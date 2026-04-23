@@ -1,0 +1,55 @@
+﻿<UserControl x:Class="ORT一键报告.ReportPicturesWidget"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:ORT一键报告"
+             mc:Ignorable="d" 
+             d:DesignHeight="250" d:DesignWidth="1000">
+    <Border BorderBrush="LightGray" BorderThickness="1,1,1,1" CornerRadius="3">
+        <StackPanel>
+            <Expander Header="Issue Photos" MaxHeight="210">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/>
+                        <ColumnDefinition/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+                    <Border BorderThickness="1,1,1,1" BorderBrush="Black">
+                        <Label Name="issue_label1" Content="双击插入图片" Tag="issue_image1" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" MouseDoubleClick="Label_MouseDoubleClick"/>
+                    </Border>
+                    <Border BorderThickness="1,1,1,1" BorderBrush="Black" Grid.Column="1">
+                        <Label Name="issue_label2" Content="双击插入图片" Tag="issue_image2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" MouseDoubleClick="Label_MouseDoubleClick"/>
+                    </Border>
+                    <Border BorderThickness="1,1,1,1" BorderBrush="Black" Grid.Column="2">
+                        <Label Name="issue_label3" Content="双击插入图片" Tag="issue_image3" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" MouseDoubleClick="Label_MouseDoubleClick"/>
+                    </Border>
+                    <Image Name="issue_image1" Margin="3" MouseRightButtonUp="Image_MouseRightButtonUp"/>
+                    <Image Name="issue_image2" Margin="3" Grid.Column="1" MouseRightButtonUp="Image_MouseRightButtonUp"/>
+                    <Image Name="issue_image3" Margin="3" Grid.Column="2" MouseRightButtonUp="Image_MouseRightButtonUp"/>
+                </Grid>
+            </Expander>
+            <Expander Header="Test Setup" IsExpanded="True" MaxHeight="210">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/>
+                        <ColumnDefinition/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+                    <Border BorderThickness="1,1,1,1" BorderBrush="Black">
+                        <Label Name="setup_label1" Tag="setup_image1" Content="双击插入图片" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" MouseDoubleClick="Label_MouseDoubleClick"/>
+                    </Border>
+                    <Border BorderThickness="1,1,1,1" BorderBrush="Black" Grid.Column="1">
+                        <Label Name="setup_label2" Tag="setup_image2" Content="双击插入图片" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" MouseDoubleClick="Label_MouseDoubleClick"/>
+                    </Border>
+                    <Border BorderThickness="1,1,1,1" BorderBrush="Black" Grid.Column="2">
+                        <Label Name="setup_label3" Tag="setup_image3" Content="双击插入图片" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" MouseDoubleClick="Label_MouseDoubleClick"/>
+                    </Border>
+                    <Image Name="setup_image1" Margin="3" MouseRightButtonUp="Image_MouseRightButtonUp"/>
+                    <Image Name="setup_image2" Margin="3" Grid.Column="1" MouseRightButtonUp="Image_MouseRightButtonUp"/>
+                    <Image Name="setup_image3" Margin="3" Grid.Column="2" MouseRightButtonUp="Image_MouseRightButtonUp"/>
+                </Grid>
+            </Expander>
+        </StackPanel>
+    </Border>
+</UserControl>

@@ -1,0 +1,5 @@
+<svg width="256" height="256" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="128" cy="128" r="120" fill="#1d091b" stroke="white" stroke-width="12" />
+    <text font-family="microsoft yahei" font-size="80" fill="white" x="44" y="120">ORT</text>
+    <text font-family="microsoft yahei" font-size="40" fill="white" x="44" y="180">一键报告</text>
+</svg>

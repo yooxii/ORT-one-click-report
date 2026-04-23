@@ -1,0 +1,92 @@
+﻿<UserControl x:Class="ORT一键报告.ReportHeaderWidget"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:ORT一键报告"
+             mc:Ignorable="d" 
+             x:Name="root"
+             d:DesignHeight="300" d:DesignWidth="1000">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto"/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+            <Grid Margin="4,3,3,3" Grid.Column="0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="125" MinWidth="125"/>
+                    <ColumnDefinition/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="25"/>
+                    <RowDefinition Height="25"/>
+                    <RowDefinition Height="25"/>
+                </Grid.RowDefinitions>
+                <Label Content="TESTED BY" Grid.Row="0" Grid.Column="0"/>
+                <TextBox x:Name="textbox_testedby" Text="{Binding TestedBy,ElementName=root}" Margin="1" Grid.Row="0" Grid.Column="1"/>
+                <Label Content="PROJECT NAME" Grid.Row="1" Grid.Column="0"/>
+                <TextBox x:Name="textbox_projectname" Text="{Binding ProjectName,ElementName=root}" Margin="1" Grid.Row="1" Grid.Column="1"/>
+                <Label Content="TEST PERIOD" Grid.Row="2" Grid.Column="0"/>
+                <Grid Grid.Row="2" Margin="1" Grid.Column="1">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+                    <DatePicker x:Name="datepicker_start" Tag="datepicker_end" SelectedDateChanged="Datepicker_start_SelectedDateChanged" Grid.Column="0"/>
+                    <DatePicker x:Name="datepicker_end" Grid.Column="1"/>
+                </Grid>
+            </Grid>
+
+            <Grid Margin="2" Grid.Column="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="125"/>
+                    <ColumnDefinition/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="25"/>
+                    <RowDefinition Height="25"/>
+                    <RowDefinition Height="25"/>
+                </Grid.RowDefinitions>
+                <Label Content="APPROVED BY" Grid.Row="0" Grid.Column="0"/>
+                <TextBox x:Name="textbox_approvedby" Text="{Binding ApprovedBy,ElementName=root}" Margin="1" Grid.Row="0" Grid.Column="1"/>
+                <Label Content="TEST STAGE" Grid.Row="1" Grid.Column="0"/>
+                <ComboBox x:Name="textbox_teststage" Text="{Binding TestStage,ElementName=root}" IsEditable="True" Margin="1" Grid.Row="1" Grid.Column="1">
+                    <ComboBoxItem Content="MP"/>
+                    <ComboBoxItem Content="MVT"/>
+                    <ComboBoxItem Content="DVT"/>
+                    <ComboBoxItem Content="EVT"/>
+                </ComboBox>
+                <Label Content="TEST CONCLUSION" Grid.Row="2" Grid.Column="0"/>
+                <Grid Grid.Row="2" Margin="1" Grid.Column="1">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+                    <RadioButton x:Name="rbtn_testPass" Content="PASS" IsChecked="True" Grid.Column="0" VerticalContentAlignment="Center"/>
+                    <RadioButton x:Name="rbtn_testFail" Content="FAIL" Grid.Column="1" VerticalContentAlignment="Center"/>
+                </Grid>
+            </Grid>
+        </Grid>
+        <GroupBox Grid.Row="1" Header="TEST DESCRIPTION" Margin="0,3,0,3">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition/>
+                    <ColumnDefinition/>
+                </Grid.ColumnDefinitions>
+                <GroupBox Header="Test Condition and Pass/Fail Criteria" Grid.Row="0">
+                    <TextBox x:Name="text_TestDescription" Text="{Binding TextTestDescription,ElementName=root}" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto">
+                    </TextBox>
+                </GroupBox>
+                <Border BorderBrush="Gray" BorderThickness="1" Margin="6" Grid.Column="1">
+                    <Image x:Name="pic_TestDescription" Source="{Binding PicTestDescription,ElementName=root}"/>
+                </Border>
+            </Grid>
+        </GroupBox>
+    </Grid>
+</UserControl>
