@@ -1,22 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-using static ORT一键报告.ReportHeader;
+using static ORT一键报告.ReportUtils;
 
 namespace ORT一键报告
 {
@@ -101,7 +90,7 @@ namespace ORT一键报告
         {
             details_data.Columns.Clear(); // 1. 清空旧列
 
-            foreach (var config in ColumnDefinitions)
+            foreach (ColumnConfig config in ColumnDefinitions)
             {
                 if (!config.IsVisible)
                 {
@@ -120,7 +109,7 @@ namespace ORT一键报告
                         });
                         break;
                     case ColumnConfig.ColumnType.ComboBox:
-                        var comboCol = new DataGridComboBoxColumn
+                        DataGridComboBoxColumn comboCol = new DataGridComboBoxColumn
                         {
                             Header = config.Header,
                             Width = config.Width,
@@ -169,7 +158,19 @@ namespace ORT一键报告
         public int UUT_Count { set; get; } = 0;
 
         // --- 初始化表格 ---
-        public void InitBurnColumns()
+        public void InitColumns(string reportType)
+        {
+            if (reportType.ToLower().Contains("burn"))
+            {
+                InitBurnColumns();
+            }
+            else
+            {
+                InitThermalColumns();
+            }
+        }
+
+        private void InitBurnColumns()
         {
             ColumnDefinitions.Add(new ColumnConfig { Header = "BIroom", BindingPath = "BIroom", Width = 100 });
             ColumnDefinitions.Add(new ColumnConfig { Header = "BIarea", BindingPath = "BIarea", Width = 100 });
@@ -177,7 +178,7 @@ namespace ORT一键报告
             InitThermalColumns();
         }
 
-        public void InitThermalColumns()
+        private void InitThermalColumns()
         {
             ColumnDefinitions.Add(new ColumnConfig { Header = "S/N", BindingPath = "SN", Width = 150 });
             ColumnDefinitions.Add(new ColumnConfig { Header = "工令", BindingPath = "WorkOrder", Width = 150 });
@@ -230,14 +231,21 @@ namespace ORT一键报告
 
         private void DelRow_Click(object sender, RoutedEventArgs e)
         {
-            if (details_data.SelectedCells.Count == 0) return;
+            if (details_data.SelectedCells.Count == 0)
+            {
+                return;
+            }
+
             DeleteRow(details_data.Items.IndexOf(details_data.SelectedCells[0].Item));
         }
 
         private void EqualFirstRow_Click(object sender, RoutedEventArgs e)
         {
             // 1. 基础检查：确保有选中单元格，且不是表头
-            if (details_data.SelectedCells.Count == 0) return;
+            if (details_data.SelectedCells.Count == 0)
+            {
+                return;
+            }
 
             // 获取当前选中的单元格信息
             DataGridCellInfo currentCell = details_data.SelectedCells[0];
@@ -252,11 +260,18 @@ namespace ORT一键报告
                 propertyName = binding.Path.Path;
             }
 
-            if (string.IsNullOrEmpty(propertyName)) return;
+            if (string.IsNullOrEmpty(propertyName))
+            {
+                return;
+            }
 
             // 4. 获取第一行 (索引为 0) 的数据对象
             // 注意：这里直接取 Items[0]，如果表格为空需加判断
-            if (details_data.Items.Count == 0) return;
+            if (details_data.Items.Count == 0)
+            {
+                return;
+            }
+
             object firstRowItem = details_data.Items[0];
 
             // 5. 读取第一行该属性的值
@@ -272,7 +287,10 @@ namespace ORT一键报告
 
         private void ClearCol_Click(object sender, RoutedEventArgs e)
         {
-            if (details_data.SelectedCells.Count == 0) return;
+            if (details_data.SelectedCells.Count == 0)
+            {
+                return;
+            }
 
             // 获取当前选中的单元格信息
             DataGridCellInfo currentCell = details_data.SelectedCells[0];
@@ -286,7 +304,10 @@ namespace ORT一键报告
             {
                 propertyName = binding.Path.Path;
             }
-            if (string.IsNullOrEmpty(propertyName)) return;
+            if (string.IsNullOrEmpty(propertyName))
+            {
+                return;
+            }
 
             for (int i = 0; i < DataGridSource.Count; i++)
             {

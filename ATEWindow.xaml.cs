@@ -1,22 +1,15 @@
 ﻿using Microsoft.Win32;
+using NLog;
 using OfficeOpenXml;
 using System;
-using NLog;
 using System.Collections.Generic;
+using System.Data;
+using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
-using System.IO;
-using System.Data;
-using static ORT一键报告.ReportHeader;
+using static ORT一键报告.ReportUtils;
 
 namespace ORT一键报告
 {
@@ -26,7 +19,6 @@ namespace ORT一键报告
     public partial class ATEWindow : Window
     {
         private readonly Logger _logger = LogManager.GetCurrentClassLogger();
-
 
 
         public class ATEItem
@@ -64,6 +56,7 @@ namespace ORT一键报告
                 }
             }
         }
+
         public class ATERows
         {
             public string SN { get; set; }
@@ -76,6 +69,7 @@ namespace ORT一键报告
                 BadDataIndexs?.Clear();
             }
         }
+
         public class ATEItems
         {
             public List<string> ItemNames { get; set; }
@@ -204,9 +198,10 @@ namespace ORT一键报告
             InitializeComponent();
             Closed += ATEWindow_Closed;
         }
+
         private void ATEWindow_Closed(object sender, EventArgs e)
         {
-            ClearTempDir(_logger);
+            ClearTempDir();
         }
 
         /* ###############################  功能函数  ################################ */
@@ -269,7 +264,10 @@ namespace ORT一键报告
                     }
                 }
 
-                if (!opened) throw new Exception("无法打开源文件，可能文件正被占用。");
+                if (!opened)
+                {
+                    throw new Exception("无法打开源文件，可能文件正被占用。");
+                }
 
                 // 6. 另存为 xlsx (FileFormat 51 = xlOpenXMLWorkbook)
                 workbook.SaveAs(outputFilePath, Microsoft.Office.Interop.Excel.XlFileFormat.xlOpenXMLWorkbook);

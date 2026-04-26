@@ -20,7 +20,16 @@ namespace ORT一键报告
     /// </summary>
     public partial class ReportHeaderWidget : UserControl
     {
-        public int TestTime { set; get; } = 1;
+        public int TestTime
+        {
+            get => (int)GetValue(TestTimeProperty);
+            set => SetValue(TestTimeProperty, value);
+        }
+
+        public static readonly DependencyProperty TestTimeProperty =
+            DependencyProperty.Register("TestTime", typeof(int), typeof(ReportHeaderWidget), new PropertyMetadata(1));
+
+
         public string TestedBy { set => SetValue(TestedByProperty, value); get => (string)GetValue(TestedByProperty); }
         public static readonly DependencyProperty TestStageProperty = DependencyProperty.Register(nameof(TestStage), typeof(string), typeof(ReportHeaderWidget), new PropertyMetadata(string.Empty));
 

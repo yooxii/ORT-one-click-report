@@ -5,16 +5,15 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Text.RegularExpressions;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
 namespace ORT一键报告
 {
-    public class ReportHeader
+    public class ReportUtils
     {
-        private readonly Logger _logger = LogManager.GetCurrentClassLogger();
+        private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
         public class DataCell
         {
@@ -110,6 +109,8 @@ namespace ORT一键报告
         }
 
 
+        /* ###############################  EPPlus函数  ################################ */
+
         public static DataCell FindCellByValue(ExcelWorksheet ws, string value, string excludeValue = "")
         {
             int snRowStart = 1;
@@ -144,13 +145,12 @@ namespace ORT一键报告
             return null;
         }
 
-
-        public static void EmbedOleObjectWithInterop(Logger logger, string targetExcelPath, string objectToEmbedPath, string TopLeftAddress = "A1")
+        public static void EmbedOleObjectWithInterop(string targetExcelPath, string objectToEmbedPath, string TopLeftAddress = "A1")
         {
-            logger.Info("插入OLE对象...");
+            _logger.Info($"插入OLE对象到{targetExcelPath}...");
             if (objectToEmbedPath is null || objectToEmbedPath == "")
             {
-                logger.Warn("OLE对象路径为空");
+                _logger.Warn($"OLE对象路径({objectToEmbedPath})为空");
                 return;
             }
             Microsoft.Office.Interop.Excel.Application excelApp = null;
@@ -190,11 +190,11 @@ namespace ORT一键报告
                 // 5. 保存并关闭
                 workbook.Save();
                 workbook.Close();
-                logger.Info("OLE对象插入成功");
+                _logger.Info("OLE对象插入成功");
             }
             catch (Exception ex)
             {
-                logger.Error(ex, "OLE对象插入失败");
+                _logger.Error(ex, "OLE对象插入失败");
             }
             finally
             {
@@ -214,41 +214,24 @@ namespace ORT一键报告
             }
         }
 
-        public static string GetSubstringAfter(string source, string marker, int length)
+        public static ReportHeaderInfo ReadReportHeaderInfo(ExcelWorksheet ws)
         {
-            if (string.IsNullOrEmpty(source) || string.IsNullOrEmpty(marker))
-                return string.Empty;
+            // 辅助函数: 找到issue和setup图片所在的标题行
+            DataCell issueTitle = FindCellByValue(ws, "Issue Photos");
+            DataCell setupTitle = FindCellByValue(ws, "Test Setup");
 
-            int index = source.IndexOf(marker);
-            if (index == -1) // 未找到标记
-                return string.Empty;
-
-            int startIndex = index + marker.Length;
-            if (startIndex >= source.Length)
-                return string.Empty;
-
-            int actualLength = Math.Min(length, source.Length - startIndex);
-            return source.Substring(startIndex, actualLength);
-        }
-
-        /// <summary>
-        /// 将 EPPlus 的图片字节数组转换为 WPF 可用的 BitmapImage
-        /// </summary>
-        public static ImageSource ConvertToWpfImage(byte[] imageBytes)
-        {
-            if (imageBytes == null || imageBytes.Length == 0)
-                return null;
-
-            var bitmapImage = new BitmapImage();
-            using (var ms = new MemoryStream(imageBytes))
+            ReportHeaderInfo reportHeaderInfo = new ReportHeaderInfo
             {
-                bitmapImage.BeginInit();
-                bitmapImage.CacheOption = BitmapCacheOption.OnLoad; // 重要：加载后释放流
-                bitmapImage.StreamSource = ms;
-                bitmapImage.EndInit();
-                bitmapImage.Freeze(); // 冻结以提高性能并允许跨线程访问
-            }
-            return bitmapImage;
+                TESTED_BY = FindInfoByText(ws, "TESTED BY"),
+                APPROVED_BY = FindInfoByText(ws, "APPROVED BY"),
+                PROJECT_NAME = FindInfoByText(ws, "PROJECT NAME"),
+                TEST_STAGE = FindInfoByText(ws, "TEST STAGE"),
+                TestDescription = FindInfoByText(ws, "Test Description"),
+                Test_Description_Pic = GetPicturesInRange(ws, 6, 1, 10),
+                Issue_Photos_Pics = issueTitle is null ? null : GetPicturesInRange(ws, issueTitle.Row, 1, issueTitle.Row + 10),
+                Test_Setup_Pics = setupTitle is null ? null : GetPicturesInRange(ws, setupTitle.Row, 1, setupTitle.Row + 10),
+            };
+            return reportHeaderInfo;
         }
 
         public static DataCell GetPicturesInRange(ExcelWorksheet ws, int startRow = 1, int startCol = 1, int endRow = -1, int endCol = -1)
@@ -307,20 +290,6 @@ namespace ORT一键报告
             return result;
         }
 
-        public static string GetTemplatePath(string rootPath, string reportTag)
-        {
-            string[] excelExtensions = new[] { ".xlsx", ".xls", ".xlsm" };
-            string[] excelFiles = Directory.GetFiles(rootPath, "*.*", SearchOption.AllDirectories).Where(file => excelExtensions.Contains(System.IO.Path.GetExtension(file))).ToArray();
-            foreach (string excelFile in excelFiles)
-            {
-                if (excelFile.ToLower().Contains(reportTag.ToLower()))
-                {
-                    return excelFile;
-                }
-            }
-            return "";
-        }
-
         public static DataCell FindInfoByText(ExcelWorksheet ws, string toFind)
         {
             DataCell headerInfo = new DataCell();
@@ -342,13 +311,76 @@ namespace ORT一键报告
             return headerInfo;
         }
 
-        public static void ClearTempDir(Logger logger)
+
+        /* ###############################  功能函数  ################################ */
+
+        public static string GetTemplatePath(string rootPath, string reportType)
         {
-            logger.Info("清理临时目录...");
+            string[] excelExtensions = new[] { ".xlsx", ".xls", ".xlsm" };
+            string[] excelFiles = Directory.GetFiles(rootPath, "*.*", SearchOption.AllDirectories).Where(file => excelExtensions.Contains(Path.GetExtension(file))).ToArray();
+            Regex regex = new Regex(@"[^a-zA-Z]");
+            foreach (string excelFile in excelFiles)
+            {
+                if (regex.Replace(excelFile, "").ToLower().Contains(regex.Replace(reportType, "").ToLower()))
+                {
+                    return excelFile;
+                }
+            }
+            return "";
+        }
+
+        public static string GetSubstringAfter(string source, string marker, int length)
+        {
+            if (string.IsNullOrEmpty(source) || string.IsNullOrEmpty(marker))
+            {
+                return string.Empty;
+            }
+
+            int index = source.IndexOf(marker);
+            if (index == -1) // 未找到标记
+            {
+                return string.Empty;
+            }
+
+            int startIndex = index + marker.Length;
+            if (startIndex >= source.Length)
+            {
+                return string.Empty;
+            }
+
+            int actualLength = Math.Min(length, source.Length - startIndex);
+            return source.Substring(startIndex, actualLength);
+        }
+
+        /// <summary>
+        /// 将图片字节数组转换为 BitmapImage
+        /// </summary>
+        public static ImageSource ConvertToWpfImage(byte[] imageBytes)
+        {
+            if (imageBytes == null || imageBytes.Length == 0)
+            {
+                return null;
+            }
+
+            var bitmapImage = new BitmapImage();
+            using (var ms = new MemoryStream(imageBytes))
+            {
+                bitmapImage.BeginInit();
+                bitmapImage.CacheOption = BitmapCacheOption.OnLoad; // 重要：加载后释放流
+                bitmapImage.StreamSource = ms;
+                bitmapImage.EndInit();
+                bitmapImage.Freeze(); // 冻结以提高性能并允许跨线程访问
+            }
+            return bitmapImage;
+        }
+
+        public static void ClearTempDir()
+        {
+            _logger.Info("清理临时目录...");
             string TempPath = Path.Combine(Path.GetTempPath(), "ORTTemp");
             try
             {
-                foreach (var fl in Directory.GetFiles(TempPath))
+                foreach (string fl in Directory.GetFiles(TempPath))
                 {
                     File.Delete(fl);
                 }
@@ -356,9 +388,9 @@ namespace ORT一键报告
             }
             catch (Exception ex)
             {
-                logger.Error(ex, "清理失败");
+                _logger.Error(ex, "清理失败");
             }
-            logger.Info("清理完成");
+            _logger.Info("清理完成");
         }
     }
 }

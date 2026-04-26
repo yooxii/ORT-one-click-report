@@ -1,24 +1,16 @@
-﻿using System;
+﻿using Microsoft.Win32;
+using NLog;
+using OfficeOpenXml;
+using OfficeOpenXml.Drawing;
+using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-using static ORT一键报告.ReportHeader;
-using Microsoft.Win32;
-using OfficeOpenXml;
-using OfficeOpenXml.Drawing;
-using NLog;
-using System.Collections.ObjectModel;
-using System.IO;
+using static ORT一键报告.ReportUtils;
 
 namespace ORT一键报告
 {
@@ -29,28 +21,99 @@ namespace ORT一键报告
     {
         private readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
-        public ReportHeaderInfo reportHeaderInfo = null;
-        public ObservableCollection<ResultDetails> DetailsList = new ObservableCollection<ResultDetails>();
+        public ObservableCollection<ResultDetails> DetailsList { get; set; } = new ObservableCollection<ResultDetails>();
         public string ATEPath { get; set; }
-        public string RootPath { get; set; }
         public string RootReportPath { get; set; }
-        public string TempPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "ORTTemp");
+
+
+        public string ReportType
+        {
+            get => (string)GetValue(ReportTypeProperty);
+            set => SetValue(ReportTypeProperty, value);
+        }
+
+        public static readonly DependencyProperty ReportTypeProperty =
+            DependencyProperty.Register("ReportType", typeof(string), typeof(BaseReportPage), new PropertyMetadata("thermal"));
+
+
+        public int TestTime
+        {
+            get => (int)GetValue(TestTimeProperty);
+            set => SetValue(TestTimeProperty, value);
+        }
+
+        public static readonly DependencyProperty TestTimeProperty =
+            DependencyProperty.Register("TestTime", typeof(int), typeof(BaseReportPage), new PropertyMetadata(1));
+
+
+        public ReportHeaderInfo reportHeaderInfo = null;
 
         public BaseReportPage()
         {
             InitializeComponent();
-            _logger.Info("设置DataGrid数据源");
+        }
+
+        public void InitReportPage()
+        {
+            DataContext = this;
+            _logger.Info($"设置{ReportType}-DataGrid的数据源");
             details_data.DataGridSource = DetailsList;
-            details_data.InitThermalColumns();
+            details_data.InitColumns(ReportType);
             details_data.AddRow();
         }
 
         /* ###############################  功能函数  ################################ */
 
+        public void SetReportResultData()
+        {
+            if (DetailsList == null)
+            {
+                DetailsList = new ObservableCollection<ResultDetails>();
+            }
+            DetailsList.Clear();
+            UUTInfoFromExcel _UUTInfos = MainWindow.UUTInfos;
+            foreach (TestItemInfo testItem in _UUTInfos.TestItems)
+            {
+                if (testItem.TestItemName.ToLower().Contains(ReportType.ToLower()))
+                {
+                    ReportHeader.datepicker_start.SelectedDate = DateTime.Parse(testItem.Date);
+                }
+            }
+            foreach (string uutSNs in _UUTInfos.SNs)
+            {
+                DetailsList.Add(new ResultDetails()
+                {
+                    BIroom = "1F Chamber",
+                    SN = uutSNs,
+                    WorkOrder = _UUTInfos.WorkerNo,
+                    Version = _UUTInfos.Revision,
+                    DC = _UUTInfos.DC,
+                    InspectionPrev = ReportStatus.Pass,
+                    FunPrev = ReportStatus.Pass,
+                    InspectionAfter = ReportStatus.Pass,
+                    FunAfter = ReportStatus.Pass,
+                    HiPot = ReportStatus.Pass,
+                    Comments = ""
+                });
+            }
+        }
+
+        public void ReadReportHeader()
+        {
+            _logger.Info($"读取{ReportType}报告表头...");
+            FileInfo thermalFileInfo = new FileInfo(GetTemplatePath(MainWindow.RootPath, ReportType));
+            using (ExcelPackage package = new ExcelPackage(thermalFileInfo))
+            {
+                ExcelWorksheet ws = package.Workbook.Worksheets[0];
+
+                reportHeaderInfo = ReadReportHeaderInfo(ws);
+                _logger.Info($"{ReportType}表头读取完成");
+            }
+            SetInfoToWindow();
+        }
+
         private void SetInfoToWindow()
         {
-            fun(ReportHeader, reportHeaderInfo, widget_pic);
-
             void SetPics(List<ExcelPictureInfo> _pics, List<Image> images)
             {
                 for (int i = 0; i < _pics.Count && i < 3; i++)
@@ -59,22 +122,19 @@ namespace ORT一键报告
                 }
             }
 
-            void fun(ReportHeaderWidget ReportHeader, ReportHeaderInfo reportHeaderInfo, ReportPicturesWidget reportPicturesWidget)
-            {
-                ReportHeader.ApprovedBy = reportHeaderInfo.APPROVED_BY.Data;
-                ReportHeader.TestedBy = reportHeaderInfo.TESTED_BY.Data;
-                ReportHeader.ProjectName = reportHeaderInfo.PROJECT_NAME.Data;
-                ReportHeader.TestStage = reportHeaderInfo.TEST_STAGE.Data;
-                ReportHeader.text_TestDescription.Text = reportHeaderInfo.TestDescription.Data;
+            ReportHeader.ApprovedBy = reportHeaderInfo.APPROVED_BY.Data;
+            ReportHeader.TestedBy = reportHeaderInfo.TESTED_BY.Data;
+            ReportHeader.ProjectName = reportHeaderInfo.PROJECT_NAME.Data;
+            ReportHeader.TestStage = reportHeaderInfo.TEST_STAGE.Data;
+            ReportHeader.TextTestDescription = reportHeaderInfo.TestDescription.Data;
 
-                if (reportHeaderInfo.Issue_Photos_Pics != null)
-                {
-                    SetPics(reportHeaderInfo.Issue_Photos_Pics.Images, new List<Image> { reportPicturesWidget.issue_image1, reportPicturesWidget.issue_image2, reportPicturesWidget.issue_image3 });
-                }
-                if (reportHeaderInfo.Test_Setup_Pics != null)
-                {
-                    SetPics(reportHeaderInfo.Test_Setup_Pics.Images, new List<Image> { reportPicturesWidget.setup_image1, reportPicturesWidget.setup_image2, reportPicturesWidget.setup_image3 });
-                }
+            if (reportHeaderInfo.Issue_Photos_Pics != null)
+            {
+                SetPics(reportHeaderInfo.Issue_Photos_Pics.Images, new List<Image> { widget_pic.issue_image1, widget_pic.issue_image2, widget_pic.issue_image3 });
+            }
+            if (reportHeaderInfo.Test_Setup_Pics != null)
+            {
+                SetPics(reportHeaderInfo.Test_Setup_Pics.Images, new List<Image> { widget_pic.setup_image1, widget_pic.setup_image2, widget_pic.setup_image3 });
             }
         }
 
@@ -84,15 +144,15 @@ namespace ORT一键报告
             {
                 return;
             }
-            var start = new ExcelAddress(TopLeft).Start;
+            ExcelCellAddress start = new ExcelAddress(TopLeft).Start;
             int startRow = start.Row;
             int startCol = start.Column;
             for (int i = 0; i < pics.Images.Count; i++)
             {
-                string picPath = System.IO.Path.Combine(TempPath, picName + "_" + i + ".png");
+                string picPath = Path.Combine(MainWindow.TempPath, picName + "_" + i + ".png");
                 if (File.Exists(picPath))
                 {
-                    var temp = picPath.Split('.');
+                    string[] temp = picPath.Split('.');
                     picPath = temp[0] + "_" + i + "." + temp[1];
                 }
                 ImageSaverLegacy.SaveImageSourceToFile(pics.Images[i].ImageSrc, picPath, "png");
@@ -116,12 +176,12 @@ namespace ORT一键报告
             try
             {
                 string currentPath = Directory.GetCurrentDirectory();
-                FileInfo reportFI = new FileInfo(GetTemplatePath(System.IO.Path.Combine(currentPath, "Templates"), ReportType));
+                FileInfo reportFI = new FileInfo(GetTemplatePath(Path.Combine(currentPath, "Templates"), ReportType));
                 SaveFileDialog saveFileDialog = new SaveFileDialog
                 {
                     FileName = reportFI.Name,
                     Filter = "Excel文件|*.xlsx;*.xls",
-                    InitialDirectory = RootPath
+                    InitialDirectory = MainWindow.RootPath
                 };
                 ExcelPackage package = new ExcelPackage(reportFI);
                 ExcelWorkbook wb = package.Workbook;
@@ -152,7 +212,7 @@ namespace ORT一键报告
                     DetailsList.Select(r => r.FunAfter).ToList(),
                     DetailsList.Select(r => r.HiPot).ToList(),
                 };
-                if (ReportType.ToLower().Contains("thermal"))
+                if (!ReportType.ToLower().Contains("burn"))
                 {
                     detailInfoList.RemoveRange(0, 3);
                 }
@@ -161,8 +221,8 @@ namespace ORT一键报告
                 for (int r = _detail_start_row; r < ws_setup.Dimension.End.Row; r++)
                 {
                     ExcelAddress address = new ExcelAddress(ws_setup.Cells[r, 1].Text);
-                    var Rp_row = address.Start.Row;
-                    var Rp_col = address.Start.Column;
+                    int Rp_row = address.Start.Row;
+                    int Rp_col = address.Start.Column;
                     if (detailInfoList[r - _detail_start_row] is List<string> detailInfo)
                     {
                         ws.Cells[Rp_row, Rp_col].Value = detailInfo[0];
@@ -187,10 +247,10 @@ namespace ORT一键报告
 
                 saveReportPath = saveFileDialog.ShowDialog() == true
                     ? saveFileDialog.FileName
-                    : System.IO.Path.Combine(Directory.GetCurrentDirectory(), reportFI.Name);
-                saveReportPath = System.IO.Path.GetFullPath(saveReportPath);
+                    : Path.Combine(Directory.GetCurrentDirectory(), reportFI.Name);
+                saveReportPath = Path.GetFullPath(saveReportPath);
                 package.SaveAs(saveReportPath);
-                EmbedOleObjectWithInterop(_logger, saveReportPath, ATEPath, ate_Addr);
+                EmbedOleObjectWithInterop(saveReportPath, ATEPath, ate_Addr);
             }
             catch (Exception ex)
             {
@@ -226,7 +286,6 @@ namespace ORT一键报告
                 }
             }
         }
-
 
         private async void btn_finish_Click(object sender, RoutedEventArgs e)
         {
