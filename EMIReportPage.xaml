@@ -1,0 +1,84 @@
+﻿<UserControl x:Class="ORT一键报告.EMIReportPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:ORT一键报告"
+             mc:Ignorable="d" 
+             d:DesignHeight="750" d:DesignWidth="800">
+    <Grid Background="White">
+        <ScrollViewer>
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition/>
+                    <RowDefinition Height="auto"/>
+                </Grid.RowDefinitions>
+                <StackPanel>
+                    <local:ReportHeaderWidget x:Name="ReportHeader" TestTime="1"/>
+                    <StackPanel>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="1*"/>
+                                <ColumnDefinition Width="1*"/>
+                                <ColumnDefinition Width="2*"/>
+                                <ColumnDefinition Width="auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="auto"/>
+                                    <ColumnDefinition/>
+                                </Grid.ColumnDefinitions>
+                                <Label Content="单体周期:" Margin="3" VerticalContentAlignment="Center"/>
+                                <TextBox x:Name="DC_text" Grid.Column="1" VerticalContentAlignment="Center" TextWrapping="Wrap" Margin="3"/>
+                            </Grid>
+                            <Grid Grid.Column="1">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="auto"/>
+                                    <ColumnDefinition/>
+                                </Grid.ColumnDefinitions>
+                                <Label Content="版本:" Margin="3" VerticalContentAlignment="Center"/>
+                                <TextBox x:Name="Version_text" Grid.Column="1" VerticalContentAlignment="Center" TextWrapping="Wrap" Margin="3"/>
+                            </Grid>
+                            <Grid Grid.Column="2">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="auto"/>
+                                    <ColumnDefinition/>
+                                </Grid.ColumnDefinitions>
+                                <Label Content="工令:" Margin="3" VerticalContentAlignment="Center"/>
+                                <TextBox x:Name="WorkerNo_text" Grid.Column="1" VerticalContentAlignment="Center" TextWrapping="Wrap" Margin="3"/>
+                            </Grid>
+                        </Grid>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="auto"/>
+                                <ColumnDefinition Width="auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Label Content="模板路径:" Margin="3" VerticalContentAlignment="Center"/>
+                            <TextBox x:Name="TemplatePath_text" Grid.Column="1" VerticalContentAlignment="Center" TextWrapping="Wrap" Margin="3"/>
+                            <Button Tag="TemplatePath_text" x:Name="btnTemplatePath" Content="选择" Width="70" Grid.Column="2" Margin="3,3,3,0" Height="25" VerticalAlignment="Top" Click="btn_File_Click"/>
+                        </Grid>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="auto"/>
+                                <ColumnDefinition Width="auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Label Content="数据路径:" Margin="3" VerticalContentAlignment="Center"/>
+                            <TextBox x:Name="DataPath_text" Grid.Column="1" VerticalContentAlignment="Center" TextWrapping="Wrap" Margin="3"/>
+                            <Button Tag="DataPath_text" x:Name="btnDataPath" Content="选择" Width="70" Grid.Column="2" Margin="3" Click="btn_Dir_Click"/>
+                            <Button x:Name="btnToPDF" Content="转PDF" Width="70" Grid.Column="3" Margin="3" Click="btnToPDF_Click"/>
+                        </Grid>
+                    </StackPanel>
+                    <local:ReportPicturesWidget x:Name="widget_pic"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right"  Grid.Row="1">
+                    <Button Content="重置" Margin="5" MinWidth="120" Grid.Column="1" Cursor="Hand"/>
+                    <Button Tag="emi" Content="完成" Margin="5"  MinWidth="120" Cursor="Hand" />
+                </StackPanel>
+            </Grid>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

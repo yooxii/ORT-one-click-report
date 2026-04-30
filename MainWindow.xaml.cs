@@ -204,37 +204,6 @@ namespace ORT一键报告
             }
         }
 
-        private void SetInfoToWindow()
-        {
-            fun(e_ReportHeader, emiReportHeaderInfo, widget_pic_e);
-
-            void SetPics(List<ExcelPictureInfo> _pics, List<Image> images)
-            {
-                for (int i = 0; i < _pics.Count && i < 3; i++)
-                {
-                    images[i].Source = _pics[i].ImageSrc;
-                }
-            }
-
-            void fun(ReportHeaderWidget ReportHeader, ReportHeaderInfo reportHeaderInfo, ReportPicturesWidget reportPicturesWidget)
-            {
-                ReportHeader.ApprovedBy = reportHeaderInfo.APPROVED_BY.Data;
-                ReportHeader.TestedBy = reportHeaderInfo.TESTED_BY.Data;
-                ReportHeader.ProjectName = reportHeaderInfo.PROJECT_NAME.Data;
-                ReportHeader.TestStage = reportHeaderInfo.TEST_STAGE.Data;
-                ReportHeader.text_TestDescription.Text = reportHeaderInfo.TestDescription.Data;
-
-                if (reportHeaderInfo.Issue_Photos_Pics != null)
-                {
-                    SetPics(reportHeaderInfo.Issue_Photos_Pics.Images, new List<Image> { reportPicturesWidget.issue_image1, reportPicturesWidget.issue_image2, reportPicturesWidget.issue_image3 });
-                }
-                if (reportHeaderInfo.Test_Setup_Pics != null)
-                {
-                    SetPics(reportHeaderInfo.Test_Setup_Pics.Images, new List<Image> { reportPicturesWidget.setup_image1, reportPicturesWidget.setup_image2, reportPicturesWidget.setup_image3 });
-                }
-            }
-        }
-
         /* ###############################  事件函数  ################################ */
         private void MenuItem_ATE_Click(object sender, RoutedEventArgs e)
         {
@@ -292,7 +261,6 @@ namespace ORT一键报告
 
         private void Info_Set_Click(object sender, RoutedEventArgs e)
         {
-            SetInfoToWindow();
         }
 
         private void btn_rootReportPath_Click(object sender, RoutedEventArgs e)
@@ -316,6 +284,12 @@ namespace ORT一键报告
             if (sender is Button button && button.Tag is string btnTag)
             {
             }
+        }
+
+        private void MenuItem_PdfTest_Click(object sender, RoutedEventArgs e)
+        {
+            TestPdfWindow testPdfWindow = new TestPdfWindow();
+            testPdfWindow.Show();
         }
     }
 }

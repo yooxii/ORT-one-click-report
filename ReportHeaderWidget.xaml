@@ -29,9 +29,9 @@
                     <RowDefinition Height="25"/>
                 </Grid.RowDefinitions>
                 <Label Content="TESTED BY" Grid.Row="0" Grid.Column="0"/>
-                <TextBox x:Name="textbox_testedby" Text="{Binding TestedBy,ElementName=root}" Margin="1" Grid.Row="0" Grid.Column="1"/>
+                <TextBox x:Name="textbox_testedby" Text="{Binding TestedBy,ElementName=root}" VerticalContentAlignment="Center" Margin="1" Grid.Row="0" Grid.Column="1"/>
                 <Label Content="PROJECT NAME" Grid.Row="1" Grid.Column="0"/>
-                <TextBox x:Name="textbox_projectname" Text="{Binding ProjectName,ElementName=root}" Margin="1" Grid.Row="1" Grid.Column="1"/>
+                <TextBox x:Name="textbox_projectname" Text="{Binding ProjectName,ElementName=root}" VerticalContentAlignment="Center" Margin="1" Grid.Row="1" Grid.Column="1"/>
                 <Label Content="TEST PERIOD" Grid.Row="2" Grid.Column="0"/>
                 <Grid Grid.Row="2" Margin="1" Grid.Column="1">
                     <Grid.ColumnDefinitions>
@@ -54,9 +54,9 @@
                     <RowDefinition Height="25"/>
                 </Grid.RowDefinitions>
                 <Label Content="APPROVED BY" Grid.Row="0" Grid.Column="0"/>
-                <TextBox x:Name="textbox_approvedby" Text="{Binding ApprovedBy,ElementName=root}" Margin="1" Grid.Row="0" Grid.Column="1"/>
+                <TextBox x:Name="textbox_approvedby" Text="{Binding ApprovedBy,ElementName=root}" VerticalContentAlignment="Center" Margin="1" Grid.Row="0" Grid.Column="1"/>
                 <Label Content="TEST STAGE" Grid.Row="1" Grid.Column="0"/>
-                <ComboBox x:Name="textbox_teststage" Text="{Binding TestStage,ElementName=root}" IsEditable="True" Margin="1" Grid.Row="1" Grid.Column="1">
+                <ComboBox x:Name="textbox_teststage" Text="{Binding TestStage,ElementName=root}" VerticalContentAlignment="Center" IsEditable="True" Margin="1" Grid.Row="1" Grid.Column="1">
                     <ComboBoxItem Content="MP"/>
                     <ComboBoxItem Content="MVT"/>
                     <ComboBoxItem Content="DVT"/>

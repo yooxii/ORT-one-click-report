@@ -177,11 +177,12 @@ namespace ORT一键报告
             {
                 string currentPath = Directory.GetCurrentDirectory();
                 FileInfo reportFI = new FileInfo(GetTemplatePath(Path.Combine(currentPath, "Templates"), ReportType));
+                string initDir = Path.GetDirectoryName(GetTemplatePath(MainWindow.RootPath, ReportType));
                 SaveFileDialog saveFileDialog = new SaveFileDialog
                 {
                     FileName = reportFI.Name,
                     Filter = "Excel文件|*.xlsx;*.xls",
-                    InitialDirectory = MainWindow.RootPath
+                    InitialDirectory = initDir
                 };
                 ExcelPackage package = new ExcelPackage(reportFI);
                 ExcelWorkbook wb = package.Workbook;

@@ -224,6 +224,10 @@
     <Compile Include="BaseReportPage.xaml.cs">
       <DependentUpon>BaseReportPage.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Docx2Pdf.cs" />
+    <Compile Include="EMIReportPage.xaml.cs">
+      <DependentUpon>EMIReportPage.xaml</DependentUpon>
+    </Compile>
     <Compile Include="ImageSaverLegacy.cs" />
     <Compile Include="ReportUtils.cs" />
     <Compile Include="ReportHeaderWidget.xaml.cs">
@@ -237,6 +241,9 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <Compile Include="TestPdfWindow.xaml.cs">
+      <DependentUpon>TestPdfWindow.xaml</DependentUpon>
+    </Compile>
     <Compile Include="UserDataGrid.xaml.cs">
       <DependentUpon>UserDataGrid.xaml</DependentUpon>
     </Compile>
@@ -245,6 +252,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="BaseReportPage.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="EMIReportPage.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -272,6 +283,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="ReportPicturesWidget.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="TestPdfWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -329,6 +344,35 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Resources\ORTicon256_2.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <COMReference Include="Microsoft.Office.Core">
+      <Guid>{2DF8D04C-5BFA-101B-BDE5-00AA0044DE52}</Guid>
+      <VersionMajor>2</VersionMajor>
+      <VersionMinor>8</VersionMinor>
+      <Lcid>0</Lcid>
+      <WrapperTool>primary</WrapperTool>
+      <Isolated>False</Isolated>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </COMReference>
+    <COMReference Include="Microsoft.Office.Interop.Word">
+      <Guid>{00020905-0000-0000-C000-000000000046}</Guid>
+      <VersionMajor>8</VersionMajor>
+      <VersionMinor>7</VersionMinor>
+      <Lcid>0</Lcid>
+      <WrapperTool>primary</WrapperTool>
+      <Isolated>False</Isolated>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </COMReference>
+    <COMReference Include="VBIDE">
+      <Guid>{0002E157-0000-0000-C000-000000000046}</Guid>
+      <VersionMajor>5</VersionMajor>
+      <VersionMinor>3</VersionMinor>
+      <Lcid>0</Lcid>
+      <WrapperTool>primary</WrapperTool>
+      <Isolated>False</Isolated>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </COMReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="packages\NLog.Schema.6.1.2\build\NLog.Schema.targets" Condition="Exists('packages\NLog.Schema.6.1.2\build\NLog.Schema.targets')" />
