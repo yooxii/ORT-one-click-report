@@ -455,7 +455,7 @@ namespace ORT一键报告
         {
             string[] excelExtensions = new[] { ".xlsx", ".xls", ".xlsm" };
             string[] excelFiles = Directory.GetFiles(rootPath, "*.*", SearchOption.AllDirectories).Where(file => excelExtensions.Contains(Path.GetExtension(file))).ToArray();
-            Regex regex = new Regex(@"[^a-zA-Z]");
+            Regex regex = new Regex(@"[^a-zA-Z0-9]");
             foreach (string excelFile in excelFiles)
             {
                 if (regex.Replace(excelFile, "").ToLower().Contains(regex.Replace(reportType, "").ToLower()))

@@ -237,7 +237,7 @@ namespace ORT一键报告
                 {
                     _ = Directory.CreateDirectory(TempATEDir);
                 }
-                outputFilePath = System.IO.Path.Combine(TempATEDir, Guid.NewGuid().ToString() + ".xlsx");
+                outputFilePath = Path.Combine(TempATEDir, Guid.NewGuid().ToString() + ".xlsx");
 
                 // 4. 启动 Excel (增加错误处理)
                 excelApp = new Microsoft.Office.Interop.Excel.Application
@@ -498,13 +498,13 @@ namespace ORT一键报告
         {
             SaveFileDialog saveFileDialog = new SaveFileDialog
             {
-                FileName = System.IO.Path.GetFileName(ATEFilePath),
+                FileName = Path.GetFileName(ATEFilePath),
                 Filter = "Excel文件|*.xlsx;*.xls",
-                InitialDirectory = System.IO.Path.GetDirectoryName(ATEFilePath)
+                InitialDirectory = Path.GetDirectoryName(ATEFilePath)
             };
             SaveATEPath = saveFileDialog.ShowDialog() == true
                 ? saveFileDialog.FileName
-                : System.IO.Path.Combine(Directory.GetCurrentDirectory(), System.IO.Path.GetFileName(ATEFilePath));
+                : Path.Combine(Directory.GetCurrentDirectory(), Path.GetFileName(ATEFilePath));
             package.SaveAs(SaveATEPath);
             _logger.Info($"ATE报告已保存，路径：{SaveATEPath}");
             _ = MessageBox.Show($"ATE报告已保存，路径：{SaveATEPath}");
@@ -515,7 +515,7 @@ namespace ORT一键报告
             FileInfo ATEtemp;
             try
             {
-                ATEtemp = new FileInfo(System.IO.Path.GetFullPath(text_ATETemplate.Text));
+                ATEtemp = new FileInfo(Path.GetFullPath(text_ATETemplate.Text));
                 if (!ATEtemp.Exists)
                 {
                     throw new FileNotFoundException("ATE模板路径不存在");

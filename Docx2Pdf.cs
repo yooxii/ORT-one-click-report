@@ -2,21 +2,19 @@
 using NLog;
 using System;
 using System.IO;
+using System.Linq;
 
 namespace ORT一键报告
 {
     public class Docx2Pdf
     {
         private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
-        public static void ConvertToPdf(string sourcePath, string targetPath = "")
+
+        public static void ConvertToPdf(string sourcePath, string targetPath)
         {
             // 1. 创建 Word 应用程序实例
             Application wordApp = new Application();
             Document wordDoc = null;
-            if (targetPath == "")
-            {
-                targetPath = Path.GetDirectoryName(sourcePath) + Path.GetFileNameWithoutExtension(sourcePath) + "pdf";
-            }
             try
             {
                 // 2. 设置为不可见模式（后台静默运行）
@@ -46,6 +44,53 @@ namespace ORT一键报告
                 wordApp.Quit();
 
                 // 6. 释放 COM 对象，防止后台残留 WINWORD.EXE 进程
+                if (wordDoc != null)
+                {
+                    System.Runtime.InteropServices.Marshal.ReleaseComObject(wordDoc);
+                }
+
+                System.Runtime.InteropServices.Marshal.ReleaseComObject(wordApp);
+            }
+        }
+
+        public static void ConvertToPdf(string sourceDir)
+        {
+            Application wordApp = new Application();
+            Document wordDoc = null;
+            wordApp.Visible = false;
+            _logger.Info(sourceDir + "转换PDF开始");
+            try
+            {
+                if (!Directory.Exists(sourceDir))
+                {
+                    throw new DirectoryNotFoundException($"{sourceDir}不存在");
+                }
+
+                var files = Directory.GetFiles(sourceDir).Where(f => Path.GetExtension(f).Contains("docx"));
+
+                foreach (var file in files)
+                {
+                    string targetPath = file.Replace("docx", "pdf");
+
+                    wordDoc = wordApp.Documents.Open(file);
+
+                    wordDoc.ExportAsFixedFormat(targetPath, WdExportFormat.wdExportFormatPDF);
+
+                    _logger.Info("转换成功！PDF 已保存至: " + targetPath);
+                    if (wordDoc != null)
+                    {
+                        wordDoc.Close(WdSaveOptions.wdDoNotSaveChanges);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "转换过程中发生错误: " + ex.Message);
+            }
+            finally
+            {
+                wordApp.Quit();
+
                 if (wordDoc != null)
                 {
                     System.Runtime.InteropServices.Marshal.ReleaseComObject(wordDoc);

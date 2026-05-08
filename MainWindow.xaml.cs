@@ -30,7 +30,8 @@ namespace ORT一键报告
         public static UUTInfoFromExcel UUTInfos;
         public static string ATEPath { get; set; }
         public static string RootPath { get; set; }
-        public static string TempPath = Path.Combine(Path.GetTempPath(), "ORTTemp");
+        public static string TemplatePath { get; set; }
+        public static string TempPath { get; set; }
 
         public MainWindow()
         {
@@ -38,6 +39,8 @@ namespace ORT一键报告
             ExcelPackage.License.SetNonCommercialPersonal("Lucas");
             Closed += Window_Closed;
             Loaded += ReportHeader_Loaded;
+            TemplatePath = Path.Combine(Directory.GetCurrentDirectory(), "Templates");
+            TempPath = Path.Combine(Path.GetTempPath(), "ORTTemp");
         }
         private void ReportHeader_Loaded(object sender, RoutedEventArgs e)
         {

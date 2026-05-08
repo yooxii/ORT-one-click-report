@@ -57,6 +57,7 @@
                             </Grid.ColumnDefinitions>
                             <Label Content="模板路径:" Margin="3" VerticalContentAlignment="Center"/>
                             <TextBox x:Name="TemplatePath_text" Grid.Column="1" VerticalContentAlignment="Center" TextWrapping="Wrap" Margin="3"/>
+                            <Button Tag="TemplatePath_text" x:Name="btnTemplateDefaultPath" Content="默认" Width="70" Grid.Column="3" Margin="3,3,3,0" Height="25" VerticalAlignment="Top" Click="btn_Default_Click"/>
                             <Button Tag="TemplatePath_text" x:Name="btnTemplatePath" Content="选择" Width="70" Grid.Column="2" Margin="3,3,3,0" Height="25" VerticalAlignment="Top" Click="btn_File_Click"/>
                         </Grid>
                         <Grid>
