@@ -248,24 +248,45 @@ namespace ORT一键报告
 
         /* ###############################  EPPlus函数  ################################ */
 
-        public static DataCell FindCellByValue(ExcelWorksheet ws, string value, string excludeValue = "")
+        public static DataCell FindCellByValue(ExcelWorksheet ws, string value, string excludeValue = "", bool ignoreCase = true, DataCell start = null, DataCell end = null)
         {
             int snRowStart = 1;
             int snColumnStart = 1;
             int snColumnEnd = ws.Dimension.End.Column;
             int snRowEnd = ws.Dimension.End.Row;
-            value = value.ToLower();
-            excludeValue = excludeValue.ToLower();
-
             DataCell result;
+
+            if (start != null)
+            {
+                snRowStart = start.Row;
+                snColumnStart = start.Column;
+            }
+            if (end != null)
+            {
+                snRowEnd = end.Row;
+                snColumnEnd = end.Column;
+            }
+
+            if (snRowEnd < snRowStart || snColumnEnd < snColumnStart)
+            {
+                _logger.Warn("搜索的范围过小！");
+                return null;
+            }
+
+            if (ignoreCase)
+                value = value.ToLower();
+                excludeValue = excludeValue.ToLower();
+
             for (int row = snRowStart; row <= snRowEnd; row++)
             {
                 for (int col = snColumnStart; col <= snColumnEnd; col++)
                 {
                     var _value = ws.Cells[row, col].Text;
-                    if (_value.ToLower().Contains(value))
+                    if (ignoreCase)
+                        _value = _value.ToLower();
+                    if (_value.Contains(value))
                     {
-                        if (_value.ToLower().Contains(excludeValue) && excludeValue != "")
+                        if (excludeValue != "" && _value.Contains(excludeValue))
                         {
                             continue;
                         }
@@ -292,8 +313,6 @@ namespace ORT一键报告
             }
             Microsoft.Office.Interop.Excel.Application excelApp = null;
             Microsoft.Office.Interop.Excel.Workbook workbook = null;
-            Microsoft.Office.Interop.Excel.Worksheet worksheet = null;
-
             try
             {
                 // 1. 启动 Excel 应用
@@ -305,15 +324,16 @@ namespace ORT一键报告
 
                 // 2. 打开目标文件
                 workbook = excelApp.Workbooks.Open(targetExcelPath);
-                worksheet = workbook.Worksheets[1];
+                Microsoft.Office.Interop.Excel.Worksheet worksheet = (Microsoft.Office.Interop.Excel.Worksheet)workbook.Worksheets[1];
 
                 // 3. 定义嵌入位置 (例如 A1 单元格)
                 Microsoft.Office.Interop.Excel.Range range = worksheet.Range[TopLeftAddress];
-                double left = range.Left;
-                double top = range.Top;
+                double left = (double)range.Left;
+                double top = (double)range.Top;
 
                 // 4. 执行嵌入操作
-                worksheet.OLEObjects().Add(
+                dynamic oleObjects = worksheet.OLEObjects(); // 提前获取 OLE 对象集合
+                oleObjects.Add(
                     Filename: objectToEmbedPath,
                     Link: false,
                     DisplayAsIcon: true,

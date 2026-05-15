@@ -11,65 +11,65 @@
         <!--Create list of enumeration values-->
         <ObjectDataProvider x:Key="RpstatusEnum" MethodName="GetValues" ObjectType="{x:Type sys:Enum}">
             <ObjectDataProvider.MethodParameters>
-                <x:Type Type="local:ReportStatus"/>
+                <x:Type Type="local:ReportStatus" />
             </ObjectDataProvider.MethodParameters>
         </ObjectDataProvider>
     </Window.Resources>
 
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="20"/>
-            <RowDefinition/>
-            <RowDefinition Height="20"/>
+            <RowDefinition Height="20" />
+            <RowDefinition />
+            <RowDefinition Height="20" />
         </Grid.RowDefinitions>
         <Menu x:Name="_Menu" Grid.Row="0">
             <MenuItem Header="文件">
-                <MenuItem Header="新建"/>
-                <MenuItem Header="打开"/>
+                <MenuItem Header="新建" />
+                <MenuItem Header="打开" />
             </MenuItem>
             <MenuItem Header="选项">
-                <MenuItem Header="重置"/>
-                <MenuItem Header="设置"/>
+                <MenuItem Header="重置" />
+                <MenuItem Header="设置" />
             </MenuItem>
-            <MenuItem Header="ATE数据" Click="MenuItem_ATE_Click"/>
-            <MenuItem Header="帮助"/>
-            <MenuItem Header="Pdf测试" Click="MenuItem_PdfTest_Click"/>
+            <MenuItem Header="ATE数据" Click="MenuItem_ATE_Click" />
+            <MenuItem Header="帮助" />
+            <MenuItem Header="Pdf测试" Click="MenuItem_PdfTest_Click" />
         </Menu>
         <Grid Grid.Row="1">
             <Grid.RowDefinitions>
-                <RowDefinition Height="35"/>
-                <RowDefinition/>
+                <RowDefinition Height="35" />
+                <RowDefinition />
             </Grid.RowDefinitions>
             <Grid>
                 <Grid Height="30" VerticalAlignment="Top" Margin="10,3,0,0">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="65*" MaxWidth="65" MinWidth="65"/>
-                        <ColumnDefinition Width="650*" MinWidth="200"/>
-                        <ColumnDefinition Width="65*" MinWidth="65"/>
-                        <ColumnDefinition Width="65*" MinWidth="65"/>
+                        <ColumnDefinition Width="65*" MaxWidth="65" MinWidth="65" />
+                        <ColumnDefinition Width="650*" MinWidth="200" />
+                        <ColumnDefinition Width="65*" MinWidth="65" />
+                        <ColumnDefinition Width="65*" MinWidth="65" />
                     </Grid.ColumnDefinitions>
-                    <Label Content="报告路径"/>
-                    <TextBox x:Name="text_rootReportPath" Grid.Column="1" VerticalContentAlignment="Center" TextWrapping="WrapWithOverflow" ToolTip="点击浏览来选择"/>
-                    <Button x:Name="btn_rootpath_t" Content="浏览" Cursor="Hand" Click="btn_rootReportPath_Click" Margin="3,0,3,0" Grid.Column="2"/>
-                    <Button x:Name="btn_readReport_t" Content="一键报告" Cursor="Hand" Click="DoReport_Click" Margin="3,0,3,0" Grid.Column="3"/>
+                    <Label Content="报告路径" />
+                    <TextBox x:Name="text_rootReportPath" Grid.Column="1" VerticalContentAlignment="Center" TextWrapping="WrapWithOverflow" ToolTip="点击浏览来选择" />
+                    <Button x:Name="btn_rootpath_t" Content="浏览" Cursor="Hand" Click="btn_rootReportPath_Click" Margin="3,0,3,0" Grid.Column="2" />
+                    <Button x:Name="btn_readReport_t" Content="一键报告" Cursor="Hand" Click="DoReport_Click" Margin="3,0,3,0" Grid.Column="3" />
                 </Grid>
             </Grid>
             <TabControl Margin="10,3,10,3" Grid.Row="1" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
                 <TabItem Header="Thermal Shock">
-                    <local:BaseReportPage x:Name="thermalshockPage" ReportType="Thermal Shock" TestTime="1"/>
+                    <local:BaseReportPage x:Name="thermalshockPage" ReportType="Thermal Shock" TestTime="1" />
                 </TabItem>
                 <TabItem Header="Burn In">
-                    <local:BaseReportPage x:Name="burninPage" ReportType="Burn In" TestTime="7"/>
+                    <local:BaseReportPage x:Name="burninPage" ReportType="Burn In" TestTime="7" />
                 </TabItem>
                 <TabItem Header="EMI">
-                    <local:EMIReportPage x:Name="emiPage"/>
+                    <local:EMIReportPage x:Name="emiPage" />
                 </TabItem>
             </TabControl>
         </Grid>
         <StatusBar Grid.Row="2" Margin="5,0,5,0" Visibility="Collapsed">
-            <StatusBarItem x:Name="StatusBarMsg" Content="请选择"/>
+            <StatusBarItem x:Name="StatusBarMsg" Content="请选择" />
             <StatusBarItem HorizontalAlignment="Right">
-                <ProgressBar x:Name="StatusProgressBar" IsIndeterminate="True" Width="400" Height="15" Visibility="Hidden"/>
+                <ProgressBar x:Name="StatusProgressBar" IsIndeterminate="True" Width="400" Height="15" Visibility="Hidden" />
             </StatusBarItem>
         </StatusBar>
     </Grid>

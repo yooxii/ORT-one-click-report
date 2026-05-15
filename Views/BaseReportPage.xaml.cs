@@ -217,7 +217,8 @@ namespace ORT一键报告
                 {
                     detailInfoList.RemoveRange(0, 3);
                 }
-
+                /* 根据模板setup表的定义来保存结果。
+                 */
                 int _detail_start_row = 13; //setup表detail的起始行
                 for (int r = _detail_start_row; r < ws_setup.Dimension.End.Row; r++)
                 {
@@ -226,15 +227,17 @@ namespace ORT一键报告
                     int Rp_col = address.Start.Column;
                     if (detailInfoList[r - _detail_start_row] is List<string> detailInfo)
                     {
-                        ws.Cells[Rp_row, Rp_col].Value = detailInfo[0];
-                        ws.Cells[Rp_row + 1, Rp_col].Value = detailInfo[1];
-                        ws.Cells[Rp_row + 2, Rp_col].Value = detailInfo[2];
+                        for (int i = 0; i < detailInfo.Count; i++)
+                        {
+                            ws.Cells[Rp_row + i, Rp_col].Value = detailInfo[i];
+                        }
                     }
                     else if (detailInfoList[r - _detail_start_row] is List<ReportStatus> detailStatus)
                     {
-                        ws.Cells[Rp_row, Rp_col].Value = detailStatus[0].ToString();
-                        ws.Cells[Rp_row + 1, Rp_col].Value = detailStatus[1].ToString();
-                        ws.Cells[Rp_row + 2, Rp_col].Value = detailStatus[2].ToString();
+                        for (int i = 0; i < detailStatus.Count; i++)
+                        {
+                            ws.Cells[Rp_row + i, Rp_col].Value = detailStatus[i].ToString();
+                        }
                     }
                 }
 

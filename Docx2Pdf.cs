@@ -13,7 +13,7 @@ namespace ORT一键报告
         public static void ConvertToPdf(string sourcePath, string targetPath)
         {
             // 1. 创建 Word 应用程序实例
-            Application wordApp = new Application();
+            Application wordApp = new();
             Document wordDoc = null;
             try
             {
@@ -55,7 +55,7 @@ namespace ORT一键报告
 
         public static void ConvertToPdf(string sourceDir)
         {
-            Application wordApp = new Application();
+            Application wordApp = new();
             Document wordDoc = null;
             wordApp.Visible = false;
             _logger.Info(sourceDir + "转换PDF开始");

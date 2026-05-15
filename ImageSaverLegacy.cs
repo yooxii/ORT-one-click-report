@@ -33,30 +33,14 @@ namespace ORT一键报告
             }
 
             string formatLower = format.ToLower();
-
-
-            // 2. 创建编码器
-            BitmapEncoder encoder;
-            switch (formatLower)
+            BitmapEncoder encoder = formatLower switch
             {
-                case "jpg":
-                case "jpeg":
-                    encoder = new JpegBitmapEncoder();
-                    break;
-                case "bmp":
-                    encoder = new BmpBitmapEncoder();
-                    break;
-                case "gif":
-                    encoder = new GifBitmapEncoder();
-                    break;
-                case "tiff":
-                    encoder = new TiffBitmapEncoder();
-                    break;
-                case "png":
-                default:
-                    encoder = new PngBitmapEncoder();
-                    break;
-            }
+                "jpg" or "jpeg" => new JpegBitmapEncoder(),
+                "bmp" => new BmpBitmapEncoder(),
+                "gif" => new GifBitmapEncoder(),
+                "tiff" => new TiffBitmapEncoder(),
+                _ => new PngBitmapEncoder(),
+            };
 
             // 3. 设置 JPEG 质量 (可选)
             if (encoder is JpegBitmapEncoder encoder1)
@@ -69,10 +53,8 @@ namespace ORT一键报告
             encoder.Frames.Add(BitmapFrame.Create((BitmapSource)imageSource));
 
             // 5. 写入文件
-            using (FileStream stream = new FileStream(filePath, FileMode.Create, FileAccess.Write))
-            {
-                encoder.Save(stream);
-            }
+            using FileStream stream = new(filePath, FileMode.Create, FileAccess.Write);
+            encoder.Save(stream);
         }
     }
 }

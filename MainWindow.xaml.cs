@@ -1,7 +1,6 @@
 ﻿using Microsoft.Win32;
 using NLog;
 using OfficeOpenXml;
-using OfficeOpenXml.Drawing;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -14,7 +13,29 @@ using static ORT一键报告.ReportUtils;
 
 namespace ORT一键报告
 {
-    public enum ReportStatus { Pass, Fail };
+    public abstract class DynamicField
+    {
+        public string Label { get; set; } // 控件左侧的标签文字
+    }
+
+    public class TextField : DynamicField
+    {
+        public string Value { get; set; }
+    }
+
+    public class SwitchField : DynamicField
+    {
+        public bool IsChecked { get; set; }
+    }
+
+    public class OptionField : DynamicField
+    {
+        public List<string> Options { get; set; }
+        public string SelectedOption { get; set; }
+    }
+
+    public enum ReportStatus
+    { Pass, Fail };
 
     /// <summary>
     /// MainWindow.xaml 的交互逻辑
@@ -25,7 +46,7 @@ namespace ORT一键报告
 
         public ReportHeaderInfo burnReportHeaderInfo = null;
         public ReportHeaderInfo emiReportHeaderInfo = null;
-        public ObservableCollection<ResultDetails> DetailsList = new ObservableCollection<ResultDetails>();
+        public ObservableCollection<ResultDetails> DetailsList = new();
 
         public static UUTInfoFromExcel UUTInfos;
         public static string ATEPath { get; set; }
@@ -42,6 +63,7 @@ namespace ORT一键报告
             TemplatePath = Path.Combine(Directory.GetCurrentDirectory(), "Templates");
             TempPath = Path.Combine(Path.GetTempPath(), "ORTTemp");
         }
+
         private void ReportHeader_Loaded(object sender, RoutedEventArgs e)
         {
             thermalshockPage.InitReportPage();
@@ -112,7 +134,7 @@ namespace ORT一键报告
             {
                 var ws_cover = wb.Worksheets[0];
                 var ws_waterfall = wb.Worksheets[2];
-                UUTInfoFromExcel uutInfos = new UUTInfoFromExcel
+                UUTInfoFromExcel uutInfos = new()
                 {
                     DC = GetSubstringAfter(_ReportName, "WK", 4)
                 };
@@ -146,8 +168,8 @@ namespace ORT一键报告
                 }
                 else
                 {
-                    List<string> SNs = new List<string>();
-                    foreach (var cell in snCells)
+                    List<string> SNs = new();
+                    foreach (DataCell cell in snCells)
                     {
                         SNs.Add(cell.Data);
                     }
@@ -162,7 +184,7 @@ namespace ORT一键报告
 
             List<TestItemInfo> FindTestItems(ExcelWorksheet ws, int rDate, int rSN, int cSN)
             {
-                List<TestItemInfo> testItems = new List<TestItemInfo>();
+                List<TestItemInfo> testItems = new();
                 int c = cSN + 1;
                 for (; c <= ws.Dimension.End.Column; c++)
                 {
@@ -184,7 +206,7 @@ namespace ORT一键报告
                 /// <summary>
                 /// 在指定范围内寻找单元格值为"S/N"的单元格，找到后继续向下寻找非空且右边也非空的单元格，直到遇到空单元格为止，将这些非空单元格的信息（值、行号、列号）存储在SNCell对象中，并返回一个包含所有SNCell对象的列表。
                 /// </summary>
-                List<DataCell> snCells = new List<DataCell>();
+                List<DataCell> snCells = new();
                 int rSN = snTitleCell.Row + 1;
                 int cSN = snTitleCell.Column;
                 for (; rSN <= ws.Dimension.End.Row; rSN++)
@@ -208,15 +230,16 @@ namespace ORT一键报告
         }
 
         /* ###############################  事件函数  ################################ */
+
         private void MenuItem_ATE_Click(object sender, RoutedEventArgs e)
         {
-            ATEWindow ateWindow = new ATEWindow();
+            ATEWindow ateWindow = new();
             ateWindow.Show();
         }
 
         private async void DoReport_Click(object sender, RoutedEventArgs e)
         {
-            PopupWindow popup = new PopupWindow() { Title = "处理中", Message = "请耐心等待..." };
+            PopupWindow popup = new() { Title = "处理中", Message = "请耐心等待..." };
             Button btn;
             if (sender is Button tmp)
             {
@@ -291,7 +314,7 @@ namespace ORT一键报告
 
         private void MenuItem_PdfTest_Click(object sender, RoutedEventArgs e)
         {
-            TestPdfWindow testPdfWindow = new TestPdfWindow();
+            TestPdfWindow testPdfWindow = new();
             testPdfWindow.Show();
         }
     }
