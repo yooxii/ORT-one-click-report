@@ -1,11 +1,8 @@
-﻿using System;
+﻿using Microsoft.Extensions.DependencyInjection;
 using NLog;
-using System.Collections.Generic;
-using System.Configuration;
-using System.Data;
-using System.Linq;
-using System.Threading.Tasks;
+using System;
 using System.Windows;
+using ORT一键报告.ViewModels;
 
 namespace ORT一键报告
 {
@@ -19,7 +16,18 @@ namespace ORT一键报告
         protected override void OnStartup(StartupEventArgs e)
         {
             logger.Info("ORT一键报告程序启动");
-            try { base.OnStartup(e); }
+            try
+            {
+                base.OnStartup(e);
+
+                ServiceCollection services = new();
+                services.AddTransient<EMIViewModel>();
+                services.AddTransient<BaseReportPageViewModel>();
+                services.AddSingleton<ReportHeaderViewModel>();
+                services.AddSingleton<IEMIService, EMIService>();
+                ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            }
             catch (Exception ex)
             {
                 logger.Fatal(ex, "程序启动失败");

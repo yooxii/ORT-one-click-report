@@ -1,6 +1,7 @@
 ﻿using Microsoft.Win32;
 using NLog;
 using OfficeOpenXml;
+using ORT一键报告.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -44,11 +45,10 @@ namespace ORT一键报告
     {
         private readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
-        public ReportHeaderInfo burnReportHeaderInfo = null;
-        public ReportHeaderInfo emiReportHeaderInfo = null;
-        public ObservableCollection<ResultDetails> DetailsList = new();
+        public ReportHeaderViewModel BurnReportHeaderInfo { get; }
+        public ReportHeaderViewModel EmiReportHeaderInfo { get; }
 
-        public static UUTInfoFromExcel UUTInfos;
+        public static UUTInfoFromExcel UUTInfos { get; set; }
         public static string ATEPath { get; set; }
         public static string RootPath { get; set; }
         public static string TemplatePath { get; set; }
@@ -83,14 +83,12 @@ namespace ORT一键报告
 
             DateTime t_start = DateTime.Now;
             DateTime b_start = DateTime.Now;
-            string SNsCount = "3";
             try
             {
                 UUTInfos = await Task.Run(() =>
                 {
-                    var fileInfo = new FileInfo(ReportName);
-                    var package = new ExcelPackage(fileInfo);
-                    var wb = package.Workbook;
+                    ExcelPackage package = new(new FileInfo(ReportName));
+                    ExcelWorkbook wb = package.Workbook;
                     return ReadInfosFromReport(wb, ReportName);
                 });
             }
@@ -99,8 +97,7 @@ namespace ORT一键报告
                 _logger.Error(ex, "读取报告概览时出现错误");
                 return;
             }
-            DetailsList.Clear();
-            foreach (var testItem in UUTInfos.TestItems)
+            foreach (TestItemInfo testItem in UUTInfos.TestItems)
             {
                 if (testItem.TestItemName.ToLower().Contains("thermal shock"))
                 {
@@ -110,24 +107,6 @@ namespace ORT一键报告
                 {
                     t_start = DateTime.Parse(testItem.Date);
                 }
-            }
-            SNsCount = UUTInfos.SNs.Count.ToString();
-            foreach (var uutInfo in UUTInfos.SNs)
-            {
-                DetailsList.Add(new ResultDetails()
-                {
-                    BIroom = "1F Chamber",
-                    SN = uutInfo,
-                    WorkOrder = UUTInfos.WorkerNo,
-                    Version = UUTInfos.Revision,
-                    DC = UUTInfos.DC,
-                    InspectionPrev = ReportStatus.Pass,
-                    FunPrev = ReportStatus.Pass,
-                    InspectionAfter = ReportStatus.Pass,
-                    FunAfter = ReportStatus.Pass,
-                    HiPot = ReportStatus.Pass,
-                    Comments = ""
-                });
             }
 
             UUTInfoFromExcel ReadInfosFromReport(ExcelWorkbook wb, string _ReportName)

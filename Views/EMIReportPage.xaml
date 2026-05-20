@@ -15,7 +15,7 @@
                     <RowDefinition Height="auto" />
                 </Grid.RowDefinitions>
                 <StackPanel>
-                    <local:ReportHeaderWidget x:Name="ReportHeader" TestTime="1" />
+                    <local:ReportHeaderWidget x:Name="ReportHeader" DataContext="{Binding ReportHeaderVM}" TestTime="1" />
                     <StackPanel>
                         <Grid>
                             <Grid.ColumnDefinitions>
@@ -78,7 +78,7 @@
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right"  Grid.Row="1">
                     <Button Content="重置" Margin="5" MinWidth="120" Grid.Column="1" Cursor="Hand" />
-                    <Button Tag="emi" Content="完成" Margin="5"  MinWidth="120" Cursor="Hand" />
+                    <Button Tag="emi" Content="完成" Margin="5"  MinWidth="120" Cursor="Hand" Command="{Binding EMIFinishCommand}"/>
                 </StackPanel>
             </Grid>
         </ScrollViewer>

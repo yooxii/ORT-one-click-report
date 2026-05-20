@@ -108,10 +108,12 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="RelayCommand.cs" />
-    <Compile Include="Service.cs" />
+    <Compile Include="Servers\Service.cs" />
     <Compile Include="Models\User.cs" />
-    <Compile Include="InterfaceService.cs" />
+    <Compile Include="Servers\InterfaceService.cs" />
+    <Compile Include="ViewModels\BaseReportPageViewModel.cs" />
     <Compile Include="ViewModels\EMIViewModel.cs" />
+    <Compile Include="ViewModels\ReportHeaderViewModel.cs" />
     <Compile Include="ViewModels\UserViewModel.cs" />
     <Compile Include="Views\BaseReportPage.xaml.cs">
       <DependentUpon>BaseReportPage.xaml</DependentUpon>
@@ -282,6 +284,9 @@
     </PackageReference>
     <PackageReference Include="itext">
       <Version>9.6.0</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection">
+      <Version>10.0.8</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Logging">
       <Version>10.0.7</Version>

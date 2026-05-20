@@ -1,17 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using ORT一键报告.ViewModels;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 namespace ORT一键报告
 {
@@ -58,12 +48,9 @@ namespace ORT一键报告
         public static readonly DependencyProperty PicTestDescriptionProperty =
             DependencyProperty.Register("PicTestDescription", typeof(ImageSource), typeof(ReportHeaderWidget), new PropertyMetadata(null));
 
-
-
         public ReportHeaderWidget()
         {
             InitializeComponent();
-            DataContext = this;
         }
         private void Datepicker_start_SelectedDateChanged(object sender, SelectionChangedEventArgs e)
         {

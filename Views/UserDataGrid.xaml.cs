@@ -100,27 +100,27 @@ namespace ORT一键报告
                 // 3. 创建新列
                 switch (config.Type)
                 {
-                    case ColumnConfig.ColumnType.Text:
-                        details_data.Columns.Add(new DataGridTextColumn
-                        {
-                            Header = config.Header,
-                            Width = config.Width,
-                            Binding = new Binding(config.BindingPath) // 绑定路径
-                        });
-                        break;
-                    case ColumnConfig.ColumnType.ComboBox:
-                        DataGridComboBoxColumn comboCol = new DataGridComboBoxColumn
-                        {
-                            Header = config.Header,
-                            Width = config.Width,
-                            SelectedItemBinding = new Binding(config.BindingPath),
-                            EditingElementStyle = (Style)FindResource("DynamicComboBoxStyle"),
-                            ElementStyle = (Style)FindResource("DynamicComboBoxStyle")
-                        };
-                        details_data.Columns.Add(comboCol);
-                        break;
-                    default:
-                        break;
+                case ColumnConfig.ColumnType.Text:
+                    details_data.Columns.Add(new DataGridTextColumn
+                    {
+                        Header = config.Header,
+                        Width = config.Width,
+                        Binding = new Binding(config.BindingPath) // 绑定路径
+                    });
+                    break;
+                case ColumnConfig.ColumnType.ComboBox:
+                    DataGridComboBoxColumn comboCol = new DataGridComboBoxColumn
+                    {
+                        Header = config.Header,
+                        Width = config.Width,
+                        SelectedItemBinding = new Binding(config.BindingPath),
+                        EditingElementStyle = (Style)FindResource("DynamicComboBoxStyle"),
+                        ElementStyle = (Style)FindResource("DynamicComboBoxStyle")
+                    };
+                    details_data.Columns.Add(comboCol);
+                    break;
+                default:
+                    break;
                 }
             }
         }
@@ -195,7 +195,7 @@ namespace ORT一键报告
 
         public void AddRow(int index = 0)
         {
-            ResultDetails resultDetails = new ResultDetails
+            ResultDetails resultDetails = new()
             {
                 FunAfter = ReportStatus.Pass,
                 FunPrev = ReportStatus.Pass,

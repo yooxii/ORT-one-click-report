@@ -1,8 +1,10 @@
-﻿using DocumentFormat.OpenXml.Packaging;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 using NLog;
 using OfficeOpenXml;
 using OfficeOpenXml.Drawing;
+using ORT一键报告.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -142,8 +144,7 @@ namespace ORT一键报告
         /// </summary>
         private static string ExtractTextFromCell(TableCell cell)
         {
-            var texts = cell.Descendants<Text>()
-                           .Select(t => t.Text);
+            var texts = cell.Descendants<Text>().Select(t => t.Text);
             return string.Join("", texts);
         }
     }
@@ -152,11 +153,17 @@ namespace ORT一键报告
     {
         private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
-        public class DataCell
+        public class DataCell : ObservableObject
         {
-            public string Data { get; set; }
-            public int Row { get; set; }
-            public int Column { get; set; }
+            private string _data;
+            public string Data { get => _data; set => SetProperty(ref _data, value); }
+
+            private int _row;
+            public int Row { get => _row; set => SetProperty(ref _row, value); }
+
+            private int _column;
+            public int Column { get => _column; set => SetProperty(ref _column, value); }
+
             public List<ExcelPictureInfo> Images { get; set; } = null;
             public string TopLeftAddress
             {
@@ -167,7 +174,7 @@ namespace ORT一键报告
                     int bColumn = Column;
                     try
                     {
-                        ExcelAddress Addr = new ExcelAddress(value);
+                        ExcelAddress Addr = new(value);
                         Row = Addr.Start.Row;
                         Column = Addr.Start.Column;
                     }
@@ -181,6 +188,14 @@ namespace ORT一键报告
             public override string ToString()
             {
                 return $"{Data} - {TopLeftAddress}({Row},{Column})";
+            }
+            public bool IsNotEmpty()
+            {
+                return !string.IsNullOrWhiteSpace(_data);
+            }
+            public static bool IsNotNull(DataCell cell)
+            {
+                return cell is not null && !string.IsNullOrEmpty(cell._data);
             }
         }
 
@@ -202,19 +217,6 @@ namespace ORT一键报告
             {
                 return $"{WorkerNo},{Revision},{DC},{(TestItems == null ? 0 : TestItems.Count)},{(SNs == null ? 0 : SNs.Count)}";
             }
-        }
-
-        public class ReportHeaderInfo
-        {
-            public DataCell TESTED_BY { get; set; }
-            public DataCell APPROVED_BY { get; set; }
-            public DataCell PROJECT_NAME { get; set; }
-            public DataCell TEST_STAGE { get; set; }
-            public DataCell TestDescription { get; set; }
-            public DataCell Test_Description_Pic { get; set; }
-            public DataCell Issue_Photos_Pics { get; set; }
-            public DataCell Test_Setup_Pics { get; set; }
-            public DataCell Test_ATE_Data { get; set; }
         }
 
         public class ResultDetails
@@ -274,8 +276,10 @@ namespace ORT一键报告
             }
 
             if (ignoreCase)
+            {
                 value = value.ToLower();
                 excludeValue = excludeValue.ToLower();
+            }
 
             for (int row = snRowStart; row <= snRowEnd; row++)
             {
@@ -371,13 +375,13 @@ namespace ORT一键报告
             }
         }
 
-        public static ReportHeaderInfo ReadReportHeaderInfo(ExcelWorksheet ws)
+        public static ReportHeaderViewModel ReadReportHeaderInfo(ExcelWorksheet ws)
         {
             // 辅助函数: 找到issue和setup图片所在的标题行
             DataCell issueTitle = FindCellByValue(ws, "Issue Photos");
             DataCell setupTitle = FindCellByValue(ws, "Test Setup");
 
-            ReportHeaderInfo reportHeaderInfo = new ReportHeaderInfo
+            ReportHeaderViewModel reportHeaderInfo = new()
             {
                 TESTED_BY = FindInfoByText(ws, "TESTED BY"),
                 APPROVED_BY = FindInfoByText(ws, "APPROVED BY"),

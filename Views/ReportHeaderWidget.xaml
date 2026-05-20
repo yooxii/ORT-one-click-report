@@ -4,6 +4,8 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ORT一键报告"
+             xmlns:viewmodels="clr-namespace:ORT一键报告.ViewModels"
+             d:DataContext="{d:DesignInstance Type=viewmodels:ReportHeaderViewModel}"
              mc:Ignorable="d" 
              x:Name="root"
              d:DesignHeight="300" d:DesignWidth="1000">
@@ -29,9 +31,9 @@
                     <RowDefinition Height="25"/>
                 </Grid.RowDefinitions>
                 <Label Content="TESTED BY" Grid.Row="0" Grid.Column="0"/>
-                <TextBox x:Name="textbox_testedby" Text="{Binding TestedBy,ElementName=root}" VerticalContentAlignment="Center" Margin="1" Grid.Row="0" Grid.Column="1"/>
+                <TextBox x:Name="textbox_testedby" Text="{Binding TESTED_BY.Data}" VerticalContentAlignment="Center" Margin="1" Grid.Row="0" Grid.Column="1"/>
                 <Label Content="PROJECT NAME" Grid.Row="1" Grid.Column="0"/>
-                <TextBox x:Name="textbox_projectname" Text="{Binding ProjectName,ElementName=root}" VerticalContentAlignment="Center" Margin="1" Grid.Row="1" Grid.Column="1"/>
+                <TextBox x:Name="textbox_projectname" Text="{Binding PROJECT_NAME.Data}" VerticalContentAlignment="Center" Margin="1" Grid.Row="1" Grid.Column="1"/>
                 <Label Content="TEST PERIOD" Grid.Row="2" Grid.Column="0"/>
                 <Grid Grid.Row="2" Margin="1" Grid.Column="1">
                     <Grid.ColumnDefinitions>
@@ -54,9 +56,9 @@
                     <RowDefinition Height="25"/>
                 </Grid.RowDefinitions>
                 <Label Content="APPROVED BY" Grid.Row="0" Grid.Column="0"/>
-                <TextBox x:Name="textbox_approvedby" Text="{Binding ApprovedBy,ElementName=root}" VerticalContentAlignment="Center" Margin="1" Grid.Row="0" Grid.Column="1"/>
+                <TextBox x:Name="textbox_approvedby" Text="{Binding APPROVED_BY.Data}" VerticalContentAlignment="Center" Margin="1" Grid.Row="0" Grid.Column="1"/>
                 <Label Content="TEST STAGE" Grid.Row="1" Grid.Column="0"/>
-                <ComboBox x:Name="textbox_teststage" Text="{Binding TestStage,ElementName=root}" VerticalContentAlignment="Center" IsEditable="True" Margin="1" Grid.Row="1" Grid.Column="1">
+                <ComboBox x:Name="textbox_teststage" Text="{Binding TEST_STAGE.Data}" VerticalContentAlignment="Center" IsEditable="True" Margin="1" Grid.Row="1" Grid.Column="1">
                     <ComboBoxItem Content="MP"/>
                     <ComboBoxItem Content="MVT"/>
                     <ComboBoxItem Content="DVT"/>
@@ -80,7 +82,7 @@
                     <ColumnDefinition/>
                 </Grid.ColumnDefinitions>
                 <GroupBox Header="Test Condition and Pass/Fail Criteria" Grid.Row="0">
-                    <TextBox x:Name="text_TestDescription" Text="{Binding TextTestDescription,ElementName=root}" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto">
+                    <TextBox x:Name="text_TestDescription" Text="{Binding TestDescription.Data}" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto">
                     </TextBox>
                 </GroupBox>
                 <Border BorderBrush="Gray" BorderThickness="1" Margin="6" Grid.Column="1">

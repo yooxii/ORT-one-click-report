@@ -1,0 +1,206 @@
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using Microsoft.Win32;
+using NLog;
+using OfficeOpenXml;
+using OfficeOpenXml.Drawing;
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Input;
+using static ORT一键报告.ReportUtils;
+
+namespace ORT一键报告.ViewModels
+{
+    public partial class BaseReportPageViewModel : ObservableObject
+    {
+        private readonly Logger _logger = LogManager.GetCurrentClassLogger();
+
+        public ObservableCollection<ResultDetails> DetailsList { get; set; }
+        public ReportHeaderViewModel ReportHeaderVM { get; set; }
+
+        public string ATEPath { get; set; }
+        public string RootReportPath { get; set; }
+
+        private int _testTime;
+        public int TestTime
+        {
+            get => _testTime;
+            set => SetProperty(ref _testTime, value);
+        }
+
+        private string _reportType;
+        public string ReportType
+        {
+            get => _reportType;
+            set => SetProperty(ref _reportType, value);
+        }
+
+        public BaseReportPageViewModel()
+        {
+            DetailsList = new();
+            ReportHeaderVM = new();
+        }
+
+        /* ###############################  功能函数  ################################ */
+
+        public void ExcelAddPicture(ExcelWorksheet ws, string picName, DataCell pics, string TopLeft, string rpType)
+        {
+            if (pics.Images.Count <= 0)
+            {
+                return;
+            }
+            ExcelCellAddress start = new ExcelAddress(TopLeft).Start;
+            int startRow = start.Row;
+            int startCol = start.Column;
+            for (int i = 0; i < pics.Images.Count; i++)
+            {
+                string picPath = Path.Combine(MainWindow.TempPath, picName + "_" + i + ".png");
+                if (File.Exists(picPath))
+                {
+                    string[] temp = picPath.Split('.');
+                    picPath = temp[0] + "_" + i + "." + temp[1];
+                }
+                ImageSaverLegacy.SaveImageSourceToFile(pics.Images[i].ImageSrc, picPath, "png");
+                ExcelPicture test_desc_pic_excel = ws.Drawings.AddPicture(picName + "_" + i, picPath);
+                test_desc_pic_excel.SetSize(300, 220);
+                if (rpType.ToLower() == "burn")
+                {
+                    test_desc_pic_excel.SetPosition(startRow, 0, startCol + (i * 4), -18 + (i * 72));
+                }
+                else
+                {
+                    test_desc_pic_excel.SetPosition(startRow, 10, startCol + (i * 4), -24 + (i * 44));
+                }
+            }
+        }
+
+        public void ReportFinish(ReportHeaderViewModel reportHeaderInfo)
+        {
+            _logger.Info($"{ReportType}报告生成中...");
+            string saveReportPath;
+            try
+            {
+                string currentPath = Directory.GetCurrentDirectory();
+                FileInfo reportFI = new(GetTemplatePath(Path.Combine(currentPath, "Templates"), ReportType));
+                string initDir = Path.GetDirectoryName(GetTemplatePath(MainWindow.RootPath, ReportType));
+                SaveFileDialog saveFileDialog = new()
+                {
+                    FileName = reportFI.Name,
+                    Filter = "Excel文件|*.xlsx;*.xls",
+                    InitialDirectory = initDir
+                };
+                ExcelPackage package = new(reportFI);
+                ExcelWorkbook wb = package.Workbook;
+                ExcelWorksheet ws = wb.Worksheets[0];
+                ExcelWorksheet ws_setup = wb.Worksheets[1];
+
+
+                // 1.表头信息
+                _logger.Info("处理表头");
+                for (int r = 1; r <= 8; r++)
+                {
+                    ws.Cells[ws_setup.Cells[r, 1].Text].Value = reportHeaderInfo.HeaderInfoList[r - 1];
+                }
+
+                // 2.单体数据
+                _logger.Info("处理单体数据");
+                List<object> detailInfoList = new()
+                {
+                    DetailsList.Select(r => r.BIroom).ToList(),
+                    DetailsList.Select(r => r.BIarea).ToList(),
+                    DetailsList.Select(r => r.BIplace).ToList(),
+                    DetailsList.Select(r => r.SN).ToList(),
+                    DetailsList.Select(r => r.WorkOrder).ToList(),
+                    DetailsList.Select(r => r.Version).ToList(),
+                    DetailsList.Select(r => r.DC).ToList(),
+                    DetailsList.Select(r => r.InspectionPrev).ToList(),
+                    DetailsList.Select(r => r.InspectionAfter).ToList(),
+                    DetailsList.Select(r => r.FunPrev).ToList(),
+                    DetailsList.Select(r => r.FunAfter).ToList(),
+                    DetailsList.Select(r => r.HiPot).ToList(),
+                };
+                if (!ReportType.ToLower().Contains("burn"))
+                {
+                    detailInfoList.RemoveRange(0, 3);
+                }
+                /* 根据模板setup表的定义来保存结果。
+                 */
+                int _detail_start_row = 13; //setup表detail的起始行
+                for (int r = _detail_start_row; r < ws_setup.Dimension.End.Row; r++)
+                {
+                    ExcelAddress address = new(ws_setup.Cells[r, 1].Text);
+                    int Rp_row = address.Start.Row;
+                    int Rp_col = address.Start.Column;
+                    if (detailInfoList[r - _detail_start_row] is List<string> detailInfo)
+                    {
+                        for (int i = 0; i < detailInfo.Count; i++)
+                        {
+                            ws.Cells[Rp_row + i, Rp_col].Value = detailInfo[i];
+                        }
+                    }
+                    else if (detailInfoList[r - _detail_start_row] is List<ReportStatus> detailStatus)
+                    {
+                        for (int i = 0; i < detailStatus.Count; i++)
+                        {
+                            ws.Cells[Rp_row + i, Rp_col].Value = detailStatus[i].ToString();
+                        }
+                    }
+                }
+
+                // 3.图片和OLE对象
+                _logger.Info("处理图片和OLE对象");
+                ExcelAddPicture(ws, "Issue_Photos", reportHeaderInfo.Issue_Photos_Pics, ws_setup.Cells["A11"].Text, ReportType);
+                ExcelAddPicture(ws, "Test_Setup", reportHeaderInfo.Test_Setup_Pics, ws_setup.Cells["A12"].Text, ReportType);
+
+                string ate_Addr = ws_setup.Cells["A9"].Text;
+                wb.Worksheets.Delete(ws_setup); // 删除设置表
+
+                saveReportPath = saveFileDialog.ShowDialog() == true
+                    ? saveFileDialog.FileName
+                    : Path.Combine(Directory.GetCurrentDirectory(), reportFI.Name);
+                saveReportPath = Path.GetFullPath(saveReportPath);
+                package.SaveAs(saveReportPath);
+                EmbedOleObjectWithInterop(saveReportPath, ATEPath, ate_Addr);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, $"{ReportType}模版生成失败");
+                MessageBox.Show(ex + $"{ReportType}模版生成失败");
+                return;
+            }
+            _logger.Info($"{ReportType}报告生成完成, 保存在{saveReportPath}");
+            MessageBox.Show($"{ReportType}报告生成完成, 保存在{saveReportPath}", "成功");
+        }
+
+        private RelayCommand finishCommand;
+        public ICommand FinishCommand => finishCommand ??= new RelayCommand(Finish, CanFinish);
+
+        private async void Finish()
+        {
+            PopupWindow popup = new() { Title = "保存报告", Message = "处理中..." };
+            try
+            {
+                popup.Show();
+                await Task.Run(() => { ReportFinish(ReportHeaderVM); });
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "保存报告时出现错误");
+                popup.Message = "保存报告时出现错误" + ex.Message;
+            }
+            finally
+            {
+                popup.Close();
+            }
+        }
+
+        private bool CanFinish()
+        {
+            return ReportHeaderVM.IsAllFilled;
+        }
+    }
+}

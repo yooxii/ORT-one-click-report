@@ -12,4 +12,8 @@
         /// <returns>返回选择的EMI数据路径；取消返回 null</returns>
         string OpenPathDialog(string title, string filter = "EMI模板|*.xlsx;*.xlsm|所有文件|*.*", string initPath = null, bool isDir = false);
     }
+
+    public interface IReportService
+    {
+    }
 }

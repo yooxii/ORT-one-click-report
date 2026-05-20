@@ -4,6 +4,8 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ORT一键报告"
+             xmlns:viewmodels="clr-namespace:ORT一键报告.ViewModels"
+             d:DataContext="{d:DesignInstance Type=viewmodels:BaseReportPageViewModel}"
              mc:Ignorable="d" 
              x:Name="root"
              d:DesignHeight="750" d:DesignWidth="800">
@@ -16,9 +18,9 @@
                     <RowDefinition Height="auto"/>
                 </Grid.RowDefinitions>
                 <StackPanel Grid.RowSpan="2">
-                    <local:ReportHeaderWidget x:Name="ReportHeader" TestTime="{Binding TestTime, ElementName=root}"/>
+                    <local:ReportHeaderWidget x:Name="ReportHeader" TestTime="{Binding TestTime, ElementName=root}" DataContext="{Binding ReportHeaderVM}"/>
                     <local:ReportPicturesWidget x:Name="widget_pic"/>
-                    <local:UserResultDataGrid x:Name="details_data" Grid.Row="1"/>
+                    <local:UserResultDataGrid x:Name="details_data" DataGridSource="{Binding DetailsList}" Grid.Row="1"/>
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition/>
@@ -41,7 +43,7 @@
                 </StackPanel>
                 <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
                     <Button Content="重置" Margin="5" MinWidth="120" Cursor="Hand" Click="Info_Set_Click"/>
-                    <Button Tag="{Binding ReportType, ElementName=root}" Content="完成" Click="btn_finish_Click" Margin="5" MinWidth="120" Cursor="Hand" />
+                    <Button Tag="{Binding ReportType, ElementName=root}" Content="完成" Command="{Binding FinishCommand}" Margin="5,5,5,0" MinWidth="120" Cursor="Hand" Height="19" VerticalAlignment="Top" />
                 </StackPanel>
             </Grid>
         </ScrollViewer>

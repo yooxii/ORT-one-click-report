@@ -72,7 +72,8 @@ namespace ORT一键报告.ViewModels
         private ExpandoObject settingsData;
         private readonly string defaultJson = @"{""结果开始行"":44,""结束行"":103,""SN列"":4,""工令列"":6,""版本列"":7,""周期列"":8,""电压列"":11,""频率列"":12,""Phase列"":13,""负载列"":14,""Mark No列"":15,""Mark Freq列"":16,""QP Limit列"":17,""AVG Limit列"":18,""QP Max列"":20,""AVG列"":21,""备注列"":26}";
 
-        public ObservableCollection<DynamicField> EMISetupFields { get; set; } = new();
+        public ObservableCollection<DynamicField> EMISetupFields { get; set; }
+        public ReportHeaderViewModel ReportHeaderVM { get; set; }
 
         public int PK_TolerableLimit_Col { set; get; } = 4;
         public int AVG_TolerableLimit_Col { set; get; } = 7;
@@ -100,6 +101,8 @@ namespace ORT一键报告.ViewModels
         public EMIViewModel(IEMIService emiService)
         {
             _emiService = emiService;
+            EMISetupFields = new();
+            ReportHeaderVM = new();
         }
 
         /* ###############################  功能函数  ################################ */
@@ -222,6 +225,8 @@ namespace ORT一键报告.ViewModels
             ExcelWorkbook wb = package.Workbook;
             ExcelWorksheet ws = wb.Worksheets["Conducted EMI"];
             ExcelWorksheet ws_setup = wb.Worksheets["Setup"];
+
+
         }
 
         private async Task ConvertToPdfAsync(string sourcePath)
@@ -465,13 +470,26 @@ namespace ORT一键报告.ViewModels
             return !string.IsNullOrEmpty(DataPath) && (Directory.Exists(DataPath) || File.Exists(DataPath));
         }
 
-        private RelayCommand eMISetupCommand;
-        public ICommand EMISetupCommand => eMISetupCommand ??= new RelayCommand(EMISetup);
+        private RelayCommand emiSetupCommand;
+        public ICommand EMISetupCommand => emiSetupCommand ??= new RelayCommand(EMISetup);
 
         private void EMISetup()
         {
             EMIReportSetup emisetup = new();
             emisetup.Show();
+        }
+
+        private RelayCommand emiFinishCommand;
+        public ICommand EMIFinishCommand => emiFinishCommand ??= new RelayCommand(EMIFinish, CanEMIFinish);
+
+        private void EMIFinish()
+        {
+
+        }
+
+        private bool CanEMIFinish()
+        {
+            return true;
         }
 
         /* ###############################  EMIReportSetup Command  ################################ */
