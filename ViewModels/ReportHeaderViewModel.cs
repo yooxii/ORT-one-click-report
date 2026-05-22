@@ -7,19 +7,19 @@ namespace ORT一键报告.ViewModels
     public class ReportHeaderViewModel : ObservableObject
     {
         private DataCell _testedBy;
-        public DataCell TESTED_BY { get => _testedBy; set => SetPropertyAndNotifyDependents(ref _testedBy, value, nameof(IsAllFilled)); }
+        public DataCell TESTED_BY { get => _testedBy; set => SetProperty(ref _testedBy, value); }
 
         private DataCell _approvedBy;
-        public DataCell APPROVED_BY { get => _approvedBy; set => SetPropertyAndNotifyDependents(ref _approvedBy, value, nameof(IsAllFilled)); }
+        public DataCell APPROVED_BY { get => _approvedBy; set => SetProperty(ref _approvedBy, value); }
 
         private DataCell _projectName;
-        public DataCell PROJECT_NAME { get => _projectName; set => SetPropertyAndNotifyDependents(ref _projectName, value, nameof(IsAllFilled)); }
+        public DataCell PROJECT_NAME { get => _projectName; set => SetProperty(ref _projectName, value); }
 
         private DataCell _testStage;
-        public DataCell TEST_STAGE { get => _testStage; set => SetPropertyAndNotifyDependents(ref _testStage, value, nameof(IsAllFilled)); }
+        public DataCell TEST_STAGE { get => _testStage; set => SetProperty(ref _testStage, value); }
 
         private DataCell _testDescription;
-        public DataCell TestDescription { get => _testDescription; set => SetPropertyAndNotifyDependents(ref _testDescription, value, nameof(IsAllFilled)); }
+        public DataCell TestDescription { get => _testDescription; set => SetProperty(ref _testDescription, value); }
         public DataCell Test_Description_Pic { get; set; }
         public DataCell Issue_Photos_Pics { get; set; }
         public DataCell Test_Setup_Pics { get; set; }
@@ -46,12 +46,6 @@ namespace ORT一键报告.ViewModels
                 return res;
             }
         }
-
-        public bool IsAllFilled => DataCell.IsNotNull(TESTED_BY) &&
-                    DataCell.IsNotNull(APPROVED_BY) &&
-                    DataCell.IsNotNull(PROJECT_NAME) &&
-                    DataCell.IsNotNull(TEST_STAGE) &&
-                    DataCell.IsNotNull(TestDescription);
 
         protected void SetPropertyAndNotifyDependents<T>(ref T field, T value, params string[] dependentProperties)
         {

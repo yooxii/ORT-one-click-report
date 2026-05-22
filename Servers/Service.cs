@@ -3,7 +3,7 @@ using System.IO;
 
 namespace ORT一键报告
 {
-    public class EMIService : IEMIService
+    public class Service : IService
     {
         public string OpenPathDialog(string title, string filter, string initPath, bool isDir)
         {

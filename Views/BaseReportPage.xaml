@@ -18,7 +18,7 @@
                     <RowDefinition Height="auto"/>
                 </Grid.RowDefinitions>
                 <StackPanel Grid.RowSpan="2">
-                    <local:ReportHeaderWidget x:Name="ReportHeader" TestTime="{Binding TestTime, ElementName=root}" DataContext="{Binding ReportHeaderVM}"/>
+                    <local:ReportHeaderWidget x:Name="ReportHeader" TestTime="{Binding TestTime, ElementName=root}"/>
                     <local:ReportPicturesWidget x:Name="widget_pic"/>
                     <local:UserResultDataGrid x:Name="details_data" DataGridSource="{Binding DetailsList}" Grid.Row="1"/>
                     <Grid>
@@ -33,9 +33,9 @@
                                 <ColumnDefinition Width="80"/>
                             </Grid.ColumnDefinitions>
                             <Border BorderBrush="Gray" BorderThickness="1" Margin="3" CornerRadius="1">
-                                <TextBlock x:Name="ATEDatas_text" Text="请点击右侧按钮选择ATE数据文件" TextWrapping="Wrap" Margin="3"/>
+                                <TextBlock x:Name="ATEDatas_text" Text="{Binding ATEPath}" TextWrapping="Wrap" Margin="3"/>
                             </Border>
-                            <Button x:Name="btn_ATEDatas" Tag="ATEDatas_text" Grid.Column="1" Content="浏览" Margin="3" Click="btn_ATEDatas_Click"/>
+                            <Button x:Name="btn_ATEDatas" Tag="ATEDatas_text" Grid.Column="1" Content="浏览" Margin="3" Command="{Binding SelectATEDatasCommand}"/>
                         </Grid>
                     </Grid>
 

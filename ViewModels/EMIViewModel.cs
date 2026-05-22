@@ -62,7 +62,7 @@ namespace ORT一键报告.ViewModels
 
     public partial class EMIViewModel : ObservableObject
     {
-        private readonly IEMIService _emiService;
+        private readonly IService _emiService;
         private readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
         private readonly EMIUUTSetup emiUUTsetup = new();
@@ -93,12 +93,12 @@ namespace ORT一键报告.ViewModels
             get => _dataPath;
             set
             {
-                SetProperty(ref _dataPath, value);
-                toPDFCommand.RaiseCanExecuteChanged();
+                if (SetProperty(ref _dataPath, value))
+                    toPDFCommand.RaiseCanExecuteChanged();
             }
         }
 
-        public EMIViewModel(IEMIService emiService)
+        public EMIViewModel(IService emiService)
         {
             _emiService = emiService;
             EMISetupFields = new();

@@ -1,10 +1,8 @@
-﻿using Microsoft.Win32;
-using NLog;
+﻿using NLog;
 using OfficeOpenXml;
 using ORT一键报告.ViewModels;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -45,11 +43,9 @@ namespace ORT一键报告
     {
         private readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
-        public ReportHeaderViewModel BurnReportHeaderInfo { get; }
-        public ReportHeaderViewModel EmiReportHeaderInfo { get; }
+        public MainViewModel MainVM { get; set; }
 
         public static UUTInfoFromExcel UUTInfos { get; set; }
-        public static string ATEPath { get; set; }
         public static string RootPath { get; set; }
         public static string TemplatePath { get; set; }
         public static string TempPath { get; set; }
@@ -58,8 +54,13 @@ namespace ORT一键报告
         {
             InitializeComponent();
             ExcelPackage.License.SetNonCommercialPersonal("Lucas");
+
+            MainVM = new(new Service());
+            DataContext = MainVM;
+
             Closed += Window_Closed;
             Loaded += ReportHeader_Loaded;
+
             TemplatePath = Path.Combine(Directory.GetCurrentDirectory(), "Templates");
             TempPath = Path.Combine(Path.GetTempPath(), "ORTTemp");
         }
@@ -233,10 +234,10 @@ namespace ORT一键报告
             try
             {
                 popup.Show();
-                string ReportName = text_rootReportPath.Text;
+                string ReportName = MainVM.ReportPath;
                 if (!File.Exists(ReportName))
                 {
-                    throw new FileNotFoundException("报告文件不存在");
+                    throw new FileNotFoundException("报告概览文件不存在");
                 }
                 await ReadInfoFromOverview(ReportName);
                 _logger.Info("报告概览读取完成");
@@ -245,6 +246,7 @@ namespace ORT一键报告
                 thermalshockPage.SetReportResultData();
                 burninPage.ReadReportHeader();
                 burninPage.SetReportResultData();
+                emiPage.ReadReportHeader();
                 _logger.Info("表头数据已呈现至窗口");
             }
             catch (FileNotFoundException ex)
@@ -261,33 +263,6 @@ namespace ORT一键报告
             {
                 popup.Close();
                 btn.IsEnabled = true;
-            }
-        }
-
-        private void Info_Set_Click(object sender, RoutedEventArgs e)
-        {
-        }
-
-        private void btn_rootReportPath_Click(object sender, RoutedEventArgs e)
-        {
-            FileDialog fd = new OpenFileDialog()
-            {
-                Filter = "Excel文件|*.xlsx;*.xls"
-            };
-            _ = fd.ShowDialog();
-            if (fd.FileName is string fileName && fileName != "")
-            {
-                RootPath = Path.GetDirectoryName(fileName);
-                text_rootReportPath.Text = fileName;
-                string _title = Path.GetFileName(Path.GetDirectoryName(fileName));
-                Title = _title.Split(' ')[0] + " " + _title.Split('_')[1] + " ORT一键报告";
-            }
-        }
-
-        private void btn_finish_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button button && button.Tag is string btnTag)
-            {
             }
         }
 

@@ -2,7 +2,6 @@
 using Microsoft.Win32;
 using NLog;
 using OfficeOpenXml;
-using OfficeOpenXml.Drawing;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -22,8 +21,11 @@ namespace ORT一键报告.ViewModels
         public ObservableCollection<ResultDetails> DetailsList { get; set; }
         public ReportHeaderViewModel ReportHeaderVM { get; set; }
 
-        public string ATEPath { get; set; }
+        private readonly IService _Service;
         public string RootReportPath { get; set; }
+
+        private string _atePath = "请点击右侧按钮选择ATE数据文件";
+        public string ATEPath { get => _atePath; set => SetProperty(ref _atePath, value); }
 
         private int _testTime;
         public int TestTime
@@ -39,44 +41,14 @@ namespace ORT一键报告.ViewModels
             set => SetProperty(ref _reportType, value);
         }
 
-        public BaseReportPageViewModel()
+        public BaseReportPageViewModel(IService service)
         {
-            DetailsList = new();
             ReportHeaderVM = new();
+            DetailsList = new();
+            _Service = service;
         }
 
         /* ###############################  功能函数  ################################ */
-
-        public void ExcelAddPicture(ExcelWorksheet ws, string picName, DataCell pics, string TopLeft, string rpType)
-        {
-            if (pics.Images.Count <= 0)
-            {
-                return;
-            }
-            ExcelCellAddress start = new ExcelAddress(TopLeft).Start;
-            int startRow = start.Row;
-            int startCol = start.Column;
-            for (int i = 0; i < pics.Images.Count; i++)
-            {
-                string picPath = Path.Combine(MainWindow.TempPath, picName + "_" + i + ".png");
-                if (File.Exists(picPath))
-                {
-                    string[] temp = picPath.Split('.');
-                    picPath = temp[0] + "_" + i + "." + temp[1];
-                }
-                ImageSaverLegacy.SaveImageSourceToFile(pics.Images[i].ImageSrc, picPath, "png");
-                ExcelPicture test_desc_pic_excel = ws.Drawings.AddPicture(picName + "_" + i, picPath);
-                test_desc_pic_excel.SetSize(300, 220);
-                if (rpType.ToLower() == "burn")
-                {
-                    test_desc_pic_excel.SetPosition(startRow, 0, startCol + (i * 4), -18 + (i * 72));
-                }
-                else
-                {
-                    test_desc_pic_excel.SetPosition(startRow, 10, startCol + (i * 4), -24 + (i * 44));
-                }
-            }
-        }
 
         public void ReportFinish(ReportHeaderViewModel reportHeaderInfo)
         {
@@ -157,6 +129,7 @@ namespace ORT一键报告.ViewModels
                 ExcelAddPicture(ws, "Test_Setup", reportHeaderInfo.Test_Setup_Pics, ws_setup.Cells["A12"].Text, ReportType);
 
                 string ate_Addr = ws_setup.Cells["A9"].Text;
+                EmbedOleObjectWithEpplus(ws, ATEPath, ate_Addr);
                 wb.Worksheets.Delete(ws_setup); // 删除设置表
 
                 saveReportPath = saveFileDialog.ShowDialog() == true
@@ -164,7 +137,6 @@ namespace ORT一键报告.ViewModels
                     : Path.Combine(Directory.GetCurrentDirectory(), reportFI.Name);
                 saveReportPath = Path.GetFullPath(saveReportPath);
                 package.SaveAs(saveReportPath);
-                EmbedOleObjectWithInterop(saveReportPath, ATEPath, ate_Addr);
             }
             catch (Exception ex)
             {
@@ -177,7 +149,7 @@ namespace ORT一键报告.ViewModels
         }
 
         private RelayCommand finishCommand;
-        public ICommand FinishCommand => finishCommand ??= new RelayCommand(Finish, CanFinish);
+        public ICommand FinishCommand => finishCommand ??= new RelayCommand(Finish);
 
         private async void Finish()
         {
@@ -198,9 +170,12 @@ namespace ORT一键报告.ViewModels
             }
         }
 
-        private bool CanFinish()
+        private RelayCommand selectATEDatasCommand;
+        public ICommand SelectATEDatasCommand => selectATEDatasCommand ??= new RelayCommand(SelectATEDatas);
+
+        private void SelectATEDatas()
         {
-            return ReportHeaderVM.IsAllFilled;
+            ATEPath = _Service.OpenPathDialog("选择ATE数据");
         }
     }
 }

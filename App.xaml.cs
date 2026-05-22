@@ -24,7 +24,7 @@ namespace ORT一键报告
                 services.AddTransient<EMIViewModel>();
                 services.AddTransient<BaseReportPageViewModel>();
                 services.AddSingleton<ReportHeaderViewModel>();
-                services.AddSingleton<IEMIService, EMIService>();
+                services.AddSingleton<IService, Service>();
                 ServiceProvider serviceProvider = services.BuildServiceProvider();
 
             }

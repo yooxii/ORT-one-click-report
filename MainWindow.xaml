@@ -5,7 +5,10 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ORT一键报告"
         xmlns:sys="clr-namespace:System;assembly=mscorlib"
-        Title="ORT一键报告" Height="640" Width="1100" MinHeight="400" MinWidth="600" WindowStartupLocation="CenterScreen">
+        mc:Ignorable="d"
+        xmlns:viewmodels="clr-namespace:ORT一键报告.ViewModels"
+        d:DataContext="{d:DesignInstance Type=viewmodels:MainViewModel}"
+        Title="{Binding Title}" Height="640" Width="1100" MinHeight="400" MinWidth="600" WindowStartupLocation="CenterScreen">
 
     <Window.Resources>
         <!--Create list of enumeration values-->
@@ -33,7 +36,6 @@
             </MenuItem>
             <MenuItem Header="ATE数据" Click="MenuItem_ATE_Click" />
             <MenuItem Header="帮助" />
-            <MenuItem Header="Pdf测试" Click="MenuItem_PdfTest_Click" />
         </Menu>
         <Grid Grid.Row="1">
             <Grid.RowDefinitions>
@@ -49,8 +51,8 @@
                         <ColumnDefinition Width="65*" MinWidth="65" />
                     </Grid.ColumnDefinitions>
                     <Label Content="报告路径" />
-                    <TextBox x:Name="text_rootReportPath" Grid.Column="1" VerticalContentAlignment="Center" TextWrapping="WrapWithOverflow" ToolTip="点击浏览来选择" />
-                    <Button x:Name="btn_rootpath_t" Content="浏览" Cursor="Hand" Click="btn_rootReportPath_Click" Margin="3,0,3,0" Grid.Column="2" />
+                    <TextBox x:Name="text_rootReportPath" Text="{Binding ReportPath}" Grid.Column="1" VerticalContentAlignment="Center" TextWrapping="WrapWithOverflow" ToolTip="点击浏览来选择" />
+                    <Button x:Name="btn_rootpath_t" Content="浏览" Cursor="Hand" Command="{Binding SelectReportPathCommand}" Margin="3,0,3,0" Grid.Column="2" />
                     <Button x:Name="btn_readReport_t" Content="一键报告" Cursor="Hand" Click="DoReport_Click" Margin="3,0,3,0" Grid.Column="3" />
                 </Grid>
             </Grid>
@@ -62,7 +64,7 @@
                     <local:BaseReportPage x:Name="burninPage" ReportType="Burn In" TestTime="7" />
                 </TabItem>
                 <TabItem Header="EMI">
-                    <local:EMIReportPage x:Name="emiPage" />
+                    <local:EMIReportPage x:Name="emiPage" ReportType="EMI" TestTime="1" />
                 </TabItem>
             </TabControl>
         </Grid>

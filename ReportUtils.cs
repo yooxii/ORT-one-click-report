@@ -4,6 +4,7 @@ using DocumentFormat.OpenXml.Wordprocessing;
 using NLog;
 using OfficeOpenXml;
 using OfficeOpenXml.Drawing;
+using OfficeOpenXml.Drawing.OleObject;
 using ORT一键报告.ViewModels;
 using System;
 using System.Collections.Generic;
@@ -310,7 +311,7 @@ namespace ORT一键报告
         public static void EmbedOleObjectWithInterop(string targetExcelPath, string objectToEmbedPath, string TopLeftAddress = "A1")
         {
             _logger.Info($"插入OLE对象到{targetExcelPath}...");
-            if (objectToEmbedPath is null || objectToEmbedPath == "")
+            if (objectToEmbedPath is null or "")
             {
                 _logger.Warn($"OLE对象路径({objectToEmbedPath})为空");
                 return;
@@ -375,24 +376,62 @@ namespace ORT一键报告
             }
         }
 
-        public static ReportHeaderViewModel ReadReportHeaderInfo(ExcelWorksheet ws)
+        public static void EmbedOleObjectWithEpplus(ExcelWorksheet ws, string objectToEmbedPath, string TopLeftAddress = "A1", string IconPath = "")
+        {
+            _logger.Info($"插入OLE对象到{ws.Name}...");
+            if (objectToEmbedPath is null or "")
+            {
+                _logger.Warn($"OLE对象路径({objectToEmbedPath})为空");
+                return;
+            }
+
+            using MemoryStream iconStream = new(Resources.image_xlsx_emf);
+            iconStream.Position = 0; // 必须重置流指针到开头
+            try
+            {
+                DataCell tmp = new()
+                {
+                    TopLeftAddress = TopLeftAddress
+                };
+                ExcelOleObjectParameters oleSets = new()
+                {
+                    LinkToFile = false,
+                    DisplayAsIcon = true
+                };
+
+                if (string.IsNullOrWhiteSpace(IconPath))
+                {
+                    oleSets.Icon = new ExcelImage(iconStream, ePictureType.Png);
+                }
+                else
+                {
+                    oleSets.Icon = new ExcelImage(IconPath);
+                }
+                ExcelOleObject oleObject = ws.Drawings.AddOleObject(Path.GetFileNameWithoutExtension(objectToEmbedPath), objectToEmbedPath, oleSets);
+                oleObject.SetPosition(tmp.Row, 10, tmp.Column, 10);
+                oleObject.SetSize(100, 100);
+                _logger.Info($"插入OLE对象到{ws.Name}完成");
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "OLE对象插入失败");
+            }
+        }
+
+        public static void ReadReportHeaderInfo(ExcelWorksheet ws, ReportHeaderViewModel reportHeaderInfo)
         {
             // 辅助函数: 找到issue和setup图片所在的标题行
             DataCell issueTitle = FindCellByValue(ws, "Issue Photos");
             DataCell setupTitle = FindCellByValue(ws, "Test Setup");
 
-            ReportHeaderViewModel reportHeaderInfo = new()
-            {
-                TESTED_BY = FindInfoByText(ws, "TESTED BY"),
-                APPROVED_BY = FindInfoByText(ws, "APPROVED BY"),
-                PROJECT_NAME = FindInfoByText(ws, "PROJECT NAME"),
-                TEST_STAGE = FindInfoByText(ws, "TEST STAGE"),
-                TestDescription = FindInfoByText(ws, "Test Description"),
-                Test_Description_Pic = GetPicturesInRange(ws, 6, 1, 10),
-                Issue_Photos_Pics = issueTitle is null ? null : GetPicturesInRange(ws, issueTitle.Row, 1, issueTitle.Row + 10),
-                Test_Setup_Pics = setupTitle is null ? null : GetPicturesInRange(ws, setupTitle.Row, 1, setupTitle.Row + 10),
-            };
-            return reportHeaderInfo;
+            reportHeaderInfo.TESTED_BY = FindInfoByText(ws, "TESTED BY");
+            reportHeaderInfo.APPROVED_BY = FindInfoByText(ws, "APPROVED BY");
+            reportHeaderInfo.PROJECT_NAME = FindInfoByText(ws, "PROJECT NAME");
+            reportHeaderInfo.TEST_STAGE = FindInfoByText(ws, "TEST STAGE");
+            reportHeaderInfo.TestDescription = FindInfoByText(ws, "Test Description");
+            reportHeaderInfo.Test_Description_Pic = GetPicturesInRange(ws, 6, 1, 10);
+            reportHeaderInfo.Issue_Photos_Pics = issueTitle is null ? null : GetPicturesInRange(ws, issueTitle.Row, 1, issueTitle.Row + 10);
+            reportHeaderInfo.Test_Setup_Pics = setupTitle is null ? null : GetPicturesInRange(ws, setupTitle.Row, 1, setupTitle.Row + 10);
         }
 
         public static DataCell GetPicturesInRange(ExcelWorksheet ws, int startRow = 1, int startCol = 1, int endRow = -1, int endCol = -1)
@@ -453,8 +492,8 @@ namespace ORT一键报告
 
         public static DataCell FindInfoByText(ExcelWorksheet ws, string toFind)
         {
-            DataCell headerInfo = new DataCell();
-            var cell = FindCellByValue(ws, toFind);
+            DataCell headerInfo = new();
+            DataCell cell = FindCellByValue(ws, toFind);
             if (cell != null)
             {
                 for (int c = cell.Column + 1; c <= ws.Dimension.End.Column; c++)
@@ -472,6 +511,37 @@ namespace ORT一键报告
             return headerInfo;
         }
 
+        public static void ExcelAddPicture(ExcelWorksheet ws, string picName, DataCell pics, string TopLeft, string rpType)
+        {
+            if (pics.Images.Count <= 0)
+            {
+                return;
+            }
+            ExcelCellAddress start = new ExcelAddress(TopLeft).Start;
+            int startRow = start.Row;
+            int startCol = start.Column;
+            for (int i = 0; i < pics.Images.Count; i++)
+            {
+                string picPath = Path.Combine(MainWindow.TempPath, picName + "_" + i + ".png");
+                if (File.Exists(picPath))
+                {
+                    string[] temp = picPath.Split('.');
+                    picPath = temp[0] + "_" + i + "." + temp[1];
+                }
+                ImageSaverLegacy.SaveImageSourceToFile(pics.Images[i].ImageSrc, picPath, "png");
+                ExcelPicture test_desc_pic_excel = ws.Drawings.AddPicture(picName + "_" + i, picPath);
+                test_desc_pic_excel.SetSize(300, 220);
+                if (rpType.ToLower() == "burn")
+                {
+                    test_desc_pic_excel.SetPosition(startRow, 0, startCol + (i * 4), -18 + (i * 72));
+                }
+                else
+                {
+                    test_desc_pic_excel.SetPosition(startRow, 10, startCol + (i * 4), -24 + (i * 44));
+                }
+            }
+        }
+
 
         /* ###############################  功能函数  ################################ */
 
@@ -479,7 +549,7 @@ namespace ORT一键报告
         {
             string[] excelExtensions = new[] { ".xlsx", ".xls", ".xlsm" };
             string[] excelFiles = Directory.GetFiles(rootPath, "*.*", SearchOption.AllDirectories).Where(file => excelExtensions.Contains(Path.GetExtension(file))).ToArray();
-            Regex regex = new Regex(@"[^a-zA-Z0-9]");
+            Regex regex = new(@"[^a-zA-Z0-9]");
             foreach (string excelFile in excelFiles)
             {
                 if (regex.Replace(excelFile, "").ToLower().Contains(regex.Replace(reportType, "").ToLower()))
