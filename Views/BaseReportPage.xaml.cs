@@ -1,5 +1,6 @@
 ﻿using NLog;
 using OfficeOpenXml;
+using ORT一键报告.Models;
 using ORT一键报告.ViewModels;
 using System;
 using System.Collections.Generic;
@@ -87,7 +88,7 @@ namespace ORT一键报告
                 {
                     BIroom = "1F Chamber",
                     SN = uutSNs,
-                    WorkOrder = _UUTInfos.WorkerNo,
+                    WorkOrder = _UUTInfos.WorkOrder,
                     Version = _UUTInfos.Revision,
                     DC = _UUTInfos.DC,
                     InspectionPrev = ReportStatus.Pass,
@@ -146,60 +147,5 @@ namespace ORT一键报告
         {
             SetInfoToWindow();
         }
-
-        //private void btn_ATEDatas_Click(object sender, RoutedEventArgs e)
-        //{
-        //    if (sender is Button button && button.Tag is string textName)
-        //    {
-        //        FileDialog fileDialog = new OpenFileDialog
-        //        {
-        //            Filter = "ATE数据|*.xlsx;*.xls"
-        //        };
-        //        _ = fileDialog.ShowDialog();
-
-        //        ATEPath = fileDialog.FileName;
-        //        if (FindName(textName) is TextBlock textBlock)
-        //        {
-        //            textBlock.Text = ATEPath;
-        //        }
-        //    }
-        //}
-
-        //private async void btn_finish_Click(object sender, RoutedEventArgs e)
-        //{
-        //    if (sender is Button button && button.Tag is string btnTag)
-        //    {
-        //        button.IsEnabled = false;
-
-        //        _ = details_data.details_data.CommitEdit();
-        //        List<object> HeaderInfoList = new()
-        //        {
-        //            ReportHeader.TestedBy,
-        //            ReportHeader.ApprovedBy,
-        //            ReportHeader.ProjectName,
-        //            ReportHeader.TestStage,
-        //            ReportHeader.datepicker_start.SelectedDate,
-        //            ReportHeader.datepicker_end.SelectedDate,
-        //            (bool)ReportHeader.rbtn_testPass.IsChecked ? "Pass" : "Fail",
-        //            ReportHeader.text_TestDescription.Text,
-        //        };
-        //        PopupWindow popup = new() { Title = "保存报告", Message = "处理中..." };
-        //        try
-        //        {
-        //            popup.Show();
-        //            await Task.Run(() => { ReportFinish(btnTag, HeaderInfoList, reportHeaderInfo); });
-        //        }
-        //        catch (Exception ex)
-        //        {
-        //            _logger.Error(ex, "保存报告时出现错误");
-        //            popup.Message = "保存报告时出现错误" + ex.Message;
-        //        }
-        //        finally
-        //        {
-        //            popup.Close();
-        //            button.IsEnabled = true;
-        //        }
-        //    }
-        //}
     }
 }

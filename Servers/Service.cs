@@ -1,5 +1,6 @@
 ﻿using Microsoft.Win32;
 using System.IO;
+using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace ORT一键报告
 {

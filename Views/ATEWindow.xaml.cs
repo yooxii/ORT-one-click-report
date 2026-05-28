@@ -1,6 +1,7 @@
 ﻿using Microsoft.Win32;
 using NLog;
 using OfficeOpenXml;
+using ORT一键报告.Models;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -338,7 +339,7 @@ namespace ORT一键报告
 
         private List<string> FindSNs(ExcelWorksheet ws, DataCell startCell, DataCell maxSpecCell)
         {
-            List<string> SNs = new List<string>();
+            List<string> SNs = new();
             for (int r = startCell.Row + 1; r < maxSpecCell.Row; r++)
             {
                 SNs.Add(ws.Cells[r, 1].Text);

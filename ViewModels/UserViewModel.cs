@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace ORT一键报告.ViewModels
 {
-    public class UserViewModel : ObservableObject
+    public partial class UserViewModel : ObservableObject
     {
         [ObservableProperty]
         private Models.User _user;

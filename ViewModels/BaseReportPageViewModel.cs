@@ -2,6 +2,7 @@
 using Microsoft.Win32;
 using NLog;
 using OfficeOpenXml;
+using ORT一键报告.Models;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -14,14 +15,14 @@ using static ORT一键报告.ReportUtils;
 
 namespace ORT一键报告.ViewModels
 {
-    public partial class BaseReportPageViewModel : ObservableObject
+    public partial class BaseReportPageViewModel(IService service) : ObservableObject
     {
+        private readonly IService _Service = service;
         private readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
-        public ObservableCollection<ResultDetails> DetailsList { get; set; }
-        public ReportHeaderViewModel ReportHeaderVM { get; set; }
+        public ObservableCollection<ResultDetails> DetailsList { get; set; } = [];
+        public ReportHeaderViewModel ReportHeaderVM { get; set; } = new();
 
-        private readonly IService _Service;
         public string RootReportPath { get; set; }
 
         private string _atePath = "请点击右侧按钮选择ATE数据文件";
@@ -39,13 +40,6 @@ namespace ORT一键报告.ViewModels
         {
             get => _reportType;
             set => SetProperty(ref _reportType, value);
-        }
-
-        public BaseReportPageViewModel(IService service)
-        {
-            ReportHeaderVM = new();
-            DetailsList = new();
-            _Service = service;
         }
 
         /* ###############################  功能函数  ################################ */

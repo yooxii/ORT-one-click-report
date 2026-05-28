@@ -1,6 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using ORT一键报告.Models;
 using System;
-using static ORT一键报告.ReportUtils;
 
 namespace ORT一键报告.ViewModels
 {

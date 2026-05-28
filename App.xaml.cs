@@ -21,9 +21,9 @@ namespace ORT一键报告
                 base.OnStartup(e);
 
                 ServiceCollection services = new();
-                services.AddTransient<EMIViewModel>();
+                services.AddTransient<EMIReportViewModel>();
                 services.AddTransient<BaseReportPageViewModel>();
-                services.AddSingleton<ReportHeaderViewModel>();
+                services.AddSingleton<SettingsViewModel>();
                 services.AddSingleton<IService, Service>();
                 ServiceProvider serviceProvider = services.BuildServiceProvider();
 

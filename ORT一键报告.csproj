@@ -107,19 +107,27 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Converters.cs" />
+    <Compile Include="Models\Report.cs" />
+    <Compile Include="Models\Settings.cs" />
     <Compile Include="RelayCommand.cs" />
     <Compile Include="Servers\Service.cs" />
     <Compile Include="Models\User.cs" />
     <Compile Include="Servers\InterfaceService.cs" />
     <Compile Include="ViewModels\BaseReportPageViewModel.cs" />
-    <Compile Include="ViewModels\EMIViewModel.cs" />
+    <Compile Include="ViewModels\EMIReportViewModel.cs" />
+    <Compile Include="ViewModels\EMISetupViewModel.cs" />
     <Compile Include="ViewModels\MainViewModel.cs" />
     <Compile Include="ViewModels\ReportHeaderViewModel.cs" />
+    <Compile Include="ViewModels\SettingsViewModel.cs" />
     <Compile Include="ViewModels\UserViewModel.cs" />
     <Compile Include="Views\BaseReportPage.xaml.cs">
       <DependentUpon>BaseReportPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="Docx2Pdf.cs" />
+    <Compile Include="Views\BaseSettings.xaml.cs">
+      <DependentUpon>BaseSettings.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Views\EMIReportPage.xaml.cs">
       <DependentUpon>EMIReportPage.xaml</DependentUpon>
     </Compile>
@@ -150,6 +158,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Views\BaseReportPage.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Views\BaseSettings.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -314,9 +326,6 @@
     <PackageReference Include="System.Text.Json">
       <Version>10.0.8</Version>
     </PackageReference>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\image_xlsx.emf" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

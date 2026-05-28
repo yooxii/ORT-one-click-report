@@ -3,19 +3,13 @@ using System.Windows.Input;
 
 namespace ORT一键报告
 {
-    public class RelayCommand : ICommand
+    public class RelayCommand(Action execute, Func<bool> canExecute) : ICommand
     {
-        private readonly Action _execute;
-        private readonly Func<bool> _canExecute;
+        private readonly Action _execute = execute ?? throw new ArgumentNullException(nameof(execute));
+        private readonly Func<bool> _canExecute = canExecute;
         public event EventHandler CanExecuteChanged;
 
         public RelayCommand(Action execute) : this(execute, null) { }
-
-        public RelayCommand(Action execute, Func<bool> canExecute)
-        {
-            _execute = execute ?? throw new ArgumentNullException(nameof(execute));
-            _canExecute = canExecute;
-        }
 
         public bool CanExecute(object parameter)
         {

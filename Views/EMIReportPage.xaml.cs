@@ -1,5 +1,7 @@
 ﻿using NLog;
 using OfficeOpenXml;
+using ORT一键报告.Models;
+using ORT一键报告.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -17,9 +19,9 @@ namespace ORT一键报告
     {
         private readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
-        public static ViewModels.EMIViewModel emiVM;
+        public static EMIReportViewModel emiVM;
 
-        public ViewModels.ReportHeaderViewModel ReportHeaderInfo { get; set; }
+        public ReportHeaderViewModel ReportHeaderInfo { get; set; }
 
         public string ReportType
         {
@@ -62,6 +64,9 @@ namespace ORT一键报告
                 _logger.Info($"{ReportType}表头读取完成");
             }
             UUTInfoFromExcel _UUTInfos = MainWindow.UUTInfos;
+            emiVM.DC = _UUTInfos.DC;
+            emiVM.Version = _UUTInfos.Revision;
+            emiVM.WorkOrder = _UUTInfos.WorkOrder;
             foreach (TestItemInfo testItem in _UUTInfos.TestItems)
             {
                 if (testItem.TestItemName.ToLower().Contains(ReportType.ToLower()))

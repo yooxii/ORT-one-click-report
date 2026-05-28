@@ -10,8 +10,8 @@ namespace ORT一键报告
         public EMIReportSetup()
         {
             InitializeComponent();
-            DataContext = EMIReportPage.emiVM;
-            EMIReportPage.emiVM.LoadFromExcel();
+            DataContext = EMIReportPage.emiVM.EMISetupVM;
+            EMIReportPage.emiVM.EMISetupVM.LoadFromExcel();
         }
     }
 }

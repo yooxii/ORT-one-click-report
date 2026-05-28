@@ -46,10 +46,5 @@ namespace ORT一键报告.ViewModels
             string _title = Path.GetFileName(Path.GetDirectoryName(ReportPath));
             Title = _title.Split(' ')[0] + " " + _title.Split('_')[1] + " ORT一键报告";
         }
-
-        private bool CanRootReportPath()
-        {
-            return !string.IsNullOrEmpty(ReportPath);
-        }
     }
 }

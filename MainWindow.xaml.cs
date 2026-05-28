@@ -1,5 +1,6 @@
 ﻿using NLog;
 using OfficeOpenXml;
+using ORT一键报告.Models;
 using ORT一键报告.ViewModels;
 using System;
 using System.Collections.Generic;
@@ -47,7 +48,7 @@ namespace ORT一键报告
 
         public static UUTInfoFromExcel UUTInfos { get; set; }
         public static string RootPath { get; set; }
-        public static string TemplatePath { get; set; }
+        public static string TemplateDir { get; set; }
         public static string TempPath { get; set; }
 
         public MainWindow()
@@ -61,7 +62,7 @@ namespace ORT一键报告
             Closed += Window_Closed;
             Loaded += ReportHeader_Loaded;
 
-            TemplatePath = Path.Combine(Directory.GetCurrentDirectory(), "Templates");
+            TemplateDir = Path.Combine(Directory.GetCurrentDirectory(), "Templates");
             TempPath = Path.Combine(Path.GetTempPath(), "ORTTemp");
         }
 
@@ -154,7 +155,7 @@ namespace ORT一键报告
                         SNs.Add(cell.Data);
                     }
                     uutInfos.SNs = SNs;
-                    uutInfos.WorkerNo = ws_waterfall.Cells[snCells.Last().Row + 1, snCells.Last().Column].Text;
+                    uutInfos.WorkOrder = ws_waterfall.Cells[snCells.Last().Row + 1, snCells.Last().Column].Text;
                 }
                 List<TestItemInfo> TestItems = FindTestItems(ws_waterfall, snTitleCell.Row, snCells.First().Row, snCells.First().Column);
                 uutInfos.TestItems = TestItems;
