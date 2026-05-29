@@ -46,16 +46,28 @@ namespace ORT一键报告
 
         public MainViewModel MainVM { get; set; }
 
+        public static SettingsViewModel SettingsVM { get; set; }
+
         public static UUTInfoFromExcel UUTInfos { get; set; }
+
         public static string RootPath { get; set; }
         public static string TemplateDir { get; set; }
         public static string TempPath { get; set; }
+
+        private readonly Dictionary<string, object> defaultSetup = new() { 
+            {"路径对话框初始目录", new Dictionary<string, object> { 
+                {"BI EMI 报告","\\\\bnt56\\品保部\\ORT實驗資料\\13. 臨時試驗報告\\BI EMI"},
+                {"BI ATE Data", "\\\\bnt56\\品保部\\ORT實驗資料\\13. 臨時試驗報告\\BI ATE Data" },
+                {"BI Picture","\\\\bnt56\\品保部\\ORT實驗資料\\13. 臨時試驗報告\\BI Picture" }
+            } },
+        };
 
         public MainWindow()
         {
             InitializeComponent();
             ExcelPackage.License.SetNonCommercialPersonal("Lucas");
 
+            SettingsVM = new SettingsViewModel();
             MainVM = new(new Service());
             DataContext = MainVM;
 
@@ -218,6 +230,11 @@ namespace ORT一键报告
             ateWindow.Show();
         }
 
+        private void MenuItem_MainSetup_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
         private async void DoReport_Click(object sender, RoutedEventArgs e)
         {
             PopupWindow popup = new() { Title = "处理中", Message = "请耐心等待..." };
@@ -265,12 +282,6 @@ namespace ORT一键报告
                 popup.Close();
                 btn.IsEnabled = true;
             }
-        }
-
-        private void MenuItem_PdfTest_Click(object sender, RoutedEventArgs e)
-        {
-            TestPdfWindow testPdfWindow = new();
-            testPdfWindow.Show();
         }
     }
 }

@@ -13,7 +13,7 @@ namespace ORT一键报告.ViewModels
     {
         private readonly IService _emiService = service;
 
-        private readonly string defaultJson = @"{""结果开始行"":44,""结束行"":103,""SN列"":4,""工令列"":6,""版本列"":7,""周期列"":8,""电压列"":11,""频率列"":12,""Phase列"":13,""负载列"":14,""Mark No列"":15,""Mark Freq列"":16,""QP Limit列"":17,""AVG Limit列"":18,""QP Max列"":20,""AVG列"":21,""备注列"":26}";
+        private readonly string defaultJson = @"{""行"":{""结果开始行"":44,""结束行"":103},""列"":{""SN列"":4,""工令列"":6,""版本列"":7,""周期列"":8,""电压列"":11,""频率列"":12,""Phase列"":13,""负载列"":14,""Mark No列"":15,""Mark Freq列"":16,""QP Limit列"":17,""AVG Limit列"":18,""QP Max列"":20,""AVG列"":21,""备注列"":26}}";
 
 
         public event Action<string> TemplatePathChanged;

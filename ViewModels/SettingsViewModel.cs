@@ -4,9 +4,7 @@ using NLog;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.IO;
-using System.Runtime.CompilerServices;
 
 namespace ORT一键报告.ViewModels
 {
@@ -48,6 +46,21 @@ namespace ORT一键报告.ViewModels
 
         // 绑定到 UI 的根节点集合
         public ObservableCollection<SettingItemViewModel> RootItems { get; } = [];
+
+        public static Dictionary<string, object> ParseJson(string json)
+        {
+
+            JObject jObj = JObject.Parse(json);
+            Dictionary<string, object> result = [];
+
+            foreach (var prop in jObj)
+            {
+                result[prop.Key] = prop.Value.Type == JTokenType.Object ?
+                    prop.Value.ToObject<Dictionary<string, object>>() :
+                    prop.Value.ToString();
+            }
+            return result;
+        }
 
         /// <summary>
         /// 核心方法：传入 JSON 字符串进行解析并生成界面树

@@ -32,7 +32,7 @@
             </MenuItem>
             <MenuItem Header="选项">
                 <MenuItem Header="重置" />
-                <MenuItem Header="设置" />
+                <MenuItem Header="设置" Click="MenuItem_MainSetup_Click"/>
             </MenuItem>
             <MenuItem Header="ATE数据" Click="MenuItem_ATE_Click" />
             <MenuItem Header="帮助" />

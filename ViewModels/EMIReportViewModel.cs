@@ -12,49 +12,6 @@ using System.Windows.Input;
 namespace ORT一键报告.ViewModels
 {
     //2.1 Conducted EMI Measurement
-    public class EMIUUTdataInfo
-    {
-        public List<string> SN { get; set; } = new List<string>();
-        public List<string> Voltage { get; set; } = new List<string>();
-        public List<string> Load { get; set; } = new List<string>();
-        public List<string> LISN { get; set; } = new List<string>();
-
-        /// <summary>
-        /// 返回该机种的信息，字符串形式
-        /// </summary>
-        /// <param name="n">控制返回信息种类的个数，最大3</param>
-        /// <returns></returns>
-        public string GetName(int n)
-        {
-            string res = "";
-            if (n >= 1)
-                res += $"-{string.Join("_", Voltage.ToArray())}";
-            if (n >= 2)
-                res += $"-{string.Join("_", Load.ToArray())}".Replace("%", "");
-            if (n >= 3)
-                res += $"-{string.Join("_", LISN.ToArray())}";
-            return res;
-        }
-    }
-
-    public class EMIUUTData
-    {
-        public string Name => $"{SN}-{Voltage}-{Load}-{LISN}";
-        public string SN { get; set; }
-        public string Voltage { get; set; }
-        public string Load { get; set; }
-        public string LISN { get; set; }
-        public string Model { get; set; }
-
-        public List<List<float>> Datas { get; set; }
-        public List<float> MinDatas { get; set; }
-
-        public EMIUUTData()
-        {
-            Datas = [];
-            MinDatas = [];
-        }
-    }
 
     public partial class EMIReportViewModel : ObservableObject
     {
@@ -179,7 +136,7 @@ namespace ORT一键报告.ViewModels
                             if (line.Contains("L1")) emiData.LISN = "L";
                             else if (line.Contains("N")) emiData.LISN = "N";
                         }
-                        List<float> tmp = new();
+                        List<float> tmp = [];
                         int offest = 0;
                         for (int j = 0; j < 9; j++)
                         {
@@ -242,11 +199,12 @@ namespace ORT一键报告.ViewModels
                 _logger.Error("EMI报告模板不存在");
                 return;
             }
-            ExcelPackage package = new(new FileInfo(templatePath));
+            using ExcelPackage package = new(new FileInfo(templatePath));
             ExcelWorkbook wb = package.Workbook;
             ExcelWorksheet ws = wb.Worksheets["Conducted EMI"];
             ExcelWorksheet ws_setup = wb.Worksheets["Setup"];
 
+            var setups = SettingsViewModel.ParseJson(ws_setup.Cells["A1"].Text);
 
         }
 

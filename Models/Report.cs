@@ -100,4 +100,49 @@ namespace ORT一键报告.Models
         public byte[] ImageBytes { get; set; }    // 字节数组
         public string Name { get; set; }          // 图片名称
     }
+
+
+    public class EMIUUTdataInfo
+    {
+        public List<string> SN { get; set; } = new List<string>();
+        public List<string> Voltage { get; set; } = new List<string>();
+        public List<string> Load { get; set; } = new List<string>();
+        public List<string> LISN { get; set; } = new List<string>();
+
+        /// <summary>
+        /// 返回该机种的信息，字符串形式
+        /// </summary>
+        /// <param name="n">控制返回信息种类的个数，最大3</param>
+        /// <returns></returns>
+        public string GetName(int n)
+        {
+            string res = "";
+            if (n >= 1)
+                res += $"-{string.Join("_", Voltage.ToArray())}";
+            if (n >= 2)
+                res += $"-{string.Join("_", Load.ToArray())}".Replace("%", "");
+            if (n >= 3)
+                res += $"-{string.Join("_", LISN.ToArray())}";
+            return res;
+        }
+    }
+
+    public class EMIUUTData
+    {
+        public string Name => $"{SN}-{Voltage}-{Load}-{LISN}";
+        public string SN { get; set; }
+        public string Voltage { get; set; }
+        public string Load { get; set; }
+        public string LISN { get; set; }
+        public string Model { get; set; }
+
+        public List<List<float>> Datas { get; set; }
+        public List<float> MinDatas { get; set; }
+
+        public EMIUUTData()
+        {
+            Datas = [];
+            MinDatas = [];
+        }
+    }
 }

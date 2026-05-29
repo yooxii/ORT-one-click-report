@@ -5,57 +5,10 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ORT一键报告"
              xmlns:vm="clr-namespace:ORT一键报告.ViewModels"
-             xmlns:conv="clr-namespace:ORT一键报告.Converters" d:DataContext="{d:DesignInstance Type=vm:SettingsViewModel}"
+             xmlns:conv="clr-namespace:ORT一键报告.Converters"
+             d:DataContext="{d:DesignInstance Type=vm:SettingsViewModel}"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
-    <UserControl.Resources>
-        <!-- 字符串输入框 -->
-        <DataTemplate x:Key="StringTemplate" DataType="{x:Type vm:SettingItemViewModel}">
-            <Grid Margin="0,5">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="150"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                <TextBlock Text="{Binding Label}" VerticalAlignment="Center" FontWeight="SemiBold"/>
-                <TextBox Grid.Column="1" Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}" Padding="4"/>
-            </Grid>
-        </DataTemplate>
-
-        <!-- 布尔开关 -->
-        <DataTemplate x:Key="BoolTemplate" DataType="{x:Type vm:SettingItemViewModel}">
-            <CheckBox Content="{Binding Label}" IsChecked="{Binding Value}" Margin="0,5"/>
-        </DataTemplate>
-
-        <!-- 下拉框 -->
-        <DataTemplate x:Key="ComboTemplate" DataType="{x:Type vm:SettingItemViewModel}">
-            <Grid Margin="0,5">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="150"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                <TextBlock Text="{Binding Label}" VerticalAlignment="Center" FontWeight="SemiBold"/>
-                <ComboBox Grid.Column="1" ItemsSource="{Binding Options}" SelectedItem="{Binding Value}" Padding="4"/>
-            </Grid>
-        </DataTemplate>
-
-        <!-- 嵌套分组容器 -->
-        <DataTemplate x:Key="GroupTemplate" DataType="{x:Type vm:SettingItemViewModel}">
-            <StackPanel Margin="0,10,0,0">
-                <TextBlock Text="{Binding Label}" FontSize="16" FontWeight="Bold" Margin="0,0,0,5" Foreground="#007ACC"/>
-                <Border BorderBrush="#EEEEEE" BorderThickness="1" Padding="10,5" CornerRadius="4">
-                    <ItemsControl ItemsSource="{Binding Children}">
-                        <ItemsControl.ItemTemplateSelector>
-                            <conv:SettingTemplateSelector 
-                                StringTemplate="{StaticResource StringTemplate}"
-                                BoolTemplate="{StaticResource BoolTemplate}"
-                                ComboTemplate="{StaticResource ComboTemplate}"
-                                GroupTemplate="{StaticResource GroupTemplate}"/>
-                        </ItemsControl.ItemTemplateSelector>
-                    </ItemsControl>
-                </Border>
-            </StackPanel>
-        </DataTemplate>
-    </UserControl.Resources>
 
     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="15">
         <ItemsControl ItemsSource="{Binding RootItems}">
@@ -63,8 +16,7 @@
                 <conv:SettingTemplateSelector 
                     StringTemplate="{StaticResource StringTemplate}"
                     BoolTemplate="{StaticResource BoolTemplate}"
-                    ComboTemplate="{StaticResource ComboTemplate}"
-                    GroupTemplate="{StaticResource GroupTemplate}"/>
+                    ComboTemplate="{StaticResource ComboTemplate}"/>
             </ItemsControl.ItemTemplateSelector>
         </ItemsControl>
     </ScrollViewer>
