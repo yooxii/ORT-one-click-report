@@ -59,7 +59,7 @@
                             <Label Content="模板路径:" Margin="3" VerticalContentAlignment="Center" />
                             <TextBox x:Name="TemplatePath_text" Text="{Binding TemplatePath}" Grid.Column="1" VerticalContentAlignment="Center" TextWrapping="Wrap" Margin="3" />
                             <Button Tag="TemplatePath_text" x:Name="btnTemplatePath" Content="选择" Width="70" Grid.Column="2" Margin="3,3,3,0" Height="25" VerticalAlignment="Top" Command="{Binding FileSelectCommand}" />
-                            <Button Tag="TemplatePath_text" x:Name="btnEMISetup" Content="设置" Width="70" Grid.Column="3" Margin="3,3,3,0" Height="25" VerticalAlignment="Top" Command="{Binding EMISetupCommand}" />
+                            <Button Tag="TemplatePath_text" x:Name="btnEMISetup" Content="设置" Width="70" Grid.Column="3" Margin="3,3,3,0" Height="25" VerticalAlignment="Top" Click="BTNEMISetup_Click" />
                         </Grid>
                         <Grid>
                             <Grid.ColumnDefinitions>

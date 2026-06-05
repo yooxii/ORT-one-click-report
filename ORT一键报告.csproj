@@ -117,66 +117,74 @@
     <Compile Include="ViewModels\BaseReportPageViewModel.cs" />
     <Compile Include="ViewModels\EMIReportViewModel.cs" />
     <Compile Include="ViewModels\EMISetupViewModel.cs" />
+    <Compile Include="ViewModels\MainSettingsViewModel.cs" />
     <Compile Include="ViewModels\MainViewModel.cs" />
     <Compile Include="ViewModels\ReportHeaderViewModel.cs" />
+    <Compile Include="ViewModels\ReportTemplateViewModel.cs" />
     <Compile Include="ViewModels\SettingsViewModel.cs" />
     <Compile Include="ViewModels\UserViewModel.cs" />
-    <Compile Include="Views\BaseReportPage.xaml.cs">
-      <DependentUpon>BaseReportPage.xaml</DependentUpon>
+    <Compile Include="Views\UserControlBaseReportPage.xaml.cs">
+      <DependentUpon>UserControlBaseReportPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="Docx2Pdf.cs" />
-    <Compile Include="Views\BaseSettings.xaml.cs">
-      <DependentUpon>BaseSettings.xaml</DependentUpon>
+    <Compile Include="Views\UserControlBaseSettings.xaml.cs">
+      <DependentUpon>UserControlBaseSettings.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Views\EMIReportPage.xaml.cs">
-      <DependentUpon>EMIReportPage.xaml</DependentUpon>
+    <Compile Include="Views\UserControlEMIReportPage.xaml.cs">
+      <DependentUpon>UserControlEMIReportPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Views\EMIReportSetup.xaml.cs">
-      <DependentUpon>EMIReportSetup.xaml</DependentUpon>
+    <Compile Include="Views\WindowEMIReportSetup.xaml.cs">
+      <DependentUpon>WindowEMIReportSetup.xaml</DependentUpon>
     </Compile>
     <Compile Include="ImageSaverLegacy.cs" />
     <Compile Include="ReportUtils.cs" />
-    <Compile Include="Views\ReportHeaderWidget.xaml.cs">
-      <DependentUpon>ReportHeaderWidget.xaml</DependentUpon>
+    <Compile Include="Views\WindowMainSettings.xaml.cs">
+      <DependentUpon>WindowMainSettings.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Views\ReportPicturesWidget.xaml.cs">
-      <DependentUpon>ReportPicturesWidget.xaml</DependentUpon>
+    <Compile Include="Views\UserControlReportHeader.xaml.cs">
+      <DependentUpon>UserControlReportHeader.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Views\UserControlReportPictures.xaml.cs">
+      <DependentUpon>UserControlReportPictures.xaml</DependentUpon>
     </Compile>
     <Compile Include="Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <Compile Include="Views\SettingControl.xaml.cs">
-      <DependentUpon>SettingControl.xaml</DependentUpon>
+    <Compile Include="Views\UserControlSetting.xaml.cs">
+      <DependentUpon>UserControlSetting.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Views\TestPdfWindow.xaml.cs">
-      <DependentUpon>TestPdfWindow.xaml</DependentUpon>
+    <Compile Include="Views\WindowReportTemplate.xaml.cs">
+      <DependentUpon>WindowReportTemplate.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Views\UserDataGrid.xaml.cs">
-      <DependentUpon>UserDataGrid.xaml</DependentUpon>
+    <Compile Include="Views\WindowTestPdf.xaml.cs">
+      <DependentUpon>WindowTestPdf.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Views\UserControlDataGrid.xaml.cs">
+      <DependentUpon>UserControlDataGrid.xaml</DependentUpon>
     </Compile>
     <Page Include="Resources\SettingTemplates.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Views\ATEWindow.xaml">
+    <Page Include="Views\WindowATE.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Views\BaseReportPage.xaml">
+    <Page Include="Views\UserControlBaseReportPage.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Views\BaseSettings.xaml">
+    <Page Include="Views\UserControlBaseSettings.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Views\EMIReportPage.xaml">
+    <Page Include="Views\UserControlEMIReportPage.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Views\EMIReportSetup.xaml">
+    <Page Include="Views\WindowEMIReportSetup.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -188,41 +196,49 @@
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="Views\ATEWindow.xaml.cs">
-      <DependentUpon>ATEWindow.xaml</DependentUpon>
+    <Compile Include="Views\WindowATE.xaml.cs">
+      <DependentUpon>WindowATE.xaml</DependentUpon>
     </Compile>
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Page Include="Views\PopupWindow.xaml">
+    <Page Include="Views\WindowMainSettings.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Views\ReportHeaderWidget.xaml">
+    <Page Include="Views\WindowPopup.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Views\ReportPicturesWidget.xaml">
+    <Page Include="Views\UserControlReportHeader.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Views\SettingControl.xaml">
+    <Page Include="Views\UserControlReportPictures.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Views\TestPdfWindow.xaml">
+    <Page Include="Views\UserControlSetting.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Views\UserDataGrid.xaml">
+    <Page Include="Views\WindowReportTemplate.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Views\WindowTestPdf.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Views\UserControlDataGrid.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Views\PopupWindow.xaml.cs">
-      <DependentUpon>PopupWindow.xaml</DependentUpon>
+    <Compile Include="Views\WindowPopup.xaml.cs">
+      <DependentUpon>WindowPopup.xaml</DependentUpon>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>

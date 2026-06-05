@@ -13,7 +13,7 @@ namespace ORT一键报告.ViewModels
     {
         private readonly IService _emiService = service;
 
-        private readonly string defaultJson = @"{""行"":{""结果开始行"":44,""结束行"":103},""列"":{""SN列"":4,""工令列"":6,""版本列"":7,""周期列"":8,""电压列"":11,""频率列"":12,""Phase列"":13,""负载列"":14,""Mark No列"":15,""Mark Freq列"":16,""QP Limit列"":17,""AVG Limit列"":18,""QP Max列"":20,""AVG列"":21,""备注列"":26}}";
+        private readonly string defaultJson = @"{""Row"":{""Start"":44,""End"":103},""Col"":{""SN"":4,""WorkOrder"":6,""Version"":7,""DC"":8,""Voltage"":11,""Freq"":12,""Phase"":13,""Load"":14,""Mark No"":15,""Mark Freq"":16,""QP Limit"":17,""AVG Limit"":18,""QP Max"":20,""AVG"":21,""Remark"":26}}";
 
 
         public event Action<string> TemplatePathChanged;
@@ -44,14 +44,16 @@ namespace ORT一键报告.ViewModels
             return null;
         }
 
-        private void SaveJsonToExcel(string filePath, string updatedJson)
+        private string SaveJsonToExcel(string updatedJson)
         {
+            string filePath = _emiService.OpenPathDialog("保存设置到", initPath: Path.GetDirectoryName(TemplatePath));
             FileInfo fileInfo = new(filePath);
             using ExcelPackage package = new(fileInfo);
             ExcelWorksheet worksheet = package.Workbook.Worksheets["Setup"]; // 获取名为"setup"的工作表
 
             worksheet?.Cells[1, 1].Value = updatedJson;
             package.Save();
+            return filePath;
         }
 
         public void LoadFromExcel()
@@ -157,9 +159,9 @@ namespace ORT一键报告.ViewModels
                 {
                     WriteIndented = true
                 };
-                string updatedJson = JsonSerializer.Serialize(SettingsData, options);
-                SaveJsonToExcel(TemplatePath, updatedJson);
-                MessageBox.Show($"设置已保存!\nJSON:\n{TemplatePath}", "保存成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                string updatedJson = JsonSerializer.Serialize(SettingItemViewModel.GetDictionary(RootItems), options);
+                string savepath = SaveJsonToExcel(updatedJson);
+                MessageBox.Show($"设置已保存!\nJSON:\n{savepath}", "保存成功", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {

@@ -4,9 +4,9 @@ using System.Windows.Input;
 
 namespace ORT一键报告.ViewModels
 {
-    public class MainViewModel : ObservableObject
+    public class MainViewModel(IService service) : ObservableObject
     {
-        private readonly IService Service;
+        private readonly IService Service = service;
         public string ATEPath { get; set; }
 
 
@@ -29,11 +29,6 @@ namespace ORT一键报告.ViewModels
         {
             get => _title;
             set => SetProperty(ref _title, value);
-        }
-
-        public MainViewModel(IService service)
-        {
-            Service = service;
         }
 
         private RelayCommand selectReportPathCommand;

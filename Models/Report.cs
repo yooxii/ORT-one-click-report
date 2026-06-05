@@ -104,10 +104,10 @@ namespace ORT一键报告.Models
 
     public class EMIUUTdataInfo
     {
-        public List<string> SN { get; set; } = new List<string>();
-        public List<string> Voltage { get; set; } = new List<string>();
-        public List<string> Load { get; set; } = new List<string>();
-        public List<string> LISN { get; set; } = new List<string>();
+        public List<string> SN { get; set; } = [];
+        public List<string> Voltage { get; set; } = [];
+        public List<string> Load { get; set; } = [];
+        public List<string> LISN { get; set; } = [];
 
         /// <summary>
         /// 返回该机种的信息，字符串形式

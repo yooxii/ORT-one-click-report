@@ -34,8 +34,13 @@
                 <MenuItem Header="重置" />
                 <MenuItem Header="设置" Click="MenuItem_MainSetup_Click"/>
             </MenuItem>
-            <MenuItem Header="ATE数据" Click="MenuItem_ATE_Click" />
-            <MenuItem Header="帮助" />
+            <MenuItem Header="工具">
+                <MenuItem Header="ATE数据" Click="MenuItem_ATE_Click" />
+                <MenuItem Header="报告模板" Click="MenuItem_ReportTemplate_Click"/>
+            </MenuItem>
+            <MenuItem Header="帮助" >
+                
+            </MenuItem>
         </Menu>
         <Grid Grid.Row="1">
             <Grid.RowDefinitions>

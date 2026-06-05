@@ -13,27 +13,6 @@ using static ORT一键报告.ReportUtils;
 
 namespace ORT一键报告
 {
-    public abstract class DynamicField
-    {
-        public string Label { get; set; } // 控件左侧的标签文字
-    }
-
-    public class TextField : DynamicField
-    {
-        public string Value { get; set; }
-    }
-
-    public class SwitchField : DynamicField
-    {
-        public bool IsChecked { get; set; }
-    }
-
-    public class OptionField : DynamicField
-    {
-        public List<string> Options { get; set; }
-        public string SelectedOption { get; set; }
-    }
-
     public enum ReportStatus
     { Pass, Fail };
 
@@ -46,7 +25,7 @@ namespace ORT一键报告
 
         public MainViewModel MainVM { get; set; }
 
-        public static SettingsViewModel SettingsVM { get; set; }
+        public static SettingsViewModel SettingsVM { get; set; } = new();
 
         public static UUTInfoFromExcel UUTInfos { get; set; }
 
@@ -54,8 +33,8 @@ namespace ORT一键报告
         public static string TemplateDir { get; set; }
         public static string TempPath { get; set; }
 
-        private readonly Dictionary<string, object> defaultSetup = new() { 
-            {"路径对话框初始目录", new Dictionary<string, object> { 
+        private readonly Dictionary<string, object> defaultSetup = new() {
+            {"路径对话框初始目录", new Dictionary<string, object> {
                 {"BI EMI 报告","\\\\bnt56\\品保部\\ORT實驗資料\\13. 臨時試驗報告\\BI EMI"},
                 {"BI ATE Data", "\\\\bnt56\\品保部\\ORT實驗資料\\13. 臨時試驗報告\\BI ATE Data" },
                 {"BI Picture","\\\\bnt56\\品保部\\ORT實驗資料\\13. 臨時試驗報告\\BI Picture" }
@@ -161,7 +140,7 @@ namespace ORT一键报告
                 }
                 else
                 {
-                    List<string> SNs = new();
+                    List<string> SNs = [];
                     foreach (DataCell cell in snCells)
                     {
                         SNs.Add(cell.Data);
@@ -177,7 +156,7 @@ namespace ORT一键报告
 
             List<TestItemInfo> FindTestItems(ExcelWorksheet ws, int rDate, int rSN, int cSN)
             {
-                List<TestItemInfo> testItems = new();
+                List<TestItemInfo> testItems = [];
                 int c = cSN + 1;
                 for (; c <= ws.Dimension.End.Column; c++)
                 {
@@ -199,7 +178,7 @@ namespace ORT一键报告
                 /// <summary>
                 /// 在指定范围内寻找单元格值为"S/N"的单元格，找到后继续向下寻找非空且右边也非空的单元格，直到遇到空单元格为止，将这些非空单元格的信息（值、行号、列号）存储在SNCell对象中，并返回一个包含所有SNCell对象的列表。
                 /// </summary>
-                List<DataCell> snCells = new();
+                List<DataCell> snCells = [];
                 int rSN = snTitleCell.Row + 1;
                 int cSN = snTitleCell.Column;
                 for (; rSN <= ws.Dimension.End.Row; rSN++)
@@ -226,13 +205,20 @@ namespace ORT一键报告
 
         private void MenuItem_ATE_Click(object sender, RoutedEventArgs e)
         {
-            ATEWindow ateWindow = new();
+            ATEWindow ateWindow = new()
+            {
+                Owner = this
+            };
             ateWindow.Show();
         }
 
         private void MenuItem_MainSetup_Click(object sender, RoutedEventArgs e)
         {
-
+            MainSettingsWindow mainSettingsWindow = new()
+            {
+                Owner = this
+            };
+            mainSettingsWindow.Show();
         }
 
         private async void DoReport_Click(object sender, RoutedEventArgs e)
@@ -282,6 +268,15 @@ namespace ORT一键报告
                 popup.Close();
                 btn.IsEnabled = true;
             }
+        }
+
+        private void MenuItem_ReportTemplate_Click(object sender, RoutedEventArgs e)
+        {
+            WindowReportTemplate windowReportTemplate = new()
+            {
+                Owner = this
+            };
+            windowReportTemplate.Show();
         }
     }
 }

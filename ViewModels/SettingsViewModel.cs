@@ -34,6 +34,19 @@ namespace ORT一键报告.ViewModels
         public ObservableCollection<SettingItemViewModel> Children { get; set; } = [];
 
         public event EventHandler ValueChanged;
+
+        public static Dictionary<string, object> GetDictionary(ObservableCollection<SettingItemViewModel> items)
+        {
+            Dictionary<string, object> res = [];
+            foreach (SettingItemViewModel item in items)
+            {
+                if (item.Type == "group" && item.Children.Count != 0)
+                    res[item.Label] = GetDictionary(item.Children);
+                else
+                    res[item.Label] = item.Value;
+            }
+            return res;
+        }
     }
 
     public class SettingsViewModel(string savePath = "") : ObservableObject
@@ -104,6 +117,7 @@ namespace ORT一键报告.ViewModels
                 if (value.Type == JTokenType.Object && !IsSettingSchema(value))
                 {
                     item.Label = FormatLabel(currentKey);
+                    item.Type = "group";
                     ParseNode(value, item.Children, fullPath);
 
                     // 订阅子项的值改变事件，以便触发整体保存
@@ -209,6 +223,7 @@ namespace ORT一键报告.ViewModels
             }
             catch (Exception ex)
             {
+                return;
                 _logger.Error($"保存设置失败: {ex.Message}");
             }
         }

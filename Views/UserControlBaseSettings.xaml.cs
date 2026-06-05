@@ -1,5 +1,7 @@
 ﻿using System.Windows.Controls;
 
+
+
 namespace ORT一键报告
 {
     /// <summary>
@@ -11,6 +13,5 @@ namespace ORT一键报告
         {
             InitializeComponent();
         }
-
     }
 }

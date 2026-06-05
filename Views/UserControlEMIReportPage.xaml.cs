@@ -97,12 +97,40 @@ namespace ORT一键报告
 
             if (ReportHeaderInfo.Issue_Photos_Pics != null)
             {
-                SetPics(ReportHeaderInfo.Issue_Photos_Pics.Images, new List<Image> { widget_pic.issue_image1, widget_pic.issue_image2, widget_pic.issue_image3 });
+                SetPics(ReportHeaderInfo.Issue_Photos_Pics.Images, [widget_pic.issue_image1, widget_pic.issue_image2, widget_pic.issue_image3]);
             }
             if (ReportHeaderInfo.Test_Setup_Pics != null)
             {
-                SetPics(ReportHeaderInfo.Test_Setup_Pics.Images, new List<Image> { widget_pic.setup_image1, widget_pic.setup_image2, widget_pic.setup_image3 });
+                SetPics(ReportHeaderInfo.Test_Setup_Pics.Images, [widget_pic.setup_image1, widget_pic.setup_image2, widget_pic.setup_image3]);
             }
+        }
+
+        private Window GetRootWindow(FrameworkElement framework)
+        {
+            if (framework is Window fw)
+            {
+                return fw;
+            }
+            else if(framework.Parent is FrameworkElement fe)
+            {
+                return GetRootWindow(fe);
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        private void BTNEMISetup_Click(object sender, RoutedEventArgs e)
+        {
+            EMIReportSetup emisetup = new()
+            {
+                DataContext = emiVM.EMISetupVM,
+                Owner = GetRootWindow(this)
+            };
+            emiVM.EMISetupVM.TemplatePath = emiVM.TemplatePath;
+            emiVM.EMISetupVM.LoadFromExcel();
+            emisetup.Show();
         }
     }
 }

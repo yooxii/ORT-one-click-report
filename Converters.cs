@@ -15,11 +15,11 @@ namespace ORT一键报告.Converters
         {
             if (item is SettingItemViewModel vm)
             {
-                if (vm.Children.Count > 0) return GroupTemplate;
                 return vm.Type switch
                 {
                     "bool" => BoolTemplate,
                     "combo" => ComboTemplate,
+                    "group" => GroupTemplate,
                     _ => StringTemplate
                 };
             }

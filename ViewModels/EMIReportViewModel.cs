@@ -25,7 +25,11 @@ namespace ORT一键报告.ViewModels
         public ReportHeaderViewModel ReportHeaderVM { get; set; }
         public EMISetupViewModel EMISetupVM { get; set; }
 
+        public int PK_Col { set; get; } = 2;
+        public int PK_Limit_Col { set; get; } = 3;
         public int PK_TolerableLimit_Col { set; get; } = 4;
+        public int AVG_Col { set; get; } = 5;
+        public int AVG_Limit_Col { set; get; } = 6;
         public int AVG_TolerableLimit_Col { set; get; } = 7;
 
         private string _templatePath = string.Empty;
@@ -192,7 +196,7 @@ namespace ORT一键报告.ViewModels
             return excelFiles[0];
         }
 
-        private void WriteDatas(string templatePath, List<EMIUUTData> data, UUTInfoFromExcel uutInfos, string savePath = "")
+        private void WriteDatas(string templatePath, List<EMIUUTData> datas, UUTInfoFromExcel uutInfos, string savePath = "")
         {
             if (!File.Exists(templatePath))
             {
@@ -204,8 +208,45 @@ namespace ORT一键报告.ViewModels
             ExcelWorksheet ws = wb.Worksheets["Conducted EMI"];
             ExcelWorksheet ws_setup = wb.Worksheets["Setup"];
 
-            var setups = SettingsViewModel.ParseJson(ws_setup.Cells["A1"].Text);
+            int rowStart = 44;
+            int colSN = 4;
+            int colWorkOrder = 6;
+            int colVersion = 8;
+            int colDC = 9;
 
+
+            var setups = SettingsViewModel.ParseJson(ws_setup.Cells["A1"].Text);
+            if (setups["Row"] is Dictionary<string, object> rowSetup && setups["Col"] is Dictionary<string, object> colSetup)
+            {
+                rowStart = int.Parse(rowSetup["Start"].ToString());
+                colSN = int.Parse(colSetup["SN"].ToString());
+                colWorkOrder = int.Parse(colSetup["WorkOrder"].ToString());
+                colVersion = int.Parse(colSetup["Version"].ToString());
+                colDC = int.Parse(colSetup["DC"].ToString());
+            }
+            ws.Cells[rowStart, colWorkOrder].Value = uutInfos.WorkOrder;
+            ws.Cells[rowStart, colVersion].Value = uutInfos.Revision;
+            ws.Cells[rowStart, colDC].Value = uutInfos.DC;
+
+            int sn_rows = rowStart;
+            ws.Cells[rowStart, colSN].Value = emiUUTdatasInfo.SN[0];
+            int sn_written_count = 1;
+            for (; sn_rows < rowStart + datas.Count; sn_rows++)
+            {
+                if (sn_written_count >= emiUUTdatasInfo.SN.Count)
+                {
+                    break;
+                }
+                if (ws.GetMergeCellId(sn_rows, colSN) != ws.GetMergeCellId(sn_rows + 1, colSN))
+                {
+                    ws.Cells[sn_rows + 1, colSN].Value = emiUUTdatasInfo.SN[sn_written_count++];
+                }
+            }
+
+            foreach (var data in datas)
+            {
+
+            }
         }
 
         private async Task ConvertToPdfAsync(string sourcePath)
@@ -260,15 +301,6 @@ namespace ORT一键报告.ViewModels
         private bool CanToPDF()
         {
             return !string.IsNullOrEmpty(DataPath) && (Directory.Exists(DataPath) || File.Exists(DataPath));
-        }
-
-        private RelayCommand emiSetupCommand;
-        public ICommand EMISetupCommand => emiSetupCommand ??= new RelayCommand(EMISetup);
-
-        private void EMISetup()
-        {
-            EMIReportSetup emisetup = new();
-            emisetup.Show();
         }
 
         private RelayCommand emiFinishCommand;
