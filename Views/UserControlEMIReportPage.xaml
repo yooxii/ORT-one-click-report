@@ -75,6 +75,11 @@
                         </Grid>
                     </StackPanel>
                     <local:ReportPicturesWidget x:Name="widget_pic" />
+                    <GroupBox Header="注脚" Margin="0">
+                        <Border Margin="2" BorderBrush="LightGray" BorderThickness="0.5">
+                            <TextBox TextWrapping="Wrap" Text="{Binding Remark}"/>
+                        </Border>
+                    </GroupBox>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right"  Grid.Row="1">
                     <Button Content="重置" Margin="5" MinWidth="120" Grid.Column="1" Cursor="Hand" />

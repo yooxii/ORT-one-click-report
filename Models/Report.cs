@@ -18,6 +18,17 @@ namespace ORT一键报告.Models
         private int _column;
         public int Column { get => _column; set => SetProperty(ref _column, value); }
 
+        public DataCell() { }
+        public DataCell(string topleft)
+        {
+            TopLeftAddress = topleft;
+        }
+        public DataCell(int row, int column)
+        {
+            Row= row;
+            Column = column;
+        }
+
         public List<ExcelPictureInfo> Images { get; set; } = null;
         public string TopLeftAddress
         {
@@ -109,12 +120,15 @@ namespace ORT一键报告.Models
         public List<string> Load { get; set; } = [];
         public List<string> LISN { get; set; } = [];
 
+        public int SN_ContainsCount { get => Voltage.Count * Load.Count * LISN.Count; }
+        public int Voltage_ContainsCount { get => Load.Count * LISN.Count; }
+
         /// <summary>
-        /// 返回该机种的信息，字符串形式
+        /// 返回该机种单体的信息，字符串形式
         /// </summary>
         /// <param name="n">控制返回信息种类的个数，最大3</param>
         /// <returns></returns>
-        public string GetName(int n)
+        public string GetUUTFileName(int n)
         {
             string res = "";
             if (n >= 1)

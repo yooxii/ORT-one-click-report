@@ -1,13 +1,16 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using NLog;
 using OfficeOpenXml;
+using OfficeOpenXml.Style;
 using ORT一键报告.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Input;
+using static ORT一键报告.ReportUtils;
 
 namespace ORT一键报告.ViewModels
 {
@@ -71,6 +74,14 @@ namespace ORT一键报告.ViewModels
         {
             get => _version;
             set => SetProperty(ref _version, value);
+        }
+
+
+        private string _remark = "Remark: \n1.  Q.P. and AV. are abbreviations of quasi-peak and average individually.\n2.  “-”This value have no tested, according to standard GB 9254-2008 Annex B, If the peak value under average limit, then not need to measure the QP and AV value.\n3.  Margin value= Read Value – Limit value";
+        public string Remark
+        {
+            get => _remark;
+            set => SetProperty(ref _remark, value);
         }
 
         public EMIReportViewModel(IService service)
@@ -161,6 +172,7 @@ namespace ORT一键报告.ViewModels
                         }
                         if (offest <= 3)
                         {
+                            tmp[0] = emiData.Datas.Count + 1;
                             emiData.Datas.Add(tmp);
                             if (emiData.MinDatas.Count == 0)
                             {
@@ -185,7 +197,7 @@ namespace ORT一键报告.ViewModels
         {
             string[] excelExtensions = [".xlsx", ".xls", ".xlsm"];
             string[] excelFiles = Directory.GetFiles(MainWindow.TemplateDir, "*.*", SearchOption.AllDirectories).Where(file => excelExtensions.Contains(Path.GetExtension(file))).ToArray();
-            string tmp = emiUUTdatasInfo.GetName(2);
+            string tmp = emiUUTdatasInfo.GetUUTFileName(2);
             foreach (string excelfile in excelFiles)
             {
                 if (excelfile.Contains(tmp))
@@ -196,26 +208,24 @@ namespace ORT一键报告.ViewModels
             return excelFiles[0];
         }
 
-        private void WriteDatas(string templatePath, List<EMIUUTData> datas, UUTInfoFromExcel uutInfos, string savePath = "")
+        private void WriteDatas(ExcelWorksheet ws, Dictionary<string, object> setups, List<EMIUUTData> datas, UUTInfoFromExcel uutInfos)
         {
-            if (!File.Exists(templatePath))
-            {
-                _logger.Error("EMI报告模板不存在");
-                return;
-            }
-            using ExcelPackage package = new(new FileInfo(templatePath));
-            ExcelWorkbook wb = package.Workbook;
-            ExcelWorksheet ws = wb.Worksheets["Conducted EMI"];
-            ExcelWorksheet ws_setup = wb.Worksheets["Setup"];
-
             int rowStart = 44;
             int colSN = 4;
             int colWorkOrder = 6;
             int colVersion = 8;
             int colDC = 9;
+            int colVoltage = 11;
+            int colLoad = 14;
+            int colLisn = 13;
+            int colNo = 15;
+            int colFreq = 16;
+            int colQP_Limit = 17;
+            int colAVG_Limit = 18;
+            int colQP_Max = 20;
+            int colAVG = 21;
+            int colComments = 26;
 
-
-            var setups = SettingsViewModel.ParseJson(ws_setup.Cells["A1"].Text);
             if (setups["Row"] is Dictionary<string, object> rowSetup && setups["Col"] is Dictionary<string, object> colSetup)
             {
                 rowStart = int.Parse(rowSetup["Start"].ToString());
@@ -223,30 +233,158 @@ namespace ORT一键报告.ViewModels
                 colWorkOrder = int.Parse(colSetup["WorkOrder"].ToString());
                 colVersion = int.Parse(colSetup["Version"].ToString());
                 colDC = int.Parse(colSetup["DC"].ToString());
+                colVoltage = int.Parse(colSetup["Voltage"].ToString());
+                colLoad = int.Parse(colSetup["Load"].ToString());
+                colLisn = int.Parse(colSetup["Phase"].ToString());
+                colNo = int.Parse(colSetup["Mark No"].ToString());
+                colFreq = int.Parse(colSetup["Mark Freq"].ToString());
+                colQP_Limit = int.Parse(colSetup["QP Limit"].ToString());
+                colAVG_Limit = int.Parse(colSetup["AVG Limit"].ToString());
+                colQP_Max = int.Parse(colSetup["QP Max"].ToString());
+                colAVG = int.Parse(colSetup["AVG"].ToString());
+                colComments = int.Parse(colSetup["Comments"].ToString());
             }
-            ws.Cells[rowStart, colWorkOrder].Value = uutInfos.WorkOrder;
-            ws.Cells[rowStart, colVersion].Value = uutInfos.Revision;
-            ws.Cells[rowStart, colDC].Value = uutInfos.DC;
+            else
+            {
 
-            int sn_rows = rowStart;
+            }
+            ws.Cells[rowStart, colWorkOrder].Value = uutInfos?.WorkOrder ?? null;
+            ws.Cells[rowStart, colVersion].Value = uutInfos?.Revision ?? null;
+            ws.Cells[rowStart, colDC].Value = uutInfos?.DC ?? null;
+
+            int sn_rows = 0;
+            List<DataCell> SN_cells = [];
             ws.Cells[rowStart, colSN].Value = emiUUTdatasInfo.SN[0];
+            SN_cells.Add(new DataCell(rowStart, colSN) { Data = emiUUTdatasInfo.SN[0] });
+
             int sn_written_count = 1;
-            for (; sn_rows < rowStart + datas.Count; sn_rows++)
+            for (int _sn_row = rowStart; _sn_row < rowStart + datas.Count; _sn_row++)
             {
                 if (sn_written_count >= emiUUTdatasInfo.SN.Count)
                 {
                     break;
                 }
-                if (ws.GetMergeCellId(sn_rows, colSN) != ws.GetMergeCellId(sn_rows + 1, colSN))
+                if (ws.GetMergeCellId(_sn_row, colSN) != ws.GetMergeCellId(_sn_row + 1, colSN))
                 {
-                    ws.Cells[sn_rows + 1, colSN].Value = emiUUTdatasInfo.SN[sn_written_count++];
+                    SN_cells.Add(new DataCell(_sn_row, colSN) { Data = emiUUTdatasInfo.SN[sn_written_count] });
+                    ws.Cells[_sn_row + 1, colSN].Value = emiUUTdatasInfo.SN[sn_written_count++];
+                    if (sn_rows == 0) sn_rows = _sn_row - rowStart + 1;
                 }
             }
 
-            foreach (var data in datas)
-            {
+            var _datas = datas.GroupBy(d => d.SN).ToDictionary(
+                sn => sn.Key,
+                sn => sn.GroupBy(d => d.Voltage).ToDictionary(
+                    v => v.Key,
+                    v => v.GroupBy(d => d.Load)
+                        .OrderBy(l => int.Parse(l.Key.TrimEnd('%')))
+                        .ToDictionary(
+                            l => l.Key,
+                            l => l.ToList()
+            )));
 
+            int row_cursor = rowStart;
+            int uutNo = 1;
+            foreach (var sn in _datas)
+            {
+                int row_snStart = row_cursor;
+                ws.Cells[row_snStart, colSN].Value = sn.Key;
+                ws.Cells[row_snStart, colSN - 2].Value = uutNo++;
+                foreach (var vol in sn.Value)
+                {
+                    int row_voltageStart = row_cursor;
+                    ws.Cells[row_voltageStart, colVoltage].Value = vol.Key;
+                    ws.Cells[row_voltageStart, colVoltage + 1].Value = vol.Key.Contains("110") ? "60Hz" : "50Hz";
+                    foreach (var load in vol.Value)
+                    {
+                        int row_loadStart = row_cursor;
+                        ws.Cells[row_loadStart, colLoad].Value = load.Key;
+                        foreach (var lisn in load.Value)
+                        {
+                            ws.Cells[row_cursor, colLisn].Value = lisn.LISN == "L" ? "Line" : "Neutral";
+                            ws.Cells[row_cursor, colNo].Value = lisn.MinDatas[0];
+                            ws.Cells[row_cursor, colFreq].Value = lisn.MinDatas[1];
+                            ws.Cells[row_cursor, colQP_Limit].Value = lisn.MinDatas[3];
+                            ws.Cells[row_cursor, colAVG_Limit].Value = lisn.MinDatas[6];
+                            ws.Cells[row_cursor, colQP_Max].Value = lisn.MinDatas[2];
+                            ws.Cells[row_cursor, colAVG].Value = lisn.MinDatas[5];
+
+                            ws.Cells[row_cursor, colAVG + 2].Formula = $"T{row_cursor}-Q{row_cursor}";
+                            ws.Cells[row_cursor, colAVG + 3].Formula = $"U{row_cursor}-R{row_cursor}";
+
+                            ws.Row(row_cursor).Height = 21.75;
+                            row_cursor++;
+                        }
+                        ws.Cells[row_loadStart, colLoad, row_cursor - 1, colLoad].Merge = true; // 合并负载列
+                    }
+                    ws.Cells[row_voltageStart, colVoltage, row_cursor - 1, colVoltage].Merge = true; // 合并电压列
+                    ws.Cells[row_voltageStart, colVoltage + 1, row_cursor - 1, colVoltage + 1].Merge = true; // 合并频率列
+                    ws.Cells[row_voltageStart, colComments - 1, row_cursor - 1, colComments - 1].Merge = true; // 合并Appendix列
+                    ws.Cells[row_voltageStart, colComments, row_cursor - 1, colComments].Merge = true; // 合并Comments列
+                }
+                ws.Cells[row_snStart, colSN - 2, row_cursor - 1, colSN - 1].Merge = true; // 合并No列
+                ws.Cells[row_snStart, colSN, row_cursor - 1, colSN + 1].Merge = true; // 合并SN列
+                ws.Cells[row_snStart, colWorkOrder, row_cursor - 1, colWorkOrder + 1].Merge = true; // 合并WorlerNo列
+                ws.Cells[row_snStart, colVersion, row_cursor - 1, colVersion].Merge = true; // 合并Rev列
+                ws.Cells[row_snStart, colDC, row_cursor - 1, colDC].Merge = true; // 合并DC列
+                ws.Cells[row_snStart, colDC + 1, row_cursor - 1, colDC + 1].Merge = true; // 合并No.列
             }
+
+            int rowEnd = row_cursor - 1;
+
+            ws.Cells[rowStart, colAVG_Limit + 1, rowEnd, colAVG_Limit + 1].Value = "-"; //设置Peak Max列的值为"-"
+            ws.Cells[rowStart, colAVG + 1, rowEnd, colAVG + 1].Value = "-"; //设置Margin Peak列的值为"-"
+
+            const string FMT_3_DECIMALS = "0.000";
+            const string FMT_2_DECIMALS = "0.00";
+
+            // 设置数字格式
+            ws.Cells[rowStart, colFreq, rowEnd, colFreq].Style.Numberformat.Format = FMT_3_DECIMALS;
+            ws.Cells[rowStart, colQP_Limit, rowEnd, colQP_Limit].Style.Numberformat.Format = FMT_2_DECIMALS;
+            ws.Cells[rowStart, colAVG_Limit, rowEnd, colAVG_Limit].Style.Numberformat.Format = FMT_2_DECIMALS;
+            ws.Cells[rowStart, colQP_Max, rowEnd, colQP_Max].Style.Numberformat.Format = FMT_2_DECIMALS;
+            ws.Cells[rowStart, colAVG, rowEnd, colAVG].Style.Numberformat.Format = FMT_2_DECIMALS;
+            ws.Cells[rowStart, colAVG + 2, rowEnd, colAVG + 2].Style.Numberformat.Format = FMT_2_DECIMALS;
+            ws.Cells[rowStart, colAVG + 3, rowEnd, colAVG + 3].Style.Numberformat.Format = FMT_2_DECIMALS;
+
+            // 设置边框和样式
+            ws.Cells[rowStart, colSN - 2, rowEnd, colComments].Style.Border.Top.Style = ExcelBorderStyle.Thin;
+            ws.Cells[rowStart, colSN - 2, rowEnd, colComments].Style.Border.Bottom.Style = ExcelBorderStyle.Thin;
+            ws.Cells[rowStart, colSN - 2, rowEnd, colComments].Style.Border.Left.Style = ExcelBorderStyle.Thin;
+            ws.Cells[rowStart, colSN - 2, rowEnd, colComments].Style.Border.Right.Style = ExcelBorderStyle.Thin;
+            ws.Cells[rowStart - 2, colSN - 2, rowEnd, colComments].Style.Border.BorderAround(ExcelBorderStyle.Medium);
+            ws.Cells[rowStart - 2, colSN - 2, rowEnd, colComments].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+            ws.Cells[rowStart - 2, colSN - 2, rowEnd, colComments].Style.VerticalAlignment = ExcelVerticalAlignment.Center;
+            ws.Cells[rowStart - 2, colSN - 2, rowEnd, colComments].Style.WrapText = true;
+            ws.Cells[rowStart - 2, colSN - 2, rowEnd, colComments].Style.Font.Size = 10;
+            ws.Cells[rowStart, 1, rowEnd + 1, colComments + 1].Style.Fill.PatternType = ExcelFillStyle.Solid;
+            ws.Cells[rowStart, 1, rowEnd + 1, colComments + 1].Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.White);
+
+            // 设置一些列为灰色背景
+            var grayBgColumns = new[] { colLisn, colQP_Limit, colAVG_Limit, colAVG + 1, colAVG + 2, colAVG + 3 };
+            foreach (var col in grayBgColumns)
+            {
+                ws.Cells[rowStart, col, rowEnd, col].Style.Fill.PatternType = ExcelFillStyle.Solid;
+                ws.Cells[rowStart, col, rowEnd, col].Style.Fill.BackgroundColor.SetColor(255, 242, 242, 242);
+            }
+
+            // 写入注脚
+            var remarkLines = Remark.Split('\n');
+            foreach (var line in remarkLines)
+            {
+                ws.Cells[row_cursor, colSN - 2].Value = line;
+                ws.Cells[row_cursor, colSN - 2].Style.HorizontalAlignment = ExcelHorizontalAlignment.Left;
+                ws.Cells[row_cursor, colSN - 2].Style.Font.Size = 9;
+                row_cursor++;
+            }
+            // 设置注脚区域的边框和背景
+            ws.Cells[rowEnd, 1, row_cursor, colComments + 1].Style.Fill.PatternType = ExcelFillStyle.Solid;
+            ws.Cells[rowEnd, 1, row_cursor, colComments + 1].Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.White);
+
+            // 插入数据的压缩包
+            string zipPath = Path.Combine(DataPath, $"{datas[0].Model}.zip");
+            CreateFilteredZip(DataPath, zipPath, @"\.pdf$");
+            EmbedOleObjectWithEpplus(ws, zipPath, new DataCell(rowStart, colComments - 1).TopLeftAddress);
         }
 
         private async Task ConvertToPdfAsync(string sourcePath)
@@ -268,7 +406,25 @@ namespace ORT一键报告.ViewModels
             List<EMIUUTData> emiDatas = await Task.Run(() => ReadDatas(emiDocxFiles));
             if (string.IsNullOrEmpty(TemplatePath))
                 TemplatePath = GetEMITemplatePath(emiUUTdatasInfo);
-            await Task.Run(() => WriteDatas(TemplatePath, emiDatas, MainWindow.UUTInfos));
+
+            if (!File.Exists(TemplatePath))
+            {
+                _logger.Error("EMI报告模板不存在");
+                return;
+            }
+            using ExcelPackage package = new(new FileInfo(TemplatePath));
+            ExcelWorkbook wb = package.Workbook;
+            ExcelWorksheet ws = wb.Worksheets["Conducted EMI"];
+
+            ExcelWorksheet ws_setup = wb.Worksheets["Setup"];
+            var setups = SettingsViewModel.ParseJson(ws_setup.Cells["A1"].Text);
+            wb.Worksheets.Delete(ws_setup);
+
+            await Task.Run(() => WriteDatas(ws, setups, emiDatas, MainWindow.UUTInfos));
+
+            string savePath = _emiService.SavePathDialog("选择保存路径", "2.1 Conducted EMI Measurement", "EMI报告|*.xlsx", MainWindow.RootPath) ?? Directory.GetCurrentDirectory() + "2.1 Conducted EMI Measurement.xlsx";
+            package.SaveAs(savePath);
+            MessageBox.Show($"报告已保存到{savePath}", "保存成功", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         /* ###############################  EMIReportPage Command  ################################ */

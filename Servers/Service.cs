@@ -1,6 +1,5 @@
 ﻿using Microsoft.Win32;
 using System.IO;
-using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace ORT一键报告
 {
@@ -16,6 +15,19 @@ namespace ORT一键报告
             };
             bool? result = dialog.ShowDialog();
             return result == true ? isDir ? Path.GetDirectoryName(dialog.FileName) : dialog.FileName : null;
+        }
+
+        public string SavePathDialog(string title, string saveName, string filter, string initPath)
+        {
+            SaveFileDialog dialog = new()
+            {
+                Title = title,
+                FileName = saveName,
+                Filter = filter,
+                InitialDirectory = initPath
+            };
+            bool? result = dialog.ShowDialog();
+            return result == true ? dialog.FileName : null;
         }
     }
 }

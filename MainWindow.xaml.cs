@@ -189,12 +189,7 @@ namespace ORT一键报告
                         {
                             continue;
                         }
-                        snCells.Add(new DataCell
-                        {
-                            Data = sn,
-                            Row = rSN,
-                            Column = cSN
-                        });
+                        snCells.Add(new DataCell(rSN, cSN) { Data = sn });
                     }
                 }
                 return snCells;

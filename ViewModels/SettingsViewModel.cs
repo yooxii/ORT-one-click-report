@@ -116,7 +116,8 @@ namespace ORT一键报告.ViewModels
                 // 判断是否为嵌套对象（分组/分类）
                 if (value.Type == JTokenType.Object && !IsSettingSchema(value))
                 {
-                    item.Label = FormatLabel(currentKey);
+                    //item.Label = FormatLabel(currentKey);
+                    item.Label = currentKey;
                     item.Type = "group";
                     ParseNode(value, item.Children, fullPath);
 
@@ -146,7 +147,8 @@ namespace ORT一键报告.ViewModels
                 var schema = (JObject)value;
                 item.Type = schema["type"]?.ToString() ?? "string";
                 var keyParts = item.Key.Split('.');
-                item.Label = schema["label"]?.ToString() ?? FormatLabel(keyParts[keyParts.Length - 1]);
+                //item.Label = schema["label"]?.ToString() ?? FormatLabel(keyParts[keyParts.Length - 1]);
+                item.Label = schema["label"]?.ToString() ?? keyParts[keyParts.Length - 1];
 
                 var defaultVal = schema["default"];
                 item.Value = GetTypedValue(defaultVal, item.Type);
@@ -160,7 +162,8 @@ namespace ORT一键报告.ViewModels
             {
                 // 简单格式预期: "editor.fontSize": 14 或 "editor.wordWrap": true
                 var keyParts = item.Key.Split('.');
-                item.Label = FormatLabel(keyParts[keyParts.Length - 1]);
+                //item.Label = FormatLabel(keyParts[keyParts.Length - 1]);
+                item.Label = keyParts[keyParts.Length - 1];
                 item.Type = value.Type == JTokenType.Boolean ? "bool" : "string";
                 item.Value = GetTypedValue(value, item.Type);
             }
