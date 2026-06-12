@@ -15,7 +15,6 @@ using static ORT一键报告.ReportUtils;
 namespace ORT一键报告.ViewModels
 {
     //2.1 Conducted EMI Measurement
-
     public partial class EMIReportViewModel : ObservableObject
     {
         private readonly IService _emiService;
@@ -225,29 +224,55 @@ namespace ORT一键报告.ViewModels
             int colQP_Max = 20;
             int colAVG = 21;
             int colComments = 26;
+            string addressTESTED_BY = "F4";
+            string addressAPPROVED_BY = "M4";
+            string addressPROJECT_NAME = "F5";
+            string addressTEST_STAGE = "M5";
+            string addressTEST_PERIOD = "F6";
+            string addressTEST_CONCLUSION = "M6";
 
-            if (setups["Row"] is Dictionary<string, object> rowSetup && setups["Col"] is Dictionary<string, object> colSetup)
+            try
             {
-                rowStart = int.Parse(rowSetup["Start"].ToString());
-                colSN = int.Parse(colSetup["SN"].ToString());
-                colWorkOrder = int.Parse(colSetup["WorkOrder"].ToString());
-                colVersion = int.Parse(colSetup["Version"].ToString());
-                colDC = int.Parse(colSetup["DC"].ToString());
-                colVoltage = int.Parse(colSetup["Voltage"].ToString());
-                colLoad = int.Parse(colSetup["Load"].ToString());
-                colLisn = int.Parse(colSetup["Phase"].ToString());
-                colNo = int.Parse(colSetup["Mark No"].ToString());
-                colFreq = int.Parse(colSetup["Mark Freq"].ToString());
-                colQP_Limit = int.Parse(colSetup["QP Limit"].ToString());
-                colAVG_Limit = int.Parse(colSetup["AVG Limit"].ToString());
-                colQP_Max = int.Parse(colSetup["QP Max"].ToString());
-                colAVG = int.Parse(colSetup["AVG"].ToString());
-                colComments = int.Parse(colSetup["Comments"].ToString());
-            }
-            else
-            {
+                if (setups["Data"] is Dictionary<string, object> setup_datas && setup_datas["Row"] is Dictionary<string, object> rowSetup && setup_datas["Col"] is Dictionary<string, object> colSetup)
+                {
+                    rowStart = ToInt(rowSetup["Start"], rowStart);
+                    colSN = ToInt(colSetup["SN"], colSN);
+                    colWorkOrder = ToInt(colSetup["WorkOrder"], colWorkOrder);
+                    colVersion = ToInt(colSetup["Version"], colVersion);
+                    colDC = ToInt(colSetup["DC"], colDC);
+                    colVoltage = ToInt(colSetup["Voltage"], colVoltage);
+                    colLoad = ToInt(colSetup["Load"], colLoad);
+                    colLisn = ToInt(colSetup["Phase"], colLisn);
+                    colNo = ToInt(colSetup["Mark No"], colNo);
+                    colFreq = ToInt(colSetup["Mark Freq"], colFreq);
+                    colQP_Limit = ToInt(colSetup["QP Limit"], colQP_Limit);
+                    colAVG_Limit = ToInt(colSetup["AVG Limit"], colAVG_Limit);
+                    colQP_Max = ToInt(colSetup["QP Max"], colQP_Max);
+                    colAVG = ToInt(colSetup["AVG"], colAVG);
+                    colComments = ToInt(colSetup["Comments"], colComments);
+                }
 
+                if (setups["Header"] is Dictionary<string, object> setup_header)
+                {
+                    addressTESTED_BY = To_String(setup_header["TESTED_BY"], addressTESTED_BY);
+                    addressAPPROVED_BY = To_String(setup_header["APPROVED_BY"], addressAPPROVED_BY);
+                    addressPROJECT_NAME = To_String(setup_header["PROJECT_NAME"], addressPROJECT_NAME);
+                    addressTEST_STAGE = To_String(setup_header["TEST_STAGE"], addressTEST_STAGE);
+                    addressTEST_PERIOD = To_String(setup_header["TEST_PERIOD"], addressTEST_PERIOD);
+                    addressTEST_CONCLUSION = To_String(setup_header["TEST_CONCLUSION"], addressTEST_CONCLUSION);
+                }
             }
+            catch (Exception ex)
+            {
+                _logger.Error($"{ex.Message}, 从Setup工作表解析行列信息失败，使用默认行列设置");
+            }
+
+            ws.Cells[addressTESTED_BY].Value = ReportHeaderVM?.TESTED_BY.Data ?? null;
+            ws.Cells[addressAPPROVED_BY].Value = ReportHeaderVM?.APPROVED_BY.Data ?? null;
+            ws.Cells[addressPROJECT_NAME].Value = ReportHeaderVM?.PROJECT_NAME.Data ?? null;
+            ws.Cells[addressTEST_STAGE].Value = ReportHeaderVM?.TEST_STAGE.Data ?? null;
+            ws.Cells[addressTEST_PERIOD].Value = ReportHeaderVM?.TestStart ?? null;
+            ws.Cells[addressTEST_CONCLUSION].Value = ReportHeaderVM?.TestPass is true ? "Pass" : "Fail";
             ws.Cells[rowStart, colWorkOrder].Value = uutInfos?.WorkOrder ?? null;
             ws.Cells[rowStart, colVersion].Value = uutInfos?.Revision ?? null;
             ws.Cells[rowStart, colDC].Value = uutInfos?.DC ?? null;
@@ -289,7 +314,14 @@ namespace ORT一键报告.ViewModels
             {
                 int row_snStart = row_cursor;
                 ws.Cells[row_snStart, colSN].Value = sn.Key;
-                ws.Cells[row_snStart, colSN - 2].Value = uutNo++;
+                ws.Cells[row_snStart, colSN - 2].Value = uutNo;
+                ws.Cells[row_snStart, colDC + 1].Value = uutNo++;
+                if (row_snStart != rowStart)
+                {
+                    ws.Cells[row_snStart, colWorkOrder].Formula = $"={GetCellColumn(colWorkOrder)}{rowStart}";
+                    ws.Cells[row_snStart, colVersion].Formula = $"={GetCellColumn(colVersion)}{rowStart}";
+                    ws.Cells[row_snStart, colDC].Formula = $"={GetCellColumn(colDC)}{rowStart}";
+                }
                 foreach (var vol in sn.Value)
                 {
                     int row_voltageStart = row_cursor;
@@ -374,17 +406,23 @@ namespace ORT一键报告.ViewModels
             {
                 ws.Cells[row_cursor, colSN - 2].Value = line;
                 ws.Cells[row_cursor, colSN - 2].Style.HorizontalAlignment = ExcelHorizontalAlignment.Left;
-                ws.Cells[row_cursor, colSN - 2].Style.Font.Size = 9;
+                ws.Cells[row_cursor, colSN - 2].Style.Font.Size = 11;
                 row_cursor++;
             }
             // 设置注脚区域的边框和背景
-            ws.Cells[rowEnd, 1, row_cursor, colComments + 1].Style.Fill.PatternType = ExcelFillStyle.Solid;
-            ws.Cells[rowEnd, 1, row_cursor, colComments + 1].Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.White);
+            ws.Cells[rowEnd + 1, 1, row_cursor, colComments + 1].Style.Fill.PatternType = ExcelFillStyle.Solid;
+            ws.Cells[rowEnd + 1, 1, row_cursor, colComments + 1].Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.White);
 
             // 插入数据的压缩包
             string zipPath = Path.Combine(DataPath, $"{datas[0].Model}.zip");
             CreateFilteredZip(DataPath, zipPath, @"\.pdf$");
-            EmbedOleObjectWithEpplus(ws, zipPath, new DataCell(rowStart, colComments - 1).TopLeftAddress);
+            string iconDir = Path.Combine(MainWindow.TemplateDir, "ZipEMF");
+            if (!Directory.Exists(iconDir))
+                Directory.CreateDirectory(iconDir);
+            string iconPath = Path.Combine(iconDir, $"{datas[0].Model}.zip.emf");
+            if (!File.Exists(iconPath))
+                ImageUtils.GenerateCenteredEmf(iconPath, Resources._7z_Icon, $"{datas[0].Model}.zip");
+            EmbedOleObjectWithEpplus(ws, zipPath, new DataCell(rowStart, colComments - 2).TopLeftAddress, iconPath, 0, 0, 120, 60);
         }
 
         private async Task ConvertToPdfAsync(string sourcePath)

@@ -83,7 +83,7 @@
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right"  Grid.Row="1">
                     <Button Content="重置" Margin="5" MinWidth="120" Grid.Column="1" Cursor="Hand" />
-                    <Button Tag="emi" Content="完成" Margin="5"  MinWidth="120" Cursor="Hand" Command="{Binding EMIFinishCommand}"/>
+                    <Button Tag="emi" Content="开始制作" Margin="5"  MinWidth="120" Cursor="Hand" Command="{Binding EMIFinishCommand}"/>
                 </StackPanel>
             </Grid>
         </ScrollViewer>

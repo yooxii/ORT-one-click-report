@@ -1,4 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using System;
 using System.IO;
 using System.Windows.Input;
 
@@ -39,7 +40,22 @@ namespace ORT一键报告.ViewModels
         {
             ReportPath = Service.OpenPathDialog("选择报告概览");
             string _title = Path.GetFileName(Path.GetDirectoryName(ReportPath));
-            Title = _title.Split(' ')[0] + " " + _title.Split('_')[1] + " ORT一键报告";
+            try
+            {
+                Title = _title.Split(' ')[0] + " " + _title.Split('_')[1] + " ORT一键报告";
+            }
+            catch
+            {
+                Title = " ORT一键报告";
+            }
+        }
+
+        private RelayCommand emfTestCommand;
+        public ICommand EMFTestCommand => emfTestCommand ??= new RelayCommand(EMFTest);
+
+        private void EMFTest()
+        {
+            ImageUtils.GenerateCenteredEmf("test.emf", Resources._7z_Icon, "FSJ001-612G.zip");
         }
     }
 }

@@ -158,6 +158,15 @@ namespace ORT一键报告
 
         /* ###############################  EPPlus函数  ################################ */
 
+        public static string GetCellAddress(int row, int column)
+        {
+            return ExcelCellBase.GetAddress(row, column);
+        }
+        public static string GetCellColumn(int column)
+        {
+            return ExcelCellBase.GetAddress(1, column).Replace("1", "");
+        }
+
         public static DataCell FindCellByValue(ExcelWorksheet ws, string value, string excludeValue = "", bool ignoreCase = true, DataCell start = null, DataCell end = null)
         {
             int snRowStart = 1;
@@ -278,7 +287,7 @@ namespace ORT一键报告
             }
         }
 
-        public static void EmbedOleObjectWithEpplus(ExcelWorksheet ws, string objectToEmbedPath, string TopLeftAddress = "A1", string IconPath = "")
+        public static void EmbedOleObjectWithEpplus(ExcelWorksheet ws, string objectToEmbedPath, string TopLeftAddress = "A1", string IconPath = "", int IconX = 10, int IcnoY = 10, int IconW = 100, int IconH = 100)
         {
             _logger.Info($"插入OLE对象到{ws.Name}...");
             if (objectToEmbedPath is null or "")
@@ -310,8 +319,8 @@ namespace ORT一键报告
                     oleSets.Icon = new ExcelImage(IconPath);
                 }
                 ExcelOleObject oleObject = ws.Drawings.AddOleObject(Path.GetFileNameWithoutExtension(objectToEmbedPath), objectToEmbedPath, oleSets);
-                oleObject.SetPosition(tmp.Row, 10, tmp.Column, 10);
-                oleObject.SetSize(100, 100);
+                oleObject.SetPosition(tmp.Row, IconX, tmp.Column, IcnoY);
+                oleObject.SetSize(IconW, IconH);
                 _logger.Info($"插入OLE对象到{ws.Name}完成");
             }
             catch (Exception ex)
@@ -430,7 +439,7 @@ namespace ORT一键报告
                     string[] temp = picPath.Split('.');
                     picPath = temp[0] + "_" + i + "." + temp[1];
                 }
-                ImageSaverLegacy.SaveImageSourceToFile(pics.Images[i].ImageSrc, picPath, "png");
+                SaveImageSourceToFile(pics.Images[i].ImageSrc, picPath, "png");
                 ExcelPicture test_desc_pic_excel = ws.Drawings.AddPicture(picName + "_" + i, picPath);
                 test_desc_pic_excel.SetSize(300, 220);
                 if (rpType.ToLower() == "burn")
@@ -446,6 +455,16 @@ namespace ORT一键报告
 
 
         /* ###############################  功能函数  ################################ */
+
+        public static int ToInt(object obj, int defaultValue = 0)
+        {
+            return int.TryParse(obj?.ToString(), out var v) ? v : defaultValue;
+        }
+
+        public static string To_String(object obj, string defaultValue = "")
+        {
+            return obj?.ToString() ?? defaultValue;
+        }
 
         public static string GetRelativePath(string relativeTo, string path)
         {
@@ -562,12 +581,12 @@ namespace ORT一键报告
 
         public static string GetTemplatePath(string rootPath, string reportType)
         {
-            string[] excelExtensions = new[] { ".xlsx", ".xls", ".xlsm" };
+            string[] excelExtensions = [".xlsx", ".xls", ".xlsm"];
             string[] excelFiles = Directory.GetFiles(rootPath, "*.*", SearchOption.AllDirectories).Where(file => excelExtensions.Contains(Path.GetExtension(file))).ToArray();
             Regex regex = new(@"[^a-zA-Z0-9]");
             foreach (string excelFile in excelFiles)
             {
-                if (regex.Replace(excelFile, "").ToLower().Contains(regex.Replace(reportType, "").ToLower()))
+                if (regex.Replace(Path.GetFileName(excelFile), "").ToLower().Contains(regex.Replace(reportType, "").ToLower()))
                 {
                     return excelFile;
                 }
@@ -618,6 +637,57 @@ namespace ORT一键报告
                 bitmapImage.Freeze(); // 冻结以提高性能并允许跨线程访问
             }
             return bitmapImage;
+        }
+
+
+        /// <summary>
+        /// 将 WPF ImageSource 保存为文件
+        /// </summary>
+        public static void SaveImageSourceToFile(ImageSource imageSource, string filePath, string format)
+        {
+            if (imageSource == null)
+            {
+                throw new ArgumentNullException(nameof(imageSource));
+            }
+
+            if (string.IsNullOrEmpty(filePath))
+            {
+                throw new ArgumentNullException(nameof(filePath));
+            }
+
+            // 1. 确保目录存在
+            string directory = System.IO.Path.GetDirectoryName(filePath);
+            if (!string.IsNullOrEmpty(directory))
+            {
+                if (!Directory.Exists(directory))
+                {
+                    Directory.CreateDirectory(directory);
+                }
+            }
+
+            string formatLower = format.ToLower();
+            BitmapEncoder encoder = formatLower switch
+            {
+                "jpg" or "jpeg" => new JpegBitmapEncoder(),
+                "bmp" => new BmpBitmapEncoder(),
+                "gif" => new GifBitmapEncoder(),
+                "tiff" => new TiffBitmapEncoder(),
+                _ => new PngBitmapEncoder(),
+            };
+
+            // 3. 设置 JPEG 质量 (可选)
+            if (encoder is JpegBitmapEncoder encoder1)
+            {
+                encoder1.QualityLevel = 90;
+            }
+
+            // 4. 添加帧
+            // BitmapFrame.Create 会处理 ImageSource 到帧的转换
+            encoder.Frames.Add(BitmapFrame.Create((BitmapSource)imageSource));
+
+            // 5. 写入文件
+            using FileStream stream = new(filePath, FileMode.Create, FileAccess.Write);
+            encoder.Save(stream);
         }
 
         public static void ClearTempDir()

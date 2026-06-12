@@ -137,7 +137,7 @@
     <Compile Include="Views\WindowEMIReportSetup.xaml.cs">
       <DependentUpon>WindowEMIReportSetup.xaml</DependentUpon>
     </Compile>
-    <Compile Include="ImageSaverLegacy.cs" />
+    <Compile Include="ImageUtils.cs" />
     <Compile Include="ReportUtils.cs" />
     <Compile Include="Views\WindowMainSettings.xaml.cs">
       <DependentUpon>WindowMainSettings.xaml</DependentUpon>
@@ -250,7 +250,7 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
     <EmbeddedResource Include="Resources.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
+      <Generator>PublicResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
     <None Include=".editorconfig" />

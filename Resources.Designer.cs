@@ -19,10 +19,10 @@ namespace ORT一键报告 {
     // 类通过类似于 ResGen 或 Visual Studio 的工具自动生成的。
     // 若要添加或移除成员，请编辑 .ResX 文件，然后重新运行 ResGen
     // (以 /str 作为命令选项)，或重新生成 VS 项目。
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "16.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "18.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    internal class Resources {
+    public class Resources {
         
         private static global::System.Resources.ResourceManager resourceMan;
         
@@ -36,7 +36,7 @@ namespace ORT一键报告 {
         ///   返回此类使用的缓存的 ResourceManager 实例。
         /// </summary>
         [global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Advanced)]
-        internal static global::System.Resources.ResourceManager ResourceManager {
+        public static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
                     global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("ORT一键报告.Resources", typeof(Resources).Assembly);
@@ -51,7 +51,7 @@ namespace ORT一键报告 {
         ///   使用此强类型资源类的所有资源查找执行重写。
         /// </summary>
         [global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Advanced)]
-        internal static global::System.Globalization.CultureInfo Culture {
+        public static global::System.Globalization.CultureInfo Culture {
             get {
                 return resourceCulture;
             }
@@ -61,9 +61,19 @@ namespace ORT一键报告 {
         }
         
         /// <summary>
+        ///   查找 System.Drawing.Bitmap 类型的本地化资源。
+        /// </summary>
+        public static System.Drawing.Bitmap _7z_Icon {
+            get {
+                object obj = ResourceManager.GetObject("_7z_Icon", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
         ///   查找 System.Byte[] 类型的本地化资源。
         /// </summary>
-        internal static byte[] image_xlsx_emf {
+        public static byte[] image_xlsx_emf {
             get {
                 object obj = ResourceManager.GetObject("image_xlsx_emf", resourceCulture);
                 return ((byte[])(obj));
@@ -73,7 +83,7 @@ namespace ORT一键报告 {
         /// <summary>
         ///   查找 System.Byte[] 类型的本地化资源。
         /// </summary>
-        internal static byte[] minus {
+        public static byte[] minus {
             get {
                 object obj = ResourceManager.GetObject("minus", resourceCulture);
                 return ((byte[])(obj));
@@ -83,7 +93,7 @@ namespace ORT一键报告 {
         /// <summary>
         ///   查找 System.Byte[] 类型的本地化资源。
         /// </summary>
-        internal static byte[] ORTicon256 {
+        public static byte[] ORTicon256 {
             get {
                 object obj = ResourceManager.GetObject("ORTicon256", resourceCulture);
                 return ((byte[])(obj));
@@ -93,7 +103,7 @@ namespace ORT一键报告 {
         /// <summary>
         ///   查找 System.Byte[] 类型的本地化资源。
         /// </summary>
-        internal static byte[] plus {
+        public static byte[] plus {
             get {
                 object obj = ResourceManager.GetObject("plus", resourceCulture);
                 return ((byte[])(obj));

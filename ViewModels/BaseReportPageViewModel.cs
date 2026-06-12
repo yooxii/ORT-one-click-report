@@ -74,8 +74,8 @@ namespace ORT一键报告.ViewModels
 
                 // 2.单体数据
                 _logger.Info("处理单体数据");
-                List<object> detailInfoList = new()
-                {
+                List<object> detailInfoList =
+                [
                     DetailsList.Select(r => r.BIroom).ToList(),
                     DetailsList.Select(r => r.BIarea).ToList(),
                     DetailsList.Select(r => r.BIplace).ToList(),
@@ -88,7 +88,7 @@ namespace ORT一键报告.ViewModels
                     DetailsList.Select(r => r.FunPrev).ToList(),
                     DetailsList.Select(r => r.FunAfter).ToList(),
                     DetailsList.Select(r => r.HiPot).ToList(),
-                };
+                ];
                 if (!ReportType.ToLower().Contains("burn"))
                 {
                     detailInfoList.RemoveRange(0, 3);

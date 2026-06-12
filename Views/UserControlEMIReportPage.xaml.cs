@@ -55,8 +55,8 @@ namespace ORT一键报告
         public void ReadReportHeader()
         {
             _logger.Info($"读取{ReportType}报告表头...");
-            FileInfo thermalFileInfo = new(GetTemplatePath(MainWindow.RootPath, ReportType));
-            using (ExcelPackage package = new(thermalFileInfo))
+            FileInfo fileInfo = new(GetTemplatePath(MainWindow.RootPath, ReportType));
+            using (ExcelPackage package = new(fileInfo))
             {
                 ExcelWorksheet ws = package.Workbook.Worksheets[0];
 

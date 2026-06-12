@@ -226,8 +226,8 @@ namespace ORT一键报告.ViewModels
             }
             catch (Exception ex)
             {
-                return;
                 _logger.Error($"保存设置失败: {ex.Message}");
+                return;
             }
         }
     }

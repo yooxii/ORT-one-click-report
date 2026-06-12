@@ -32,17 +32,17 @@ namespace ORT一键报告.ViewModels
         {
             get
             {
-                string[] res = new string[8];
-
-                res[0] = TESTED_BY.Data;
-                res[1] = APPROVED_BY.Data;
-                res[2] = PROJECT_NAME.Data;
-                res[3] = TEST_STAGE.Data;
-                res[4] = TestStart.ToString("d");
-                res[5] = TestEnd.ToString("d");
-                res[6] = TestPass ? "Pass" : "Fail";
-                res[7] = TestDescription.Data;
-
+                string[] res =
+                [
+                    TESTED_BY.Data,
+                    APPROVED_BY.Data,
+                    PROJECT_NAME.Data,
+                    TEST_STAGE.Data,
+                    TestStart.ToString("d"),
+                    TestEnd.ToString("d"),
+                    TestPass ? "Pass" : "Fail",
+                    TestDescription.Data,
+                ];
                 return res;
             }
         }

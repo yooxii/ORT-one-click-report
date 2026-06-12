@@ -13,7 +13,7 @@ namespace ORT一键报告.ViewModels
     {
         private readonly IService _emiService = service;
 
-        private readonly string defaultJson = @"{""Row"":{""Start"":44,""End"":103},""Col"":{""SN"":4,""WorkOrder"":6,""Version"":8,""DC"":9,""Voltage"":11,""Freq"":12,""Phase"":13,""Load"":14,""Mark No"":15,""Mark Freq"":16,""QP Limit"":17,""AVG Limit"":18,""QP Max"":20,""AVG"":21,""Comments"":26}}";
+        private readonly string defaultJson = @"{""Header"":{""TESTED BY"":""F4"",""APPROVED BY"":""M4"",""PROJECT NAME"":""F5"",""TEST STAGE"":""M5"",""TEST STAGE"":""M5"",""TEST PERIOD"":""F6"",""TEST CONCLUSION"":""M6"",},""Data"":{""Row"":{""Start"":44,""End"":103},""Col"":{""SN"":4,""WorkOrder"":6,""Version"":8,""DC"":9,""Voltage"":11,""Freq"":12,""Phase"":13,""Load"":14,""Mark No"":15,""Mark Freq"":16,""QP Limit"":17,""AVG Limit"":18,""QP Max"":20,""AVG"":21,""Comments"":26}}}";
 
 
         public event Action<string> TemplatePathChanged;

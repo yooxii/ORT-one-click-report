@@ -41,6 +41,7 @@
             <MenuItem Header="帮助" >
                 
             </MenuItem>
+            <MenuItem Header="EMF测试" Command="{Binding EMFTestCommand}"/>
         </Menu>
         <Grid Grid.Row="1">
             <Grid.RowDefinitions>
