@@ -37,11 +37,12 @@
             <MenuItem Header="工具">
                 <MenuItem Header="ATE数据" Click="MenuItem_ATE_Click" />
                 <MenuItem Header="报告模板" Click="MenuItem_ReportTemplate_Click"/>
+                <MenuItem Header="回线转移单" Click="MenuItem_ReturnLine_Click"/>
             </MenuItem>
             <MenuItem Header="帮助" >
                 
             </MenuItem>
-            <MenuItem Header="EMF测试" Command="{Binding EMFTestCommand}"/>
+            <!--<MenuItem Header="EMF测试" Command="{Binding EMFTestCommand}"/>-->
         </Menu>
         <Grid Grid.Row="1">
             <Grid.RowDefinitions>

@@ -273,5 +273,10 @@ namespace ORT一键报告
             };
             windowReportTemplate.Show();
         }
+
+        private void MenuItem_ReturnLine_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
     }
 }

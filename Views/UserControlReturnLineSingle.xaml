@@ -1,0 +1,45 @@
+﻿<UserControl x:Class="ORT一键报告.Views.UserControlReturnLineSingle"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:ORT一键报告.Views"
+             xmlns:viewmodels="clr-namespace:ORT一键报告.ViewModels"
+             d:DataContext="{d:DesignInstance Type=viewmodels:ReturnLineSingleViewModel}"
+             mc:Ignorable="d" 
+             d:DesignHeight="150" d:DesignWidth="800">
+    <Grid Background="White">
+        <StackPanel Margin="3">
+            <TextBlock Text="Reliability Test 单体回线转移单" FontSize="11" FontFamily="Arial Black" HorizontalAlignment="Center"/>
+            <Border BorderBrush="Black" BorderThickness="2">
+                <Grid Margin="2">
+                    <Grid.RowDefinitions>
+                        <RowDefinition/>
+                        <RowDefinition/>
+                        <RowDefinition/>
+                        <RowDefinition/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/>
+                        <ColumnDefinition/>
+                        <ColumnDefinition/>
+                        <ColumnDefinition/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+                    <local:UserControlInputBox Grid.ColumnSpan="2" Label="机种:" Text="{Binding Model}"/>
+                    <local:UserControlInputBox Grid.Column="2" Label="版本:" Text="{Binding Version}"/>
+                    <local:UserControlInputBox Grid.Row="0" Grid.Column="3" Grid.ColumnSpan="1" Label="D/C:" Text="{Binding DC}"/>
+                    <local:UserControlInputBox Grid.Row="0" Grid.Column="4" Grid.ColumnSpan="1" Label="数量:" Text="{Binding Count}" Unit="PCS"/>
+                    <local:UserControlInputBox Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Label="实验项目:" Text="{Binding Testitem}"/>
+                    <local:UserControlInputBox Grid.Row="1" Grid.Column="2" Grid.ColumnSpan="2" Label="工令:" Text="{Binding WorkerNo}"/>
+                    <local:UserControlInputBox Grid.Row="1" Grid.Column="4" Grid.ColumnSpan="1" Label="日期:" Text="{Binding Date}"/>
+                    <local:UserControlInputBox Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="5" Label="ORT 回线流程:" Text="{Binding Steps}" Height="40"/>
+                    <local:UserControlInputBox Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="1" Label="送出者:" Text="{Binding ReturnBy}"/>
+                    <local:UserControlInputBox Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="1" Label="电话:" Text="{Binding Phone}"/>
+                    <local:UserControlInputBox Grid.Row="3" Grid.Column="2" Grid.ColumnSpan="2" Label="接收者:" Text="{Binding Recive}"/>
+                    <local:UserControlInputBox Grid.Row="3" Grid.Column="4" Grid.ColumnSpan="1" Label="线别:" Text="{Binding LineNo}"/>
+                </Grid>
+            </Border>
+        </StackPanel>
+    </Grid>
+</UserControl>

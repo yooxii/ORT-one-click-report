@@ -122,6 +122,8 @@
     <Compile Include="ViewModels\MainViewModel.cs" />
     <Compile Include="ViewModels\ReportHeaderViewModel.cs" />
     <Compile Include="ViewModels\ReportTemplateViewModel.cs" />
+    <Compile Include="ViewModels\ReturnLineSingleViewModel.cs" />
+    <Compile Include="ViewModels\ReturnLineViewModel.cs" />
     <Compile Include="ViewModels\SettingsViewModel.cs" />
     <Compile Include="ViewModels\UserViewModel.cs" />
     <Compile Include="Views\UserControlBaseReportPage.xaml.cs">
@@ -133,6 +135,12 @@
     </Compile>
     <Compile Include="Views\UserControlEMIReportPage.xaml.cs">
       <DependentUpon>UserControlEMIReportPage.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Views\UserControlInputBox.xaml.cs">
+      <DependentUpon>UserControlInputBox.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Views\UserControlReturnLineSingle.xaml.cs">
+      <DependentUpon>UserControlReturnLineSingle.xaml</DependentUpon>
     </Compile>
     <Compile Include="Views\WindowEMIReportSetup.xaml.cs">
       <DependentUpon>WindowEMIReportSetup.xaml</DependentUpon>
@@ -159,6 +167,9 @@
     <Compile Include="Views\WindowReportTemplate.xaml.cs">
       <DependentUpon>WindowReportTemplate.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Views\WindowReturnLine.xaml.cs">
+      <DependentUpon>WindowReturnLine.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Views\WindowTestPdf.xaml.cs">
       <DependentUpon>WindowTestPdf.xaml</DependentUpon>
     </Compile>
@@ -166,6 +177,14 @@
       <DependentUpon>UserControlDataGrid.xaml</DependentUpon>
     </Compile>
     <Page Include="Resources\SettingTemplates.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Views\UserControlInputBox.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Views\UserControlReturnLineSingle.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -225,6 +244,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Views\WindowReportTemplate.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Views\WindowReturnLine.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
