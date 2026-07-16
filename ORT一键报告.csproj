@@ -108,52 +108,57 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="Converters.cs" />
+    <Compile Include="Reports\ViewModels\MainReportViewModel.cs" />
+    <Compile Include="Reports\Views\WindowMainReport.xaml.cs">
+      <DependentUpon>WindowMainReport.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Converters\SettingTemplateSelector.cs" />
     <Compile Include="Models\Report.cs" />
     <Compile Include="Models\Settings.cs" />
-    <Compile Include="RelayCommand.cs" />
-    <Compile Include="Servers\Service.cs" />
+    <Compile Include="Utils\File_.cs" />
+    <Compile Include="Utils\RelayCommand.cs" />
+    <Compile Include="Servers\PathService.cs" />
     <Compile Include="Models\User.cs" />
-    <Compile Include="Servers\InterfaceService.cs" />
-    <Compile Include="ViewModels\BaseReportPageViewModel.cs" />
-    <Compile Include="ViewModels\EMIReportViewModel.cs" />
-    <Compile Include="ViewModels\EMISetupViewModel.cs" />
-    <Compile Include="ViewModels\MainSettingsViewModel.cs" />
-    <Compile Include="ViewModels\MainViewModel.cs" />
-    <Compile Include="ViewModels\ReportHeaderViewModel.cs" />
-    <Compile Include="ViewModels\ReportTemplateViewModel.cs" />
-    <Compile Include="ViewModels\ReturnLineSingleViewModel.cs" />
-    <Compile Include="ViewModels\ReturnLineViewModel.cs" />
-    <Compile Include="ViewModels\SettingsViewModel.cs" />
-    <Compile Include="ViewModels\UserViewModel.cs" />
-    <Compile Include="Views\UserControlBaseReportPage.xaml.cs">
+    <Compile Include="Servers\IPathService.cs" />
+    <Compile Include="Reports\ViewModels\BaseReportPageViewModel.cs" />
+    <Compile Include="Reports\ViewModels\EMIReportViewModel.cs" />
+    <Compile Include="Reports\ViewModels\EMISetupViewModel.cs" />
+    <Compile Include="Main\ViewModels\MainSettingsViewModel.cs" />
+    <Compile Include="Main\ViewModels\MainViewModel.cs" />
+    <Compile Include="Reports\ViewModels\ReportHeaderViewModel.cs" />
+    <Compile Include="Reports\ViewModels\ReportTemplateViewModel.cs" />
+    <Compile Include="Main\ViewModels\ReturnLineSingleViewModel.cs" />
+    <Compile Include="Main\ViewModels\ReturnLineViewModel.cs" />
+    <Compile Include="Main\ViewModels\SettingsViewModel.cs" />
+    <Compile Include="Main\ViewModels\UserViewModel.cs" />
+    <Compile Include="Reports\Views\UserControlBaseReportPage.xaml.cs">
       <DependentUpon>UserControlBaseReportPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Docx2Pdf.cs" />
-    <Compile Include="Views\UserControlBaseSettings.xaml.cs">
+    <Compile Include="Utils\Docx2Pdf.cs" />
+    <Compile Include="Main\Views\UserControlBaseSettings.xaml.cs">
       <DependentUpon>UserControlBaseSettings.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Views\UserControlEMIReportPage.xaml.cs">
+    <Compile Include="Reports\Views\UserControlEMIReportPage.xaml.cs">
       <DependentUpon>UserControlEMIReportPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Views\UserControlInputBox.xaml.cs">
+    <Compile Include="Main\Views\UserControlInputBox.xaml.cs">
       <DependentUpon>UserControlInputBox.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Views\UserControlReturnLineSingle.xaml.cs">
+    <Compile Include="Main\Views\UserControlReturnLineSingle.xaml.cs">
       <DependentUpon>UserControlReturnLineSingle.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Views\WindowEMIReportSetup.xaml.cs">
+    <Compile Include="Reports\Views\WindowEMIReportSetup.xaml.cs">
       <DependentUpon>WindowEMIReportSetup.xaml</DependentUpon>
     </Compile>
-    <Compile Include="ImageUtils.cs" />
-    <Compile Include="ReportUtils.cs" />
-    <Compile Include="Views\WindowMainSettings.xaml.cs">
+    <Compile Include="Utils\Image.cs" />
+    <Compile Include="Utils\Report.cs" />
+    <Compile Include="Main\Views\WindowMainSettings.xaml.cs">
       <DependentUpon>WindowMainSettings.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Views\UserControlReportHeader.xaml.cs">
+    <Compile Include="Reports\Views\UserControlReportHeader.xaml.cs">
       <DependentUpon>UserControlReportHeader.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Views\UserControlReportPictures.xaml.cs">
+    <Compile Include="Reports\Views\UserControlReportPictures.xaml.cs">
       <DependentUpon>UserControlReportPictures.xaml</DependentUpon>
     </Compile>
     <Compile Include="Resources.Designer.cs">
@@ -161,50 +166,54 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <Compile Include="Views\UserControlSetting.xaml.cs">
+    <Compile Include="Main\Views\UserControlSetting.xaml.cs">
       <DependentUpon>UserControlSetting.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Views\WindowReportTemplate.xaml.cs">
+    <Compile Include="Reports\Views\WindowReportTemplate.xaml.cs">
       <DependentUpon>WindowReportTemplate.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Views\WindowReturnLine.xaml.cs">
+    <Compile Include="Main\Views\WindowReturnLine.xaml.cs">
       <DependentUpon>WindowReturnLine.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Views\WindowTestPdf.xaml.cs">
+    <Compile Include="Main\Views\WindowTestPdf.xaml.cs">
       <DependentUpon>WindowTestPdf.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Views\UserControlDataGrid.xaml.cs">
+    <Compile Include="Reports\Views\UserControlDataGrid.xaml.cs">
       <DependentUpon>UserControlDataGrid.xaml</DependentUpon>
     </Compile>
+    <Page Include="Reports\Views\WindowMainReport.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="Resources\SettingTemplates.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Views\UserControlInputBox.xaml">
+    <Page Include="Main\Views\UserControlInputBox.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Views\UserControlReturnLineSingle.xaml">
+    <Page Include="Main\Views\UserControlReturnLineSingle.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Views\WindowATE.xaml">
+    <Page Include="Reports\Views\WindowATE.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Views\UserControlBaseReportPage.xaml">
+    <Page Include="Reports\Views\UserControlBaseReportPage.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Views\UserControlBaseSettings.xaml">
+    <Page Include="Main\Views\UserControlBaseSettings.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Views\UserControlEMIReportPage.xaml">
+    <Page Include="Reports\Views\UserControlEMIReportPage.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Views\WindowEMIReportSetup.xaml">
+    <Page Include="Reports\Views\WindowEMIReportSetup.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -216,52 +225,52 @@
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="Views\WindowATE.xaml.cs">
+    <Compile Include="Reports\Views\WindowATE.xaml.cs">
       <DependentUpon>WindowATE.xaml</DependentUpon>
     </Compile>
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Page Include="Views\WindowMainSettings.xaml">
+    <Page Include="Main\Views\WindowMainSettings.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Views\WindowPopup.xaml">
+    <Page Include="Main\Views\WindowPopup.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Views\UserControlReportHeader.xaml">
+    <Page Include="Reports\Views\UserControlReportHeader.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Views\UserControlReportPictures.xaml">
+    <Page Include="Reports\Views\UserControlReportPictures.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Views\UserControlSetting.xaml">
+    <Page Include="Main\Views\UserControlSetting.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Views\WindowReportTemplate.xaml">
+    <Page Include="Reports\Views\WindowReportTemplate.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Views\WindowReturnLine.xaml">
+    <Page Include="Main\Views\WindowReturnLine.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Views\WindowTestPdf.xaml">
+    <Page Include="Main\Views\WindowTestPdf.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Views\UserControlDataGrid.xaml">
+    <Page Include="Reports\Views\UserControlDataGrid.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Views\WindowPopup.xaml.cs">
+    <Compile Include="Main\Views\WindowPopup.xaml.cs">
       <DependentUpon>WindowPopup.xaml</DependentUpon>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs">
@@ -278,7 +287,7 @@
     </EmbeddedResource>
     <None Include=".editorconfig" />
     <None Include="NLog.config">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="ORT一键报告_TemporaryKey.pfx" />
     <None Include="Properties\Settings.settings">
@@ -380,6 +389,10 @@
     <PackageReference Include="System.Text.Json">
       <Version>10.0.8</Version>
     </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Plans\ViewModels\" />
+    <Folder Include="Plans\Views\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

@@ -1,0 +1,15 @@
+﻿using System.Windows;
+
+namespace ORT一键报告.Reports.Views
+{
+    /// <summary>
+    /// EMIReportSetup.xaml 的交互逻辑
+    /// </summary>
+    public partial class EMIReportSetup : Window
+    {
+        public EMIReportSetup()
+        {
+            InitializeComponent();
+        }
+    }
+}

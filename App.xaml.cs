@@ -3,6 +3,7 @@ using NLog;
 using System;
 using System.Windows;
 using ORT一键报告.ViewModels;
+using ORT一键报告.Reports.ViewModels;
 
 namespace ORT一键报告
 {
@@ -24,7 +25,7 @@ namespace ORT一键报告
                 services.AddTransient<EMIReportViewModel>();
                 services.AddTransient<BaseReportPageViewModel>();
                 services.AddSingleton<SettingsViewModel>();
-                services.AddSingleton<IService, Service>();
+                services.AddSingleton<IPathService, PathService>();
                 ServiceProvider serviceProvider = services.BuildServiceProvider();
 
             }

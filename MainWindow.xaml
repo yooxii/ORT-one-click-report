@@ -4,82 +4,47 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ORT一键报告"
-        xmlns:sys="clr-namespace:System;assembly=mscorlib"
+        xmlns:sys="clr-namespace:System;assembly=mscorlib" xmlns:viewmodels="clr-namespace:ORT一键报告.ViewModels" d:DataContext="{d:DesignInstance Type=viewmodels:MainViewModel}"
         mc:Ignorable="d"
-        xmlns:viewmodels="clr-namespace:ORT一键报告.ViewModels"
-        d:DataContext="{d:DesignInstance Type=viewmodels:MainViewModel}"
-        Title="{Binding Title}" Height="640" Width="1100" MinHeight="400" MinWidth="600" WindowStartupLocation="CenterScreen">
-
-    <Window.Resources>
-        <!--Create list of enumeration values-->
-        <ObjectDataProvider x:Key="RpstatusEnum" MethodName="GetValues" ObjectType="{x:Type sys:Enum}">
-            <ObjectDataProvider.MethodParameters>
-                <x:Type Type="local:ReportStatus" />
-            </ObjectDataProvider.MethodParameters>
-        </ObjectDataProvider>
-    </Window.Resources>
+        Title="{Binding Title}" Height="800" Width="1200" MinHeight="400" MinWidth="600" WindowStartupLocation="CenterScreen">
 
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="20" />
-            <RowDefinition />
-            <RowDefinition Height="20" />
+            <RowDefinition Height="auto"/>
+            <RowDefinition/>
         </Grid.RowDefinitions>
-        <Menu x:Name="_Menu" Grid.Row="0">
-            <MenuItem Header="文件">
-                <MenuItem Header="新建" />
-                <MenuItem Header="打开" />
-            </MenuItem>
-            <MenuItem Header="选项">
-                <MenuItem Header="重置" />
-                <MenuItem Header="设置" Click="MenuItem_MainSetup_Click"/>
-            </MenuItem>
-            <MenuItem Header="工具">
-                <MenuItem Header="ATE数据" Click="MenuItem_ATE_Click" />
-                <MenuItem Header="报告模板" Click="MenuItem_ReportTemplate_Click"/>
-                <MenuItem Header="回线转移单" Click="MenuItem_ReturnLine_Click"/>
-            </MenuItem>
-            <MenuItem Header="帮助" >
-                
-            </MenuItem>
-            <!--<MenuItem Header="EMF测试" Command="{Binding EMFTestCommand}"/>-->
+        <Menu>
+            <MenuItem Header="文件"></MenuItem>
+            <MenuItem Header="退出" Click="MenuItem_Quit_Click"/>
         </Menu>
-        <Grid Grid.Row="1">
+        <Grid Grid.Row="1" Margin="100">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition Width="300"/>
+                <ColumnDefinition Width="30"/>
+                <ColumnDefinition Width="300"/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
-                <RowDefinition Height="35" />
-                <RowDefinition />
+                <RowDefinition/>
+                <RowDefinition Height="200"/>
+                <RowDefinition Height="20"/>
+                <RowDefinition Height="200"/>
+                <RowDefinition/>
             </Grid.RowDefinitions>
-            <Grid>
-                <Grid Height="30" VerticalAlignment="Top" Margin="10,3,0,0">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="65*" MaxWidth="65" MinWidth="65" />
-                        <ColumnDefinition Width="650*" MinWidth="200" />
-                        <ColumnDefinition Width="65*" MinWidth="65" />
-                        <ColumnDefinition Width="65*" MinWidth="65" />
-                    </Grid.ColumnDefinitions>
-                    <Label Content="报告路径" />
-                    <TextBox x:Name="text_rootReportPath" Text="{Binding ReportPath}" Grid.Column="1" VerticalContentAlignment="Center" TextWrapping="WrapWithOverflow" ToolTip="点击浏览来选择" />
-                    <Button x:Name="btn_rootpath_t" Content="浏览" Cursor="Hand" Command="{Binding SelectReportPathCommand}" Margin="3,0,3,0" Grid.Column="2" />
-                    <Button x:Name="btn_readReport_t" Content="一键报告" Cursor="Hand" Click="DoReport_Click" Margin="3,0,3,0" Grid.Column="3" />
-                </Grid>
+            <Grid Grid.Row="1" Grid.Column="1">
+                <Button Content="一键报告" FontSize="32" FontWeight="ExtraBlack" Click="Button_YiJianBaoGao_Click"/>
             </Grid>
-            <TabControl Margin="10,3,10,3" Grid.Row="1" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
-                <TabItem Header="Thermal Shock">
-                    <local:BaseReportPage x:Name="thermalshockPage" ReportType="Thermal Shock" TestTime="1" />
-                </TabItem>
-                <TabItem Header="Burn In">
-                    <local:BaseReportPage x:Name="burninPage" ReportType="Burn In" TestTime="7" />
-                </TabItem>
-                <TabItem Header="EMI">
-                    <local:EMIReportPage x:Name="emiPage" ReportType="EMI" TestTime="1" />
-                </TabItem>
-            </TabControl>
+            <Grid Grid.Row="1" Grid.Column="3">
+                <Button Content="计划管理" FontSize="32" FontWeight="ExtraBlack" Click="Button_Plans_Click"/>
+            </Grid>
+            <Grid Grid.Row="3" Grid.Column="1">
+                <Button Content="ORT" FontSize="32" FontWeight="ExtraBlack"/>
+            </Grid>
+            <Grid Grid.Row="3" Grid.Column="3">
+                <Button Content="ORT" FontSize="32" FontWeight="ExtraBlack"/>
+            </Grid>
         </Grid>
-        <StatusBar Grid.Row="2" Margin="5,0,5,0" Visibility="Collapsed">
-            <StatusBarItem x:Name="StatusBarMsg" Content="请选择" />
-            <StatusBarItem HorizontalAlignment="Right">
-                <ProgressBar x:Name="StatusProgressBar" IsIndeterminate="True" Width="400" Height="15" Visibility="Hidden" />
-            </StatusBarItem>
-        </StatusBar>
     </Grid>
+    
 </Window>

@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using OfficeOpenXml;
 using OfficeOpenXml.Drawing;
+using ORT一键报告.Reports.Views;
 using System.Collections.Generic;
 using System.Windows.Media;
 
