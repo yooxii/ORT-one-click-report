@@ -4,6 +4,7 @@ using OfficeOpenXml;
 using OfficeOpenXml.Style;
 using ORT一键报告.Models;
 using ORT一键报告.Reports.Views;
+using ORT一键报告.Services;
 using ORT一键报告.Utils;
 using ORT一键报告.ViewModels;
 using System;
@@ -421,7 +422,7 @@ namespace ORT一键报告.Reports.ViewModels
 
             // 插入数据的压缩包
             string zipPath = System.IO.Path.Combine(DataPath, $"{datas[0].Model}.zip");
-            File_.CreateFilteredZip(DataPath, zipPath, @"\.pdf$");
+            FileService.CreateFilteredZip(DataPath, zipPath, @"\.pdf$");
             string iconDir = System.IO.Path.Combine(WindowMainReport.TemplateDir, "ZipEMF");
             if (!Directory.Exists(iconDir))
                 Directory.CreateDirectory(iconDir);

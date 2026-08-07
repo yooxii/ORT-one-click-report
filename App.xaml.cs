@@ -4,6 +4,7 @@ using System;
 using System.Windows;
 using ORT一键报告.ViewModels;
 using ORT一键报告.Reports.ViewModels;
+using ORT一键报告.Services;
 
 namespace ORT一键报告
 {

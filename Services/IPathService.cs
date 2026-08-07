@@ -1,4 +1,4 @@
-﻿namespace ORT一键报告
+﻿namespace ORT一键报告.Services
 {
     public interface IPathService
     {

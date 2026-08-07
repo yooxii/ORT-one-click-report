@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:ORT一键报告"
         xmlns:sys="clr-namespace:System;assembly=mscorlib" xmlns:viewmodels="clr-namespace:ORT一键报告.ViewModels" d:DataContext="{d:DesignInstance Type=viewmodels:MainViewModel}"
         mc:Ignorable="d"
-        Title="{Binding Title}" Height="800" Width="1200" MinHeight="400" MinWidth="600" WindowStartupLocation="CenterScreen">
+        Title="{Binding Title}" Height="400" Width="600" MinHeight="400" MinWidth="600" WindowStartupLocation="CenterScreen">
 
     <Grid>
         <Grid.RowDefinitions>
@@ -17,20 +17,20 @@
             <MenuItem Header="文件"></MenuItem>
             <MenuItem Header="退出" Click="MenuItem_Quit_Click"/>
         </Menu>
-        <Grid Grid.Row="1" Margin="100">
+        <Grid Grid.Row="1" Margin="5">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition/>
-                <ColumnDefinition Width="300"/>
+                <ColumnDefinition Width="1*"/>
+                <ColumnDefinition Width="3*"/>
                 <ColumnDefinition Width="30"/>
-                <ColumnDefinition Width="300"/>
-                <ColumnDefinition/>
+                <ColumnDefinition Width="3*"/>
+                <ColumnDefinition Width="1*"/>
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
-                <RowDefinition/>
-                <RowDefinition Height="200"/>
+                <RowDefinition Height="1*"/>
+                <RowDefinition Height="4*"/>
                 <RowDefinition Height="20"/>
-                <RowDefinition Height="200"/>
-                <RowDefinition/>
+                <RowDefinition Height="4*"/>
+                <RowDefinition Height="1*"/>
             </Grid.RowDefinitions>
             <Grid Grid.Row="1" Grid.Column="1">
                 <Button Content="一键报告" FontSize="32" FontWeight="ExtraBlack" Click="Button_YiJianBaoGao_Click"/>

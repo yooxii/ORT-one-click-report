@@ -4,7 +4,7 @@ using System;
 using System.IO;
 using System.Linq;
 
-namespace ORT一键报告
+namespace ORT一键报告.Utils
 {
     public class Docx2Pdf
     {
@@ -68,6 +68,11 @@ namespace ORT一键报告
                 foreach (var file in files)
                 {
                     string targetPath = file.Replace("docx", "pdf");
+
+                    if (File.Exists(targetPath))
+                    {
+                        continue;
+                    }
 
                     wordDoc = wordApp.Documents.Open(file);
 
