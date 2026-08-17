@@ -1,13 +1,14 @@
-﻿using System;
+﻿using ORT一键报告.Utils;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace ORT一键报告.Utils
+namespace ORT一键报告.Services
 {
-    internal static class File_
+    public static class FileService
     {
 
         /// <summary>

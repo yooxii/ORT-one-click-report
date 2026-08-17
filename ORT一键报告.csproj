@@ -115,11 +115,11 @@
     <Compile Include="Converters\SettingTemplateSelector.cs" />
     <Compile Include="Models\Report.cs" />
     <Compile Include="Models\Settings.cs" />
-    <Compile Include="Utils\File_.cs" />
+    <Compile Include="Services\FileService.cs" />
     <Compile Include="Utils\RelayCommand.cs" />
-    <Compile Include="Servers\PathService.cs" />
+    <Compile Include="Services\PathService.cs" />
     <Compile Include="Models\User.cs" />
-    <Compile Include="Servers\IPathService.cs" />
+    <Compile Include="Services\IPathService.cs" />
     <Compile Include="Services\ReportService.cs" />
     <Compile Include="Utils\SmartTableExtractor.cs" />
     <Compile Include="Reports\ViewModels\BaseReportPageViewModel.cs" />

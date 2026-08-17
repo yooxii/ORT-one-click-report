@@ -1,7 +1,7 @@
 ﻿using Microsoft.Win32;
 using System.IO;
 
-namespace ORT一键报告
+namespace ORT一键报告.Services
 {
     public class PathService : IPathService
     {
