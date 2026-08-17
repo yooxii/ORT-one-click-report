@@ -1,7 +1,9 @@
-﻿using NLog;
+﻿using Microsoft.Extensions.DependencyInjection;
+using NLog;
 using OfficeOpenXml;
 using ORT一键报告.Models;
 using ORT一键报告.Reports.ViewModels;
+using ORT一键报告.Services;
 using ORT一键报告.ViewModels;
 using System;
 using System.Collections.Generic;
@@ -48,11 +50,8 @@ namespace ORT一键报告.Reports.Views
         public BaseReportPage()
         {
             InitializeComponent();
-            PathService service = new();
-            BaseReportPageVM = new(service)
-            {
-                ReportType = ReportType
-            };
+            BaseReportPageVM = App.ServiceProvider.GetRequiredService<BaseReportPageViewModel>();
+            BaseReportPageVM.ReportType = ReportType;
             ReportHeaderInfo = BaseReportPageVM.ReportHeaderVM;
             DataContext = BaseReportPageVM;
         }
@@ -73,7 +72,8 @@ namespace ORT一键报告.Reports.Views
                 BaseReportPageVM.DetailsList = [];
             }
             BaseReportPageVM.DetailsList.Clear();
-            UUTInfoFromExcel _UUTInfos = WindowMainReport.UUTInfos;
+            ReportService reportService = App.ServiceProvider.GetRequiredService<ReportService>();
+            UUTInfoFromExcel _UUTInfos = reportService.UUTInfos;
             foreach (TestItemInfo testItem in _UUTInfos.TestItems)
             {
                 if (testItem.TestItemName.ToLower().Contains(ReportType.ToLower()))
@@ -105,7 +105,14 @@ namespace ORT一键报告.Reports.Views
         public void ReadReportHeader()
         {
             _logger.Info($"读取{ReportType}报告表头...");
-            FileInfo thermalFileInfo = new(GetTemplatePath(WindowMainReport.RootPath, ReportType));
+            ReportService reportService = App.ServiceProvider.GetRequiredService<ReportService>();
+            string templatePath = GetTemplatePath(reportService.RootPath, ReportType);
+            if (string.IsNullOrWhiteSpace(templatePath) || !File.Exists(templatePath))
+            {
+                _logger.Warn($"未找到{ReportType}报告模板，跳过读取该报告表头（请检查{reportService.RootPath}下的Report文件夹）");
+                return;
+            }
+            FileInfo thermalFileInfo = new(templatePath);
             using (ExcelPackage package = new(thermalFileInfo))
             {
                 ExcelWorksheet ws = package.Workbook.Worksheets[0];

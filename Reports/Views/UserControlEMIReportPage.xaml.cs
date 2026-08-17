@@ -1,7 +1,9 @@
-﻿using NLog;
+﻿using Microsoft.Extensions.DependencyInjection;
+using NLog;
 using OfficeOpenXml;
 using ORT一键报告.Models;
 using ORT一键报告.Reports.ViewModels;
+using ORT一键报告.Services;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -44,8 +46,7 @@ namespace ORT一键报告.Reports.Views
         public EMIReportPage()
         {
             InitializeComponent();
-            PathService service = new();
-            emiVM = new(service);
+            emiVM = App.ServiceProvider.GetRequiredService<EMIReportViewModel>();
             ReportHeaderInfo = emiVM.ReportHeaderVM;
             DataContext = emiVM;
         }
@@ -55,7 +56,8 @@ namespace ORT一键报告.Reports.Views
         public void ReadReportHeader()
         {
             _logger.Info($"读取{ReportType}报告表头...");
-            FileInfo fileInfo = new(GetTemplatePath(WindowMainReport.RootPath, ReportType));
+            ReportService reportService = App.ServiceProvider.GetRequiredService<ReportService>();
+            FileInfo fileInfo = new(GetTemplatePath(reportService.RootPath, ReportType));
             using (ExcelPackage package = new(fileInfo))
             {
                 ExcelWorksheet ws = package.Workbook.Worksheets[0];
@@ -63,7 +65,7 @@ namespace ORT一键报告.Reports.Views
                 ReadReportHeaderInfo(ws, ReportHeaderInfo);
                 _logger.Info($"{ReportType}表头读取完成");
             }
-            UUTInfoFromExcel _UUTInfos = WindowMainReport.UUTInfos;
+            UUTInfoFromExcel _UUTInfos = reportService.UUTInfos;
             emiVM.DC = _UUTInfos.DC;
             emiVM.Version = _UUTInfos.Revision;
             emiVM.WorkOrder = _UUTInfos.WorkOrder;

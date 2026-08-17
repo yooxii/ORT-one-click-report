@@ -3,7 +3,7 @@ using NLog;
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
 using ORT一键报告.Models;
-using ORT一键报告.Reports.Views;
+using ORT一键报告.Services;
 using ORT一键报告.Utils;
 using ORT一键报告.ViewModels;
 using System;
@@ -21,6 +21,7 @@ namespace ORT一键报告.Reports.ViewModels
     public partial class EMIReportViewModel : ObservableObject
     {
         private readonly IPathService _emiService;
+        private readonly ReportService _reportService;
         private readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
         private readonly EMIUUTdataInfo emiUUTdatasInfo = new();
@@ -89,11 +90,12 @@ namespace ORT一键报告.Reports.ViewModels
             set => SetProperty(ref _remark, value);
         }
 
-        public EMIReportViewModel(IPathService service)
+        public EMIReportViewModel(IPathService service, ReportService reportService)
         {
             _emiService = service;
+            _reportService = reportService;
             ReportHeaderVM = new();
-            EMISetupVM = new(service);
+            EMISetupVM = new(service, reportService);
             EMISetupVM.TemplatePathChanged += (newPath) => TemplatePath = newPath;
         }
 
@@ -201,7 +203,7 @@ namespace ORT一键报告.Reports.ViewModels
         private string GetEMITemplatePath(EMIUUTdataInfo emiUUTdatasInfo)
         {
             string[] excelExtensions = [".xlsx", ".xls", ".xlsm"];
-            string[] excelFiles = Directory.GetFiles(WindowMainReport.TemplateDir, "*.*", SearchOption.AllDirectories).Where(file => excelExtensions.Contains(Path.GetExtension(file))).ToArray();
+            string[] excelFiles = Directory.GetFiles(_reportService.TemplateDir, "*.*", SearchOption.AllDirectories).Where(file => excelExtensions.Contains(Path.GetExtension(file))).ToArray();
             string tmp = emiUUTdatasInfo.GetUUTFileName(2);
             foreach (string excelfile in excelFiles)
             {
@@ -422,7 +424,7 @@ namespace ORT一键报告.Reports.ViewModels
             // 插入数据的压缩包
             string zipPath = System.IO.Path.Combine(DataPath, $"{datas[0].Model}.zip");
             File_.CreateFilteredZip(DataPath, zipPath, @"\.pdf$");
-            string iconDir = System.IO.Path.Combine(WindowMainReport.TemplateDir, "ZipEMF");
+            string iconDir = System.IO.Path.Combine(_reportService.TemplateDir, "ZipEMF");
             if (!Directory.Exists(iconDir))
                 Directory.CreateDirectory(iconDir);
             string iconPath = System.IO.Path.Combine(iconDir, $"{datas[0].Model}.zip.emf");
@@ -464,9 +466,9 @@ namespace ORT一键报告.Reports.ViewModels
             var setups = SettingsViewModel.ParseJson(ws_setup.Cells["A1"].Text);
             wb.Worksheets.Delete(ws_setup);
 
-            await Task.Run(() => WriteDatas(ws, setups, emiDatas, WindowMainReport.UUTInfos));
+            await Task.Run(() => WriteDatas(ws, setups, emiDatas, _reportService.UUTInfos));
 
-            string savePath = _emiService.SavePathDialog("选择保存路径", "2.1 Conducted EMI Measurement", "EMI报告|*.xlsx", WindowMainReport.RootPath) ?? Directory.GetCurrentDirectory() + "2.1 Conducted EMI Measurement.xlsx";
+            string savePath = _emiService.SavePathDialog("选择保存路径", "2.1 Conducted EMI Measurement", "EMI报告|*.xlsx", _reportService.RootPath) ?? Directory.GetCurrentDirectory() + "2.1 Conducted EMI Measurement.xlsx";
             package.SaveAs(savePath);
             MessageBox.Show($"报告已保存到{savePath}", "保存成功", MessageBoxButton.OK, MessageBoxImage.Information);
         }

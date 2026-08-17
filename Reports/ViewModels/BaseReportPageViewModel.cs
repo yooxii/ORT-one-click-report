@@ -1,9 +1,11 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Win32;
 using NLog;
 using OfficeOpenXml;
 using ORT一键报告.Models;
 using ORT一键报告.Reports.Views;
+using ORT一键报告.Services;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -16,9 +18,10 @@ using static ORT一键报告.Utils.Report;
 
 namespace ORT一键报告.Reports.ViewModels
 {
-    public partial class BaseReportPageViewModel(IPathService service) : ObservableObject
+    public partial class BaseReportPageViewModel(IPathService service, ReportService reportService) : ObservableObject
     {
         private readonly IPathService _Service = service;
+        private readonly ReportService _reportService = reportService;
         private readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
         public ObservableCollection<ResultDetails> DetailsList { get; set; } = [];
@@ -53,7 +56,7 @@ namespace ORT一键报告.Reports.ViewModels
             {
                 string currentPath = Directory.GetCurrentDirectory();
                 FileInfo reportFI = new(GetTemplatePath(Path.Combine(currentPath, "Templates"), ReportType));
-                string initDir = Path.GetDirectoryName(GetTemplatePath(WindowMainReport.RootPath, ReportType));
+                string initDir = Path.GetDirectoryName(GetTemplatePath(_reportService.RootPath, ReportType));
                 SaveFileDialog saveFileDialog = new()
                 {
                     FileName = reportFI.Name,
@@ -120,8 +123,8 @@ namespace ORT一键报告.Reports.ViewModels
 
                 // 3.图片和OLE对象
                 _logger.Info("处理图片和OLE对象");
-                ExcelAddPicture(ws, "Issue_Photos", reportHeaderInfo.Issue_Photos_Pics, ws_setup.Cells["A11"].Text, ReportType);
-                ExcelAddPicture(ws, "Test_Setup", reportHeaderInfo.Test_Setup_Pics, ws_setup.Cells["A12"].Text, ReportType);
+                ExcelAddPicture(ws, "Issue_Photos", reportHeaderInfo.Issue_Photos_Pics, ws_setup.Cells["A11"].Text, ReportType, _reportService.TempPath);
+                ExcelAddPicture(ws, "Test_Setup", reportHeaderInfo.Test_Setup_Pics, ws_setup.Cells["A12"].Text, ReportType, _reportService.TempPath);
 
                 string ate_Addr = ws_setup.Cells["A9"].Text;
                 EmbedOleObjectWithEpplus(ws, ATEPath, ate_Addr);

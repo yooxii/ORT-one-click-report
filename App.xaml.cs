@@ -1,9 +1,11 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using NLog;
+using ORT一键报告.Reports.ViewModels;
+using ORT一键报告.Reports.Views;
+using ORT一键报告.Services;
+using ORT一键报告.ViewModels;
 using System;
 using System.Windows;
-using ORT一键报告.ViewModels;
-using ORT一键报告.Reports.ViewModels;
 
 namespace ORT一键报告
 {
@@ -14,6 +16,8 @@ namespace ORT一键报告
     {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
+        public static IServiceProvider ServiceProvider { get; private set; }
+
         protected override void OnStartup(StartupEventArgs e)
         {
             logger.Info("ORT一键报告程序启动");
@@ -22,12 +26,22 @@ namespace ORT一键报告
                 base.OnStartup(e);
 
                 ServiceCollection services = new();
-                services.AddTransient<EMIReportViewModel>();
-                services.AddTransient<BaseReportPageViewModel>();
-                services.AddSingleton<SettingsViewModel>();
+                // Services
                 services.AddSingleton<IPathService, PathService>();
-                ServiceProvider serviceProvider = services.BuildServiceProvider();
+                services.AddSingleton<ReportService>();
 
+                // ViewModels
+                services.AddTransient<MainViewModel>();
+                services.AddTransient<MainReportViewModel>();
+                services.AddTransient<BaseReportPageViewModel>();
+                services.AddTransient<EMIReportViewModel>();
+                services.AddTransient<EMISetupViewModel>();
+                services.AddSingleton<SettingsViewModel>();
+                services.AddTransient<MainSettingsViewModel>();
+                services.AddTransient<ReturnLineViewModel>();
+                services.AddTransient<ReturnLineSingleViewModel>();
+
+                ServiceProvider = services.BuildServiceProvider();
             }
             catch (Exception ex)
             {

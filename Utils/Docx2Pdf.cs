@@ -10,24 +10,16 @@ namespace ORT一键报告
     {
         private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
+        /// <summary>
+        /// 转换单个 Word 文档为 PDF
+        /// </summary>
         public static void ConvertToPdf(string sourcePath, string targetPath)
         {
-            // 1. 创建 Word 应用程序实例
             Application wordApp = new();
-            Document wordDoc = null;
             try
             {
-                // 2. 设置为不可见模式（后台静默运行）
                 wordApp.Visible = false;
-
-                // 3. 打开指定的 Word 文档
-                wordDoc = wordApp.Documents.Open(sourcePath);
-
-                // 4. 调用导出功能，将文档保存为 PDF 格式
-                // WdExportFormat.wdExportFormatPDF 是导出为 PDF 的枚举常量
-                wordDoc.ExportAsFixedFormat(targetPath, WdExportFormat.wdExportFormatPDF);
-
-                _logger.Info("转换成功！PDF 已保存至: {0}", targetPath);
+                ConvertSingleFile(wordApp, sourcePath, targetPath);
             }
             catch (Exception ex)
             {
@@ -35,25 +27,17 @@ namespace ORT一键报告
             }
             finally
             {
-                // 5. 无论成功与否，都要确保关闭文档和退出 Word 程序
-                // 关闭文档，不保存对原文档的修改
-                wordDoc?.Close(WdSaveOptions.wdDoNotSaveChanges);
                 wordApp.Quit();
-
-                // 6. 释放 COM 对象，防止后台残留 WINWORD.EXE 进程
-                if (wordDoc != null)
-                {
-                    System.Runtime.InteropServices.Marshal.ReleaseComObject(wordDoc);
-                }
-
                 System.Runtime.InteropServices.Marshal.ReleaseComObject(wordApp);
             }
         }
 
+        /// <summary>
+        /// 转换指定目录下所有 docx 文件为 PDF
+        /// </summary>
         public static void ConvertToPdf(string sourceDir)
         {
             Application wordApp = new();
-            Document wordDoc = null;
             wordApp.Visible = false;
             _logger.Info("{0} 转换PDF开始", sourceDir);
             try
@@ -68,13 +52,7 @@ namespace ORT一键报告
                 foreach (var file in files)
                 {
                     string targetPath = file.Replace("docx", "pdf");
-
-                    wordDoc = wordApp.Documents.Open(file);
-
-                    wordDoc.ExportAsFixedFormat(targetPath, WdExportFormat.wdExportFormatPDF);
-
-                    _logger.Info("转换成功！PDF 已保存至: {0}", targetPath);
-                    wordDoc?.Close(WdSaveOptions.wdDoNotSaveChanges);
+                    ConvertSingleFile(wordApp, file, targetPath);
                 }
             }
             catch (Exception ex)
@@ -84,13 +62,29 @@ namespace ORT一键报告
             finally
             {
                 wordApp.Quit();
+                System.Runtime.InteropServices.Marshal.ReleaseComObject(wordApp);
+            }
+        }
 
+        /// <summary>
+        /// 使用已创建的 Word 应用程序实例转换单个文件
+        /// </summary>
+        private static void ConvertSingleFile(Application wordApp, string sourcePath, string targetPath)
+        {
+            Document wordDoc = null;
+            try
+            {
+                wordDoc = wordApp.Documents.Open(sourcePath);
+                wordDoc.ExportAsFixedFormat(targetPath, WdExportFormat.wdExportFormatPDF);
+                _logger.Info("转换成功！PDF 已保存至: {0}", targetPath);
+            }
+            finally
+            {
                 if (wordDoc != null)
                 {
+                    wordDoc.Close(WdSaveOptions.wdDoNotSaveChanges);
                     System.Runtime.InteropServices.Marshal.ReleaseComObject(wordDoc);
                 }
-
-                System.Runtime.InteropServices.Marshal.ReleaseComObject(wordApp);
             }
         }
 

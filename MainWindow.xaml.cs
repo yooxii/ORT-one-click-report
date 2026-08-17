@@ -1,5 +1,7 @@
-﻿using NLog;
+﻿using Microsoft.Extensions.DependencyInjection;
+using NLog;
 using OfficeOpenXml;
+using ORT一键报告.Main.Views;
 using ORT一键报告.Models;
 using ORT一键报告.Reports.Views;
 using ORT一键报告.ViewModels;
@@ -36,8 +38,8 @@ namespace ORT一键报告
             InitializeComponent();
             ExcelPackage.License.SetNonCommercialPersonal("Lucas");
 
-            SettingsVM = new SettingsViewModel();
-            MainVM = new();
+            SettingsVM = App.ServiceProvider.GetRequiredService<SettingsViewModel>();
+            MainVM = App.ServiceProvider.GetRequiredService<MainViewModel>();
             DataContext = MainVM;
 
             Closed += Window_Closed;
@@ -66,15 +68,20 @@ namespace ORT一键报告
             Close();
         }
 
+        private void MenuItem_ViewLog_Click(object sender, RoutedEventArgs e)
+        {
+            WindowLog windowLog = new()
+            {
+                Owner = this
+            };
+            windowLog.Show();
+        }
+
         private void Button_YiJianBaoGao_Click(object sender, RoutedEventArgs e)
         {
             WindowMainReport windowMainReport = new();
             windowMainReport.Show();
         }
 
-        private void Button_Plans_Click(object sender, RoutedEventArgs e)
-        {
-            
-        }
     }
 }

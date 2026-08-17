@@ -1,4 +1,5 @@
 ﻿using OfficeOpenXml;
+using ORT一键报告.Services;
 using ORT一键报告.ViewModels;
 using System;
 using System.Collections.Generic;
@@ -10,7 +11,7 @@ using System.Windows.Input;
 
 namespace ORT一键报告.Reports.ViewModels
 {
-    public partial class EMISetupViewModel(IPathService service) : SettingsViewModel
+    public partial class EMISetupViewModel(IPathService service, ReportService reportService) : SettingsViewModel
     {
         private readonly IPathService _emiService = service;
 
