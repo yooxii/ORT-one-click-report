@@ -1,0 +1,115 @@
+﻿==== FILE: e:\Desktop\ORT\plan\_2026.成品領用記錄.xlsx ====
+---- SHEET: [退管理表] dim=A1:U249
+R1: [1] | [2]ORT 課試驗成品領退管理表 | [3] | [4] | [5] | [6] | [7] | [8] | [9] | [10] | [11] | [12] | [13] | [14] | [15] | [16] | [17] | [18] | [19] | [20] | [21] | 
+R2: [1] | [2]說明: 1. 除 DMTBF 測.. | [3] | [4] | [5] | [6] | [7] | [8] | [9] | [10] | [11] | [12] | [13] | [14] | [15] | [16] | [17] | [18] | [19] | [20] | [21] | 
+R3: [1] | [2]領用/日期 | [3]領料單据號 | [4]機種名稱 | [5]測試項目 | [6]領出/數量 | [7]S/N | [8]D/C | [9]REV. | [10]Work Order | [11]回綫 RT 工令 | [12]回線/數量 | [13] 線別 | [14]回線/日期 | [15]入庫退料/單据號號 | [16]入庫/數量 | [17]入庫日期 | [18]备注 | [19] | [20] | [21] | 
+R4: [1] | [2]1月9日 | [3]T01260100183 | [4]FSF050-00CG | [5]ORT | [6]3 | [7]FSF050A0400CGB26.. | [8]2601 | [9]A04 | [10]AH00F50B0056P010.. | [11]RTAH2610002 | [12]3 | [13]P01 | [14]1月20日 | [15]T01260101695 | [16]3 | [17]1月21日 | [18] | [19] | [20] | [21] | 
+R5: [1] | [2]1月9日 | [3]T01260100184 | [4]POJ002-280G | [5]ORT | [6]3 | [7]5421JU11A6/5421J.. | [8]2601 | [9]D13 | [10]AH00J2800187P060.. | [11]RTAH2610003 | [12]3 | [13]P06 | [14]1月20日 | [15]T01260101490 | [16]3 | [17]1月21日 | [18] | [19] | [20] | [21] | 
+R6: [1] | [2]1月9日 | [3]T01260100187 | [4]OFN003-HF1G | [5]ORT | [6]3 | [7]ADG300101MW/ADG3.. | [8]2601 | [9]A0 | [10]AH00HF1G0061P080.. | [11]RTAH2610004 | [12]3 | [13]P08 | [14]1月20日 | [15] T01260201032 | [16]3 | [17]2月27日 | [18] | [19] | [20] | [21] | 
+R7: [1] | [2]1月9日 | [3]T01260100194 | [4]FSF059-00CG | [5]ORT | [6]3 | [7]FSF059A0400CGB26.. | [8]2602 | [9]A04 | [10]AH00F59B0040P010.. | [11]RTAH2610005 | [12]3 | [13]P01 | [14]1月20日 | [15]T01260101694 | [16]3 | [17]1月23日 | [18] | [19] | [20] | [21] | 
+R8: [1] | [2]1月9日 | [3]T01260100269 | [4]WAQ006-F90G | [5]ORT | [6]15 | [7] | [8]2602 | [9]03 | [10]AH00690G0020P040.. | [11] | [12] | [13]3C31 | [14] | [15]T01260300099 | [16]15 | [17]3月13日 | [18] | [19] | [20] | [21] | 
+R9: [1] | [2]1月9日 | [3]T01260100271 | [4]WAQ006-F90GB | [5]ORT | [6]15 | [7] | [8]2602 | [9]03 | [10]AH00690B0057P040.. | [11] | [12] | [13]3C31 | [14] | [15]T01260300099 | [16]15 | [17]3月13日 | [18] | [19] | [20] | [21] | 
+R10: [1] | [2]1月9日 | [3]T01260100270 | [4]WAQ006-F91GK | [5]ORT | [6]15 | [7] | [8]2602 | [9]03 | [10]AH00691K0008P040.. | [11] | [12] | [13]3C31 | [14] | [15]T01260300099 | [16]15 | [17]3月13日 | [18] | [19] | [20] | [21] | 
+R11: [1] | [2]1月13日 | [3]T01260100272 | [4]WAM019-F90GK | [5]ORT | [6]38 | [7] | [8]2602 | [9]3 | [10]AH00M1900318P040.. | [11] | [12] | [13]3C31 | [14] | [15]T01260300099 | [16]38 | [17]3月13日 | [18] | [19] | [20] | [21] | 
+R12: [1] | [2]1月13日 | [3]T01260100273 | [4]WAM019-F91GB | [5]ORT | [6]23 | [7] | [8]2603 | [9]1 | [10]AH00M91B0018P040.. | [11] | [12] | [13]3C31 | [14] | [15]T01260300099 | [16]23 | [17]3月13日 | [18] | [19] | [20] | [21] | 
+DRAWINGS: 42
+  drawing: name=Object 1 type=ExcelOleObject row=8 col=7
+  drawing: name=Object 3 type=ExcelOleObject row=9 col=7
+  drawing: name=Object 4 type=ExcelOleObject row=10 col=7
+  drawing: name=Object 6 type=ExcelOleObject row=11 col=7
+  drawing: name=Object 7 type=ExcelOleObject row=12 col=7
+  drawing: name=Object 8 type=ExcelOleObject row=13 col=7
+  drawing: name=Object 9 type=ExcelOleObject row=14 col=7
+  drawing: name=Object 11 type=ExcelOleObject row=25 col=7
+  drawing: name=Object 12 type=ExcelOleObject row=26 col=7
+  drawing: name=Object 14 type=ExcelOleObject row=27 col=7
+  drawing: name=Object 15 type=ExcelOleObject row=28 col=7
+  drawing: name=Object 16 type=ExcelOleObject row=29 col=7
+  drawing: name=Object 18 type=ExcelOleObject row=39 col=7
+  drawing: name=Object 19 type=ExcelOleObject row=38 col=7
+  drawing: name=Object 20 type=ExcelOleObject row=53 col=7
+  drawing: name=Object 23 type=ExcelOleObject row=57 col=7
+  drawing: name=Object 25 type=ExcelOleObject row=58 col=7
+  drawing: name=Object 28 type=ExcelOleObject row=59 col=7
+  drawing: name=Object 30 type=ExcelOleObject row=60 col=7
+  drawing: name=Object 32 type=ExcelOleObject row=61 col=7
+  drawing: name=Object 34 type=ExcelOleObject row=62 col=7
+  drawing: name=Object 36 type=ExcelOleObject row=67 col=7
+  drawing: name=Object 38 type=ExcelOleObject row=84 col=7
+  drawing: name=Object 59 type=ExcelOleObject row=86 col=7
+  drawing: name=Object 78 type=ExcelOleObject row=89 col=7
+  drawing: name=Object 79 type=ExcelOleObject row=90 col=7
+  drawing: name=Object 98 type=ExcelOleObject row=85 col=7
+  drawing: name=Object 101 type=ExcelOleObject row=98 col=7
+  drawing: name=Object 102 type=ExcelOleObject row=108 col=7
+  drawing: name=Object 121 type=ExcelOleObject row=109 col=7
+  drawing: name=Object 124 type=ExcelOleObject row=119 col=7
+  drawing: name=Object 143 type=ExcelOleObject row=120 col=7
+  drawing: name=Object 144 type=ExcelOleObject row=121 col=7
+  drawing: name=Object 145 type=ExcelOleObject row=137 col=7
+  drawing: name=Object 163 type=ExcelOleObject row=145 col=7
+  drawing: name=Object 165 type=ExcelOleObject row=159 col=7
+  drawing: name=Object 167 type=ExcelOleObject row=160 col=7
+  drawing: name=Object 169 type=ExcelOleObject row=201 col=7
+  drawing: name=Object 170 type=ExcelOleObject row=202 col=7
+  drawing: name=Object 191 type=ExcelOleObject row=229 col=7
+  drawing: name=Object 192 type=ExcelOleObject row=230 col=7
+  drawing: name=Object 193 type=ExcelOleObject row=231 col=7
+==== FILE: e:\Desktop\ORT\plan\_Y2026 ORT Test Schedule.xlsx ====
+---- SHEET: [Schedule] dim=A1:U583
+R1: [1] | [2] | [3]    Y2026 ORT Te.. | [4] | [5] | [6] | [7] | [8] | [9] | [10] | [11] | [12] | [13] | [14] | [15] | [16] | [17]總件數 | [18]Close/(已完成測試) | [19]Ongoing/(測試中……) | [20]Pending/(預排測試,暫無.. | [21]結案率 | 
+R2: [1] | [2] | [3] | [4] | [5] | [6] | [7] | [8] | [9] | [10] | [11] | [12] | [13] | [14] | [15] | [16] | [17] | [18] | [19] | [20] | [21] | 
+R3: [1] | [2]工作編號/Job No | [3]產品別/Product | [4]客戶別/Customer | [5]機種名/Part No | [6]階 段/Stage | [7]測試項目/Test Item | [8]樣品數/Sample Size | [9]試驗時間/Test Period | [10]負責人/Owner | [11]開始日期/Start Date | [12]結束日期/End Date | [13]完成狀況/Status | [14]上傳系統/Upload e-la.. | [15]備 考/Remark | [16] | [17]286 | [18]221 | [19]65 | [20]0 | [21]77.3% | 
+R4: [1] | [2]QRT260101 | [3]Charger | [4]AMZ | [5]WAR008-F90GB/AP4.. | [6]EVT | [7]LTOS (Amazon) | [8]50 | [9]1008 | [10]李剛 | [11]2025/1/2 | [12]2026/2/27 | [13]Close | [14]No | [15]DQ 送測 | [16] | [17] | [18] | [19] | [20] | [21] | 
+R5: [1] | [2]QRT260102 | [3]Sever | [4]SUPERMICRO | [5]FSB004-4B4G | [6]MP | [7]Harmonic | [8]5 | [9]1 | [10]李志斌 | [11]2026/1/2 | [12]2026/1/2 | [13]Close | [14]No | [15]OQC送測 | [16] | [17] | [18] | [19] | [20] | [21] | 
+R6: [1] | [2]QRT260103 | [3]Charger | [4]AMZ | [5]WAR008-F97GB/AP4.. | [6]EVT | [7]LTOS (Amazon) | [8]10 | [9]1008 | [10]李剛 | [11]2026/1/5 | [12]2026/3/3 | [13]Close | [14]No | [15]DQ 送測 | [16] | [17] | [18] | [19] | [20] | [21] | 
+R7: [1] | [2]QRT260104 | [3]Charger | [4]AMZ | [5]WAR008-F92GB/AP4.. | [6]EVT | [7]LTOS (Amazon) | [8]10 | [9]1008 | [10]李剛 | [11]2026/1/5 | [12]2026/3/3 | [13]Close | [14]No | [15]DQ 送測 | [16] | [17] | [18] | [19] | [20] | [21] | 
+R8: [1] | [2]QRT260105 | [3]Charger | [4]AMZ | [5]WAR008-F91GB/AP4.. | [6]EVT | [7]LTOS (Amazon) | [8]10 | [9]1008 | [10]李剛 | [11]2026/1/5 | [12]2026/3/3 | [13]Close | [14]No | [15]DQ 送測 | [16] | [17] | [18] | [19] | [20] | [21] | 
+R9: [1] | [2]QRT260106 | [3]Charger | [4]AMZ | [5]WAR008-F95GB/AP4.. | [6]EVT | [7]LTOS (Amazon) | [8]10 | [9]1008 | [10]李剛 | [11]2026/1/5 | [12]2026/3/3 | [13]Close | [14]No | [15]DQ 送測 | [16] | [17] | [18] | [19] | [20] | [21] | 
+R10: [1] | [2]QRT260107 | [3]Charger | [4]AMZ | [5]WAR008-F94GB/AP4.. | [6]EVT | [7]LTOS (Amazon) | [8]10 | [9]1008 | [10]李剛 | [11]2026/1/5 | [12]2026/3/3 | [13]Close | [14]No | [15]DQ 送測 | [16] | [17] | [18] | [19] | [20] | [21] | 
+R11: [1] | [2]QRT260108 | [3]Sever | [4]CISCO | [5]FSH018-7EAG | [6]RMA | [7]Burn In Test | [8]2 | [9]168 | [10]李剛 | [11]2026/1/7 | [12]2026/1/14 | [13]Close | [14]No | [15]QE 羅曉文:/FSH018A0.. | [16] | [17] | [18] | [19] | [20] | [21] | 
+R12: [1] | [2]RT260109 | [3]Sever | [4]#N/A | [5]FSF050-00CG | [6]MP | [7]ORT Rel Test For.. | [8]3 | [9]216 | [10]李剛/李志斌 | [11]2026/1/9 | [12]2026/1/18 | [13]Close | [14] | [15]AH00F50B0056P010.. | [16] | [17] | [18] | [19] | [20] | [21] | 
+DRAWINGS: 1
+  drawing: name=圖片 2 type=ExcelPicture row=1 col=2
+---- SHEET: [Test Items] dim=A1:H53
+R1: [1] | [2]測試人員維護設定 | [3] | [4] | [5] | [6] | [7] | [8] | 
+R2: [1] | [2] | [3] | [4] | [5] | [6] | [7] | [8] | 
+R3: [1] | [2]項次/No. | [3]試驗項目/Test Item | [4]試驗時間/Test Period.. | [5]負責人/Owner | [6]樣品處理/Dispose | [7]備 考/Remark | [8] | 
+R4: [1] | [2]1 | [3]Acoustic Noise T.. | [4]10 | [5]劉唐英 | [6]回線 | [7]以測試5臺為基礎計算,每臺測試時.. | [8] | 
+R5: [1] | [2]2 | [3]Adapter EMI/Drop.. | [4]24 | [5]劉唐英 | [6]報廢 | [7] | [8] | 
+R6: [1] | [2]3 | [3]Amazon All ORT T.. | [4]360 | [5]余軍平/劉唐英 | [6]報廢 | [7] | [8] | 
+R7: [1] | [2]4 | [3]Amazon Mechanica.. | [4]192 | [5]劉唐英/余軍平 | [6]報廢 | [7] | [8]360 | 
+R8: [1] | [2]5 | [3]For AMZ Burn In .. | [4]168 | [5]李志斌 | [6]回線 | [7] | [8] | 
+R9: [1] | [2]6 | [3]LTOS (Amazon) | [4]1008 | [5]李剛 | [6]報廢 | [7] | [8] | 
+R10: [1] | [2]7 | [3]For Dell ORT Tes.. | [4]226 | [5]李剛/李志斌/劉唐英 | [6]回線 | [7]Thermal Shock-->.. | [8] | 
+R11: [1] | [2]8 | [3]Google _All | [4]192 | [5]李志斌/劉唐英/李剛 | [6]報廢 | [7]樣品需保留一年才可以報廢.  | [8] | 
+R12: [1] | [2]9 | [3]Google_Burn In T.. | [4]192 | [5]李剛 | [6]報廢 | [7]樣品需保留一年才可以報廢.  | [8] | 
+DRAWINGS: 0
+---- SHEET: [Cust. Code] dim=A1:H92
+R1: [1] | [2]Customer Code | [3] | [4] | [5] | [6] | [7] | [8] | 
+R2: [1] | [2] | [3] | [4] | [5] | [6] | [7] | [8] | 
+R3: [1] | [2]Cust. Code | [3]ENDCUSTOMER | [4]PRODUCTTYPE | [5]PRODUCTTYPE | [6] | [7]Code | [8]Product Type | 
+R4: [1] | [2]02 | [3]HP | [4]PC | [5]PC | [6] | [7]AD | [8]Adapter | 
+R5: [1] | [2]03 | [3]IBM | [4]VRM | [5]VRM | [6] | [7]PC | [8]Desk top | 
+R6: [1] | [2]07 | [3]WISTRON | [4]FS | [5]Server | [6] | [7]FS | [8]Sever | 
+R7: [1] | [2]0A | [3]杭州協能科技 | [4]HSR | [5]HSR | [6] | [7]OT | [8]OP | 
+R8: [1] | [2]0R | [3]LITEON | [4]FS1 | [5]Server | [6] | [7]WA | [8]Charger | 
+R9: [1] | [2]11 | [3]NCR | [4]FS | [5]Server | [6] | [7]WL | [8]LED | 
+R10: [1] | [2]13 | [3]POWER | [4]LED | [5]LED | [6] | [7]VR | [8]VRM | 
+R11: [1] | [2]14 | [3]ACER | [4]ADP | [5]Adapter | [6] | [7]TC | [8]Sever | 
+R12: [1] | [2]18 | [3]MITAC | [4]FS2 | [5]Server | [6] | [7]ST | [8]OP | 
+DRAWINGS: 0
+---- SHEET: [工作表3] dim=B4:P69
+R1: [1] | [2] | [3] | [4] | [5] | [6] | [7] | [8] | [9] | [10] | [11] | [12] | [13] | [14] | [15] | [16] | 
+R2: [1] | [2] | [3] | [4] | [5] | [6] | [7] | [8] | [9] | [10] | [11] | [12] | [13] | [14] | [15] | [16] | 
+R3: [1] | [2] | [3] | [4] | [5] | [6] | [7] | [8] | [9] | [10] | [11] | [12] | [13] | [14] | [15] | [16] | 
+R4: [1] | [2]列標籤 | [3]Adapter EMI/Drop.. | [4]Amazon Mechanica.. | [5]Burn In Test | [6]Conducted EMI Me.. | [7]DMTBF Test | [8]EMC&Dell ORT Tes.. | [9]Harmonic  | [10]ION Test | [11]ORT Rel Test For.. | [12]ORT Rel Test For.. | [13]POS Test | [14]海康威視All ORT Test.. | [15]海康威視B/I 168Hrs T.. | [16]總計 | 
+R5: [1] | [2]/ADM020-Y1AG/ | [3] | [4] | [5] | [6] | [7]1 | [8] | [9] | [10] | [11] | [12] | [13] | [14] | [15] | [16]1 | 
+R6: [1] | [2]ADC008-020G | [3]1 | [4] | [5] | [6] | [7] | [8] | [9] | [10] | [11] | [12] | [13] | [14] | [15] | [16]1 | 
+R7: [1] | [2]ADC027-790G | [3]1 | [4] | [5] | [6] | [7] | [8] | [9] | [10] | [11] | [12] | [13] | [14] | [15] | [16]1 | 
+R8: [1] | [2]ADH036-00LG | [3] | [4] | [5] | [6] | [7] | [8] | [9] | [10] | [11]1 | [12] | [13] | [14] | [15] | [16]1 | 
+R9: [1] | [2]ADL030-FEAG | [3]1 | [4] | [5] | [6] | [7] | [8] | [9] | [10] | [11] | [12] | [13] | [14] | [15] | [16]1 | 
+R10: [1] | [2]FSA037-4B1G | [3] | [4] | [5] | [6] | [7] | [8] | [9] | [10] | [11]2 | [12] | [13] | [14] | [15] | [16]2 | 
+R11: [1] | [2]FSB004-4B4G | [3] | [4] | [5] | [6] | [7] | [8] | [9] | [10] | [11]1 | [12] | [13] | [14] | [15] | [16]1 | 
+R12: [1] | [2]FSB015-4C0G | [3] | [4] | [5] | [6] | [7] | [8] | [9] | [10] | [11]1 | [12] | [13] | [14] | [15] | [16]1 | 
+DRAWINGS: 0

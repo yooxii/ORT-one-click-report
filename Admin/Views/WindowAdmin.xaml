@@ -1,0 +1,112 @@
+<Window x:Class="ORT一键报告.Admin.Views.WindowAdmin"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="管理" Height="600" Width="950" MinHeight="450" MinWidth="750"
+        WindowStartupLocation="CenterOwner">
+
+    <TabControl Margin="5">
+
+        <!--人员管理-->
+        <TabItem Header="人员管理">
+            <Grid Margin="5">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="5*"/>
+                    <ColumnDefinition Width="3*"/>
+                </Grid.ColumnDefinitions>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="auto"/>
+                        <RowDefinition/>
+                    </Grid.RowDefinitions>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                        <Button Content="新建用户" Padding="10,3" Click="Btn_NewUser_Click"/>
+                        <Button Content="刷新" Padding="10,3" Margin="8,0,0,0" Click="Btn_RefreshUsers_Click"/>
+                    </StackPanel>
+                    <DataGrid x:Name="dg_users" Grid.Row="1" AutoGenerateColumns="False" IsReadOnly="True"
+                              CanUserAddRows="False" SelectionMode="Single" SelectionUnit="FullRow"
+                              HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                              SelectionChanged="Dg_Users_SelectionChanged">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="用户名" Binding="{Binding Username}" Width="110"/>
+                            <DataGridTextColumn Header="显示名" Binding="{Binding DisplayName}" Width="100"/>
+                            <DataGridTextColumn Header="角色" Binding="{Binding RolesText}" Width="*"/>
+                            <DataGridTextColumn Header="状态" Binding="{Binding IsActive}" Width="55"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+                <Border Grid.Column="1" BorderBrush="#FFCCCCCC" BorderThickness="1" Margin="8,0,0,0" Padding="10">
+                    <StackPanel>
+                        <TextBlock Text="选中用户设置" FontWeight="Bold" Margin="0,0,0,8"/>
+                        <Label Content="显示名称"/>
+                        <TextBox x:Name="txt_displayName" Margin="0,0,0,8"/>
+                        <Label Content="角色（可多选）"/>
+                        <CheckBox x:Name="chk_general" Content="普通用户" Margin="5,2"/>
+                        <CheckBox x:Name="chk_tech" Content="技术员" Margin="5,2"/>
+                        <CheckBox x:Name="chk_reviewer" Content="审核员" Margin="5,2"/>
+                        <CheckBox x:Name="chk_admin" Content="管理员" Margin="5,2"/>
+                        <Button Content="应用身份与显示名" Padding="8,4" Margin="0,10,0,0" Click="Btn_ApplyRoles_Click"/>
+                        <Button Content="重置密码" Padding="8,4" Margin="0,8,0,0" Click="Btn_ResetPassword_Click"/>
+                        <Button x:Name="btn_toggleActive" Content="禁用/启用" Padding="8,4" Margin="0,8,0,0" Click="Btn_ToggleActive_Click"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </TabItem>
+
+        <!--客户管理-->
+        <TabItem Header="客户管理">
+            <Grid Margin="5">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="auto"/>
+                    <RowDefinition/>
+                </Grid.RowDefinitions>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                    <Button Content="新增" Padding="10,3" Click="Btn_NewCustomer_Click"/>
+                    <Button Content="编辑" Padding="10,3" Margin="8,0,0,0" Click="Btn_EditCustomer_Click"/>
+                    <Button Content="删除" Padding="10,3" Margin="8,0,0,0" Click="Btn_DeleteCustomer_Click"/>
+                    <Button Content="从计划数据同步" Padding="10,3" Margin="20,0,0,0" Click="Btn_SyncCustomers_Click"
+                            ToolTip="从已导入的计划数据（客户别）同步客户字典"/>
+                    <Button Content="刷新" Padding="10,3" Margin="8,0,0,0" Click="Btn_RefreshCustomers_Click"/>
+                </StackPanel>
+                <DataGrid x:Name="dg_customers" Grid.Row="1" AutoGenerateColumns="False" IsReadOnly="True"
+                          CanUserAddRows="False" SelectionMode="Single" SelectionUnit="FullRow"
+                          HeadersVisibility="Column" GridLinesVisibility="Horizontal">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="客户名称" Binding="{Binding Name}" Width="200"/>
+                        <DataGridTextColumn Header="备注" Binding="{Binding Remark}" Width="*"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+        </TabItem>
+
+        <!--测试项目管理-->
+        <TabItem Header="测试项目管理">
+            <Grid Margin="5">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="auto"/>
+                    <RowDefinition/>
+                </Grid.RowDefinitions>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                    <Button Content="新增" Padding="10,3" Click="Btn_NewTestItem_Click"/>
+                    <Button Content="编辑" Padding="10,3" Margin="8,0,0,0" Click="Btn_EditTestItem_Click"/>
+                    <Button Content="删除" Padding="10,3" Margin="8,0,0,0" Click="Btn_DeleteTestItem_Click"/>
+                    <Button Content="从计划表文件同步" Padding="10,3" Margin="20,0,0,0" Click="Btn_SyncTestItems_Click"
+                            ToolTip="从 ORT Test Schedule 文件的 Test Items 工作表同步"/>
+                    <Button Content="刷新" Padding="10,3" Margin="8,0,0,0" Click="Btn_RefreshTestItems_Click"/>
+                </StackPanel>
+                <DataGrid x:Name="dg_testItems" Grid.Row="1" AutoGenerateColumns="False" IsReadOnly="True"
+                          CanUserAddRows="False" SelectionMode="Single" SelectionUnit="FullRow"
+                          HeadersVisibility="Column" GridLinesVisibility="Horizontal">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="试验项目" Binding="{Binding Name}" Width="220"/>
+                        <DataGridTextColumn Header="试验时间" Binding="{Binding Period}" Width="80"/>
+                        <DataGridTextColumn Header="负责人" Binding="{Binding Owner}" Width="120"/>
+                        <DataGridTextColumn Header="备注" Binding="{Binding Remark}" Width="*"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+        </TabItem>
+    </TabControl>
+</Window>

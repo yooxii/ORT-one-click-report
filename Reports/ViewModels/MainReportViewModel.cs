@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
@@ -14,10 +15,11 @@ using static ORT一键报告.Utils.Report;
 
 namespace ORT一键报告.Reports.ViewModels
 {
-    public partial class MainReportViewModel(IPathService service, ReportService reportService) : ObservableObject
+    public partial class MainReportViewModel(IPathService service, ReportService reportService, DatabaseService databaseService) : ObservableObject
     {
         private readonly IPathService Service = service;
         private readonly ReportService _reportService = reportService;
+        private readonly DatabaseService _databaseService = databaseService;
         private readonly Logger _logger = LogManager.GetCurrentClassLogger();
         public string ATEPath { get; set; }
 
@@ -50,6 +52,10 @@ namespace ORT一键报告.Reports.ViewModels
         private void SelectReportPath()
         {
             ReportPath = Service.OpenPathDialog("选择报告概览");
+            if (ReportPath == null)
+            {
+                return;
+            }
             string _title = Path.GetFileName(Path.GetDirectoryName(ReportPath));
             try
             {
@@ -58,6 +64,60 @@ namespace ORT一键报告.Reports.ViewModels
             catch
             {
                 Title = " ORT一键报告";
+            }
+            // 数据源重构：按文件夹名称中的机种名称、RT工作编号等信息从领退和计划中匹配记录
+            MatchPlanFromFolderName(_title);
+        }
+
+        /// <summary>
+        /// 从报告文件夹名称中解析 RT工号/机种名称，在领退和计划中匹配记录（优先RT工号，其次机种），
+        /// 匹配结果存入 ReportService.MatchedPlan，供报告表头补充信息。
+        /// </summary>
+        private void MatchPlanFromFolderName(string folderName)
+        {
+            _reportService.MatchedPlan = null;
+            if (string.IsNullOrWhiteSpace(folderName))
+            {
+                return;
+            }
+            try
+            {
+                Plan matched = null;
+                // 1. RT工号/回线工令（如 RT260637 / RTAH2610002）
+                Match rt = Regex.Match(folderName, @"RT[A-Z]*\d+");
+                if (rt.Success)
+                {
+                    string rtValue = rt.Value;
+                    matched = _databaseService.FreeSql.Select<Plan>()
+                        .Where(p => p.ReturnRtOrder == rtValue || p.JobNo == rtValue)
+                        .First();
+                }
+                // 2. 机种名称（如 FSA037-4B1G，通常位于文件夹名开头）
+                if (matched == null)
+                {
+                    Match model = Regex.Match(folderName, @"^([A-Za-z]{2,5}\d{2,5}-[A-Za-z0-9]+)");
+                    if (model.Success)
+                    {
+                        string modelName = model.Groups[1].Value.ToUpper();
+                        List<Plan> candidates = _databaseService.FreeSql.Select<Plan>()
+                            .Where(p => p.ModelName != null)
+                            .ToList();
+                        matched = candidates.FirstOrDefault(p => p.ModelName?.ToUpper() == modelName);
+                    }
+                }
+                _reportService.MatchedPlan = matched;
+                if (matched != null)
+                {
+                    _logger.Info($"文件夹[{folderName}]匹配到计划记录: Id={matched.Id} 机种={matched.ModelName} 工作編號={matched.JobNo} 负责人={matched.Owner}");
+                }
+                else
+                {
+                    _logger.Warn($"文件夹[{folderName}]未匹配到领退和计划中的记录，报告表头将仅使用模板信息");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "从领退和计划匹配记录失败");
             }
         }
 

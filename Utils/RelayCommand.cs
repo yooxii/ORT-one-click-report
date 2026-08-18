@@ -7,7 +7,15 @@ namespace ORT一键报告
     {
         private readonly Action _execute = execute ?? throw new ArgumentNullException(nameof(execute));
         private readonly Func<bool> _canExecute = canExecute;
-        public event EventHandler CanExecuteChanged;
+
+        /// <summary>
+        /// 挂接 CommandManager.RequerySuggested，使按钮状态随界面事件自动重新评估
+        /// </summary>
+        public event EventHandler CanExecuteChanged
+        {
+            add => CommandManager.RequerySuggested += value;
+            remove => CommandManager.RequerySuggested -= value;
+        }
 
         public RelayCommand(Action execute) : this(execute, null) { }
 
@@ -23,7 +31,7 @@ namespace ORT一键报告
 
         public void RaiseCanExecuteChanged()
         {
-            CanExecuteChanged?.Invoke(this, EventArgs.Empty);
+            CommandManager.InvalidateRequerySuggested();
         }
     }
 }

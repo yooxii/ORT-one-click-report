@@ -1,15 +1,14 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using NLog;
-using OfficeOpenXml;
+using ORT一键报告.Admin.Views;
 using ORT一键报告.Main.Views;
-using ORT一键报告.Models;
+using ORT一键报告.Plans.Views;
 using ORT一键报告.Reports.Views;
+using ORT一键报告.Review.Views;
+using ORT一键报告.Services;
 using ORT一键报告.ViewModels;
 using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Windows;
-using static ORT一键报告.Utils.Report;
 
 namespace ORT一键报告
 {
@@ -21,51 +20,67 @@ namespace ORT一键报告
     {
         private readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
+        private readonly AuthService _auth;
+        private readonly IPermissionService _permission;
+        private readonly ReviewService _reviewService;
+
         public MainViewModel MainVM { get; set; }
-
-        public static SettingsViewModel SettingsVM { get; set; } = new();
-
-        private readonly Dictionary<string, object> defaultSetup = new() {
-            {"路径对话框初始目录", new Dictionary<string, object> {
-                {"BI EMI 报告","\\\\bnt56\\品保部\\ORT實驗資料\\13. 臨時試驗報告\\BI EMI"},
-                {"BI ATE Data", "\\\\bnt56\\品保部\\ORT實驗資料\\13. 臨時試驗報告\\BI ATE Data" },
-                {"BI Picture","\\\\bnt56\\品保部\\ORT實驗資料\\13. 臨時試驗報告\\BI Picture" }
-            } },
-        };
 
         public MainWindow()
         {
             InitializeComponent();
-            ExcelPackage.License.SetNonCommercialPersonal("Lucas");
 
-            SettingsVM = App.ServiceProvider.GetRequiredService<SettingsViewModel>();
+            _auth = App.ServiceProvider.GetRequiredService<AuthService>();
+            _permission = App.ServiceProvider.GetRequiredService<IPermissionService>();
+            _reviewService = App.ServiceProvider.GetRequiredService<ReviewService>();
+
             MainVM = App.ServiceProvider.GetRequiredService<MainViewModel>();
             DataContext = MainVM;
 
-            Closed += Window_Closed;
+            _auth.AuthChanged += () => Dispatcher.Invoke(UpdateUIByPermission);
+            Loaded += (s, e) => UpdateUIByPermission();
         }
 
+        /* ###############################  功能函数  ################################ */
 
-        private void Window_Closed(object sender, EventArgs e)
+        /// <summary>
+        /// 根据当前登录状态与角色刷新入口可用性
+        /// </summary>
+        private void UpdateUIByPermission()
         {
-            ClearTempDir();
+            menu_account.Header = _auth.CurrentUser == null
+                ? "登录"
+                : $"注销 [{_auth.CurrentDisplayName}]";
+            btn_report.IsEnabled = _permission.Can("report.use");
+            btn_admin.IsEnabled = _permission.Can("admin.manage");
+            btn_review.IsEnabled = _permission.Can("review.view");
+            btn_review.Content = _permission.Can("review.view")
+                ? $"审核 ({_reviewService.PendingCount()})"
+                : "审核";
         }
 
         /* ###############################  事件函数  ################################ */
 
-
-        private void MenuItem_MainSetup_Click(object sender, RoutedEventArgs e)
+        private void MenuItem_Login_Click(object sender, RoutedEventArgs e)
         {
-            MainSettingsWindow mainSettingsWindow = new()
+            if (_auth.CurrentUser != null)
+            {
+                // 已登录 → 注销
+                if (MessageBox.Show($"确认注销当前用户 [{_auth.CurrentDisplayName}]？", "注销确认",
+                    MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+                {
+                    _auth.Logout();
+                }
+                return;
+            }
+            WindowLogin loginWindow = new()
             {
                 Owner = this
             };
-            mainSettingsWindow.Show();
-        }
-
-        private void MenuItem_Quit_Click(object sender, RoutedEventArgs e)
-        {
-            Close();
+            if (loginWindow.ShowDialog() == true)
+            {
+                _logger.Info($"当前用户: {_auth.CurrentDisplayName}");
+            }
         }
 
         private void MenuItem_ViewLog_Click(object sender, RoutedEventArgs e)
@@ -77,11 +92,57 @@ namespace ORT一键报告
             windowLog.Show();
         }
 
+        private void MenuItem_Quit_Click(object sender, RoutedEventArgs e)
+        {
+            Close();
+        }
+
         private void Button_YiJianBaoGao_Click(object sender, RoutedEventArgs e)
         {
+            if (!_permission.Can("report.use"))
+            {
+                _ = MessageBox.Show("一键报告需要技术员及以上权限，请先登录。", "无权限");
+                return;
+            }
             WindowMainReport windowMainReport = new();
             windowMainReport.Show();
         }
 
+        private void Button_Plans_Click(object sender, RoutedEventArgs e)
+        {
+            WindowPlans windowPlans = new()
+            {
+                Owner = this
+            };
+            windowPlans.Show();
+        }
+
+        private void Button_Admin_Click(object sender, RoutedEventArgs e)
+        {
+            if (!_permission.Can("admin.manage"))
+            {
+                _ = MessageBox.Show("管理模块需要管理员权限，请先登录。", "无权限");
+                return;
+            }
+            WindowAdmin windowAdmin = new()
+            {
+                Owner = this
+            };
+            windowAdmin.Show();
+        }
+
+        private void Button_Review_Click(object sender, RoutedEventArgs e)
+        {
+            if (!_permission.Can("review.view"))
+            {
+                _ = MessageBox.Show("审核模块需要审核员及以上权限，请先登录。", "无权限");
+                return;
+            }
+            WindowReview windowReview = new()
+            {
+                Owner = this
+            };
+            windowReview.Show();
+        }
     }
 }

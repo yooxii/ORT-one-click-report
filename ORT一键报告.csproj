@@ -121,6 +121,39 @@
     <Compile Include="Models\User.cs" />
     <Compile Include="Services\IPathService.cs" />
     <Compile Include="Services\ReportService.cs" />
+        <Compile Include="Models\Plan.cs" />
+        <Compile Include="Models\Review.cs" />
+        <Compile Include="Services\AuthService.cs" />
+        <Compile Include="Services\AdminService.cs" />
+        <Compile Include="Services\ReviewService.cs" />
+        <Compile Include="Main\Views\WindowLogin.xaml.cs">
+          <DependentUpon>WindowLogin.xaml</DependentUpon>
+        </Compile>
+        <Compile Include="Admin\Views\WindowAdmin.xaml.cs">
+          <DependentUpon>WindowAdmin.xaml</DependentUpon>
+        </Compile>
+        <Compile Include="Admin\Views\WindowAdminInput.xaml.cs">
+          <DependentUpon>WindowAdminInput.xaml</DependentUpon>
+        </Compile>
+        <Compile Include="Review\Views\WindowReview.xaml.cs">
+          <DependentUpon>WindowReview.xaml</DependentUpon>
+        </Compile>
+        <Compile Include="Review\Views\WindowReviewDetail.xaml.cs">
+          <DependentUpon>WindowReviewDetail.xaml</DependentUpon>
+        </Compile>
+        <Compile Include="Services\DatabaseService.cs" />
+        <Compile Include="Services\PermissionService.cs" />
+        <Compile Include="Services\PlanExcelService.cs" />
+        <Compile Include="Plans\ViewModels\PlansViewModel.cs" />
+        <Compile Include="Plans\Views\FilterDropDown.xaml.cs">
+          <DependentUpon>FilterDropDown.xaml</DependentUpon>
+        </Compile>
+        <Compile Include="Plans\Views\WindowPlans.xaml.cs">
+          <DependentUpon>WindowPlans.xaml</DependentUpon>
+        </Compile>
+        <Compile Include="Plans\Views\WindowPlanEdit.xaml.cs">
+          <DependentUpon>WindowPlanEdit.xaml</DependentUpon>
+        </Compile>
     <Compile Include="Utils\SmartTableExtractor.cs" />
     <Compile Include="Reports\ViewModels\BaseReportPageViewModel.cs" />
     <Compile Include="Reports\ViewModels\EMIReportViewModel.cs" />
@@ -270,6 +303,38 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Main\Views\WindowLog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Plans\Views\WindowPlans.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Plans\Views\FilterDropDown.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Main\Views\WindowLogin.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Admin\Views\WindowAdmin.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Admin\Views\WindowAdminInput.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Review\Views\WindowReview.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Review\Views\WindowReviewDetail.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Plans\Views\WindowPlanEdit.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

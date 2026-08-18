@@ -1,0 +1,22 @@
+<Window x:Class="ORT一键报告.Admin.Views.WindowAdminInput"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="输入" Width="420" SizeToContent="Height" ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner">
+
+    <Grid Margin="15">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="auto"/>
+        </Grid.RowDefinitions>
+        <!--字段区由代码动态生成-->
+        <StackPanel x:Name="panel_fields"/>
+        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button Content="确定" Width="90" Height="28" Click="Btn_OK_Click" IsDefault="True"/>
+            <Button Content="取消" Width="90" Height="28" Margin="10,0,0,0" Click="Btn_Cancel_Click" IsCancel="True"/>
+        </StackPanel>
+    </Grid>
+</Window>

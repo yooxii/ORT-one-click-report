@@ -91,6 +91,9 @@ namespace ORT一键报告.Reports.Views
                 burninPage.ReadReportHeader();
                 burninPage.SetReportResultData();
                 emiPage.ReadReportHeader();
+                // 数据源重构：用领退和计划中匹配到的记录补充报告表头空缺信息
+                ApplyMatchedPlanToHeader(thermalshockPage.ReportHeaderInfo);
+                ApplyMatchedPlanToHeader(burninPage.ReportHeaderInfo);
                 _logger.Info("表头数据已呈现至窗口");
             }
             catch (FileNotFoundException ex)
@@ -119,6 +122,39 @@ namespace ORT一键报告.Reports.Views
             ateWindow.Show();
         }
 
+        /// <summary>
+        /// 用领退和计划匹配到的记录补充报告表头（仅填充模板中为空的字段）
+        /// </summary>
+        private void ApplyMatchedPlanToHeader(ReportHeaderViewModel header)
+        {
+            Plan plan = ReportService.MatchedPlan;
+            if (plan == null || header == null)
+            {
+                return;
+            }
+            if (string.IsNullOrWhiteSpace(header.PROJECT_NAME?.Data) && plan.ModelName != null)
+            {
+                header.PROJECT_NAME ??= new DataCell();
+                header.PROJECT_NAME.Data = plan.TestItem != null ? $"{plan.ModelName} {plan.TestItem}" : plan.ModelName;
+            }
+            if (string.IsNullOrWhiteSpace(header.TEST_STAGE?.Data) && plan.Stage != null)
+            {
+                header.TEST_STAGE ??= new DataCell();
+                header.TEST_STAGE.Data = plan.Stage;
+            }
+            if (string.IsNullOrWhiteSpace(header.TESTED_BY?.Data) && plan.Owner != null)
+            {
+                header.TESTED_BY ??= new DataCell();
+                header.TESTED_BY.Data = plan.Owner;
+            }
+            if (string.IsNullOrWhiteSpace(header.TestDescription?.Data) && plan.TestItem != null)
+            {
+                header.TestDescription ??= new DataCell();
+                header.TestDescription.Data = plan.TestPeriod != null ? $"{plan.TestItem} ({plan.TestPeriod}hrs)" : plan.TestItem;
+            }
+            _logger.Info($"已用匹配计划记录(Id={plan.Id})补充报告表头信息");
+        }
+
         private void MenuItem_ReportTemplate_Click(object sender, RoutedEventArgs e)
         {
             WindowReportTemplate windowReportTemplate = new()
@@ -126,12 +162,6 @@ namespace ORT一键报告.Reports.Views
                 Owner = this
             };
             windowReportTemplate.Show();
-        }
-
-        private void MenuItem_ReturnLine_Click(object sender, RoutedEventArgs e)
-        {
-            WindowReturnLine windowReturnLine = new();
-            windowReturnLine.Show();
         }
 
         private void MenuItem_ViewLog_Click(object sender, RoutedEventArgs e)
