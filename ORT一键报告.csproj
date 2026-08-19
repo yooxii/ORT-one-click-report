@@ -123,6 +123,8 @@
     <Compile Include="Services\ReportService.cs" />
         <Compile Include="Models\Plan.cs" />
         <Compile Include="Models\Review.cs" />
+        <Compile Include="Models\AdminCatalogs.cs" />
+        <Compile Include="Utils\PlanValidation.cs" />
         <Compile Include="Services\AuthService.cs" />
         <Compile Include="Services\AdminService.cs" />
         <Compile Include="Services\ReviewService.cs" />

@@ -7,7 +7,21 @@
         Title="管理" Height="600" Width="950" MinHeight="450" MinWidth="750"
         WindowStartupLocation="CenterOwner">
 
-    <TabControl Margin="5">
+    <Grid Margin="5">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto"/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+
+        <!--导入入口（从领退和计划迁入）：导入计划表时一并同步客户/测试项目/产品别/机种映射-->
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+            <Button Content="导入领用表" Padding="10,3" Click="Btn_ImportRequisition_Click"
+                    ToolTip="导入成品領用記錄Excel，与已有记录合并到同一行"/>
+            <Button Content="导入计划表" Padding="10,3" Margin="8,0,0,0" Click="Btn_ImportPlan_Click"
+                    ToolTip="导入ORT Test Schedule Excel，并同步客户/测试项目/产品别/机种映射字典"/>
+        </StackPanel>
+
+        <TabControl Grid.Row="1">
 
         <!--人员管理-->
         <TabItem Header="人员管理">
@@ -108,5 +122,53 @@
                 </DataGrid>
             </Grid>
         </TabItem>
+        <!--产品别管理-->
+        <TabItem Header="产品别管理">
+            <Grid Margin="5">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="auto"/>
+                    <RowDefinition/>
+                </Grid.RowDefinitions>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                    <Button Content="新增" Padding="10,3" Click="Btn_NewProduct_Click"/>
+                    <Button Content="编辑" Padding="10,3" Margin="8,0,0,0" Click="Btn_EditProduct_Click"/>
+                    <Button Content="删除" Padding="10,3" Margin="8,0,0,0" Click="Btn_DeleteProduct_Click"/>
+                    <Button Content="刷新" Padding="10,3" Margin="20,0,0,0" Click="Btn_RefreshProducts_Click"/>
+                </StackPanel>
+                <DataGrid x:Name="dg_products" Grid.Row="1" AutoGenerateColumns="False" IsReadOnly="True"
+                          CanUserAddRows="False" SelectionMode="Single" SelectionUnit="FullRow"
+                          HeadersVisibility="Column" GridLinesVisibility="Horizontal">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="产品别名称" Binding="{Binding Name}" Width="200"/>
+                        <DataGridTextColumn Header="备注" Binding="{Binding Remark}" Width="*"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+        </TabItem>
+
+        <!--阶段管理-->
+        <TabItem Header="阶段管理">
+            <Grid Margin="5">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="auto"/>
+                    <RowDefinition/>
+                </Grid.RowDefinitions>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                    <Button Content="新增" Padding="10,3" Click="Btn_NewStage_Click"/>
+                    <Button Content="编辑" Padding="10,3" Margin="8,0,0,0" Click="Btn_EditStage_Click"/>
+                    <Button Content="删除" Padding="10,3" Margin="8,0,0,0" Click="Btn_DeleteStage_Click"/>
+                    <Button Content="刷新" Padding="10,3" Margin="20,0,0,0" Click="Btn_RefreshStages_Click"/>
+                </StackPanel>
+                <DataGrid x:Name="dg_stages" Grid.Row="1" AutoGenerateColumns="False" IsReadOnly="True"
+                          CanUserAddRows="False" SelectionMode="Single" SelectionUnit="FullRow"
+                          HeadersVisibility="Column" GridLinesVisibility="Horizontal">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="阶段名" Binding="{Binding Name}" Width="150"/>
+                        <DataGridTextColumn Header="描述" Binding="{Binding Description}" Width="*"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+        </TabItem>
     </TabControl>
+    </Grid>
 </Window>

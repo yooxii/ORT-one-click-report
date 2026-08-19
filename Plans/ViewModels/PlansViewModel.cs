@@ -1,7 +1,9 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using Newtonsoft.Json;
 using NLog;
 using ORT一键报告.Models;
 using ORT一键报告.Services;
+using ORT一键报告.Utils;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -86,6 +88,7 @@ namespace ORT一键报告.Plans.ViewModels
         private readonly IPathService _pathService;
         private readonly IPermissionService _permission;
         private readonly ReviewService _reviewService;
+        private readonly AdminService _adminService;
 
         /// <summary>
         /// 可筛选的字段定义：(字段名, 是否日期字段)
@@ -139,6 +142,94 @@ namespace ORT一键报告.Plans.ViewModels
         /// </summary>
         public bool NeedsReview => _permission.PlanEditNeedsReview;
 
+        /// <summary>
+        /// 是否允许表格内直接编辑（技术员及以上；普通用户走对话框提审）
+        /// </summary>
+        public bool CanGridEdit => CanEdit && !NeedsReview;
+
+        /// <summary>
+        /// 表格是否只读（XAML 绑定用：游客/普通用户只读）
+        /// </summary>
+        public bool IsGridReadOnly => !CanGridEdit;
+
+        /* ###############################  暂存修改（非实时保存，手动提交）  ################################ */
+
+        /// <summary>
+        /// 加载时的原始快照（编辑前的状态，用于变更日志与丢弃还原）
+        /// </summary>
+        private readonly Dictionary<long, Plan> _originals = [];
+
+        /// <summary>
+        /// 已修改的记录（Id>0）
+        /// </summary>
+        private readonly HashSet<Plan> _pendingModified = [];
+
+        /// <summary>
+        /// 新增的行（Id==0）
+        /// </summary>
+        private readonly List<Plan> _pendingAdded = [];
+
+        /// <summary>
+        /// 待删除的记录
+        /// </summary>
+        private readonly Dictionary<long, Plan> _pendingDeleted = [];
+
+        /// <summary>
+        /// 是否有未提交的修改（新增/删除立即感知；已有行的修改以快照对比感知）
+        /// </summary>
+        public bool HasPendingChanges => _pendingAdded.Count > 0 || _pendingDeleted.Count > 0 || DetectModifiedCount() > 0;
+
+        /// <summary>
+        /// 未提交修改的描述（状态栏显示）
+        /// </summary>
+        public string PendingText => HasPendingChanges
+            ? $"未提交修改: 新增{_pendingAdded.Count} 修改{DetectModifiedCount()} 删除{_pendingDeleted.Count}"
+            : "无未提交修改";
+
+        /// <summary>
+        /// 以快照对比检测已修改的存量行数
+        /// </summary>
+        private int DetectModifiedCount()
+        {
+            int count = 0;
+            foreach (Plan plan in Plans.Where(p => p.Id > 0))
+            {
+                if (_originals.TryGetValue(plan.Id, out Plan before)
+                    && JsonConvert.SerializeObject(plan) != JsonConvert.SerializeObject(before))
+                {
+                    count++;
+                }
+            }
+            return count;
+        }
+
+        /* ###############################  字典（编辑选择框与校验用）  ################################ */
+
+        /// <summary>
+        /// 测试项目字典
+        /// </summary>
+        public List<string> CatalogTestItems { get; private set; } = [];
+
+        /// <summary>
+        /// 产品别字典
+        /// </summary>
+        public List<string> CatalogProducts { get; private set; } = [];
+
+        /// <summary>
+        /// 客户别字典
+        /// </summary>
+        public List<string> CatalogCustomers { get; private set; } = [];
+
+        /// <summary>
+        /// 阶段字典
+        /// </summary>
+        public List<string> CatalogStages { get; private set; } = [];
+
+        /// <summary>
+        /// 状况固定枚举
+        /// </summary>
+        public List<string> CatalogStatuses { get; } = [.. PlanValidation.ValidStatuses];
+
         private readonly DispatcherTimer _searchTimer;
         private string _keyword;
         /// <summary>
@@ -181,13 +272,14 @@ namespace ORT一键报告.Plans.ViewModels
         public List<string> AvailableFields
             => FilterFields.Select(f => f.Name).Where(n => ActiveFilters.All(c => c.Field != n)).ToList();
 
-        public PlansViewModel(DatabaseService db, PlanExcelService excelService, IPathService pathService, IPermissionService permission, ReviewService reviewService)
+        public PlansViewModel(DatabaseService db, PlanExcelService excelService, IPathService pathService, IPermissionService permission, ReviewService reviewService, AdminService adminService)
         {
             _db = db;
             _excelService = excelService;
             _pathService = pathService;
             _permission = permission;
             _reviewService = reviewService;
+            _adminService = adminService;
 
             PlansView = CollectionViewSource.GetDefaultView(Plans);
             PlansView.Filter = PlanFilter;
@@ -232,6 +324,30 @@ namespace ORT一键报告.Plans.ViewModels
         private RelayCommand _clearAllCommand;
         public ICommand ClearAllCommand => _clearAllCommand ??= new RelayCommand(ClearAll);
 
+        private RelayCommand _saveChangesCommand;
+        /// <summary>
+        /// 提交保存暂存的修改（写入数据库并记录变更日志）
+        /// </summary>
+        public ICommand SaveChangesCommand => _saveChangesCommand ??= new RelayCommand(SaveChanges, () => CanGridEdit && HasPendingChanges);
+
+        private RelayCommand _discardChangesCommand;
+        /// <summary>
+        /// 丢弃暂存的修改，还原为数据库状态
+        /// </summary>
+        public ICommand DiscardChangesCommand => _discardChangesCommand ??= new RelayCommand(DiscardChanges, () => CanGridEdit && HasPendingChanges);
+
+        private RelayCommand _addRowCommand;
+        /// <summary>
+        /// 表格内新增空行（暂存，提交后入库）
+        /// </summary>
+        public ICommand AddRowCommand => _addRowCommand ??= new RelayCommand(AddRow, () => CanGridEdit);
+
+        private CommunityToolkit.Mvvm.Input.RelayCommand<object> _deleteRowCommand;
+        /// <summary>
+        /// 标记删除行（暂存，提交后生效；参数为 Plan）
+        /// </summary>
+        public ICommand DeleteRowCommand => _deleteRowCommand ??= new CommunityToolkit.Mvvm.Input.RelayCommand<object>(DeleteRow, p => CanGridEdit && p is Plan);
+
         private CommunityToolkit.Mvvm.Input.RelayCommand<object> _removeFilterCommand;
         /// <summary>
         /// 删除指定筛选条件（参数为 FilterCondition）
@@ -248,7 +364,7 @@ namespace ORT一键报告.Plans.ViewModels
         /* ###############################  功能函数  ################################ */
 
         /// <summary>
-        /// 从数据库重新加载全部记录，并刷新各筛选条件的候选项
+        /// 从数据库重新加载全部记录，并刷新各筛选条件的候选项（丢弃未提交修改）
         /// </summary>
         public void Refresh()
         {
@@ -256,16 +372,24 @@ namespace ORT一键报告.Plans.ViewModels
             {
                 List<Plan> plans = _db.FreeSql.Select<Plan>().OrderByDescending(p => p.Id).ToList();
                 Plans.Clear();
+                _originals.Clear();
+                _pendingModified.Clear();
+                _pendingAdded.Clear();
+                _pendingDeleted.Clear();
                 foreach (Plan plan in plans)
                 {
                     Plans.Add(plan);
+                    _originals[plan.Id] = ClonePlan(plan);
                 }
                 // 刷新各值字段条件的候选项（保留当前勾选）
                 foreach (FilterCondition cond in ActiveFilters.Where(c => !c.IsDateField))
                 {
                     RefreshConditionOptions(cond);
                 }
+                LoadCatalogs();
                 PlansView.Refresh();
+                OnPropertyChanged(nameof(HasPendingChanges));
+                OnPropertyChanged(nameof(PendingText));
                 StatusMessage = $"共 {Plans.Count} 条记录";
             }
             catch (Exception ex)
@@ -274,6 +398,24 @@ namespace ORT一键报告.Plans.ViewModels
                 StatusMessage = $"加载失败: {ex.Message}";
             }
         }
+
+        /// <summary>
+        /// 加载编辑字典（测试项目/产品别/客户别/阶段）
+        /// </summary>
+        private void LoadCatalogs()
+        {
+            CatalogTestItems = _adminService.GetTestItems().Select(t => t.Name).ToList();
+            CatalogProducts = _adminService.GetProducts().Select(p => p.Name).ToList();
+            CatalogCustomers = _adminService.GetCustomers().Select(c => c.Name).ToList();
+            CatalogStages = _adminService.GetStages().Select(s => s.Name).ToList();
+            OnPropertyChanged(nameof(CatalogTestItems));
+            OnPropertyChanged(nameof(CatalogProducts));
+            OnPropertyChanged(nameof(CatalogCustomers));
+            OnPropertyChanged(nameof(CatalogStages));
+        }
+
+        private static Plan ClonePlan(Plan source)
+            => JsonConvert.DeserializeObject<Plan>(JsonConvert.SerializeObject(source));
 
         private void AddFilter(string fieldName)
         {
@@ -609,6 +751,227 @@ namespace ORT一键报告.Plans.ViewModels
                 _logger.Error(ex, "清空数据失败");
                 StatusMessage = $"清空失败: {ex.Message}";
             }
+        }
+
+        /* ###############################  表格内编辑：暂存与提交  ################################ */
+
+        /// <summary>
+        /// 标记记录已修改（由单元格编辑结束时调用）；Id==0 的行视为新增
+        /// </summary>
+        public void MarkModified(Plan plan)
+        {
+            if (plan.Id == 0)
+            {
+                if (!_pendingAdded.Contains(plan))
+                {
+                    _pendingAdded.Add(plan);
+                }
+            }
+            else
+            {
+                _pendingModified.Add(plan);
+            }
+            OnPropertyChanged(nameof(HasPendingChanges));
+            OnPropertyChanged(nameof(PendingText));
+            CommandManager.InvalidateRequerySuggested();
+        }
+
+        /// <summary>
+        /// 单元格校验（工作编号格式/状况枚举/字典存在性）；合法返回null
+        /// </summary>
+        public string ValidateField(string field, string value)
+        {
+            return field switch
+            {
+                "JobNo" => PlanValidation.ValidateJobNo(value),
+                "Status" => PlanValidation.ValidateStatus(value),
+                "TestItem" => PlanValidation.ValidateInCatalog(value, CatalogTestItems, "测试项目"),
+                "Product" => PlanValidation.ValidateInCatalog(value, CatalogProducts, "产品别"),
+                "Customer" => PlanValidation.ValidateInCatalog(value, CatalogCustomers, "客户别"),
+                "Stage" => PlanValidation.ValidateInCatalog(value, CatalogStages, "阶段"),
+                _ => null
+            };
+        }
+
+        /// <summary>
+        /// 机种联动：输入机种名称后自动带出产品别/客户别（还原计划表公式关系，仅填充空字段）
+        /// </summary>
+        public void AutoFillByModel(Plan plan)
+        {
+            if (string.IsNullOrWhiteSpace(plan.ModelName))
+            {
+                return;
+            }
+            ModelMapping mapping = _adminService.FindModelMapping(plan.ModelName);
+            if (mapping == null)
+            {
+                return;
+            }
+            bool changed = false;
+            if (string.IsNullOrWhiteSpace(plan.Product) && mapping.Product != null)
+            {
+                plan.Product = mapping.Product;
+                changed = true;
+            }
+            if (string.IsNullOrWhiteSpace(plan.Customer) && mapping.Customer != null)
+            {
+                plan.Customer = mapping.Customer;
+                changed = true;
+            }
+            if (changed)
+            {
+                MarkModified(plan);
+                _logger.Info($"机种[{plan.ModelName}]自动带出: 产品别={plan.Product}, 客户别={plan.Customer}");
+            }
+        }
+
+        /// <summary>
+        /// 表格内新增空行（暂存）
+        /// </summary>
+        private void AddRow()
+        {
+            if (!CanGridEdit)
+            {
+                return;
+            }
+            Plan plan = new()
+            {
+                CreatedBy = _permission.CurrentUser,
+                CreatedAt = DateTime.Now,
+                UpdatedBy = _permission.CurrentUser,
+                UpdatedAt = DateTime.Now
+            };
+            _pendingAdded.Add(plan);
+            Plans.Insert(0, plan);
+            OnPropertyChanged(nameof(HasPendingChanges));
+            OnPropertyChanged(nameof(PendingText));
+            StatusMessage = "已新增空行，填写后请点击提交保存";
+        }
+
+        /// <summary>
+        /// 标记删除行（暂存，提交后生效）
+        /// </summary>
+        private void DeleteRow(object parameter)
+        {
+            if (parameter is not Plan plan || !CanGridEdit)
+            {
+                return;
+            }
+            if (plan.Id == 0)
+            {
+                // 未入库的新增行直接移除
+                _pendingAdded.Remove(plan);
+                Plans.Remove(plan);
+            }
+            else
+            {
+                if (System.Windows.MessageBox.Show(
+                    $"确认删除该记录？（暂存，提交后生效）\n工作編號: {plan.JobNo ?? "-"}  机种: {plan.ModelName ?? "-"}",
+                    "删除确认", System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Warning)
+                    != System.Windows.MessageBoxResult.Yes)
+                {
+                    return;
+                }
+                _pendingDeleted[plan.Id] = plan;
+                _pendingModified.Remove(plan);
+                Plans.Remove(plan);
+            }
+            OnPropertyChanged(nameof(HasPendingChanges));
+            OnPropertyChanged(nameof(PendingText));
+            StatusMessage = PendingText;
+        }
+
+        /// <summary>
+        /// 丢弃所有暂存修改，还原为数据库状态
+        /// </summary>
+        private void DiscardChanges()
+        {
+            if (System.Windows.MessageBox.Show("确认丢弃所有未提交的修改？",
+                "丢弃确认", System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Question)
+                != System.Windows.MessageBoxResult.Yes)
+            {
+                return;
+            }
+            Refresh();
+            StatusMessage = "已丢弃未提交的修改";
+        }
+
+        /// <summary>
+        /// 提交保存：将暂存的新增/修改/删除写入数据库，并为每条变更写入变更日志（便于回滚）
+        /// </summary>
+        private void SaveChanges()
+        {
+            if (!CanGridEdit || !HasPendingChanges)
+            {
+                return;
+            }
+            try
+            {
+                string op = _permission.CurrentUser;
+                int added = 0, modified = 0, deleted = 0;
+
+                foreach (Plan plan in _pendingAdded)
+                {
+                    if (string.IsNullOrWhiteSpace(plan.JobNo) && string.IsNullOrWhiteSpace(plan.RequisitionNo))
+                    {
+                        StatusMessage = "存在未填写工作编号/领料单据号的空行，请补充或删除后再提交";
+                        return;
+                    }
+                    plan.Id = _db.FreeSql.Insert(plan).ExecuteIdentity();
+                    WriteChangeLog("新增", plan.Id, $"新增计划 {plan.JobNo ?? plan.RequisitionNo} ({plan.ModelName})", null, plan, op);
+                    added++;
+                }
+                foreach (Plan plan in Plans.Where(p => p.Id > 0))
+                {
+                    // 以快照对比自动检测修改（兼容单元格编辑与字典选择列等所有编辑方式）
+                    if (!_originals.TryGetValue(plan.Id, out Plan before))
+                    {
+                        continue;
+                    }
+                    if (JsonConvert.SerializeObject(plan) == JsonConvert.SerializeObject(before))
+                    {
+                        continue;
+                    }
+                    plan.UpdatedBy = op;
+                    plan.UpdatedAt = DateTime.Now;
+                    _db.FreeSql.Update<Plan>().SetSource(plan).Where(p => p.Id == plan.Id).ExecuteAffrows();
+                    WriteChangeLog("编辑", plan.Id, $"编辑计划 {plan.JobNo ?? plan.RequisitionNo} ({plan.ModelName})", before, plan, op);
+                    modified++;
+                }
+                foreach (KeyValuePair<long, Plan> kv in _pendingDeleted)
+                {
+                    _db.FreeSql.Delete<Plan>().Where(p => p.Id == kv.Key).ExecuteAffrows();
+                    WriteChangeLog("删除", kv.Key, $"删除计划 {kv.Value.JobNo ?? kv.Value.RequisitionNo} ({kv.Value.ModelName})", kv.Value, null, op);
+                    deleted++;
+                }
+
+                _logger.Info($"提交保存计划数据: 新增{added} 修改{modified} 删除{deleted} 操作人={op}");
+                Refresh();
+                StatusMessage = $"保存成功: 新增{added} 修改{modified} 删除{deleted}";
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "提交保存失败");
+                StatusMessage = $"保存失败: {ex.Message}";
+                _ = System.Windows.MessageBox.Show($"保存失败:\n{ex.Message}", "错误");
+            }
+        }
+
+        /// <summary>
+        /// 写入变更日志（前后快照，便于追溯与回滚）
+        /// </summary>
+        private void WriteChangeLog(string action, long planId, string summary, Plan before, Plan after, string op)
+        {
+            _db.FreeSql.Insert(new PlanChangeLog
+            {
+                Action = action,
+                PlanId = planId,
+                Summary = summary,
+                BeforeJson = before == null ? null : JsonConvert.SerializeObject(before),
+                AfterJson = after == null ? null : JsonConvert.SerializeObject(after),
+                Operator = op,
+                CreatedAt = DateTime.Now
+            }).ExecuteAffrows();
         }
 
         /// <summary>

@@ -1,8 +1,11 @@
-﻿using NLog;
+﻿using Microsoft.Extensions.DependencyInjection;
+using NLog;
 using ORT一键报告.Models;
 using ORT一键报告.Services;
+using ORT一键报告.Utils;
 using System;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 using System.Windows;
 
@@ -45,10 +48,42 @@ namespace ORT一键报告.Plans.Views
             _submitForReview = submitForReview;
 
             Title = editTarget == null ? "新增计划记录" : "编辑计划记录";
+            InitCatalogComboBoxes();
             if (editTarget != null)
             {
                 LoadFromPlan(editTarget);
             }
+        }
+
+        /// <summary>
+        /// 字典选择框初始化：测试项目/产品别/客户别/阶段取自字典表，状况为固定枚举；
+        /// 当前值不在字典中时临时加入（避免回显丢失）
+        /// </summary>
+        private void InitCatalogComboBoxes()
+        {
+            AdminService admin = App.ServiceProvider.GetRequiredService<AdminService>();
+            cb_testItem.ItemsSource = admin.GetTestItems().Select(t => t.Name).ToList();
+            cb_product.ItemsSource = admin.GetProducts().Select(p => p.Name).ToList();
+            cb_customer.ItemsSource = admin.GetCustomers().Select(c => c.Name).ToList();
+            cb_stage.ItemsSource = admin.GetStages().Select(s => s.Name).ToList();
+            cb_status.ItemsSource = PlanValidation.ValidStatuses.ToList();
+        }
+
+        /// <summary>
+        /// 为 ComboBox 设置选中值；值不在字典中时临时补充选项
+        /// </summary>
+        private static void SetComboValue(System.Windows.Controls.ComboBox combo, string value)
+        {
+            if (value == null)
+            {
+                combo.SelectedItem = null;
+                return;
+            }
+            if (combo.ItemsSource is System.Collections.Generic.List<string> list && !list.Contains(value))
+            {
+                list.Add(value);
+            }
+            combo.SelectedItem = value;
         }
 
         /* ###############################  功能函数  ################################ */
@@ -58,12 +93,13 @@ namespace ORT一键报告.Plans.Views
             // 计划信息
             txt_jobNo.Text = plan.JobNo;
             txt_model.Text = plan.ModelName;
-            txt_testItem.Text = plan.TestItem;
-            txt_stage.Text = plan.Stage;
-            txt_product.Text = plan.Product;
-            txt_customer.Text = plan.Customer;
+            SetComboValue(cb_testItem, plan.TestItem);
+            SetComboValue(cb_stage, plan.Stage);
+            SetComboValue(cb_product, plan.Product);
+            SetComboValue(cb_customer, plan.Customer);
             txt_sampleSize.Text = plan.SampleSize;
             txt_testPeriod.Text = plan.TestPeriod;
+            SetComboValue(cb_status, plan.Status);
             // 领用信息
             txt_reqNo.Text = plan.RequisitionNo;
             txt_returnRt.Text = plan.ReturnRtOrder;
@@ -100,6 +136,13 @@ namespace ORT一键报告.Plans.Views
                 _ = MessageBox.Show("工作編號不能为空", "提示");
                 return false;
             }
+            // 工作編號格式校验：QRT/RT + 4位年月 + 至少2位编号
+            string jobNoError = PlanValidation.ValidateJobNo(jobNo);
+            if (jobNoError != null)
+            {
+                _ = MessageBox.Show(jobNoError, "格式校验失败");
+                return false;
+            }
             if (_db.FreeSql.Select<Plan>().Where(p => p.JobNo == jobNo && p.Id != selfId).Any())
             {
                 _ = MessageBox.Show($"工作編號 [{jobNo}] 已存在，不可重复", "提示");
@@ -121,12 +164,13 @@ namespace ORT一键报告.Plans.Views
             // 计划信息
             plan.JobNo = jobNo;
             plan.ModelName = NullIfEmpty(txt_model.Text);
-            plan.TestItem = NullIfEmpty(txt_testItem.Text);
-            plan.Stage = NullIfEmpty(txt_stage.Text);
-            plan.Product = NullIfEmpty(txt_product.Text);
-            plan.Customer = NullIfEmpty(txt_customer.Text);
+            plan.TestItem = NullIfEmpty(cb_testItem.SelectedItem as string);
+            plan.Stage = NullIfEmpty(cb_stage.SelectedItem as string);
+            plan.Product = NullIfEmpty(cb_product.SelectedItem as string);
+            plan.Customer = NullIfEmpty(cb_customer.SelectedItem as string);
             plan.SampleSize = NullIfEmpty(txt_sampleSize.Text);
             plan.TestPeriod = NullIfEmpty(txt_testPeriod.Text);
+            plan.Status = NullIfEmpty(cb_status.SelectedItem as string);
 
             // 领用信息
             plan.RequisitionNo = reqNo;

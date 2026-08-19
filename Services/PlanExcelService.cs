@@ -107,7 +107,8 @@ namespace ORT一键报告.Services
                 plan.RequisitionDateValue = ParseChineseDate(requisitionDate, year);
                 plan.RequisitionNo = requisitionNo;
                 plan.ModelName = modelName;
-                plan.TestItem = testItem;
+                // 测试项目以计划表为准，领用表中的不覆盖已有值
+                plan.TestItem = existing?.TestItem ?? testItem;
                 plan.OutQty = outQty;
                 plan.SN = Cell(ws, r, map, "S/N");
                 plan.DC = Cell(ws, r, map, "D/C");

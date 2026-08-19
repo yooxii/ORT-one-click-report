@@ -32,8 +32,8 @@ namespace ORT一键报告.Services
     }
 
     /// <summary>
-    /// 管理服务：人员管理（用户+角色）、客户管理、测试项目管理。
-    /// 客户与测试项目的数据源在计划表中，可一键同步。
+    /// 管理服务：人员管理（用户+角色）、客户/测试项目/产品别/阶段字典管理、机种映射。
+    /// 字典数据源均在计划表中，可随计划表导入一并同步。
     /// </summary>
     public class AdminService
     {
@@ -43,6 +43,7 @@ namespace ORT一键报告.Services
         public AdminService(DatabaseService db)
         {
             _db = db;
+            EnsureDefaultStages();
         }
 
         /* ###############################  人员管理  ################################ */
@@ -157,6 +158,96 @@ namespace ORT一键报告.Services
             return added;
         }
 
+        /* ###############################  产品别管理  ################################ */
+
+        public List<Product> GetProducts()
+            => _db.FreeSql.Select<Product>().OrderBy(p => p.Name).ToList();
+
+        /// <summary>
+        /// 新增或更新产品别，返回错误信息；成功返回null
+        /// </summary>
+        public string SaveProduct(Product product)
+        {
+            if (string.IsNullOrWhiteSpace(product.Name))
+            {
+                return "产品别名称不能为空";
+            }
+            bool exists = _db.FreeSql.Select<Product>()
+                .Where(p => p.Name == product.Name && p.Id != product.Id).Any();
+            if (exists)
+            {
+                return $"产品别 [{product.Name}] 已存在";
+            }
+            if (product.Id == 0)
+            {
+                _db.FreeSql.Insert(product).ExecuteAffrows();
+            }
+            else
+            {
+                _db.FreeSql.Update<Product>().SetSource(product).Where(p => p.Id == product.Id).ExecuteAffrows();
+            }
+            return null;
+        }
+
+        public void DeleteProduct(long id)
+            => _db.FreeSql.Delete<Product>().Where(p => p.Id == id).ExecuteAffrows();
+
+        /* ###############################  阶段管理  ################################ */
+
+        public List<Stage> GetStages()
+            => _db.FreeSql.Select<Stage>().OrderBy(s => s.Id).ToList();
+
+        /// <summary>
+        /// 新增或更新阶段，返回错误信息；成功返回null
+        /// </summary>
+        public string SaveStage(Stage stage)
+        {
+            if (string.IsNullOrWhiteSpace(stage.Name))
+            {
+                return "阶段名不能为空";
+            }
+            bool exists = _db.FreeSql.Select<Stage>()
+                .Where(s => s.Name == stage.Name && s.Id != stage.Id).Any();
+            if (exists)
+            {
+                return $"阶段 [{stage.Name}] 已存在";
+            }
+            if (stage.Id == 0)
+            {
+                _db.FreeSql.Insert(stage).ExecuteAffrows();
+            }
+            else
+            {
+                _db.FreeSql.Update<Stage>().SetSource(stage).Where(s => s.Id == stage.Id).ExecuteAffrows();
+            }
+            return null;
+        }
+
+        public void DeleteStage(long id)
+            => _db.FreeSql.Delete<Stage>().Where(s => s.Id == id).ExecuteAffrows();
+
+        /// <summary>
+        /// 首次运行初始化默认阶段：MP/EVT/DVT/PVT/RMA（描述暂无）
+        /// </summary>
+        private void EnsureDefaultStages()
+        {
+            try
+            {
+                string[] defaults = ["MP", "EVT", "DVT", "PVT", "RMA"];
+                foreach (string name in defaults)
+                {
+                    if (!_db.FreeSql.Select<Stage>().Where(s => s.Name == name).Any())
+                    {
+                        _db.FreeSql.Insert(new Stage { Name = name }).ExecuteAffrows();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "初始化默认阶段失败");
+            }
+        }
+
         /* ###############################  测试项目管理  ################################ */
 
         public List<TestItemCatalog> GetTestItems()
@@ -190,6 +281,82 @@ namespace ORT一键报告.Services
 
         public void DeleteTestItem(long id)
             => _db.FreeSql.Delete<TestItemCatalog>().Where(t => t.Id == id).ExecuteAffrows();
+
+        /* ###############################  机种映射（还原计划表公式关系）  ################################ */
+
+        public List<ModelMapping> GetModelMappings()
+            => _db.FreeSql.Select<ModelMapping>().OrderBy(m => m.ModelName).ToList();
+
+        /// <summary>
+        /// 按机种名称查找映射（输入机种带出产品别/客户别）
+        /// </summary>
+        public ModelMapping FindModelMapping(string modelName)
+            => string.IsNullOrWhiteSpace(modelName) ? null
+            : _db.FreeSql.Select<ModelMapping>().Where(m => m.ModelName == modelName.Trim()).First();
+
+        /// <summary>
+        /// 登记/更新机种映射
+        /// </summary>
+        public void SetModelMapping(string modelName, string product, string customer)
+        {
+            if (string.IsNullOrWhiteSpace(modelName))
+            {
+                return;
+            }
+            modelName = modelName.Trim();
+            ModelMapping existing = _db.FreeSql.Select<ModelMapping>().Where(m => m.ModelName == modelName).First();
+            if (existing == null)
+            {
+                _db.FreeSql.Insert(new ModelMapping { ModelName = modelName, Product = product, Customer = customer }).ExecuteAffrows();
+            }
+            else
+            {
+                existing.Product = product ?? existing.Product;
+                existing.Customer = customer ?? existing.Customer;
+                _db.FreeSql.Update<ModelMapping>().SetSource(existing).Where(m => m.Id == existing.Id).ExecuteAffrows();
+            }
+        }
+
+        /* ###############################  字典同步（数据源：计划表）  ################################ */
+
+        /// <summary>
+        /// 从计划数据（plans 表）同步字典：客户别 + 产品别 + 机种映射
+        /// </summary>
+        public (int customers, int products, int mappings) SyncCatalogsFromPlans()
+        {
+            List<Plan> plans = _db.FreeSql.Select<Plan>().ToList();
+            int cAdded = 0, pAdded = 0, mAdded = 0;
+            foreach (IGrouping<string, Plan> group in plans
+                .Where(p => !string.IsNullOrWhiteSpace(p.ModelName))
+                .GroupBy(p => p.ModelName))
+            {
+                Plan first = group.First(p => p.Customer != null || p.Product != null) is Plan hit ? hit : group.First();
+                string customer = group.Select(p => p.Customer).FirstOrDefault(v => !string.IsNullOrWhiteSpace(v));
+                string product = group.Select(p => p.Product).FirstOrDefault(v => !string.IsNullOrWhiteSpace(v));
+
+                if (customer != null && !_db.FreeSql.Select<Customer>().Where(c => c.Name == customer).Any())
+                {
+                    _db.FreeSql.Insert(new Customer { Name = customer }).ExecuteAffrows();
+                    cAdded++;
+                }
+                if (product != null && !_db.FreeSql.Select<Product>().Where(p => p.Name == product).Any())
+                {
+                    _db.FreeSql.Insert(new Product { Name = product }).ExecuteAffrows();
+                    pAdded++;
+                }
+                if (!_db.FreeSql.Select<ModelMapping>().Where(m => m.ModelName == group.Key).Any())
+                {
+                    _db.FreeSql.Insert(new ModelMapping { ModelName = group.Key, Product = product, Customer = customer }).ExecuteAffrows();
+                    mAdded++;
+                }
+                else if (first != null)
+                {
+                    SetModelMapping(group.Key, product, customer);
+                }
+            }
+            _logger.Info($"从计划数据同步字典: 客户+{cAdded}, 产品别+{pAdded}, 机种映射+{mAdded}");
+            return (cAdded, pAdded, mAdded);
+        }
 
         /// <summary>
         /// 从计划表文件的 "Test Items" 工作表同步测试项目字典（项次/试验项目/试验时间/负责人/备考）
@@ -271,6 +438,122 @@ namespace ORT一键报告.Services
             }
             _logger.Info($"从计划表文件同步测试项目: 新增{added}个, 更新{updated}个");
             return added;
+        }
+
+        /// <summary>
+        /// 从计划表文件的 Schedule/Cust. Code 工作表同步字典：
+        /// 客户别、产品别（含 Cust. Code 表的 Product Type）、机种映射（机种→产品别/客户别）
+        /// </summary>
+        public (int customers, int products, int mappings) SyncCatalogsFromScheduleFile(string filePath)
+        {
+            ExcelPackage.License.SetNonCommercialPersonal("Lucas");
+            using FileStream fs = new(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            using ExcelPackage package = new(fs);
+            int cAdded = 0, pAdded = 0, mAdded = 0;
+
+            // 1. Cust. Code 工作表的 Product Type 列 → 产品别字典
+            ExcelWorksheet wsCode = package.Workbook.Worksheets.FirstOrDefault(s => s.Name == "Cust. Code");
+            if (wsCode != null)
+            {
+                int endRow = wsCode.Dimension?.End.Row ?? 0;
+                for (int r = 1; r <= endRow; r++)
+                {
+                    for (int c = 1; c <= (wsCode.Dimension?.End.Column ?? 0); c++)
+                    {
+                        string header = Norm(wsCode.Cells[r, c].Text);
+                        if (header == "PRODUCTTYPE" || header == "ProductType")
+                        {
+                            for (int rr = r + 1; rr <= endRow; rr++)
+                            {
+                                string product = NullIfEmpty(wsCode.Cells[rr, c].Text);
+                                if (product != null && !_db.FreeSql.Select<Product>().Where(p => p.Name == product).Any())
+                                {
+                                    _db.FreeSql.Insert(new Product { Name = product }).ExecuteAffrows();
+                                    pAdded++;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 2. Schedule 工作表：机种→产品别/客户别映射 + 字典补充
+            ExcelWorksheet ws = package.Workbook.Worksheets.FirstOrDefault(s => s.Name == "Schedule")
+                ?? package.Workbook.Worksheets[0];
+            (int headerRow, Dictionary<string, int> map) = FindScheduleHeader(ws);
+            if (headerRow > 0)
+            {
+                int colModel = map.TryGetValue("機種名", out int cm) ? cm : 0;
+                int colProduct = map.TryGetValue("產品別", out int cp) ? cp : 0;
+                int colCustomer = map.TryGetValue("客戶別", out int cc) ? cc : 0;
+                int endRow = ws.Dimension?.End.Row ?? 0;
+                for (int r = headerRow + 1; r <= endRow; r++)
+                {
+                    string model = colModel > 0 ? NullIfEmpty(ws.Cells[r, colModel].Text) : null;
+                    string product = colProduct > 0 ? NullIfEmpty(ws.Cells[r, colProduct].Text) : null;
+                    string customer = colCustomer > 0 ? NullIfEmpty(ws.Cells[r, colCustomer].Text) : null;
+                    if (model == null)
+                    {
+                        continue;
+                    }
+                    if (customer != null && !_db.FreeSql.Select<Customer>().Where(c => c.Name == customer).Any())
+                    {
+                        _db.FreeSql.Insert(new Customer { Name = customer }).ExecuteAffrows();
+                        cAdded++;
+                    }
+                    if (product != null && !_db.FreeSql.Select<Product>().Where(p => p.Name == product).Any())
+                    {
+                        _db.FreeSql.Insert(new Product { Name = product }).ExecuteAffrows();
+                        pAdded++;
+                    }
+                    if (!_db.FreeSql.Select<ModelMapping>().Where(m => m.ModelName == model).Any())
+                    {
+                        _db.FreeSql.Insert(new ModelMapping { ModelName = model, Product = product, Customer = customer }).ExecuteAffrows();
+                        mAdded++;
+                    }
+                    else
+                    {
+                        SetModelMapping(model, product, customer);
+                    }
+                }
+            }
+            _logger.Info($"从计划表文件同步字典: 客户+{cAdded}, 产品别+{pAdded}, 机种映射+{mAdded}");
+            return (cAdded, pAdded, mAdded);
+        }
+
+        /// <summary>
+        /// 定位 Schedule 表头行与关键列（機種名/產品別/客戶別）
+        /// </summary>
+        private static (int, Dictionary<string, int>) FindScheduleHeader(ExcelWorksheet ws)
+        {
+            int endRow = Math.Min(ws.Dimension?.End.Row ?? 0, 10);
+            int endCol = ws.Dimension?.End.Column ?? 0;
+            for (int r = 1; r <= endRow; r++)
+            {
+                Dictionary<string, int> map = [];
+                for (int c = 1; c <= endCol; c++)
+                {
+                    string key = Norm(ws.Cells[r, c].Text);
+                    if (key.Contains("機種名"))
+                    {
+                        map["機種名"] = c;
+                    }
+                    else if (key.Contains("產品別"))
+                    {
+                        map["產品別"] = c;
+                    }
+                    else if (key.Contains("客戶別"))
+                    {
+                        map["客戶別"] = c;
+                    }
+                }
+                // 扫描完整行后统一返回，避免遇到第一个命中列就提前返回导致后续列未收集
+                if (map.Count > 0)
+                {
+                    return (r, map);
+                }
+            }
+            return (0, []);
         }
 
         private static string Norm(string s) => s?.Replace(" ", "").Replace("\n", "").Replace("\r", "") ?? "";

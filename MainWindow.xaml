@@ -38,19 +38,19 @@
             </Grid.RowDefinitions>
             <Grid Grid.Row="1" Grid.Column="1">
                 <Button x:Name="btn_report" Content="一键报告" FontSize="32" FontWeight="ExtraBlack" Click="Button_YiJianBaoGao_Click"
-                        ToolTip="需要技术员及以上权限"/>
+                        ToolTip="读取报告概览并自动生成报告"/>
             </Grid>
             <Grid Grid.Row="1" Grid.Column="3">
                 <Button x:Name="btn_plans" Content="领退和计划" FontSize="32" FontWeight="ExtraBlack" Click="Button_Plans_Click"
-                        ToolTip="游客可浏览；编辑需相应权限"/>
+                        ToolTip="领退与计划数据的查看与编辑"/>
             </Grid>
             <Grid Grid.Row="3" Grid.Column="1">
                 <Button x:Name="btn_admin" Content="管理" FontSize="32" FontWeight="ExtraBlack" Click="Button_Admin_Click"
-                        ToolTip="需要管理员权限"/>
+                        ToolTip="人员/客户/测试项目/产品别/阶段管理与数据导入"/>
             </Grid>
             <Grid Grid.Row="3" Grid.Column="3">
                 <Button x:Name="btn_review" Content="审核" FontSize="32" FontWeight="ExtraBlack" Click="Button_Review_Click"
-                        ToolTip="需要审核员及以上权限"/>
+                        ToolTip="审核计划表单更改请求"/>
             </Grid>
         </Grid>
     </Grid>

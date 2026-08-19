@@ -16,6 +16,7 @@ namespace ORT一键报告.Admin.Views
         private readonly AdminService _admin;
         private readonly AuthService _auth;
         private readonly IPathService _pathService;
+        private readonly PlanExcelService _planExcelService;
 
         public WindowAdmin()
         {
@@ -23,12 +24,15 @@ namespace ORT一键报告.Admin.Views
             _admin = App.ServiceProvider.GetRequiredService<AdminService>();
             _auth = App.ServiceProvider.GetRequiredService<AuthService>();
             _pathService = App.ServiceProvider.GetRequiredService<IPathService>();
+            _planExcelService = App.ServiceProvider.GetRequiredService<PlanExcelService>();
 
             Loaded += (s, e) =>
             {
                 LoadUsers();
                 LoadCustomers();
                 LoadTestItems();
+                LoadProducts();
+                LoadStages();
             };
         }
 
@@ -336,5 +340,213 @@ namespace ORT一键报告.Admin.Views
         }
 
         private void Btn_RefreshTestItems_Click(object sender, RoutedEventArgs e) => LoadTestItems();
+
+        /* ###############################  导入入口（从领退和计划迁入）  ################################ */
+
+        /// <summary>
+        /// 导入领用表
+        /// </summary>
+        private void Btn_ImportRequisition_Click(object sender, RoutedEventArgs e)
+        {
+            string file = _pathService.OpenPathDialog("选择领用表(成品領用記錄)");
+            if (file == null)
+            {
+                return;
+            }
+            try
+            {
+                (int added, int updated) = _planExcelService.ImportRequisition(file);
+                _ = MessageBox.Show($"领用表导入完成: 新增{added}条, 更新{updated}条", "导入结果");
+            }
+            catch (System.Exception ex)
+            {
+                _ = MessageBox.Show($"导入领用表失败:\n{ex.Message}", "错误");
+            }
+        }
+
+        /// <summary>
+        /// 导入计划表，并一并同步客户/测试项目/产品别/机种映射字典
+        /// </summary>
+        private void Btn_ImportPlan_Click(object sender, RoutedEventArgs e)
+        {
+            string file = _pathService.OpenPathDialog("选择计划表(ORT Test Schedule)");
+            if (file == null)
+            {
+                return;
+            }
+            try
+            {
+                (int added, int updated, System.Collections.Generic.List<string> unmatched) = _planExcelService.ImportSchedule(file);
+                // 一并同步字典数据：客户/测试项目/产品别/机种映射
+                (int c1, int p1, int m1) = _admin.SyncCatalogsFromScheduleFile(file);
+                int t1 = _admin.SyncTestItemsFromScheduleFile(file);
+                LoadCustomers();
+                LoadTestItems();
+                LoadProducts();
+
+                string message = $"计划表导入完成: 新增{added}条, 更新{updated}条\n" +
+                    $"字典同步: 客户+{c1}, 产品别+{p1}, 机种映射+{m1}, 测试项目+{t1}";
+                if (unmatched.Count > 0)
+                {
+                    string list = unmatched.Count > 30
+                        ? string.Join("\n", unmatched.GetRange(0, 30)) + $"\n...等共{unmatched.Count}条"
+                        : string.Join("\n", unmatched);
+                    message += $"\n\n以下 {unmatched.Count} 条备注中未找到工令且工作編號非 Q 开头，未关联到领用数据:\n{list}";
+                }
+                _ = MessageBox.Show(message, "导入结果");
+            }
+            catch (System.Exception ex)
+            {
+                _ = MessageBox.Show($"导入计划表失败:\n{ex.Message}", "错误");
+            }
+        }
+
+        /* ###############################  产品别管理  ################################ */
+
+        private void LoadProducts()
+        {
+            dg_products.ItemsSource = _admin.GetProducts();
+        }
+
+        private Product SelectedProduct => dg_products.SelectedItem as Product;
+
+        private void Btn_NewProduct_Click(object sender, RoutedEventArgs e)
+        {
+            WindowAdminInput input = new("新增产品别", ("产品别名称", "", false), ("备注", "", false))
+            {
+                Owner = this
+            };
+            if (input.ShowDialog() != true)
+            {
+                return;
+            }
+            string error = _admin.SaveProduct(new Product { Name = input.Values[0], Remark = input.Values[1] });
+            if (error != null)
+            {
+                _ = MessageBox.Show(error, "保存失败");
+                return;
+            }
+            LoadProducts();
+        }
+
+        private void Btn_EditProduct_Click(object sender, RoutedEventArgs e)
+        {
+            Product product = SelectedProduct;
+            if (product == null)
+            {
+                _ = MessageBox.Show("请先选择一个产品别", "提示");
+                return;
+            }
+            WindowAdminInput input = new("编辑产品别", ("产品别名称", product.Name, false), ("备注", product.Remark, false))
+            {
+                Owner = this
+            };
+            if (input.ShowDialog() != true)
+            {
+                return;
+            }
+            product.Name = input.Values[0];
+            product.Remark = input.Values[1];
+            string error = _admin.SaveProduct(product);
+            if (error != null)
+            {
+                _ = MessageBox.Show(error, "保存失败");
+                return;
+            }
+            LoadProducts();
+        }
+
+        private void Btn_DeleteProduct_Click(object sender, RoutedEventArgs e)
+        {
+            Product product = SelectedProduct;
+            if (product == null)
+            {
+                _ = MessageBox.Show("请先选择一个产品别", "提示");
+                return;
+            }
+            if (MessageBox.Show($"确认删除产品别 [{product.Name}]？", "删除确认",
+                MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+            {
+                return;
+            }
+            _admin.DeleteProduct(product.Id);
+            LoadProducts();
+        }
+
+        private void Btn_RefreshProducts_Click(object sender, RoutedEventArgs e) => LoadProducts();
+
+        /* ###############################  阶段管理  ################################ */
+
+        private void LoadStages()
+        {
+            dg_stages.ItemsSource = _admin.GetStages();
+        }
+
+        private Stage SelectedStage => dg_stages.SelectedItem as Stage;
+
+        private void Btn_NewStage_Click(object sender, RoutedEventArgs e)
+        {
+            WindowAdminInput input = new("新增阶段", ("阶段名", "", false), ("描述", "", false))
+            {
+                Owner = this
+            };
+            if (input.ShowDialog() != true)
+            {
+                return;
+            }
+            string error = _admin.SaveStage(new Stage { Name = input.Values[0], Description = input.Values[1] });
+            if (error != null)
+            {
+                _ = MessageBox.Show(error, "保存失败");
+                return;
+            }
+            LoadStages();
+        }
+
+        private void Btn_EditStage_Click(object sender, RoutedEventArgs e)
+        {
+            Stage stage = SelectedStage;
+            if (stage == null)
+            {
+                _ = MessageBox.Show("请先选择一个阶段", "提示");
+                return;
+            }
+            WindowAdminInput input = new("编辑阶段", ("阶段名", stage.Name, false), ("描述", stage.Description, false))
+            {
+                Owner = this
+            };
+            if (input.ShowDialog() != true)
+            {
+                return;
+            }
+            stage.Name = input.Values[0];
+            stage.Description = input.Values[1];
+            string error = _admin.SaveStage(stage);
+            if (error != null)
+            {
+                _ = MessageBox.Show(error, "保存失败");
+                return;
+            }
+            LoadStages();
+        }
+
+        private void Btn_DeleteStage_Click(object sender, RoutedEventArgs e)
+        {
+            Stage stage = SelectedStage;
+            if (stage == null)
+            {
+                _ = MessageBox.Show("请先选择一个阶段", "提示");
+                return;
+            }
+            if (MessageBox.Show($"确认删除阶段 [{stage.Name}]？", "删除确认",
+                MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+            {
+                return;
+            }
+            _admin.DeleteStage(stage.Id);
+            LoadStages();
+        }
+
+        private void Btn_RefreshStages_Click(object sender, RoutedEventArgs e) => LoadStages();
     }
 }
