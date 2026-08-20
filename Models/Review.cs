@@ -1,4 +1,4 @@
-using FreeSql.DataAnnotations;
+﻿using FreeSql.DataAnnotations;
 using System;
 
 namespace ORT一键报告.Models
@@ -74,7 +74,7 @@ namespace ORT一键报告.Models
     }
 
     /// <summary>
-    /// 客户实体（customers 表），数据源为计划表的客户别
+    /// 客户实体（customers 表），数据源为计划表 Cust. Code 工作表的 B、C 列（Cust. Code, ENDCUSTOMER）
     /// </summary>
     [Table(Name = "customers")]
     [Index("uk_customer_name", nameof(Name), true)]
@@ -83,8 +83,17 @@ namespace ORT一键报告.Models
         [Column(IsPrimary = true, IsIdentity = true)]
         public long Id { get; set; }
 
+        /// <summary>
+        /// 客户名称（ENDCUSTOMER）
+        /// </summary>
         [Column(StringLength = 64, IsNullable = false)]
         public string Name { get; set; }
+
+        /// <summary>
+        /// 客户代码（Cust. Code）
+        /// </summary>
+        [Column(StringLength = 32, IsNullable = true)]
+        public string Code { get; set; }
 
         [Column(StringLength = 256, IsNullable = true)]
         public string Remark { get; set; }

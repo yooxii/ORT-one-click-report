@@ -89,8 +89,22 @@ namespace ORT一键报告.Reports.ViewModels
                 {
                     string rtValue = rt.Value;
                     matched = _databaseService.FreeSql.Select<Plan>()
-                        .Where(p => p.ReturnRtOrder == rtValue || p.JobNo == rtValue)
+                        .Where(p => p.JobNo == rtValue)
                         .First();
+                    if (matched == null)
+                    {
+                        // 回线工令属于领退表，找到后按机种匹配计划表
+                        Requisition req = _databaseService.FreeSql.Select<Requisition>()
+                            .Where(r => r.ReturnRtOrder == rtValue || r.WorkOrder == rtValue)
+                            .First();
+                        if (req != null)
+                        {
+                            matched = _databaseService.FreeSql.Select<Plan>()
+                                .Where(p => p.ModelName == req.ModelName)
+                                .OrderByDescending(p => p.Id)
+                                .First();
+                        }
+                    }
                 }
                 // 2. 机种名称（如 FSA037-4B1G，通常位于文件夹名开头）
                 if (matched == null)

@@ -1,6 +1,7 @@
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using ORT一键报告.Models;
 using ORT一键报告.Services;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
@@ -67,7 +68,6 @@ namespace ORT一键报告.Admin.Views
                 ("显示名称", "", false),
                 ("密码（至少6位）", "", true))
             {
-                Owner = this
             };
             if (input.ShowDialog() != true)
             {
@@ -122,7 +122,6 @@ namespace ORT一键报告.Admin.Views
             }
             WindowAdminInput input = new($"重置密码 - {user.Username}", ("新密码（至少6位）", "", true))
             {
-                Owner = this
             };
             if (input.ShowDialog() != true)
             {
@@ -151,7 +150,7 @@ namespace ORT一键报告.Admin.Views
 
         private void Btn_RefreshUsers_Click(object sender, RoutedEventArgs e) => LoadUsers();
 
-        /* ###############################  客户管理  ################################ */
+        /* ###############################  客户管理（整合产品别）  ################################ */
 
         private void LoadCustomers()
         {
@@ -162,15 +161,22 @@ namespace ORT一键报告.Admin.Views
 
         private void Btn_NewCustomer_Click(object sender, RoutedEventArgs e)
         {
-            WindowAdminInput input = new("新增客户", ("客户名称", "", false), ("备注", "", false))
+            WindowAdminInput input = new("新增客户",
+                ("客户名称", "", false),
+                ("客户代码", "", false),
+                ("备注", "", false))
             {
-                Owner = this
             };
             if (input.ShowDialog() != true)
             {
                 return;
             }
-            string error = _admin.SaveCustomer(new Customer { Name = input.Values[0], Remark = input.Values[1] });
+            string error = _admin.SaveCustomer(new Customer
+            {
+                Name = input.Values[0],
+                Code = input.Values[1],
+                Remark = input.Values[2]
+            });
             if (error != null)
             {
                 _ = MessageBox.Show(error, "保存失败");
@@ -187,16 +193,19 @@ namespace ORT一键报告.Admin.Views
                 _ = MessageBox.Show("请先选择一个客户", "提示");
                 return;
             }
-            WindowAdminInput input = new("编辑客户", ("客户名称", customer.Name, false), ("备注", customer.Remark, false))
+            WindowAdminInput input = new("编辑客户",
+                ("客户名称", customer.Name, false),
+                ("客户代码", customer.Code, false),
+                ("备注", customer.Remark, false))
             {
-                Owner = this
             };
             if (input.ShowDialog() != true)
             {
                 return;
             }
             customer.Name = input.Values[0];
-            customer.Remark = input.Values[1];
+            customer.Code = input.Values[1];
+            customer.Remark = input.Values[2];
             string error = _admin.SaveCustomer(customer);
             if (error != null)
             {
@@ -225,9 +234,10 @@ namespace ORT一键报告.Admin.Views
 
         private void Btn_SyncCustomers_Click(object sender, RoutedEventArgs e)
         {
-            int added = _admin.SyncCustomersFromPlans();
+            (int cAdded, int pAdded, int mAdded) = _admin.SyncCatalogsFromPlans();
             LoadCustomers();
-            _ = MessageBox.Show($"同步完成，新增 {added} 个客户", "同步结果");
+            LoadProducts();
+            _ = MessageBox.Show($"同步完成，客户+{cAdded}，产品别+{pAdded}，机种映射+{mAdded}", "同步结果");
         }
 
         private void Btn_RefreshCustomers_Click(object sender, RoutedEventArgs e) => LoadCustomers();
@@ -243,12 +253,24 @@ namespace ORT一键报告.Admin.Views
 
         private void Btn_NewTestItem_Click(object sender, RoutedEventArgs e)
         {
-            TestItemCatalog item = InputTestItem("新增测试项目", new TestItemCatalog());
-            if (item == null)
+            WindowAdminInput input = new("新增测试项目",
+                ("试验项目", "", false),
+                ("试验时间", "", false),
+                ("负责人", "", false),
+                ("备注", "", false))
+            {
+            };
+            if (input.ShowDialog() != true)
             {
                 return;
             }
-            string error = _admin.SaveTestItem(item);
+            string error = _admin.SaveTestItem(new TestItemCatalog
+            {
+                Name = input.Values[0],
+                Period = input.Values[1],
+                Owner = input.Values[2],
+                Remark = input.Values[3]
+            });
             if (error != null)
             {
                 _ = MessageBox.Show(error, "保存失败");
@@ -265,42 +287,28 @@ namespace ORT一键报告.Admin.Views
                 _ = MessageBox.Show("请先选择一个测试项目", "提示");
                 return;
             }
-            TestItemCatalog item = InputTestItem("编辑测试项目", selected);
-            if (item == null)
+            WindowAdminInput input = new("编辑测试项目",
+                ("试验项目", selected.Name, false),
+                ("试验时间", selected.Period, false),
+                ("负责人", selected.Owner, false),
+                ("备注", selected.Remark, false))
+            {
+            };
+            if (input.ShowDialog() != true)
             {
                 return;
             }
-            string error = _admin.SaveTestItem(item);
+            selected.Name = input.Values[0];
+            selected.Period = input.Values[1];
+            selected.Owner = input.Values[2];
+            selected.Remark = input.Values[3];
+            string error = _admin.SaveTestItem(selected);
             if (error != null)
             {
                 _ = MessageBox.Show(error, "保存失败");
                 return;
             }
             LoadTestItems();
-        }
-
-        private TestItemCatalog InputTestItem(string title, TestItemCatalog source)
-        {
-            WindowAdminInput input = new(title,
-                ("试验项目", source.Name, false),
-                ("试验时间", source.Period, false),
-                ("负责人", source.Owner, false),
-                ("备注", source.Remark, false))
-            {
-                Owner = this
-            };
-            if (input.ShowDialog() != true)
-            {
-                return null;
-            }
-            return new TestItemCatalog
-            {
-                Id = source.Id,
-                Name = input.Values[0],
-                Period = input.Values[1],
-                Owner = input.Values[2],
-                Remark = input.Values[3]
-            };
         }
 
         private void Btn_DeleteTestItem_Click(object sender, RoutedEventArgs e)
@@ -333,7 +341,7 @@ namespace ORT一键报告.Admin.Views
                 LoadTestItems();
                 _ = MessageBox.Show($"同步完成，新增 {added} 个测试项目", "同步结果");
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 _ = MessageBox.Show($"同步失败:\n{ex.Message}", "错误");
             }
@@ -343,9 +351,6 @@ namespace ORT一键报告.Admin.Views
 
         /* ###############################  导入入口（从领退和计划迁入）  ################################ */
 
-        /// <summary>
-        /// 导入领用表
-        /// </summary>
         private void Btn_ImportRequisition_Click(object sender, RoutedEventArgs e)
         {
             string file = _pathService.OpenPathDialog("选择领用表(成品領用記錄)");
@@ -358,15 +363,12 @@ namespace ORT一键报告.Admin.Views
                 (int added, int updated) = _planExcelService.ImportRequisition(file);
                 _ = MessageBox.Show($"领用表导入完成: 新增{added}条, 更新{updated}条", "导入结果");
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 _ = MessageBox.Show($"导入领用表失败:\n{ex.Message}", "错误");
             }
         }
 
-        /// <summary>
-        /// 导入计划表，并一并同步客户/测试项目/产品别/机种映射字典
-        /// </summary>
         private void Btn_ImportPlan_Click(object sender, RoutedEventArgs e)
         {
             string file = _pathService.OpenPathDialog("选择计划表(ORT Test Schedule)");
@@ -376,8 +378,7 @@ namespace ORT一键报告.Admin.Views
             }
             try
             {
-                (int added, int updated, System.Collections.Generic.List<string> unmatched) = _planExcelService.ImportSchedule(file);
-                // 一并同步字典数据：客户/测试项目/产品别/机种映射
+                (int added, int updated, List<string> unmatched) = _planExcelService.ImportSchedule(file);
                 (int c1, int p1, int m1) = _admin.SyncCatalogsFromScheduleFile(file);
                 int t1 = _admin.SyncTestItemsFromScheduleFile(file);
                 LoadCustomers();
@@ -395,85 +396,43 @@ namespace ORT一键报告.Admin.Views
                 }
                 _ = MessageBox.Show(message, "导入结果");
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 _ = MessageBox.Show($"导入计划表失败:\n{ex.Message}", "错误");
             }
         }
 
-        /* ###############################  产品别管理  ################################ */
-
-        private void LoadProducts()
+        /// <summary>
+        /// 清空全部计划数据（领退表+计划表），仅管理员可操作，二次确认
+        /// </summary>
+        private void Btn_ClearAll_Click(object sender, RoutedEventArgs e)
         {
-            dg_products.ItemsSource = _admin.GetProducts();
+            IPermissionService permission = App.ServiceProvider.GetRequiredService<IPermissionService>();
+            if (!permission.Can("admin.manage"))
+            {
+                _ = MessageBox.Show("只有管理员可以清空计划数据", "权限不足");
+                return;
+            }
+            if (MessageBox.Show("确认清空领退表和计划表的全部数据？此操作不可恢复！\n建议操作前先导出备份。",
+                "清空确认", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+            {
+                return;
+            }
+            if (MessageBox.Show("再次确认：真的要清空全部计划数据吗？",
+                "二次确认", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+            {
+                return;
+            }
+            try
+            {
+                int n = _planExcelService.ClearAll();
+                _ = MessageBox.Show($"已清空 {n} 条记录", "完成");
+            }
+            catch (Exception ex)
+            {
+                _ = MessageBox.Show($"清空失败:\n{ex.Message}", "错误");
+            }
         }
-
-        private Product SelectedProduct => dg_products.SelectedItem as Product;
-
-        private void Btn_NewProduct_Click(object sender, RoutedEventArgs e)
-        {
-            WindowAdminInput input = new("新增产品别", ("产品别名称", "", false), ("备注", "", false))
-            {
-                Owner = this
-            };
-            if (input.ShowDialog() != true)
-            {
-                return;
-            }
-            string error = _admin.SaveProduct(new Product { Name = input.Values[0], Remark = input.Values[1] });
-            if (error != null)
-            {
-                _ = MessageBox.Show(error, "保存失败");
-                return;
-            }
-            LoadProducts();
-        }
-
-        private void Btn_EditProduct_Click(object sender, RoutedEventArgs e)
-        {
-            Product product = SelectedProduct;
-            if (product == null)
-            {
-                _ = MessageBox.Show("请先选择一个产品别", "提示");
-                return;
-            }
-            WindowAdminInput input = new("编辑产品别", ("产品别名称", product.Name, false), ("备注", product.Remark, false))
-            {
-                Owner = this
-            };
-            if (input.ShowDialog() != true)
-            {
-                return;
-            }
-            product.Name = input.Values[0];
-            product.Remark = input.Values[1];
-            string error = _admin.SaveProduct(product);
-            if (error != null)
-            {
-                _ = MessageBox.Show(error, "保存失败");
-                return;
-            }
-            LoadProducts();
-        }
-
-        private void Btn_DeleteProduct_Click(object sender, RoutedEventArgs e)
-        {
-            Product product = SelectedProduct;
-            if (product == null)
-            {
-                _ = MessageBox.Show("请先选择一个产品别", "提示");
-                return;
-            }
-            if (MessageBox.Show($"确认删除产品别 [{product.Name}]？", "删除确认",
-                MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
-            {
-                return;
-            }
-            _admin.DeleteProduct(product.Id);
-            LoadProducts();
-        }
-
-        private void Btn_RefreshProducts_Click(object sender, RoutedEventArgs e) => LoadProducts();
 
         /* ###############################  阶段管理  ################################ */
 
@@ -488,7 +447,6 @@ namespace ORT一键报告.Admin.Views
         {
             WindowAdminInput input = new("新增阶段", ("阶段名", "", false), ("描述", "", false))
             {
-                Owner = this
             };
             if (input.ShowDialog() != true)
             {
@@ -513,7 +471,6 @@ namespace ORT一键报告.Admin.Views
             }
             WindowAdminInput input = new("编辑阶段", ("阶段名", stage.Name, false), ("描述", stage.Description, false))
             {
-                Owner = this
             };
             if (input.ShowDialog() != true)
             {
@@ -548,5 +505,89 @@ namespace ORT一键报告.Admin.Views
         }
 
         private void Btn_RefreshStages_Click(object sender, RoutedEventArgs e) => LoadStages();
+
+        /* ###############################  产品别管理  ################################ */
+
+        private void LoadProducts()
+        {
+            dg_products.ItemsSource = _admin.GetProductEntities();
+        }
+
+        private Product SelectedProduct => dg_products.SelectedItem as Product;
+
+        private void Btn_NewProduct_Click(object sender, RoutedEventArgs e)
+        {
+            WindowAdminInput input = new("新增产品别",
+                ("产品别名称", "", false),
+                ("产品代码", "", false),
+                ("备注", "", false))
+            {
+            };
+            if (input.ShowDialog() != true)
+            {
+                return;
+            }
+            string error = _admin.SaveProduct(new Product
+            {
+                Name = input.Values[0],
+                Code = input.Values[1],
+                Remark = input.Values[2]
+            });
+            if (error != null)
+            {
+                _ = MessageBox.Show(error, "保存失败");
+                return;
+            }
+            LoadProducts();
+        }
+
+        private void Btn_EditProduct_Click(object sender, RoutedEventArgs e)
+        {
+            Product product = SelectedProduct;
+            if (product == null)
+            {
+                _ = MessageBox.Show("请先选择一个产品别", "提示");
+                return;
+            }
+            WindowAdminInput input = new("编辑产品别",
+                ("产品别名称", product.Name, false),
+                ("产品代码", product.Code, false),
+                ("备注", product.Remark, false))
+            {
+            };
+            if (input.ShowDialog() != true)
+            {
+                return;
+            }
+            product.Name = input.Values[0];
+            product.Code = input.Values[1];
+            product.Remark = input.Values[2];
+            string error = _admin.SaveProduct(product);
+            if (error != null)
+            {
+                _ = MessageBox.Show(error, "保存失败");
+                return;
+            }
+            LoadProducts();
+        }
+
+        private void Btn_DeleteProduct_Click(object sender, RoutedEventArgs e)
+        {
+            Product product = SelectedProduct;
+            if (product == null)
+            {
+                _ = MessageBox.Show("请先选择一个产品别", "提示");
+                return;
+            }
+            if (MessageBox.Show($"确认删除产品别 [{product.Name}]？", "删除确认",
+                MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+            {
+                return;
+            }
+            _admin.DeleteProduct(product.Id);
+            LoadProducts();
+        }
+
+        private void Btn_RefreshProducts_Click(object sender, RoutedEventArgs e) => LoadProducts();
     }
 }

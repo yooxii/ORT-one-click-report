@@ -37,6 +37,8 @@ namespace ORT一键报告
             MainVM = App.ServiceProvider.GetRequiredService<MainViewModel>();
             DataContext = MainVM;
 
+            Loaded += (s, e) => Activate();
+
             _auth.AuthChanged += () => Dispatcher.Invoke(UpdateUIByPermission);
             Loaded += (s, e) => UpdateUIByPermission();
         }
@@ -75,7 +77,6 @@ namespace ORT一键报告
             }
             WindowLogin loginWindow = new()
             {
-                Owner = this
             };
             if (loginWindow.ShowDialog() == true)
             {
@@ -87,7 +88,6 @@ namespace ORT一键报告
         {
             WindowLog windowLog = new()
             {
-                Owner = this
             };
             windowLog.Show();
         }
@@ -112,7 +112,6 @@ namespace ORT一键报告
         {
             WindowPlans windowPlans = new()
             {
-                Owner = this
             };
             windowPlans.Show();
         }
@@ -126,7 +125,6 @@ namespace ORT一键报告
             }
             WindowAdmin windowAdmin = new()
             {
-                Owner = this
             };
             windowAdmin.Show();
         }
@@ -140,9 +138,9 @@ namespace ORT一键报告
             }
             WindowReview windowReview = new()
             {
-                Owner = this
             };
             windowReview.Show();
         }
     }
 }
+

@@ -19,6 +19,10 @@
                     ToolTip="导入成品領用記錄Excel，与已有记录合并到同一行"/>
             <Button Content="导入计划表" Padding="10,3" Margin="8,0,0,0" Click="Btn_ImportPlan_Click"
                     ToolTip="导入ORT Test Schedule Excel，并同步客户/测试项目/产品别/机种映射字典"/>
+            <Separator Margin="10,2"/>
+            <Button x:Name="btn_clearAll" Content="清空计划数据" Padding="10,3" Foreground="DarkRed"
+                    Click="Btn_ClearAll_Click"
+                    ToolTip="清空领退表和计划表全部数据（仅管理员，需二次确认，不可恢复）"/>
         </StackPanel>
 
         <TabControl Grid.Row="1">
@@ -88,7 +92,8 @@
                           CanUserAddRows="False" SelectionMode="Single" SelectionUnit="FullRow"
                           HeadersVisibility="Column" GridLinesVisibility="Horizontal">
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="客户名称" Binding="{Binding Name}" Width="200"/>
+                        <DataGridTextColumn Header="客户名称" Binding="{Binding Name}" Width="150"/>
+                        <DataGridTextColumn Header="客户代码" Binding="{Binding Code}" Width="100"/>
                         <DataGridTextColumn Header="备注" Binding="{Binding Remark}" Width="*"/>
                     </DataGrid.Columns>
                 </DataGrid>
@@ -122,6 +127,7 @@
                 </DataGrid>
             </Grid>
         </TabItem>
+
         <!--产品别管理-->
         <TabItem Header="产品别管理">
             <Grid Margin="5">
@@ -139,7 +145,8 @@
                           CanUserAddRows="False" SelectionMode="Single" SelectionUnit="FullRow"
                           HeadersVisibility="Column" GridLinesVisibility="Horizontal">
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="产品别名称" Binding="{Binding Name}" Width="200"/>
+                        <DataGridTextColumn Header="产品别名称" Binding="{Binding Name}" Width="150"/>
+                        <DataGridTextColumn Header="产品代码" Binding="{Binding Code}" Width="100"/>
                         <DataGridTextColumn Header="备注" Binding="{Binding Remark}" Width="*"/>
                     </DataGrid.Columns>
                 </DataGrid>

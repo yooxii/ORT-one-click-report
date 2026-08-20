@@ -1,309 +1,580 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json;
 using NLog;
 using ORT一键报告.Models;
 using ORT一键报告.Plans.ViewModels;
 using ORT一键报告.Services;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Reflection;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Input;
+using System.Windows.Media;
 
 namespace ORT一键报告.Plans.Views
 {
     /// <summary>
-    /// WindowPlans.xaml 的交互逻辑
+    /// WindowPlans.xaml 的交互逻辑：领退表/计划表两个 Tab 展示、单元格编辑、
+    /// 右键菜单（编辑/删除/复制/粘贴/显示隐藏列）、机种联动、行号显示与列顺序持久化。
     /// </summary>
     public partial class WindowPlans : Window
     {
         private readonly Logger _logger = LogManager.GetCurrentClassLogger();
+        private readonly PlansViewModel _vm;
 
-        public PlansViewModel PlansVM { get; }
-
-        /// <summary>
-        /// 列顺序布局文件（Data目录下），窗口关闭时保存，下次开启恢复
-        /// </summary>
-        private string LayoutFilePath => Path.Combine(
-            App.ServiceProvider.GetService(typeof(DatabaseService)) is DatabaseService db ? db.DataDir : "", "plans_layout.json");
-
-        /// <summary>
-        /// 允许复制/粘贴的列（属性名，按表格列顺序）
-        /// </summary>
-        private static readonly string[] CopyableFields =
-        [
-            "JobNo", "RequisitionNo", "ModelName", "TestItem", "OutQty", "SN", "DC", "Rev",
-            "WorkOrder", "ReturnRtOrder", "LineNo", "RequisitionDate", "ReturnDate",
-            "StockInNo", "StockInDate", "Product", "Customer", "Stage",
-            "SampleSize", "TestPeriod", "Owner", "StartDate", "EndDate", "Status", "Remark"
-        ];
+        private static readonly string LayoutFile
+            = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data", "plans_layout.json");
 
         public WindowPlans()
         {
             InitializeComponent();
-            PlansVM = App.ServiceProvider.GetRequiredService<PlansViewModel>();
-            DataContext = PlansVM;
-
-            Loaded += (s, e) => RestoreColumnLayout();
-            Closing += (s, e) => SaveColumnLayout();
-        }
-
-        /// <summary>
-        /// 打开回线转移单工具（从一键报告迁移至此）
-        /// </summary>
-        private void Btn_ReturnLine_Click(object sender, RoutedEventArgs e)
-        {
-            WindowReturnLine windowReturnLine = new()
+            _vm = App.ServiceProvider.GetRequiredService<PlansViewModel>();
+            DataContext = _vm;
+            Loaded += (s, e) =>
             {
-                Owner = this
+                RestoreColumnState();
+                _vm.Refresh();
             };
-            windowReturnLine.Show();
+            Closing += (s, e) => SaveColumnState();
         }
 
-        /* ###############################  Excel 风格：行号 / 编辑校验 / 联动  ################################ */
+        /* ###############################  行号  ################################ */
 
-        /// <summary>
-        /// 行头显示行号（像 Excel）
-        /// </summary>
+        private void Dg_Requisitions_LoadingRow(object sender, DataGridRowEventArgs e)
+        {
+            e.Row.Header = (e.Row.GetIndex() + 1).ToString();
+        }
+
         private void Dg_Plans_LoadingRow(object sender, DataGridRowEventArgs e)
         {
-            e.Row.Header = e.Row.GetIndex() + 1;
+            e.Row.Header = (e.Row.GetIndex() + 1).ToString();
         }
 
-        /// <summary>
-        /// 单元格编辑结束：校验格式 → 机种联动 → 标记暂存修改
-        /// </summary>
+        /* ###############################  单元格编辑结束  ################################ */
+
+        private void Dg_Requisitions_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
+        {
+            if (e.Row.Item is Requisition req)
+            {
+                _vm.NotifyPendingChanged();
+                _vm.StatusMessage = _vm.PendingText;
+            }
+        }
+
         private void Dg_Plans_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
         {
-            if (e.EditAction != DataGridEditAction.Commit || e.Row.Item is not Plan plan)
+            if (e.Row.Item is not Plan plan)
             {
                 return;
             }
-            string field = (e.Column as DataGridTextColumn)?.SortMemberPath
-                ?? e.Column.SortMemberPath;
-            string newValue = (e.EditingElement as TextBox)?.Text;
-
-            // 格式校验
-            string error = PlansVM.ValidateField(field, newValue);
-            if (error != null)
+            // 校验字典/格式字段
+            string column = e.Column.SortMemberPath;
+            if (column == "JobNo")
             {
-                e.Cancel = true;
-                _ = MessageBox.Show(error, "输入校验失败", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
+                string error = _vm.ValidateField("JobNo", plan.JobNo);
+                if (error != null)
+                {
+                    _ = MessageBox.Show(error, "格式校验失败");
+                    e.Cancel = true;
+                    return;
+                }
             }
-
-            // 机种名称修改后自动带出产品别/客户别（还原计划表公式关系）；
-            // Plan 已实现属性通知，单元格自动刷新，无需 Items.Refresh（编辑事务中 Refresh 会抛异常）
-            if (field == "ModelName")
+            if (column == "Status")
             {
-                PlansVM.AutoFillByModel(plan);
+                string error = _vm.ValidateField("Status", plan.Status);
+                if (error != null)
+                {
+                    _ = MessageBox.Show(error, "校验失败");
+                    e.Cancel = true;
+                    return;
+                }
             }
-            PlansVM.MarkModified(plan);
+            if (column == "TestItem")
+            {
+                string error = _vm.ValidateField("TestItem", plan.TestItem);
+                if (error != null)
+                {
+                    _ = MessageBox.Show(error, "校验失败");
+                    e.Cancel = true;
+                    return;
+                }
+                // 测试项目联动：同步负责人/试验时间/结束日期
+                _vm.AutoFillByTestItem(plan);
+            }
+            // 机种联动：修改机种名称后带出产品别/客户别（仅填充空字段）
+            if (column == "ModelName")
+            {
+                _vm.AutoFillByModel(plan);
+            }
+            _vm.NotifyPendingChanged();
+            _vm.StatusMessage = _vm.PendingText;
         }
 
-        /* ###############################  右键菜单：编辑 / 删除 / 复制 / 粘贴  ################################ */
+        /* ###############################  右键单元格定位  ################################ */
 
-        private void Menu_Edit_Click(object sender, RoutedEventArgs e)
+        private void Dg_Requisitions_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
         {
-            if (PlansVM.EditCommand.CanExecute(null))
-            {
-                PlansVM.EditCommand.Execute(null);
-            }
+            SelectCellUnderMouse(sender as DataGrid, e);
         }
 
-        private void Menu_Delete_Click(object sender, RoutedEventArgs e)
+        private void Dg_Plans_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
         {
-            if (dg_plans.CurrentItem is Plan plan)
-            {
-                PlansVM.DeleteRowCommand.Execute(plan);
-            }
-        }
-
-        /// <summary>
-        /// 复制选中行（TSV，多行以换行分隔）
-        /// </summary>
-        private void Menu_CopyRow_Click(object sender, RoutedEventArgs e)
-        {
-            List<Plan> rows = dg_plans.SelectedItems.OfType<Plan>().ToList();
-            if (rows.Count == 0 && dg_plans.CurrentItem is Plan current)
-            {
-                rows.Add(current);
-            }
-            if (rows.Count == 0)
-            {
-                return;
-            }
-            List<string> lines = [];
-            foreach (Plan row in rows)
-            {
-                lines.Add(string.Join("\t", CopyableFields.Select(f => GetFieldValue(row, f) ?? "")));
-            }
-            Clipboard.SetText(string.Join(Environment.NewLine, lines));
-            PlansVM.StatusMessage = $"已复制 {rows.Count} 行";
+            SelectCellUnderMouse(sender as DataGrid, e);
         }
 
         /// <summary>
-        /// 复制当前单元格
+        /// 右键点击时定位到鼠标所在单元格并设为当前单元格（保证右键菜单操作针对正确的单元格）
         /// </summary>
-        private void Menu_CopyCell_Click(object sender, RoutedEventArgs e)
+        private static void SelectCellUnderMouse(DataGrid grid, MouseButtonEventArgs e)
         {
-            if (dg_plans.CurrentCell.Item is not Plan plan || dg_plans.CurrentCell.Column == null)
+            if (grid == null)
             {
                 return;
             }
-            string field = dg_plans.CurrentCell.Column.SortMemberPath;
-            if (field == "Id" || string.IsNullOrEmpty(field))
+            System.Windows.DependencyObject dep = e.OriginalSource as System.Windows.DependencyObject;
+            while (dep != null && dep is not DataGridCell)
             {
-                return;
+                dep = VisualTreeHelper.GetParent(dep);
             }
-            Clipboard.SetText(GetFieldValue(plan, field) ?? "");
-            PlansVM.StatusMessage = "已复制单元格";
+            if (dep is DataGridCell cell && cell.DataContext == grid.CurrentItem)
+            {
+                cell.Focus();
+                grid.CurrentCell = new DataGridCellInfo(cell);
+            }
         }
 
-        /// <summary>
-        /// 粘贴：从剪贴板（TSV）按当前单元格起向右向下写入，逐格校验并标记暂存修改
-        /// </summary>
-        private void Menu_Paste_Click(object sender, RoutedEventArgs e)
+        /* ###############################  右键菜单：编辑单元格  ################################ */
+
+        private void Menu_BeginEditReq_Click(object sender, RoutedEventArgs e)
         {
-            if (PlansVM.IsGridReadOnly)
+            if (_vm.CanGridEdit && dg_requisitions.CurrentCell.IsValid)
             {
-                _ = MessageBox.Show("当前身份不支持表格内编辑", "提示");
-                return;
+                dg_requisitions.BeginEdit();
             }
-            if (dg_plans.CurrentCell.Item is not Plan startPlan || dg_plans.CurrentCell.Column == null)
+        }
+
+        private void Menu_BeginEditPlan_Click(object sender, RoutedEventArgs e)
+        {
+            if (_vm.CanGridEdit && dg_plans.CurrentCell.IsValid)
             {
-                _ = MessageBox.Show("请先选择粘贴起始单元格", "提示");
+                dg_plans.BeginEdit();
+            }
+        }
+
+        /* ###############################  右键菜单：编辑/删除  ################################ */
+
+        private void Menu_EditRequisition_Click(object sender, RoutedEventArgs e)
+        {
+            _vm.SelectedRequisition = dg_requisitions.SelectedItem as Requisition;
+            if (_vm.EditRequisitionCommand.CanExecute(null))
+            {
+                _vm.EditRequisitionCommand.Execute(null);
+            }
+        }
+
+        private void Menu_EditPlan_Click(object sender, RoutedEventArgs e)
+        {
+            _vm.SelectedPlan = dg_plans.SelectedItem as Plan;
+            if (_vm.EditPlanCommand.CanExecute(null))
+            {
+                _vm.EditPlanCommand.Execute(null);
+            }
+        }
+
+        private void Menu_DeleteRequisition_Click(object sender, RoutedEventArgs e)
+        {
+            if (dg_requisitions.SelectedItem is Requisition req)
+            {
+                _vm.DeleteRequisitionCommand.Execute(req);
+            }
+        }
+
+        private void Menu_DeletePlan_Click(object sender, RoutedEventArgs e)
+        {
+            if (dg_plans.SelectedItem is Plan plan)
+            {
+                _vm.DeletePlanCommand.Execute(plan);
+            }
+        }
+
+        /* ###############################  右键菜单：复制/粘贴  ################################ */
+
+        private void Menu_CopyReqRow_Click(object sender, RoutedEventArgs e)
+        {
+            if (dg_requisitions.SelectedItem is Requisition req)
+            {
+                Clipboard.SetText(RequisitionToTsv(req));
+            }
+        }
+
+        private void Menu_CopyPlanRow_Click(object sender, RoutedEventArgs e)
+        {
+            if (dg_plans.SelectedItem is Plan plan)
+            {
+                Clipboard.SetText(PlanToTsv(plan));
+            }
+        }
+
+        private void Menu_CopyReqCell_Click(object sender, RoutedEventArgs e)
+        {
+            if (dg_requisitions.CurrentCell.Column != null && dg_requisitions.SelectedItem is Requisition req)
+            {
+                Clipboard.SetText(GetRequisitionFieldValue(req, dg_requisitions.CurrentCell.Column.SortMemberPath) ?? "");
+            }
+        }
+
+        private void Menu_CopyPlanCell_Click(object sender, RoutedEventArgs e)
+        {
+            if (dg_plans.CurrentCell.Column != null && dg_plans.SelectedItem is Plan plan)
+            {
+                Clipboard.SetText(GetPlanFieldValue(plan, dg_plans.CurrentCell.Column.SortMemberPath) ?? "");
+            }
+        }
+
+        private void Menu_PasteReq_Click(object sender, RoutedEventArgs e)
+        {
+            if (!_vm.CanGridEdit)
+            {
                 return;
             }
             string text = Clipboard.GetText();
-            if (string.IsNullOrEmpty(text))
+            if (string.IsNullOrWhiteSpace(text))
             {
                 return;
             }
-
-            List<Plan> viewRows = PlansVM.PlansView.Cast<Plan>().ToList();
-            int startRowIndex = viewRows.IndexOf(startPlan);
-            int startColIndex = dg_plans.Columns.IndexOf(dg_plans.CurrentCell.Column);
-            if (startRowIndex < 0 || startColIndex < 0)
+            if (dg_requisitions.CurrentItem is not Requisition start)
             {
                 return;
             }
-
-            string[] lines = text.Split(["\r\n", "\n"], StringSplitOptions.RemoveEmptyEntries);
-            int pastedCells = 0;
-            List<string> errors = [];
-            for (int i = 0; i < lines.Length; i++)
+            string[][] rows = ParseTsv(text);
+            List<DataGridColumn> columns = dg_requisitions.Columns.ToList();
+            int startCol = dg_requisitions.CurrentCell.Column?.DisplayIndex ?? 0;
+            int startRow = dg_requisitions.Items.IndexOf(start);
+            for (int i = 0; i < rows.Length; i++)
             {
-                int rowIndex = startRowIndex + i;
-                if (rowIndex >= viewRows.Count)
+                int rowIndex = startRow + i;
+                if (rowIndex >= dg_requisitions.Items.Count)
                 {
                     break;
                 }
-                Plan row = viewRows[rowIndex];
-                string[] cells = lines[i].Split('\t');
-                for (int j = 0; j < cells.Length; j++)
+                if (dg_requisitions.Items[rowIndex] is not Requisition target)
                 {
-                    int colIndex = startColIndex + j;
-                    if (colIndex >= dg_plans.Columns.Count)
+                    continue;
+                }
+                for (int j = 0; j < rows[i].Length; j++)
+                {
+                    int colIndex = startCol + j;
+                    if (colIndex >= columns.Count)
                     {
                         break;
                     }
-                    DataGridColumn column = dg_plans.Columns[colIndex];
-                    if (column.IsReadOnly)
+                    SetRequisitionFieldValue(target, columns[colIndex].SortMemberPath, rows[i][j]);
+                }
+            }
+            _vm.NotifyPendingChanged();
+        }
+
+        private void Menu_PastePlan_Click(object sender, RoutedEventArgs e)
+        {
+            if (!_vm.CanGridEdit)
+            {
+                return;
+            }
+            string text = Clipboard.GetText();
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return;
+            }
+            if (dg_plans.CurrentItem is not Plan start)
+            {
+                return;
+            }
+            string[][] rows = ParseTsv(text);
+            List<DataGridColumn> columns = dg_plans.Columns.ToList();
+            int startCol = dg_plans.CurrentCell.Column?.DisplayIndex ?? 0;
+            int startRow = dg_plans.Items.IndexOf(start);
+            for (int i = 0; i < rows.Length; i++)
+            {
+                int rowIndex = startRow + i;
+                if (rowIndex >= dg_plans.Items.Count)
+                {
+                    break;
+                }
+                if (dg_plans.Items[rowIndex] is not Plan target)
+                {
+                    continue;
+                }
+                for (int j = 0; j < rows[i].Length; j++)
+                {
+                    int colIndex = startCol + j;
+                    if (colIndex >= columns.Count)
                     {
-                        continue;
+                        break;
                     }
-                    string field = column.SortMemberPath;
-                    if (!CopyableFields.Contains(field))
-                    {
-                        continue;
-                    }
-                    string value = string.IsNullOrWhiteSpace(cells[j]) ? null : cells[j].Trim();
-                    string error = PlansVM.ValidateField(field, value);
+                    string error = SetPlanFieldValue(target, columns[colIndex].SortMemberPath, rows[i][j]);
                     if (error != null)
                     {
-                        errors.Add($"行{rowIndex + 1} {field}: {error}");
-                        continue;
-                    }
-                    SetFieldValue(row, field, value);
-                    PlansVM.MarkModified(row);
-                    pastedCells++;
-                }
-            }
-            PlansVM.StatusMessage = $"已粘贴 {pastedCells} 个单元格" + (errors.Count > 0 ? $"，{errors.Count} 个校验失败" : "");
-            if (errors.Count > 0)
-            {
-                _ = MessageBox.Show("以下单元格校验失败，未粘贴：\n\n" + string.Join("\n", errors.Take(20)),
-                    "粘贴校验", MessageBoxButton.OK, MessageBoxImage.Warning);
-            }
-        }
-
-        private static string GetFieldValue(Plan plan, string field)
-        {
-            PropertyInfo prop = typeof(Plan).GetProperty(field);
-            return prop?.GetValue(plan)?.ToString();
-        }
-
-        private static void SetFieldValue(Plan plan, string field, string value)
-        {
-            PropertyInfo prop = typeof(Plan).GetProperty(field);
-            if (prop != null && prop.PropertyType == typeof(string))
-            {
-                prop.SetValue(plan, value);
-            }
-        }
-
-        /* ###############################  列顺序持久化  ################################ */
-
-        /// <summary>
-        /// 保存当前列显示顺序（列头名 -> DisplayIndex）
-        /// </summary>
-        private void SaveColumnLayout()
-        {
-            try
-            {
-                List<KeyValuePair<string, int>> layout = dg_plans.Columns
-                    .OrderBy(c => c.DisplayIndex)
-                    .Select(c => new KeyValuePair<string, int>(c.Header?.ToString() ?? "", c.DisplayIndex))
-                    .ToList();
-                File.WriteAllText(LayoutFilePath, JsonConvert.SerializeObject(layout, Formatting.Indented));
-            }
-            catch (Exception ex)
-            {
-                _logger.Warn($"保存列顺序布局失败: {ex.Message}");
-            }
-        }
-
-        /// <summary>
-        /// 恢复上次保存的列显示顺序；文件不存在或不匹配时保持默认
-        /// </summary>
-        private void RestoreColumnLayout()
-        {
-            try
-            {
-                if (!File.Exists(LayoutFilePath))
-                {
-                    return;
-                }
-                var layout = JsonConvert.DeserializeObject<List<KeyValuePair<string, int>>>(File.ReadAllText(LayoutFilePath));
-                if (layout == null)
-                {
-                    return;
-                }
-                foreach (KeyValuePair<string, int> kv in layout.OrderBy(kv => kv.Value))
-                {
-                    DataGridColumn col = dg_plans.Columns.FirstOrDefault(c => c.Header?.ToString() == kv.Key);
-                    if (col != null && kv.Value >= 0 && kv.Value < dg_plans.Columns.Count)
-                    {
-                        col.DisplayIndex = kv.Value;
+                        _ = MessageBox.Show($"{columns[colIndex].Header}: {error}", "粘贴校验失败");
                     }
                 }
             }
+            _vm.NotifyPendingChanged();
+        }
+
+        private static string[][] ParseTsv(string text)
+        {
+            string[] lines = text.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries);
+            string[][] rows = new string[lines.Length][];
+            for (int i = 0; i < lines.Length; i++)
+            {
+                rows[i] = lines[i].Split('\t');
+            }
+            return rows;
+        }
+
+        private static string RequisitionToTsv(Requisition r)
+            => string.Join("\t",
+                r.RequisitionDate?.ToString("yyyy/M/d"), r.RequisitionNo, r.ModelName, r.OutQty,
+                r.SN ?? r.SnFilePath, r.DC, r.Rev, r.WorkOrder, r.ReturnRtOrder, r.ReturnQty,
+                r.LineNo, r.ReturnDate?.ToString("yyyy/M/d"), r.StockInNo, r.StockInQty,
+                r.StockInDate?.ToString("yyyy/M/d"), r.Remark);
+
+        private static string PlanToTsv(Plan p)
+            => string.Join("\t",
+                p.JobNo, p.Product, p.Customer, p.ModelName, p.Stage, p.TestItem, p.SampleSize,
+                p.TestPeriod, p.Owner, p.StartDate?.ToString("yyyy/M/d"), p.EndDate?.ToString("yyyy/M/d"),
+                p.Status, p.Remark);
+
+        private static string GetRequisitionFieldValue(Requisition r, string field) => field switch
+        {
+            nameof(Requisition.RequisitionDate) => r.RequisitionDate?.ToString("yyyy/M/d"),
+            nameof(Requisition.RequisitionNo) => r.RequisitionNo,
+            nameof(Requisition.ModelName) => r.ModelName,
+            nameof(Requisition.OutQty) => r.OutQty,
+            nameof(Requisition.SN) => r.SN ?? r.SnFilePath,
+            nameof(Requisition.DC) => r.DC,
+            nameof(Requisition.Rev) => r.Rev,
+            nameof(Requisition.WorkOrder) => r.WorkOrder,
+            nameof(Requisition.ReturnRtOrder) => r.ReturnRtOrder,
+            nameof(Requisition.ReturnQty) => r.ReturnQty,
+            nameof(Requisition.LineNo) => r.LineNo,
+            nameof(Requisition.ReturnDate) => r.ReturnDate?.ToString("yyyy/M/d"),
+            nameof(Requisition.StockInNo) => r.StockInNo,
+            nameof(Requisition.StockInQty) => r.StockInQty,
+            nameof(Requisition.StockInDate) => r.StockInDate?.ToString("yyyy/M/d"),
+            nameof(Requisition.Remark) => r.Remark,
+            _ => null
+        };
+
+        private static string GetPlanFieldValue(Plan p, string field) => field switch
+        {
+            nameof(Plan.JobNo) => p.JobNo,
+            nameof(Plan.Product) => p.Product,
+            nameof(Plan.Customer) => p.Customer,
+            nameof(Plan.ModelName) => p.ModelName,
+            nameof(Plan.Stage) => p.Stage,
+            nameof(Plan.TestItem) => p.TestItem,
+            nameof(Plan.SampleSize) => p.SampleSize,
+            nameof(Plan.TestPeriod) => p.TestPeriod,
+            nameof(Plan.Owner) => p.Owner,
+            nameof(Plan.StartDate) => p.StartDate?.ToString("yyyy/M/d"),
+            nameof(Plan.EndDate) => p.EndDate?.ToString("yyyy/M/d"),
+            nameof(Plan.Status) => p.Status,
+            nameof(Plan.Remark) => p.Remark,
+            _ => null
+        };
+
+        private static void SetRequisitionFieldValue(Requisition r, string field, string value)
+        {
+            if (value == "")
+            {
+                value = null;
+            }
+            switch (field)
+            {
+                case nameof(Requisition.RequisitionDate): r.RequisitionDate = ParseDate(value); break;
+                case nameof(Requisition.RequisitionNo): r.RequisitionNo = value; break;
+                case nameof(Requisition.ModelName): r.ModelName = value; break;
+                case nameof(Requisition.OutQty): r.OutQty = value; break;
+                case nameof(Requisition.SN): r.SN = value; break;
+                case nameof(Requisition.DC): r.DC = value; break;
+                case nameof(Requisition.Rev): r.Rev = value; break;
+                case nameof(Requisition.WorkOrder): r.WorkOrder = value; break;
+                case nameof(Requisition.ReturnRtOrder): r.ReturnRtOrder = value; break;
+                case nameof(Requisition.ReturnQty): r.ReturnQty = value; break;
+                case nameof(Requisition.LineNo): r.LineNo = value; break;
+                case nameof(Requisition.ReturnDate): r.ReturnDate = ParseDate(value); break;
+                case nameof(Requisition.StockInNo): r.StockInNo = value; break;
+                case nameof(Requisition.StockInQty): r.StockInQty = value; break;
+                case nameof(Requisition.StockInDate): r.StockInDate = ParseDate(value); break;
+                case nameof(Requisition.Remark): r.Remark = value; break;
+            }
+        }
+
+        private string SetPlanFieldValue(Plan p, string field, string value)
+        {
+            if (value == "")
+            {
+                value = null;
+            }
+            switch (field)
+            {
+                case nameof(Plan.JobNo): p.JobNo = value; break;
+                case nameof(Plan.Product): p.Product = value; break;
+                case nameof(Plan.Customer): p.Customer = value; break;
+                case nameof(Plan.ModelName): p.ModelName = value; break;
+                case nameof(Plan.Stage): p.Stage = value; break;
+                case nameof(Plan.TestItem): p.TestItem = value; break;
+                case nameof(Plan.SampleSize): p.SampleSize = value; break;
+                case nameof(Plan.TestPeriod): p.TestPeriod = value; break;
+                case nameof(Plan.Owner): p.Owner = value; break;
+                case nameof(Plan.StartDate): p.StartDate = ParseDate(value); break;
+                case nameof(Plan.EndDate): p.EndDate = ParseDate(value); break;
+                case nameof(Plan.Status): p.Status = value; break;
+                case nameof(Plan.Remark): p.Remark = value; break;
+            }
+            return _vm.ValidateField(field switch
+            {
+                nameof(Plan.JobNo) => "JobNo",
+                nameof(Plan.Status) => "Status",
+                nameof(Plan.TestItem) => "TestItem",
+                nameof(Plan.Product) => "Product",
+                nameof(Plan.Customer) => "Customer",
+                nameof(Plan.Stage) => "Stage",
+                _ => ""
+            }, value);
+        }
+
+        private static DateTime? ParseDate(string text)
+        {
+            if (text == null)
+            {
+                return null;
+            }
+            return DateTime.TryParseExact(text, ["yyyy/M/d", "yyyy/M/d H:mm:ss", "yyyy-M-d"],
+                CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dt) ? dt : null;
+        }
+
+        /* ###############################  显示/隐藏列  ################################ */
+
+        private void Menu_ReqColumns_SubmenuOpened(object sender, RoutedEventArgs e)
+        {
+            BuildColumnMenu(menu_req_columns, dg_requisitions);
+        }
+
+        private void Menu_PlanColumns_SubmenuOpened(object sender, RoutedEventArgs e)
+        {
+            BuildColumnMenu(menu_plan_columns, dg_plans);
+        }
+
+        private static void BuildColumnMenu(MenuItem parent, DataGrid grid)
+        {
+            parent.Items.Clear();
+            foreach (DataGridColumn column in grid.Columns)
+            {
+                MenuItem item = new()
+                {
+                    Header = column.Header?.ToString(),
+                    IsCheckable = true,
+                    IsChecked = column.Visibility == Visibility.Visible
+                };
+                DataGridColumn captured = column;
+                item.Click += (s, e) =>
+                    captured.Visibility = item.IsChecked ? Visibility.Visible : Visibility.Collapsed;
+                parent.Items.Add(item);
+            }
+        }
+
+        /* ###############################  回线转移单  ################################ */
+
+        private void Btn_ReturnLine_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                WindowReturnLine window = new() { Topmost = true };
+                window.Show();
+            }
             catch (Exception ex)
             {
-                _logger.Warn($"恢复列顺序布局失败: {ex.Message}");
+                _logger.Error(ex, "打开回线转移单失败");
+                _ = MessageBox.Show($"打开回线转移单失败:\n{ex.Message}", "错误");
+            }
+        }
+
+        /* ###############################  列顺序与可见性持久化  ################################ */
+
+        private void SaveColumnState()
+        {
+            try
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(LayoutFile));
+                Dictionary<string, List<string>> state = new()
+                {
+                    ["requisitions"] = dg_requisitions.Columns.Select(ColumnKey).ToList(),
+                    ["plans"] = dg_plans.Columns.Select(ColumnKey).ToList()
+                };
+                File.WriteAllText(LayoutFile, Newtonsoft.Json.JsonConvert.SerializeObject(state));
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn($"保存列布局失败: {ex.Message}");
+            }
+        }
+
+        private static string ColumnKey(DataGridColumn column)
+        {
+            string order = column.DisplayIndex.ToString("D3");
+            string visible = column.Visibility == Visibility.Visible ? "V" : "H";
+            string name = column.Header?.ToString() ?? "?";
+            return $"{order}|{visible}|{name}";
+        }
+
+        private void RestoreColumnState()
+        {
+            try
+            {
+                if (!File.Exists(LayoutFile))
+                {
+                    return;
+                }
+                Dictionary<string, List<string>> state = Newtonsoft.Json.JsonConvert
+                    .DeserializeObject<Dictionary<string, List<string>>>(File.ReadAllText(LayoutFile));
+                RestoreColumns(state.TryGetValue("requisitions", out List<string> reqKeys) ? reqKeys : null, dg_requisitions);
+                RestoreColumns(state.TryGetValue("plans", out List<string> planKeys) ? planKeys : null, dg_plans);
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn($"恢复列布局失败: {ex.Message}");
+            }
+        }
+
+        private static void RestoreColumns(List<string> keys, DataGrid grid)
+        {
+            if (keys == null)
+            {
+                return;
+            }
+            foreach (string key in keys)
+            {
+                string[] parts = key.Split('|');
+                if (parts.Length < 3)
+                {
+                    continue;
+                }
+                DataGridColumn column = grid.Columns.FirstOrDefault(c => (c.Header?.ToString() ?? "?") == parts[2]);
+                if (column == null)
+                {
+                    continue;
+                }
+                column.Visibility = parts[1] == "V" ? Visibility.Visible : Visibility.Collapsed;
+                if (int.TryParse(parts[0], out int displayIndex))
+                {
+                    column.DisplayIndex = Math.Min(displayIndex, grid.Columns.Count - 1);
+                }
             }
         }
     }

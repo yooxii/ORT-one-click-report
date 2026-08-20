@@ -24,18 +24,17 @@
         <!--工具栏-->
         <ToolBarTray>
             <ToolBar Band="0" BandIndex="0">
-                <Button Content="新增行" Command="{Binding AddRowCommand}" ToolTip="在表格中新增一行空记录"/>
-                <Button Content="编辑" Command="{Binding EditCommand}" ToolTip="以对话框编辑选中记录"/>
-                <Button Content="删除" Command="{Binding DeleteCommand}" ToolTip="删除选中记录"/>
+                <Button Content="领退新增" Command="{Binding AddRequisitionCommand}" ToolTip="新增领退记录并同步新增计划"/>
+                <Button Content="计划新增" Command="{Binding AddPlanCommand}" ToolTip="直接新增非领用计划（QRT前缀）"/>
+                <Button Content="编辑" Command="{Binding EditRequisitionCommand}" ToolTip="编辑选中记录"/>
                 <Separator/>
                 <Button Content="提交保存" Command="{Binding SaveChangesCommand}" FontWeight="Bold"
                         ToolTip="将暂存的修改写入数据库并记录变更日志"/>
                 <Button Content="丢弃修改" Command="{Binding DiscardChangesCommand}"
                         ToolTip="放弃所有暂存修改，还原为数据库状态"/>
                 <Separator/>
-                <Button Content="导出领用表" Command="{Binding ExportRequisitionCommand}" ToolTip="导出为成品領退管理表格式"/>
+                <Button Content="导出领退表" Command="{Binding ExportRequisitionCommand}" ToolTip="导出为成品領退管理表格式"/>
                 <Button Content="导出计划表" Command="{Binding ExportScheduleCommand}" ToolTip="导出为 ORT Test Schedule 格式"/>
-                <Button Content="全部清空" Command="{Binding ClearAllCommand}" Foreground="DarkRed" ToolTip="清空全部计划数据（需确认）"/>
                 <Separator/>
                 <Button Content="回线转移单" Click="Btn_ReturnLine_Click" ToolTip="打开回线转移单工具"/>
                 <Separator/>
@@ -43,14 +42,22 @@
             </ToolBar>
         </ToolBarTray>
 
-        <!--筛选区（可折叠）：按需添加筛选条件-->
+        <!--筛选区（可折叠）-->
         <Expander Grid.Row="1" Header="筛选" IsExpanded="True" Margin="0,5,0,0">
             <StackPanel Margin="5">
                 <WrapPanel>
+                    <Label Content="领退搜索" VerticalContentAlignment="Center"/>
+                    <TextBox Width="180" Margin="0,0,15,3" VerticalContentAlignment="Center"
+                             Text="{Binding ReqKeyword, UpdateSourceTrigger=PropertyChanged}"
+                             ToolTip="按机种/单据号/工令/SN等筛选领退表"/>
+                    <Label Content="计划搜索" VerticalContentAlignment="Center"/>
+                    <TextBox Width="180" Margin="0,0,15,3" VerticalContentAlignment="Center"
+                             Text="{Binding Keyword, UpdateSourceTrigger=PropertyChanged}"
+                             ToolTip="按机种/工作编号/测试项目等筛选计划表"/>
                     <ComboBox Width="140" Margin="0,0,10,3" VerticalContentAlignment="Center"
                               ItemsSource="{Binding AvailableFields}"
                               SelectedItem="{Binding AddFilterField, Mode=TwoWay}"
-                              ToolTip="选择字段以添加筛选条件"/>
+                              ToolTip="选择字段以添加计划表筛选条件"/>
                     <ItemsControl ItemsSource="{Binding ActiveFilters}" VerticalAlignment="Center">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
@@ -84,155 +91,260 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
                 </WrapPanel>
-                <StackPanel Orientation="Horizontal" Margin="0,3,0,0">
-                    <Label Content="搜索" VerticalContentAlignment="Center"/>
-                    <TextBox Width="220" VerticalContentAlignment="Center"
-                             Text="{Binding Keyword, UpdateSourceTrigger=PropertyChanged}"
-                             ToolTip="按机种/单据号/工作编号/测试项目/负责人/SN等筛选"/>
-                </StackPanel>
             </StackPanel>
         </Expander>
 
-        <!--数据列表：行号显示在行头，可拖动列头调整顺序（顺序会持久化），右键菜单支持复制/粘贴-->
-        <DataGrid x:Name="dg_plans" Grid.Row="2" Margin="0,5,0,0"
-                  ItemsSource="{Binding PlansView}"
-                  SelectedItem="{Binding SelectedPlan, Mode=TwoWay}"
-                  AutoGenerateColumns="False"
-                  IsReadOnly="{Binding DataContext.IsGridReadOnly, RelativeSource={RelativeSource AncestorType=Window}}"
-                  CanUserSortColumns="True" CanUserReorderColumns="True" CanUserAddRows="False"
-                  HeadersVisibility="All" GridLinesVisibility="All"
-                  SelectionMode="Extended" SelectionUnit="CellOrRowHeader"
-                  ClipboardCopyMode="None"
-                  LoadingRow="Dg_Plans_LoadingRow"
-                  CellEditEnding="Dg_Plans_CellEditEnding"
-                  VirtualizingPanel.IsVirtualizing="True">
-            <DataGrid.ContextMenu>
-                <ContextMenu>
-                    <MenuItem Header="编辑(对话框)" Click="Menu_Edit_Click"/>
-                    <MenuItem Header="标记删除" Click="Menu_Delete_Click"/>
-                    <Separator/>
-                    <MenuItem Header="复制行" Click="Menu_CopyRow_Click"/>
-                    <MenuItem Header="复制单元格" Click="Menu_CopyCell_Click"/>
-                    <MenuItem Header="粘贴" Click="Menu_Paste_Click"/>
-                </ContextMenu>
-            </DataGrid.ContextMenu>
-            <DataGrid.RowStyle>
-                <Style TargetType="DataGridRow">
-                    <Setter Property="Background" Value="White"/>
-                    <Style.Triggers>
-                        <DataTrigger Binding="{Binding Id}" Value="0">
-                            <Setter Property="Background" Value="#FFFFF8E1"/>
-                        </DataTrigger>
-                    </Style.Triggers>
-                </Style>
-            </DataGrid.RowStyle>
-            <DataGrid.Columns>
-                <DataGridTextColumn Header="工作編號" Binding="{Binding JobNo, UpdateSourceTrigger=PropertyChanged}" Width="90"/>
-                <DataGridTextColumn Header="领料单据号" Binding="{Binding RequisitionNo, UpdateSourceTrigger=PropertyChanged}" Width="110"/>
-                <DataGridTextColumn Header="机种名称" Binding="{Binding ModelName, UpdateSourceTrigger=PropertyChanged}" Width="130"/>
-                <DataGridTemplateColumn Header="测试项目" Width="150" SortMemberPath="TestItem">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <ComboBox ItemsSource="{Binding DataContext.CatalogTestItems, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                      SelectedValue="{Binding TestItem, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
-                                      IsEditable="False" VerticalContentAlignment="Center" BorderThickness="0"
-                                      ToolTip="测试项目取自字典，如需新增请到管理模块添加"/>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-                <DataGridTextColumn Header="数量" Binding="{Binding OutQty, UpdateSourceTrigger=PropertyChanged}" Width="45"/>
-                <DataGridTextColumn Header="S/N" Binding="{Binding SN, UpdateSourceTrigger=PropertyChanged}" Width="160"/>
-                <DataGridTemplateColumn Header="SN文件" Width="140" SortMemberPath="SnFilePath" IsReadOnly="True">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <Grid>
-                                <TextBlock x:Name="linkSn" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
-                                           ToolTip="点击打开SN文件">
-                                    <Hyperlink Command="{Binding DataContext.OpenSnFileCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                               CommandParameter="{Binding}">
-                                        <Run Text="{Binding SnFilePath, Mode=OneWay}"/>
-                                    </Hyperlink>
-                                </TextBlock>
-                            </Grid>
-                            <DataTemplate.Triggers>
-                                <DataTrigger Binding="{Binding SnFilePath}" Value="{x:Null}">
-                                    <Setter TargetName="linkSn" Property="Visibility" Value="Collapsed"/>
+        <!--两 Tab：领退表 / 计划表-->
+        <TabControl Grid.Row="2" Margin="0,5,0,0">
+            <!--领退表-->
+            <TabItem Header="领退表">
+                <DataGrid x:Name="dg_requisitions"
+                          ItemsSource="{Binding RequisitionsView}"
+                          SelectedItem="{Binding SelectedRequisition, Mode=TwoWay}"
+                          AutoGenerateColumns="False"
+                          IsReadOnly="{Binding DataContext.IsGridReadOnly, RelativeSource={RelativeSource AncestorType=Window}}"
+                          CanUserSortColumns="True" CanUserReorderColumns="True" CanUserAddRows="False"
+                          HeadersVisibility="All" GridLinesVisibility="All"
+                          SelectionMode="Extended" SelectionUnit="CellOrRowHeader"
+                          ClipboardCopyMode="None"
+                          LoadingRow="Dg_Requisitions_LoadingRow"
+                          CellEditEnding="Dg_Requisitions_CellEditEnding"
+                          PreviewMouseRightButtonDown="Dg_Requisitions_PreviewMouseRightButtonDown"
+                          VirtualizingPanel.IsVirtualizing="True">
+                    <DataGrid.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Header="编辑单元格" Click="Menu_BeginEditReq_Click"/>
+                            <MenuItem Header="编辑(对话框)" Click="Menu_EditRequisition_Click"/>
+                            <MenuItem Header="标记删除" Click="Menu_DeleteRequisition_Click"/>
+                            <Separator/>
+                            <MenuItem Header="复制行" Click="Menu_CopyReqRow_Click"/>
+                            <MenuItem Header="复制单元格" Click="Menu_CopyReqCell_Click"/>
+                            <MenuItem Header="粘贴" Click="Menu_PasteReq_Click"/>
+                            <Separator/>
+                            <MenuItem Header="显示/隐藏列" x:Name="menu_req_columns" SubmenuOpened="Menu_ReqColumns_SubmenuOpened"/>
+                        </ContextMenu>
+                    </DataGrid.ContextMenu>
+                    <DataGrid.CellStyle>
+                        <Style TargetType="DataGridCell">
+                            <Setter Property="VerticalContentAlignment" Value="Center"/>
+                            <Setter Property="VerticalAlignment" Value="Center"/>
+                        </Style>
+                    </DataGrid.CellStyle>
+                    <DataGrid.RowStyle>
+                        <Style TargetType="DataGridRow">
+                            <Setter Property="Background" Value="White"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Id}" Value="0">
+                                    <Setter Property="Background" Value="#FFFFF8E1"/>
                                 </DataTrigger>
-                            </DataTemplate.Triggers>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-                <DataGridTextColumn Header="D/C" Binding="{Binding DC, UpdateSourceTrigger=PropertyChanged}" Width="50"/>
-                <DataGridTextColumn Header="REV" Binding="{Binding Rev, UpdateSourceTrigger=PropertyChanged}" Width="50"/>
-                <DataGridTextColumn Header="Work Order" Binding="{Binding WorkOrder, UpdateSourceTrigger=PropertyChanged}" Width="150"/>
-                <DataGridTextColumn Header="回线RT工令" Binding="{Binding ReturnRtOrder, UpdateSourceTrigger=PropertyChanged}" Width="95"/>
-                <DataGridTextColumn Header="线别" Binding="{Binding LineNo, UpdateSourceTrigger=PropertyChanged}" Width="50"/>
-                <DataGridTextColumn Header="领用日期" Binding="{Binding RequisitionDate, UpdateSourceTrigger=PropertyChanged}" Width="75"/>
-                <DataGridTextColumn Header="回线日期" Binding="{Binding ReturnDate, UpdateSourceTrigger=PropertyChanged}" Width="75"/>
-                <DataGridTextColumn Header="入库单号" Binding="{Binding StockInNo, UpdateSourceTrigger=PropertyChanged}" Width="110"/>
-                <DataGridTextColumn Header="入库日期" Binding="{Binding StockInDate, UpdateSourceTrigger=PropertyChanged}" Width="75"/>
-                <DataGridTemplateColumn Header="产品别" Width="80" SortMemberPath="Product">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <ComboBox ItemsSource="{Binding DataContext.CatalogProducts, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                      SelectedValue="{Binding Product, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
-                                      VerticalContentAlignment="Center" BorderThickness="0"
-                                      ToolTip="产品别取自字典，如需新增请到管理模块添加"/>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-                <DataGridTemplateColumn Header="客户别" Width="95" SortMemberPath="Customer">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <ComboBox ItemsSource="{Binding DataContext.CatalogCustomers, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                      SelectedValue="{Binding Customer, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
-                                      VerticalContentAlignment="Center" BorderThickness="0"
-                                      ToolTip="客户别取自字典，如需新增请到管理模块添加"/>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-                <DataGridTemplateColumn Header="阶段" Width="65" SortMemberPath="Stage">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <ComboBox ItemsSource="{Binding DataContext.CatalogStages, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                      SelectedValue="{Binding Stage, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
-                                      VerticalContentAlignment="Center" BorderThickness="0"
-                                      ToolTip="阶段取自字典，如需新增请到管理模块添加"/>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-                <DataGridTextColumn Header="样品数" Binding="{Binding SampleSize, UpdateSourceTrigger=PropertyChanged}" Width="55"/>
-                <DataGridTextColumn Header="试验时间" Binding="{Binding TestPeriod, UpdateSourceTrigger=PropertyChanged}" Width="65"/>
-                <DataGridTextColumn Header="负责人" Binding="{Binding Owner, UpdateSourceTrigger=PropertyChanged}" Width="80"/>
-                <DataGridTextColumn Header="开始日期" Binding="{Binding StartDate, UpdateSourceTrigger=PropertyChanged}" Width="85"/>
-                <DataGridTextColumn Header="结束日期" Binding="{Binding EndDate, UpdateSourceTrigger=PropertyChanged}" Width="85"/>
-                <DataGridTemplateColumn Header="状况" Width="75" SortMemberPath="Status">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <ComboBox ItemsSource="{Binding DataContext.CatalogStatuses, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                      SelectedValue="{Binding Status, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
-                                      VerticalContentAlignment="Center" BorderThickness="0"
-                                      ToolTip="状况仅可选 Ongoing / Close / Pending"/>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-                <DataGridTextColumn Header="备注" Binding="{Binding Remark, UpdateSourceTrigger=PropertyChanged}" Width="150"/>
-                <DataGridTemplateColumn Header="创建人" Width="70" IsReadOnly="True" SortMemberPath="CreatedBy">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <TextBlock Text="{Binding CreatedBy}" VerticalAlignment="Center" Margin="3,0"/>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-                <DataGridTemplateColumn Header="更新时间" Width="120" IsReadOnly="True" SortMemberPath="UpdatedAt">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <TextBlock Text="{Binding UpdatedAt, StringFormat=yyyy-MM-dd HH:mm}" VerticalAlignment="Center" Margin="3,0"/>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-            </DataGrid.Columns>
-        </DataGrid>
+                            </Style.Triggers>
+                        </Style>
+                    </DataGrid.RowStyle>
+                    <DataGrid.Columns>
+                        <DataGridTemplateColumn Header="領用日期" Width="90" SortMemberPath="RequisitionDate">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding RequisitionDate, StringFormat={}{0:yyyy/M/d}}" VerticalAlignment="Center"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                            <DataGridTemplateColumn.CellEditingTemplate>
+                                <DataTemplate>
+                                    <DatePicker SelectedDate="{Binding RequisitionDate, UpdateSourceTrigger=PropertyChanged}"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellEditingTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTextColumn Header="領料單据號" Binding="{Binding RequisitionNo, UpdateSourceTrigger=PropertyChanged}" Width="110"/>
+                        <DataGridTextColumn Header="機種名稱" Binding="{Binding ModelName, UpdateSourceTrigger=PropertyChanged}" Width="130"/>
+                        <DataGridTextColumn Header="領出數量" Binding="{Binding OutQty, UpdateSourceTrigger=PropertyChanged}" Width="70"/>
+                        <DataGridTemplateColumn Header="S/N" Width="170" SortMemberPath="SN">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Grid>
+                                        <TextBlock x:Name="txtSn" Text="{Binding SN}" VerticalAlignment="Center"
+                                                   TextTrimming="CharacterEllipsis" Visibility="Collapsed"/>
+                                        <TextBlock x:Name="linkSn" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                                                   ToolTip="点击打开SN文件">
+                                            <Hyperlink Command="{Binding DataContext.OpenSnFileCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                       CommandParameter="{Binding}">
+                                                <Run Text="{Binding SnFilePath, Mode=OneWay}"/>
+                                            </Hyperlink>
+                                        </TextBlock>
+                                    </Grid>
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding SnFilePath}" Value="{x:Null}">
+                                            <Setter TargetName="linkSn" Property="Visibility" Value="Collapsed"/>
+                                            <Setter TargetName="txtSn" Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </DataTemplate.Triggers>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTextColumn Header="D/C" Binding="{Binding DC, UpdateSourceTrigger=PropertyChanged}" Width="50"/>
+                        <DataGridTextColumn Header="REV" Binding="{Binding Rev, UpdateSourceTrigger=PropertyChanged}" Width="50"/>
+                        <DataGridTextColumn Header="Work Order" Binding="{Binding WorkOrder, UpdateSourceTrigger=PropertyChanged}" Width="150"/>
+                        <DataGridTextColumn Header="回线RT工令" Binding="{Binding ReturnRtOrder, UpdateSourceTrigger=PropertyChanged}" Width="100"/>
+                        <DataGridTextColumn Header="回线数量" Binding="{Binding ReturnQty, UpdateSourceTrigger=PropertyChanged}" Width="65"/>
+                        <DataGridTextColumn Header="线别" Binding="{Binding LineNo, UpdateSourceTrigger=PropertyChanged}" Width="50"/>
+                        <DataGridTemplateColumn Header="回线日期" Width="90" SortMemberPath="ReturnDate">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding ReturnDate, StringFormat={}{0:yyyy/M/d}}" VerticalAlignment="Center"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                            <DataGridTemplateColumn.CellEditingTemplate>
+                                <DataTemplate>
+                                    <DatePicker SelectedDate="{Binding ReturnDate, UpdateSourceTrigger=PropertyChanged}"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellEditingTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTextColumn Header="入库单号" Binding="{Binding StockInNo, UpdateSourceTrigger=PropertyChanged}" Width="110"/>
+                        <DataGridTextColumn Header="入库数量" Binding="{Binding StockInQty, UpdateSourceTrigger=PropertyChanged}" Width="65"/>
+                        <DataGridTemplateColumn Header="入库日期" Width="90" SortMemberPath="StockInDate">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding StockInDate, StringFormat={}{0:yyyy/M/d}}" VerticalAlignment="Center"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                            <DataGridTemplateColumn.CellEditingTemplate>
+                                <DataTemplate>
+                                    <DatePicker SelectedDate="{Binding StockInDate, UpdateSourceTrigger=PropertyChanged}"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellEditingTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTextColumn Header="备注" Binding="{Binding Remark, UpdateSourceTrigger=PropertyChanged}" Width="140"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </TabItem>
+
+            <!--计划表-->
+            <TabItem Header="计划表">
+                <DataGrid x:Name="dg_plans"
+                          ItemsSource="{Binding PlansView}"
+                          SelectedItem="{Binding SelectedPlan, Mode=TwoWay}"
+                          AutoGenerateColumns="False"
+                          IsReadOnly="{Binding DataContext.IsGridReadOnly, RelativeSource={RelativeSource AncestorType=Window}}"
+                          CanUserSortColumns="True" CanUserReorderColumns="True" CanUserAddRows="False"
+                          HeadersVisibility="All" GridLinesVisibility="All"
+                          SelectionMode="Extended" SelectionUnit="CellOrRowHeader"
+                          ClipboardCopyMode="None"
+                          LoadingRow="Dg_Plans_LoadingRow"
+                          CellEditEnding="Dg_Plans_CellEditEnding"
+                          PreviewMouseRightButtonDown="Dg_Plans_PreviewMouseRightButtonDown"
+                          VirtualizingPanel.IsVirtualizing="True">
+                    <DataGrid.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Header="编辑单元格" Click="Menu_BeginEditPlan_Click"/>
+                            <MenuItem Header="编辑(对话框)" Click="Menu_EditPlan_Click"/>
+                            <MenuItem Header="标记删除" Click="Menu_DeletePlan_Click"/>
+                            <Separator/>
+                            <MenuItem Header="复制行" Click="Menu_CopyPlanRow_Click"/>
+                            <MenuItem Header="复制单元格" Click="Menu_CopyPlanCell_Click"/>
+                            <MenuItem Header="粘贴" Click="Menu_PastePlan_Click"/>
+                            <Separator/>
+                            <MenuItem Header="显示/隐藏列" x:Name="menu_plan_columns" SubmenuOpened="Menu_PlanColumns_SubmenuOpened"/>
+                        </ContextMenu>
+                    </DataGrid.ContextMenu>
+                    <DataGrid.CellStyle>
+                        <Style TargetType="DataGridCell">
+                            <Setter Property="VerticalContentAlignment" Value="Center"/>
+                            <Setter Property="VerticalAlignment" Value="Center"/>
+                        </Style>
+                    </DataGrid.CellStyle>
+                    <DataGrid.RowStyle>
+                        <Style TargetType="DataGridRow">
+                            <Setter Property="Background" Value="White"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Id}" Value="0">
+                                    <Setter Property="Background" Value="#FFFFF8E1"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </DataGrid.RowStyle>
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="工作編號" Binding="{Binding JobNo, UpdateSourceTrigger=PropertyChanged}" Width="90"/>
+                        <DataGridTemplateColumn Header="产品别" Width="80" SortMemberPath="Product">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <ComboBox ItemsSource="{Binding DataContext.CatalogProducts, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                              SelectedValue="{Binding Product, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                                              VerticalContentAlignment="Center" BorderThickness="0"
+                                              ToolTip="产品别取自字典，如需新增请到管理模块添加"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="客户别" Width="95" SortMemberPath="Customer">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <ComboBox ItemsSource="{Binding DataContext.CatalogCustomers, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                              SelectedValue="{Binding Customer, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                                              VerticalContentAlignment="Center" BorderThickness="0"
+                                              ToolTip="客户别取自字典，如需新增请到管理模块添加"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTextColumn Header="机种名称" Binding="{Binding ModelName, UpdateSourceTrigger=PropertyChanged}" Width="130"/>
+                        <DataGridTemplateColumn Header="阶段" Width="65" SortMemberPath="Stage">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <ComboBox ItemsSource="{Binding DataContext.CatalogStages, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                              SelectedValue="{Binding Stage, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                                              VerticalContentAlignment="Center" BorderThickness="0"
+                                              ToolTip="阶段取自字典，如需新增请到管理模块添加"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="测试项目" Width="150" SortMemberPath="TestItem">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <ComboBox ItemsSource="{Binding DataContext.CatalogTestItems, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                              SelectedValue="{Binding TestItem, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                                              IsEditable="False" VerticalContentAlignment="Center" BorderThickness="0"
+                                              ToolTip="测试项目取自字典，如需新增请到管理模块添加"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTextColumn Header="样品数" Binding="{Binding SampleSize, UpdateSourceTrigger=PropertyChanged}" Width="55"/>
+                        <DataGridTextColumn Header="试验时间" Binding="{Binding TestPeriod, UpdateSourceTrigger=PropertyChanged}" Width="65"/>
+                        <DataGridTextColumn Header="负责人" Binding="{Binding Owner, UpdateSourceTrigger=PropertyChanged}" Width="80"/>
+                        <DataGridTemplateColumn Header="开始日期" Width="90" SortMemberPath="StartDate">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding StartDate, StringFormat={}{0:yyyy/M/d}}" VerticalAlignment="Center"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                            <DataGridTemplateColumn.CellEditingTemplate>
+                                <DataTemplate>
+                                    <DatePicker SelectedDate="{Binding StartDate, UpdateSourceTrigger=PropertyChanged}"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellEditingTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="结束日期" Width="90" SortMemberPath="EndDate">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding EndDate, StringFormat={}{0:yyyy/M/d}}" VerticalAlignment="Center"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                            <DataGridTemplateColumn.CellEditingTemplate>
+                                <DataTemplate>
+                                    <DatePicker SelectedDate="{Binding EndDate, UpdateSourceTrigger=PropertyChanged}"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellEditingTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="状况" Width="75" SortMemberPath="Status">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <ComboBox ItemsSource="{Binding DataContext.CatalogStatuses, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                              SelectedValue="{Binding Status, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                                              VerticalContentAlignment="Center" BorderThickness="0"
+                                              ToolTip="状况仅可选 Ongoing / Close / Pending"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTextColumn Header="备注" Binding="{Binding Remark, UpdateSourceTrigger=PropertyChanged}" Width="150"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </TabItem>
+        </TabControl>
 
         <StatusBar Grid.Row="3">
             <StatusBarItem Content="{Binding StatusMessage}"/>

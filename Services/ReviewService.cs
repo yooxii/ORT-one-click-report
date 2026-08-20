@@ -34,9 +34,9 @@ namespace ORT一键报告.Services
         {
             string summary = action switch
             {
-                "新增" => $"新增计划: {payload.ModelName ?? "-"} / {payload.JobNo ?? payload.RequisitionNo ?? "-"}",
-                "编辑" => $"编辑计划(Id={targetId}): {payload.ModelName ?? "-"} / {payload.JobNo ?? payload.RequisitionNo ?? "-"}",
-                "删除" => $"删除计划(Id={targetId}): {payload?.ModelName ?? "-"} / {payload?.JobNo ?? payload?.RequisitionNo ?? "-"}",
+                "新增" => $"新增计划: {payload.ModelName ?? "-"} / {payload.JobNo ?? "-"}",
+                "编辑" => $"编辑计划(Id={targetId}): {payload.ModelName ?? "-"} / {payload.JobNo ?? "-"}",
+                "删除" => $"删除计划(Id={targetId}): {payload?.ModelName ?? "-"} / {payload?.JobNo ?? "-"}",
                 _ => $"{action}计划"
             };
             ReviewRequest request = new()
@@ -52,6 +52,32 @@ namespace ORT一键报告.Services
             };
             _db.FreeSql.Insert(request).ExecuteAffrows();
             _logger.Info($"提交审核请求: {summary} (请求人: {requester})");
+        }
+
+        /// <summary>
+        /// 提交领退表更改请求（普通用户编辑时调用），PayloadJson 存 Requisition 序列化
+        /// </summary>
+        public void SubmitRequisitionRequest(string action, Requisition payload, long? targetId, string requester)
+        {
+            string summary = action switch
+            {
+                "新增" => $"新增领退: {payload.ModelName ?? "-"} / {payload.RequisitionNo ?? "-"}",
+                "编辑" => $"编辑领退(Id={targetId}): {payload.ModelName ?? "-"} / {payload.RequisitionNo ?? "-"}",
+                _ => $"{action}领退"
+            };
+            ReviewRequest request = new()
+            {
+                Type = "领退表单",
+                Action = action,
+                TargetId = targetId,
+                Summary = summary,
+                PayloadJson = payload == null ? null : JsonConvert.SerializeObject(payload),
+                RequesterName = requester,
+                Status = StatusPending,
+                CreatedAt = DateTime.Now
+            };
+            _db.FreeSql.Insert(request).ExecuteAffrows();
+            _logger.Info($"提交领退审核请求: {summary} (请求人: {requester})");
         }
 
         /* ###############################  查询  ################################ */
@@ -137,6 +163,11 @@ namespace ORT一键报告.Services
         /// </summary>
         private void ApplyPlanChange(ReviewRequest request)
         {
+            if (request.Type == "领退表单")
+            {
+                ApplyRequisitionChange(request);
+                return;
+            }
             if (request.Type != TypePlan)
             {
                 throw new NotSupportedException($"暂不支持的请求类型: {request.Type}");
@@ -167,6 +198,36 @@ namespace ORT一键报告.Services
                         throw new InvalidOperationException("删除请求缺少目标记录Id");
                     }
                     _db.FreeSql.Delete<Plan>().Where(p => p.Id == request.TargetId.Value).ExecuteAffrows();
+                    break;
+
+                default:
+                    throw new NotSupportedException($"暂不支持的操作: {request.Action}");
+            }
+        }
+
+        /// <summary>
+        /// 应用领退表更改
+        /// </summary>
+        private void ApplyRequisitionChange(ReviewRequest request)
+        {
+            switch (request.Action)
+            {
+                case "新增":
+                    Requisition newReq = JsonConvert.DeserializeObject<Requisition>(request.PayloadJson);
+                    newReq.Id = 0;
+                    _db.FreeSql.Insert(newReq).ExecuteAffrows();
+                    break;
+
+                case "编辑":
+                    if (request.TargetId == null)
+                    {
+                        throw new InvalidOperationException("编辑请求缺少目标记录Id");
+                    }
+                    Requisition edited = JsonConvert.DeserializeObject<Requisition>(request.PayloadJson);
+                    edited.Id = request.TargetId.Value;
+                    edited.UpdatedAt = DateTime.Now;
+                    edited.UpdatedBy = request.ReviewerName;
+                    _db.FreeSql.Update<Requisition>().SetSource(edited).Where(r => r.Id == edited.Id).ExecuteAffrows();
                     break;
 
                 default:
