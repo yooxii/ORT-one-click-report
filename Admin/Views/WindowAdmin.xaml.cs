@@ -18,6 +18,7 @@ namespace ORT一键报告.Admin.Views
         private readonly AuthService _auth;
         private readonly IPathService _pathService;
         private readonly PlanExcelService _planExcelService;
+        private readonly AppSettingsService _appSettings;
 
         public WindowAdmin()
         {
@@ -26,6 +27,7 @@ namespace ORT一键报告.Admin.Views
             _auth = App.ServiceProvider.GetRequiredService<AuthService>();
             _pathService = App.ServiceProvider.GetRequiredService<IPathService>();
             _planExcelService = App.ServiceProvider.GetRequiredService<PlanExcelService>();
+            _appSettings = App.ServiceProvider.GetRequiredService<AppSettingsService>();
 
             Loaded += (s, e) =>
             {
@@ -154,7 +156,9 @@ namespace ORT一键报告.Admin.Views
 
         private void LoadCustomers()
         {
-            dg_customers.ItemsSource = _admin.GetCustomers();
+            dg_customers.ItemsSource = _admin.GetCustomers()
+                .OrderBy(c => string.IsNullOrWhiteSpace(c.Code) ? "ZZZ" : c.Code)
+                .ToList();
         }
 
         private Customer SelectedCustomer => dg_customers.SelectedItem as Customer;
@@ -330,7 +334,7 @@ namespace ORT一键报告.Admin.Views
 
         private void Btn_SyncTestItems_Click(object sender, RoutedEventArgs e)
         {
-            string file = _pathService.OpenPathDialog("选择计划表文件(ORT Test Schedule)");
+            string file = _pathService.OpenPathDialog("选择计划表文件(ORT Test Schedule)", initPath: _appSettings.ScheduleDir);
             if (file == null)
             {
                 return;
@@ -353,7 +357,7 @@ namespace ORT一键报告.Admin.Views
 
         private void Btn_ImportRequisition_Click(object sender, RoutedEventArgs e)
         {
-            string file = _pathService.OpenPathDialog("选择领用表(成品領用記錄)");
+            string file = _pathService.OpenPathDialog("选择领用表(成品領用記錄)", initPath: _appSettings.RequisitionDir);
             if (file == null)
             {
                 return;
@@ -371,7 +375,7 @@ namespace ORT一键报告.Admin.Views
 
         private void Btn_ImportPlan_Click(object sender, RoutedEventArgs e)
         {
-            string file = _pathService.OpenPathDialog("选择计划表(ORT Test Schedule)");
+            string file = _pathService.OpenPathDialog("选择计划表(ORT Test Schedule)", initPath: _appSettings.ScheduleDir);
             if (file == null)
             {
                 return;
@@ -510,15 +514,17 @@ namespace ORT一键报告.Admin.Views
 
         private void LoadProducts()
         {
-            dg_products.ItemsSource = _admin.GetProductEntities();
+            dg_products.ItemsSource = _admin.GetProductEntities()
+                .OrderBy(p => string.IsNullOrWhiteSpace(p.Code) ? "ZZZ" : p.Code)
+                .ToList();
         }
 
         private Product SelectedProduct => dg_products.SelectedItem as Product;
 
         private void Btn_NewProduct_Click(object sender, RoutedEventArgs e)
         {
-            WindowAdminInput input = new("新增产品别",
-                ("产品别名称", "", false),
+            WindowAdminInput input = new("新增产品类型",
+                ("产品类型名称", "", false),
                 ("产品代码", "", false),
                 ("备注", "", false))
             {
@@ -546,11 +552,11 @@ namespace ORT一键报告.Admin.Views
             Product product = SelectedProduct;
             if (product == null)
             {
-                _ = MessageBox.Show("请先选择一个产品别", "提示");
+                _ = MessageBox.Show("请先选择一个产品类型", "提示");
                 return;
             }
-            WindowAdminInput input = new("编辑产品别",
-                ("产品别名称", product.Name, false),
+            WindowAdminInput input = new("编辑产品类型",
+                ("产品类型名称", product.Name, false),
                 ("产品代码", product.Code, false),
                 ("备注", product.Remark, false))
             {
@@ -576,10 +582,10 @@ namespace ORT一键报告.Admin.Views
             Product product = SelectedProduct;
             if (product == null)
             {
-                _ = MessageBox.Show("请先选择一个产品别", "提示");
+                _ = MessageBox.Show("请先选择一个产品类型", "提示");
                 return;
             }
-            if (MessageBox.Show($"确认删除产品别 [{product.Name}]？", "删除确认",
+            if (MessageBox.Show($"确认删除产品类型 [{product.Name}]？", "删除确认",
                 MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
             {
                 return;

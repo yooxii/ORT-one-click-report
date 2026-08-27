@@ -125,10 +125,15 @@
         <Compile Include="Models\Requisition.cs" />
         <Compile Include="Models\Review.cs" />
         <Compile Include="Models\AdminCatalogs.cs" />
+        <Compile Include="Models\AppSettings.cs" />
         <Compile Include="Utils\PlanValidation.cs" />
         <Compile Include="Services\AuthService.cs" />
         <Compile Include="Services\AdminService.cs" />
         <Compile Include="Services\ReviewService.cs" />
+        <Compile Include="Services\AppSettingsService.cs" />
+        <Compile Include="Main\Views\WindowAppSettings.xaml.cs">
+          <DependentUpon>WindowAppSettings.xaml</DependentUpon>
+        </Compile>
         <Compile Include="Main\Views\WindowLogin.xaml.cs">
           <DependentUpon>WindowLogin.xaml</DependentUpon>
         </Compile>
@@ -160,7 +165,6 @@
         <Compile Include="Plans\Views\WindowPlanDirectEdit.xaml.cs">
           <DependentUpon>WindowPlanDirectEdit.xaml</DependentUpon>
         </Compile>
-        <Compile Include="Models\Requisition.cs" />
     <Compile Include="Utils\SmartTableExtractor.cs" />
     <Compile Include="Reports\ViewModels\BaseReportPageViewModel.cs" />
     <Compile Include="Reports\ViewModels\EMIReportViewModel.cs" />
@@ -330,6 +334,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Main\Views\WindowLogin.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Main\Views\WindowAppSettings.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

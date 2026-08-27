@@ -15,11 +15,12 @@ using static ORT一键报告.Utils.Report;
 
 namespace ORT一键报告.Reports.ViewModels
 {
-    public partial class MainReportViewModel(IPathService service, ReportService reportService, DatabaseService databaseService) : ObservableObject
+    public partial class MainReportViewModel(IPathService service, ReportService reportService, DatabaseService databaseService, AppSettingsService appSettings) : ObservableObject
     {
         private readonly IPathService Service = service;
         private readonly ReportService _reportService = reportService;
         private readonly DatabaseService _databaseService = databaseService;
+        private readonly AppSettingsService _appSettings = appSettings;
         private readonly Logger _logger = LogManager.GetCurrentClassLogger();
         public string ATEPath { get; set; }
 
@@ -51,7 +52,7 @@ namespace ORT一键报告.Reports.ViewModels
 
         private void SelectReportPath()
         {
-            ReportPath = Service.OpenPathDialog("选择报告概览");
+            ReportPath = Service.OpenPathDialog("选择报告概览", initPath: _appSettings.ReportDir);
             if (ReportPath == null)
             {
                 return;

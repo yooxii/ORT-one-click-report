@@ -23,6 +23,7 @@ namespace ORT一键报告
         private readonly AuthService _auth;
         private readonly IPermissionService _permission;
         private readonly ReviewService _reviewService;
+        private readonly AppSettingsService _appSettings;
 
         public MainViewModel MainVM { get; set; }
 
@@ -33,11 +34,15 @@ namespace ORT一键报告
             _auth = App.ServiceProvider.GetRequiredService<AuthService>();
             _permission = App.ServiceProvider.GetRequiredService<IPermissionService>();
             _reviewService = App.ServiceProvider.GetRequiredService<ReviewService>();
+            _appSettings = App.ServiceProvider.GetRequiredService<AppSettingsService>();
 
             MainVM = App.ServiceProvider.GetRequiredService<MainViewModel>();
             DataContext = MainVM;
 
             Loaded += (s, e) => Activate();
+            // 启动时应用设置字体，并在设置变更时实时刷新
+            Loaded += (s, e) => _appSettings.ApplyFont(this);
+            _appSettings.SettingsChanged += () => Dispatcher.Invoke(() => _appSettings.ApplyFont(this));
 
             _auth.AuthChanged += () => Dispatcher.Invoke(UpdateUIByPermission);
             Loaded += (s, e) => UpdateUIByPermission();
@@ -90,6 +95,15 @@ namespace ORT一键报告
             {
             };
             windowLog.Show();
+        }
+
+        private void MenuItem_Settings_Click(object sender, RoutedEventArgs e)
+        {
+            WindowAppSettings settingsWindow = new()
+            {
+                Owner = null
+            };
+            settingsWindow.Show();
         }
 
         private void MenuItem_Quit_Click(object sender, RoutedEventArgs e)

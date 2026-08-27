@@ -18,6 +18,7 @@
             <MenuItem Header="视图">
                 <MenuItem Header="查看日志" Click="MenuItem_ViewLog_Click"/>
             </MenuItem>
+            <MenuItem Header="设置" Click="MenuItem_Settings_Click"/>
             <MenuItem x:Name="menu_account" Header="登录" Click="MenuItem_Login_Click"/>
             <MenuItem Header="退出" Click="MenuItem_Quit_Click"/>
         </Menu>

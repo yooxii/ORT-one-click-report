@@ -44,12 +44,6 @@ namespace ORT一键报告.Services
             _permission = permission;
         }
 
-        static PlanExcelService()
-        {
-            // EPPlus 8 非商业许可，确保任何入口使用本服务前许可已设置
-            ExcelPackage.License.SetNonCommercialPersonal("Lucas");
-        }
-
         /* ###############################  导入  ################################ */
 
         /// <summary>

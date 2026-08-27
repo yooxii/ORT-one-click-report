@@ -147,29 +147,13 @@ namespace ORT一键报告.Plans.Views
             }
         }
 
-        /* ###############################  右键菜单：编辑单元格  ################################ */
-
-        private void Menu_BeginEditReq_Click(object sender, RoutedEventArgs e)
-        {
-            if (_vm.CanGridEdit && dg_requisitions.CurrentCell.IsValid)
-            {
-                dg_requisitions.BeginEdit();
-            }
-        }
-
-        private void Menu_BeginEditPlan_Click(object sender, RoutedEventArgs e)
-        {
-            if (_vm.CanGridEdit && dg_plans.CurrentCell.IsValid)
-            {
-                dg_plans.BeginEdit();
-            }
-        }
-
         /* ###############################  右键菜单：编辑/删除  ################################ */
 
         private void Menu_EditRequisition_Click(object sender, RoutedEventArgs e)
         {
-            _vm.SelectedRequisition = dg_requisitions.SelectedItem as Requisition;
+            // 仅选择单个单元格时也可进入：优先取右键单元格所在行
+            _vm.SelectedRequisition = (dg_requisitions.CurrentCell.Item as Requisition)
+                ?? dg_requisitions.SelectedItem as Requisition;
             if (_vm.EditRequisitionCommand.CanExecute(null))
             {
                 _vm.EditRequisitionCommand.Execute(null);
@@ -178,7 +162,8 @@ namespace ORT一键报告.Plans.Views
 
         private void Menu_EditPlan_Click(object sender, RoutedEventArgs e)
         {
-            _vm.SelectedPlan = dg_plans.SelectedItem as Plan;
+            _vm.SelectedPlan = (dg_plans.CurrentCell.Item as Plan)
+                ?? dg_plans.SelectedItem as Plan;
             if (_vm.EditPlanCommand.CanExecute(null))
             {
                 _vm.EditPlanCommand.Execute(null);

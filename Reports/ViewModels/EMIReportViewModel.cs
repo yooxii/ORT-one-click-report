@@ -23,6 +23,7 @@ namespace ORT一键报告.Reports.ViewModels
     {
         private readonly IPathService _emiService;
         private readonly ReportService _reportService;
+        private readonly AppSettingsService _appSettings;
         private readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
         private readonly EMIUUTdataInfo emiUUTdatasInfo = new();
@@ -91,10 +92,11 @@ namespace ORT一键报告.Reports.ViewModels
             set => SetProperty(ref _remark, value);
         }
 
-        public EMIReportViewModel(IPathService service, ReportService reportService)
+        public EMIReportViewModel(IPathService service, ReportService reportService, AppSettingsService appSettings)
         {
             _emiService = service;
             _reportService = reportService;
+            _appSettings = appSettings;
             ReportHeaderVM = new();
             EMISetupVM = new(service, reportService);
             EMISetupVM.TemplatePathChanged += (newPath) => TemplatePath = newPath;
@@ -489,7 +491,7 @@ namespace ORT一键报告.Reports.ViewModels
 
         private void DirSelect()
         {
-            DataPath = _emiService.OpenPathDialog("请选择EMI数据", filter: "EMI数据文件|*.pdf;*.docx|所有文件|*.*", isDir: true);
+            DataPath = _emiService.OpenPathDialog("请选择EMI数据", filter: "EMI数据文件|*.pdf;*.docx|所有文件|*.*", initPath: _appSettings.EmiDataDir, isDir: true);
             ReadPath(DataPath);
         }
 

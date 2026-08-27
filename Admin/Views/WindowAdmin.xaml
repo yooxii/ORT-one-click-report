@@ -92,8 +92,8 @@
                           CanUserAddRows="False" SelectionMode="Single" SelectionUnit="FullRow"
                           HeadersVisibility="Column" GridLinesVisibility="Horizontal">
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="客户名称" Binding="{Binding Name}" Width="150"/>
-                        <DataGridTextColumn Header="客户代码" Binding="{Binding Code}" Width="100"/>
+                        <DataGridTextColumn Header="客户代码" Binding="{Binding Code}" Width="100" SortMemberPath="Code"/>
+                        <DataGridTextColumn Header="客户名称" Binding="{Binding Name}" Width="150" SortMemberPath="Name"/>
                         <DataGridTextColumn Header="备注" Binding="{Binding Remark}" Width="*"/>
                     </DataGrid.Columns>
                 </DataGrid>
@@ -128,8 +128,8 @@
             </Grid>
         </TabItem>
 
-        <!--产品别管理-->
-        <TabItem Header="产品别管理">
+        <!--产品类型管理-->
+        <TabItem Header="产品类型管理">
             <Grid Margin="5">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="auto"/>
@@ -145,8 +145,8 @@
                           CanUserAddRows="False" SelectionMode="Single" SelectionUnit="FullRow"
                           HeadersVisibility="Column" GridLinesVisibility="Horizontal">
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="产品别名称" Binding="{Binding Name}" Width="150"/>
-                        <DataGridTextColumn Header="产品代码" Binding="{Binding Code}" Width="100"/>
+                        <DataGridTextColumn Header="产品代码" Binding="{Binding Code}" Width="100" SortMemberPath="Code"/>
+                        <DataGridTextColumn Header="产品类型名称" Binding="{Binding Name}" Width="150" SortMemberPath="Name"/>
                         <DataGridTextColumn Header="备注" Binding="{Binding Remark}" Width="*"/>
                     </DataGrid.Columns>
                 </DataGrid>

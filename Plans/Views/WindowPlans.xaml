@@ -11,6 +11,39 @@
 
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        <!-- 文本列浏览样式：文字水平垂直居中，无内边距与边框 -->
+        <Style x:Key="CenterText" TargetType="TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="TextAlignment" Value="Center"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Margin" Value="0"/>
+        </Style>
+        <!-- 文本列编辑样式：无边框铺满单元格，内容居中 -->
+        <Style x:Key="CenterEdit" TargetType="TextBox">
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+        <!-- 单元格通用样式：无内边距、边框填满、内容居中；选中时保持黑字白底避免文字消失 -->
+        <Style x:Key="FullCell" TargetType="DataGridCell">
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="Foreground" Value="Black"/>
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="White"/>
+                    <Setter Property="Foreground" Value="Black"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
     </Window.Resources>
 
     <Grid Margin="5">
@@ -113,7 +146,6 @@
                           VirtualizingPanel.IsVirtualizing="True">
                     <DataGrid.ContextMenu>
                         <ContextMenu>
-                            <MenuItem Header="编辑单元格" Click="Menu_BeginEditReq_Click"/>
                             <MenuItem Header="编辑(对话框)" Click="Menu_EditRequisition_Click"/>
                             <MenuItem Header="标记删除" Click="Menu_DeleteRequisition_Click"/>
                             <Separator/>
@@ -125,10 +157,7 @@
                         </ContextMenu>
                     </DataGrid.ContextMenu>
                     <DataGrid.CellStyle>
-                        <Style TargetType="DataGridCell">
-                            <Setter Property="VerticalContentAlignment" Value="Center"/>
-                            <Setter Property="VerticalAlignment" Value="Center"/>
-                        </Style>
+                        <StaticResource ResourceKey="FullCell"/>
                     </DataGrid.CellStyle>
                     <DataGrid.RowStyle>
                         <Style TargetType="DataGridRow">
@@ -144,7 +173,7 @@
                         <DataGridTemplateColumn Header="領用日期" Width="90" SortMemberPath="RequisitionDate">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <TextBlock Text="{Binding RequisitionDate, StringFormat={}{0:yyyy/M/d}}" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding RequisitionDate, StringFormat={}{0:yyyy/M/d}}" Style="{StaticResource CenterText}"/>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                             <DataGridTemplateColumn.CellEditingTemplate>
@@ -153,9 +182,9 @@
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellEditingTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTextColumn Header="領料單据號" Binding="{Binding RequisitionNo, UpdateSourceTrigger=PropertyChanged}" Width="110"/>
-                        <DataGridTextColumn Header="機種名稱" Binding="{Binding ModelName, UpdateSourceTrigger=PropertyChanged}" Width="130"/>
-                        <DataGridTextColumn Header="領出數量" Binding="{Binding OutQty, UpdateSourceTrigger=PropertyChanged}" Width="70"/>
+                        <DataGridTextColumn Header="領料單据號" Binding="{Binding RequisitionNo, UpdateSourceTrigger=PropertyChanged}" Width="110" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
+                        <DataGridTextColumn Header="機種名稱" Binding="{Binding ModelName, UpdateSourceTrigger=PropertyChanged}" Width="130" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
+                        <DataGridTextColumn Header="領出數量" Binding="{Binding OutQty, UpdateSourceTrigger=PropertyChanged}" Width="70" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
                         <DataGridTemplateColumn Header="S/N" Width="170" SortMemberPath="SN">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
@@ -179,16 +208,16 @@
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTextColumn Header="D/C" Binding="{Binding DC, UpdateSourceTrigger=PropertyChanged}" Width="50"/>
-                        <DataGridTextColumn Header="REV" Binding="{Binding Rev, UpdateSourceTrigger=PropertyChanged}" Width="50"/>
-                        <DataGridTextColumn Header="Work Order" Binding="{Binding WorkOrder, UpdateSourceTrigger=PropertyChanged}" Width="150"/>
-                        <DataGridTextColumn Header="回线RT工令" Binding="{Binding ReturnRtOrder, UpdateSourceTrigger=PropertyChanged}" Width="100"/>
-                        <DataGridTextColumn Header="回线数量" Binding="{Binding ReturnQty, UpdateSourceTrigger=PropertyChanged}" Width="65"/>
-                        <DataGridTextColumn Header="线别" Binding="{Binding LineNo, UpdateSourceTrigger=PropertyChanged}" Width="50"/>
+                        <DataGridTextColumn Header="D/C" Binding="{Binding DC, UpdateSourceTrigger=PropertyChanged}" Width="50" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
+                        <DataGridTextColumn Header="REV" Binding="{Binding Rev, UpdateSourceTrigger=PropertyChanged}" Width="50" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
+                        <DataGridTextColumn Header="Work Order" Binding="{Binding WorkOrder, UpdateSourceTrigger=PropertyChanged}" Width="150" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
+                        <DataGridTextColumn Header="回线RT工令" Binding="{Binding ReturnRtOrder, UpdateSourceTrigger=PropertyChanged}" Width="100" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
+                        <DataGridTextColumn Header="回线数量" Binding="{Binding ReturnQty, UpdateSourceTrigger=PropertyChanged}" Width="65" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
+                        <DataGridTextColumn Header="线别" Binding="{Binding LineNo, UpdateSourceTrigger=PropertyChanged}" Width="50" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
                         <DataGridTemplateColumn Header="回线日期" Width="90" SortMemberPath="ReturnDate">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <TextBlock Text="{Binding ReturnDate, StringFormat={}{0:yyyy/M/d}}" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding ReturnDate, StringFormat={}{0:yyyy/M/d}}" Style="{StaticResource CenterText}"/>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                             <DataGridTemplateColumn.CellEditingTemplate>
@@ -197,12 +226,12 @@
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellEditingTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTextColumn Header="入库单号" Binding="{Binding StockInNo, UpdateSourceTrigger=PropertyChanged}" Width="110"/>
-                        <DataGridTextColumn Header="入库数量" Binding="{Binding StockInQty, UpdateSourceTrigger=PropertyChanged}" Width="65"/>
+                        <DataGridTextColumn Header="入库单号" Binding="{Binding StockInNo, UpdateSourceTrigger=PropertyChanged}" Width="110" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
+                        <DataGridTextColumn Header="入库数量" Binding="{Binding StockInQty, UpdateSourceTrigger=PropertyChanged}" Width="65" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
                         <DataGridTemplateColumn Header="入库日期" Width="90" SortMemberPath="StockInDate">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <TextBlock Text="{Binding StockInDate, StringFormat={}{0:yyyy/M/d}}" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding StockInDate, StringFormat={}{0:yyyy/M/d}}" Style="{StaticResource CenterText}"/>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                             <DataGridTemplateColumn.CellEditingTemplate>
@@ -211,7 +240,7 @@
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellEditingTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTextColumn Header="备注" Binding="{Binding Remark, UpdateSourceTrigger=PropertyChanged}" Width="140"/>
+                        <DataGridTextColumn Header="备注" Binding="{Binding Remark, UpdateSourceTrigger=PropertyChanged}" Width="140" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
                     </DataGrid.Columns>
                 </DataGrid>
             </TabItem>
@@ -233,7 +262,6 @@
                           VirtualizingPanel.IsVirtualizing="True">
                     <DataGrid.ContextMenu>
                         <ContextMenu>
-                            <MenuItem Header="编辑单元格" Click="Menu_BeginEditPlan_Click"/>
                             <MenuItem Header="编辑(对话框)" Click="Menu_EditPlan_Click"/>
                             <MenuItem Header="标记删除" Click="Menu_DeletePlan_Click"/>
                             <Separator/>
@@ -245,10 +273,7 @@
                         </ContextMenu>
                     </DataGrid.ContextMenu>
                     <DataGrid.CellStyle>
-                        <Style TargetType="DataGridCell">
-                            <Setter Property="VerticalContentAlignment" Value="Center"/>
-                            <Setter Property="VerticalAlignment" Value="Center"/>
-                        </Style>
+                        <StaticResource ResourceKey="FullCell"/>
                     </DataGrid.CellStyle>
                     <DataGrid.RowStyle>
                         <Style TargetType="DataGridRow">
@@ -261,7 +286,7 @@
                         </Style>
                     </DataGrid.RowStyle>
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="工作編號" Binding="{Binding JobNo, UpdateSourceTrigger=PropertyChanged}" Width="90"/>
+                        <DataGridTextColumn Header="工作編號" Binding="{Binding JobNo, UpdateSourceTrigger=PropertyChanged}" Width="90" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
                         <DataGridTemplateColumn Header="产品别" Width="80" SortMemberPath="Product">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
@@ -282,7 +307,7 @@
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTextColumn Header="机种名称" Binding="{Binding ModelName, UpdateSourceTrigger=PropertyChanged}" Width="130"/>
+                        <DataGridTextColumn Header="机种名称" Binding="{Binding ModelName, UpdateSourceTrigger=PropertyChanged}" Width="130" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
                         <DataGridTemplateColumn Header="阶段" Width="65" SortMemberPath="Stage">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
@@ -303,13 +328,13 @@
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTextColumn Header="样品数" Binding="{Binding SampleSize, UpdateSourceTrigger=PropertyChanged}" Width="55"/>
-                        <DataGridTextColumn Header="试验时间" Binding="{Binding TestPeriod, UpdateSourceTrigger=PropertyChanged}" Width="65"/>
-                        <DataGridTextColumn Header="负责人" Binding="{Binding Owner, UpdateSourceTrigger=PropertyChanged}" Width="80"/>
+                        <DataGridTextColumn Header="样品数" Binding="{Binding SampleSize, UpdateSourceTrigger=PropertyChanged}" Width="55" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
+                        <DataGridTextColumn Header="试验时间" Binding="{Binding TestPeriod, UpdateSourceTrigger=PropertyChanged}" Width="65" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
+                        <DataGridTextColumn Header="负责人" Binding="{Binding Owner, UpdateSourceTrigger=PropertyChanged}" Width="80" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
                         <DataGridTemplateColumn Header="开始日期" Width="90" SortMemberPath="StartDate">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <TextBlock Text="{Binding StartDate, StringFormat={}{0:yyyy/M/d}}" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding StartDate, StringFormat={}{0:yyyy/M/d}}" Style="{StaticResource CenterText}"/>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                             <DataGridTemplateColumn.CellEditingTemplate>
@@ -321,7 +346,7 @@
                         <DataGridTemplateColumn Header="结束日期" Width="90" SortMemberPath="EndDate">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <TextBlock Text="{Binding EndDate, StringFormat={}{0:yyyy/M/d}}" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding EndDate, StringFormat={}{0:yyyy/M/d}}" Style="{StaticResource CenterText}"/>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                             <DataGridTemplateColumn.CellEditingTemplate>
@@ -340,7 +365,7 @@
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTextColumn Header="备注" Binding="{Binding Remark, UpdateSourceTrigger=PropertyChanged}" Width="150"/>
+                        <DataGridTextColumn Header="备注" Binding="{Binding Remark, UpdateSourceTrigger=PropertyChanged}" Width="150" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
                     </DataGrid.Columns>
                 </DataGrid>
             </TabItem>

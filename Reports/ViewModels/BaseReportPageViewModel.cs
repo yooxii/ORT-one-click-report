@@ -18,9 +18,10 @@ using static ORT一键报告.Utils.Report;
 
 namespace ORT一键报告.Reports.ViewModels
 {
-    public partial class BaseReportPageViewModel(IPathService service, ReportService reportService) : ObservableObject
+    public partial class BaseReportPageViewModel(IPathService service, ReportService reportService, AppSettingsService appSettings) : ObservableObject
     {
         private readonly IPathService _Service = service;
+        private readonly AppSettingsService _appSettings = appSettings;
         private readonly ReportService _reportService = reportService;
         private readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
@@ -173,7 +174,7 @@ namespace ORT一键报告.Reports.ViewModels
 
         private void SelectATEDatas()
         {
-            ATEPath = _Service.OpenPathDialog("选择ATE数据");
+            ATEPath = _Service.OpenPathDialog("选择ATE数据", initPath: _appSettings.AteDataDir);
         }
     }
 }

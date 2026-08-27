@@ -4,6 +4,36 @@ using System;
 namespace ORT一键报告.Models
 {
     /// <summary>
+    /// 代码映射（code_mappings 表）：Cust. Code 工作表的两位代码 → 名称。
+    /// CodeType：C=客户别（B、C 列：Cust. Code→ENDCUSTOMER），P=产品别（G、H 列：Code→Product Type）。
+    /// 查询规则：客户别 = 机种名称第 8 位起的 2 位；产品别 = 机种名称开始的 2 位。
+    /// </summary>
+    [Table(Name = "code_mappings")]
+    [Index("uk_code_mapping", nameof(CodeType) + "," + nameof(Code), true)]
+    public class CodeMapping
+    {
+        [Column(IsPrimary = true, IsIdentity = true)]
+        public long Id { get; set; }
+
+        /// <summary>
+        /// 代码类型：C=客户别，P=产品别
+        /// </summary>
+        [Column(StringLength = 1, IsNullable = false)]
+        public string CodeType { get; set; }
+
+        /// <summary>
+        /// 两位代码
+        /// </summary>
+        [Column(StringLength = 8, IsNullable = false)]
+        public string Code { get; set; }
+
+        /// <summary>
+        /// 对应名称（客户名/产品类型名）
+        /// </summary>
+        [Column(StringLength = 64, IsNullable = false)]
+        public string Name { get; set; }
+    }
+    /// <summary>
     /// 阶段字典（stages 表）：阶段名 + 描述。初始值 MP/EVT/DVT/PVT/RMA
     /// </summary>
     [Table(Name = "stages")]

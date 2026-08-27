@@ -274,6 +274,75 @@ namespace ORT一键报告.Services
             => string.IsNullOrWhiteSpace(modelName) ? null
             : _db.FreeSql.Select<ModelMapping>().Where(m => m.ModelName == modelName.Trim()).First();
 
+        /// <summary>
+        /// 插入或更新代码映射（同代码不同名称时更新为最新名称）
+        /// </summary>
+        private void UpsertCodeMapping(string codeType, string code, string name)
+        {
+            if (code == null || name == null)
+            {
+                return;
+            }
+            CodeMapping existing = _db.FreeSql.Select<CodeMapping>()
+                .Where(m => m.CodeType == codeType && m.Code == code).First();
+            if (existing == null)
+            {
+                _db.FreeSql.Insert(new CodeMapping { CodeType = codeType, Code = code, Name = name }).ExecuteAffrows();
+            }
+            else if (existing.Name != name)
+            {
+                existing.Name = name;
+                _db.FreeSql.Update<CodeMapping>().SetSource(existing).Where(m => m.Id == existing.Id).ExecuteAffrows();
+            }
+        }
+
+        /// <summary>
+        /// 代码规范化：数字代码补足两位前导零（如 "2"→"02"），非数字原样保留
+        /// </summary>
+        private static string NormalizeCode(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return null;
+            }
+            string t = text.Trim();
+            return int.TryParse(t, out int n) ? n.ToString("D2") : t;
+        }
+
+        /// <summary>
+        /// 按机种名称查询客户别：机种名称第 8 位起的 2 位代码 → Cust. Code 表 B/C 列
+        /// </summary>
+        public string FindCustomerByModel(string modelName)
+        {
+            string code = ModelToCustomerCode(modelName);
+            return code == null ? null
+                : _db.FreeSql.Select<CodeMapping>().Where(m => m.CodeType == "C" && m.Code == code).First()?.Name;
+        }
+
+        /// <summary>
+        /// 按机种名称查询产品别：机种名称开始的 2 位代码 → Cust. Code 表 G/H 列
+        /// </summary>
+        public string FindProductByModel(string modelName)
+        {
+            string code = ModelToProductCode(modelName);
+            return code == null ? null
+                : _db.FreeSql.Select<CodeMapping>().Where(m => m.CodeType == "P" && m.Code == code).First()?.Name;
+        }
+
+        /// <summary>
+        /// 机种名称 → 客户代码（第 8 位起的 2 位）
+        /// </summary>
+        public static string ModelToCustomerCode(string modelName)
+            => string.IsNullOrWhiteSpace(modelName) || modelName.Trim().Length < 9
+                ? null : modelName.Trim().Substring(7, 2);
+
+        /// <summary>
+        /// 机种名称 → 产品代码（开始的 2 位）
+        /// </summary>
+        public static string ModelToProductCode(string modelName)
+            => string.IsNullOrWhiteSpace(modelName) || modelName.Trim().Length < 2
+                ? null : modelName.Trim().Substring(0, 2);
+
         public void SetModelMapping(string modelName, string product, string customer)
         {
             if (string.IsNullOrWhiteSpace(modelName))
@@ -339,7 +408,6 @@ namespace ORT一键报告.Services
         /// </summary>
         public int SyncTestItemsFromScheduleFile(string filePath)
         {
-            ExcelPackage.License.SetNonCommercialPersonal("Lucas");
             using FileStream fs = new(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
             using ExcelPackage package = new(fs);
             ExcelWorksheet ws = package.Workbook.Worksheets.FirstOrDefault(s => s.Name == "Test Items")
@@ -399,7 +467,6 @@ namespace ORT一键报告.Services
         /// </summary>
         public (int customers, int products, int mappings) SyncCatalogsFromScheduleFile(string filePath)
         {
-            ExcelPackage.License.SetNonCommercialPersonal("Lucas");
             using FileStream fs = new(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
             using ExcelPackage package = new(fs);
             int cAdded = 0, pAdded = 0, mAdded = 0;
@@ -430,20 +497,28 @@ namespace ORT一键报告.Services
                     // 客户：B 列=Cust. Code，C 列=ENDCUSTOMER
                     for (int rr = headerRow + 1; rr <= endRow; rr++)
                     {
-                        string code = NullIfEmpty(wsCode.Cells[rr, 2].Text);
+                        string code = NormalizeCode(wsCode.Cells[rr, 2].Text);
                         string customer = NullIfEmpty(wsCode.Cells[rr, 3].Text);
-                        if (customer != null && !_db.FreeSql.Select<Customer>().Where(c => c.Name == customer).Any())
+                        if (customer != null)
                         {
-                            _db.FreeSql.Insert(new Customer { Name = customer, Code = code }).ExecuteAffrows();
-                            cAdded++;
+                            if (!_db.FreeSql.Select<Customer>().Where(c => c.Name == customer).Any())
+                            {
+                                _db.FreeSql.Insert(new Customer { Name = customer, Code = code }).ExecuteAffrows();
+                                cAdded++;
+                            }
+                            UpsertCodeMapping("C", code, customer);
                         }
                         // 产品别：G 列=Code，H 列=Product Type
-                        string productCode = NullIfEmpty(wsCode.Cells[rr, 7].Text);
+                        string productCode = NormalizeCode(wsCode.Cells[rr, 7].Text);
                         string product = NullIfEmpty(wsCode.Cells[rr, 8].Text);
-                        if (product != null && !_db.FreeSql.Select<Product>().Where(p => p.Name == product).Any())
+                        if (product != null)
                         {
-                            _db.FreeSql.Insert(new Product { Name = product, Code = productCode }).ExecuteAffrows();
-                            pAdded++;
+                            if (!_db.FreeSql.Select<Product>().Where(p => p.Name == product).Any())
+                            {
+                                _db.FreeSql.Insert(new Product { Name = product, Code = productCode }).ExecuteAffrows();
+                                pAdded++;
+                            }
+                            UpsertCodeMapping("P", productCode, product);
                         }
                     }
                 }

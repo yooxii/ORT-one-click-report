@@ -26,9 +26,13 @@ namespace ORT一键报告
             {
                 base.OnStartup(e);
 
+                // EPPlus 非商业许可统一在程序入口设置（各服务不再重复设置）
+                OfficeOpenXml.ExcelPackage.License.SetNonCommercialPersonal("Lucas");
+
                 ServiceCollection services = new();
                 // Services
                 services.AddSingleton<IPathService, PathService>();
+                services.AddSingleton<AppSettingsService>();
                 services.AddSingleton<ReportService>();
                 services.AddSingleton<DatabaseService>();
                 services.AddSingleton<AuthService>();

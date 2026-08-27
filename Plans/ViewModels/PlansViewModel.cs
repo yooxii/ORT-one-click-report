@@ -601,7 +601,8 @@ namespace ORT一键报告.Plans.ViewModels
         }
 
         /// <summary>
-        /// 机种联动：输入机种名称后自动带出产品别/客户别（还原计划表公式关系，仅填充空字段）
+        /// 机种联动：输入机种名称后自动带出产品别/客户别（仅填充空字段）。
+        /// 查询规则：产品别 = 机种名开始 2 位代码，客户别 = 机种名第 8 位起的 2 位代码；代码映射缺失时回退机种映射表。
         /// </summary>
         public void AutoFillByModel(Plan plan)
         {
@@ -609,18 +610,21 @@ namespace ORT一键报告.Plans.ViewModels
             {
                 return;
             }
-            ModelMapping mapping = _adminService.FindModelMapping(plan.ModelName);
-            if (mapping == null)
+            string product = _adminService.FindProductByModel(plan.ModelName);
+            string customer = _adminService.FindCustomerByModel(plan.ModelName);
+            if (product == null || customer == null)
             {
-                return;
+                ModelMapping mapping = _adminService.FindModelMapping(plan.ModelName);
+                product ??= mapping?.Product;
+                customer ??= mapping?.Customer;
             }
-            if (string.IsNullOrWhiteSpace(plan.Product) && mapping.Product != null)
+            if (string.IsNullOrWhiteSpace(plan.Product) && product != null)
             {
-                plan.Product = mapping.Product;
+                plan.Product = product;
             }
-            if (string.IsNullOrWhiteSpace(plan.Customer) && mapping.Customer != null)
+            if (string.IsNullOrWhiteSpace(plan.Customer) && customer != null)
             {
-                plan.Customer = mapping.Customer;
+                plan.Customer = customer;
             }
         }
 
@@ -671,24 +675,31 @@ namespace ORT一键报告.Plans.ViewModels
                 StatusMessage = "无新增权限，请登录相应账号";
                 return;
             }
-            Views.WindowRequisitionEdit editWindow = new(_db, _permission, _adminService, _excelService, null, NeedsReview)
+            Views.WindowRequisitionEdit editWindow = new(_db, _permission, _adminService, _excelService, null)
             {
             };
             if (editWindow.ShowDialog() != true)
             {
                 return;
             }
+            Requisition reqResult = editWindow.RequisitionResult;
+            Plan planResult = editWindow.PlanResult;
             if (NeedsReview)
             {
-                _reviewService.SubmitPlanRequest("新增", editWindow.PlanResult, null, _permission.CurrentUser);
-                _reviewService.SubmitRequisitionRequest("新增", editWindow.RequisitionResult, null, _permission.CurrentUser);
+                _reviewService.SubmitPlanRequest("新增", planResult, null, _permission.CurrentUser);
+                _reviewService.SubmitRequisitionRequest("新增", reqResult, null, _permission.CurrentUser);
                 StatusMessage = "新增请求已提交审核，待审核员通过后生效";
                 _ = System.Windows.MessageBox.Show("新增请求已提交审核，待审核员通过后生效。", "提交成功");
             }
             else
             {
-                Refresh();
-                StatusMessage = "新增成功";
+                // 暂存到内存（需点“提交保存”才写库）
+                _pendingReqAdded.Add(reqResult);
+                _pendingPlanAdded.Add(planResult);
+                Requisitions.Insert(0, reqResult);
+                Plans.Insert(0, planResult);
+                NotifyPendingChanged();
+                StatusMessage = PendingText;
             }
         }
 
@@ -699,23 +710,27 @@ namespace ORT一键报告.Plans.ViewModels
                 StatusMessage = "无新增权限，请登录相应账号";
                 return;
             }
-            Views.WindowPlanDirectEdit editWindow = new(_db, _permission, _adminService, _excelService, null, NeedsReview)
+            Views.WindowPlanDirectEdit editWindow = new(_db, _permission, _adminService, _excelService, null)
             {
             };
             if (editWindow.ShowDialog() != true)
             {
                 return;
             }
+            Plan planResult = editWindow.PlanResult;
             if (NeedsReview)
             {
-                _reviewService.SubmitPlanRequest("新增", editWindow.PlanResult, null, _permission.CurrentUser);
+                _reviewService.SubmitPlanRequest("新增", planResult, null, _permission.CurrentUser);
                 StatusMessage = "新增请求已提交审核，待审核员通过后生效";
                 _ = System.Windows.MessageBox.Show("新增请求已提交审核，待审核员通过后生效。", "提交成功");
             }
             else
             {
-                Refresh();
-                StatusMessage = "新增成功";
+                // 暂存到内存（需点“提交保存”才写库）
+                _pendingPlanAdded.Add(planResult);
+                Plans.Insert(0, planResult);
+                NotifyPendingChanged();
+                StatusMessage = PendingText;
             }
         }
 
@@ -725,7 +740,7 @@ namespace ORT一键报告.Plans.ViewModels
             {
                 return;
             }
-            Views.WindowRequisitionEdit editWindow = new(_db, _permission, _adminService, _excelService, SelectedRequisition, NeedsReview)
+            Views.WindowRequisitionEdit editWindow = new(_db, _permission, _adminService, _excelService, SelectedRequisition)
             {
             };
             if (editWindow.ShowDialog() != true)
@@ -735,13 +750,28 @@ namespace ORT一键报告.Plans.ViewModels
             if (NeedsReview)
             {
                 _reviewService.SubmitRequisitionRequest("编辑", editWindow.RequisitionResult, SelectedRequisition.Id, _permission.CurrentUser);
+                if (editWindow.PlanResult != null)
+                {
+                    _reviewService.SubmitPlanRequest("编辑", editWindow.PlanResult, editWindow.PlanResult.Id, _permission.CurrentUser);
+                }
                 StatusMessage = "编辑请求已提交审核，待审核员通过后生效";
                 _ = System.Windows.MessageBox.Show("编辑请求已提交审核，待审核员通过后生效。", "提交成功");
             }
             else
             {
-                Refresh();
-                StatusMessage = "编辑成功";
+                // 暂存到内存：把对话框结果复制回集合中的对象（快照对比将识别为修改）
+                CopyRequisitionFields(editWindow.RequisitionResult, SelectedRequisition);
+                if (editWindow.PlanResult != null)
+                {
+                    // 同步暂存关联计划的修改（按 Id 找到集合内对象）
+                    Plan existingPlan = Plans.FirstOrDefault(p => p.Id == editWindow.PlanResult.Id);
+                    if (existingPlan != null)
+                    {
+                        CopyPlanFields(editWindow.PlanResult, existingPlan);
+                    }
+                }
+                NotifyPendingChanged();
+                StatusMessage = PendingText;
             }
         }
 
@@ -751,7 +781,7 @@ namespace ORT一键报告.Plans.ViewModels
             {
                 return;
             }
-            Views.WindowPlanDirectEdit editWindow = new(_db, _permission, _adminService, _excelService, SelectedPlan, NeedsReview)
+            Views.WindowPlanDirectEdit editWindow = new(_db, _permission, _adminService, _excelService, SelectedPlan)
             {
             };
             if (editWindow.ShowDialog() != true)
@@ -766,9 +796,59 @@ namespace ORT一键报告.Plans.ViewModels
             }
             else
             {
-                Refresh();
-                StatusMessage = "编辑成功";
+                // 暂存到内存：把对话框结果复制回集合中的对象（快照对比将识别为修改）
+                CopyPlanFields(editWindow.PlanResult, SelectedPlan);
+                NotifyPendingChanged();
+                StatusMessage = PendingText;
             }
+        }
+
+        /// <summary>
+        /// 复制领退记录字段（保持集合内对象引用，触发属性通知自动刷新单元格）
+        /// </summary>
+        private static void CopyRequisitionFields(Requisition from, Requisition to)
+        {
+            to.RequisitionDate = from.RequisitionDate;
+            to.RequisitionNo = from.RequisitionNo;
+            to.ModelName = from.ModelName;
+            to.OutQty = from.OutQty;
+            to.SN = from.SN;
+            to.SnFilePath = from.SnFilePath;
+            to.Rev = from.Rev;
+            to.WorkOrder = from.WorkOrder;
+            to.DC = from.DC;
+            to.LineNo = from.LineNo;
+            to.ReturnRtOrder = from.ReturnRtOrder;
+            to.ReturnQty = from.ReturnQty;
+            to.ReturnDate = from.ReturnDate;
+            to.StockInNo = from.StockInNo;
+            to.StockInQty = from.StockInQty;
+            to.StockInDate = from.StockInDate;
+            to.Remark = from.Remark;
+            to.UpdatedBy = from.UpdatedBy;
+            to.UpdatedAt = from.UpdatedAt;
+        }
+
+        /// <summary>
+        /// 复制计划记录字段（保持集合内对象引用，触发属性通知自动刷新单元格）
+        /// </summary>
+        private static void CopyPlanFields(Plan from, Plan to)
+        {
+            to.JobNo = from.JobNo;
+            to.Product = from.Product;
+            to.Customer = from.Customer;
+            to.ModelName = from.ModelName;
+            to.Stage = from.Stage;
+            to.TestItem = from.TestItem;
+            to.SampleSize = from.SampleSize;
+            to.TestPeriod = from.TestPeriod;
+            to.Owner = from.Owner;
+            to.StartDate = from.StartDate;
+            to.EndDate = from.EndDate;
+            to.Status = from.Status;
+            to.Remark = from.Remark;
+            to.UpdatedBy = from.UpdatedBy;
+            to.UpdatedAt = from.UpdatedAt;
         }
 
         private void DeleteRequisition(object parameter)

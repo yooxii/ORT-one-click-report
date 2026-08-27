@@ -34,9 +34,9 @@
                 <TextBox x:Name="txt_reqNo" Grid.Column="3" Margin="3"/>
 
                 <Label Content="機種名稱*" Grid.Row="1"/>
-                <TextBox x:Name="txt_model" Grid.Row="1" Grid.Column="1" Margin="3"/>
+                <TextBox x:Name="txt_model" Grid.Row="1" Grid.Column="1" Margin="3" TextChanged="Txt_Model_TextChanged"/>
                 <Label Content="領出數量*" Grid.Row="1" Grid.Column="2"/>
-                <TextBox x:Name="txt_outQty" Grid.Row="1" Grid.Column="3" Margin="3"/>
+                <TextBox x:Name="txt_outQty" Grid.Row="1" Grid.Column="3" Margin="3" TextChanged="Txt_Model_TextChanged"/>
 
                 <Label Content="REV.*" Grid.Row="2"/>
                 <TextBox x:Name="txt_rev" Grid.Row="2" Grid.Column="1" Margin="3"/>
@@ -44,9 +44,9 @@
                 <TextBox x:Name="txt_workOrder" Grid.Row="2" Grid.Column="3" Margin="3"/>
 
                 <Label Content="D/C" Grid.Row="3"/>
-                <TextBox x:Name="txt_dc" Grid.Row="3" Grid.Column="1" Margin="3" IsReadOnly="True" ToolTip="根据Work Order自动补全"/>
+                <TextBox x:Name="txt_dc" Grid.Row="3" Grid.Column="1" Margin="3" ToolTip="根据Work Order自动补全，可手动修改"/>
                 <Label Content="線別" Grid.Row="3" Grid.Column="2"/>
-                <TextBox x:Name="txt_lineNo" Grid.Row="3" Grid.Column="3" Margin="3" IsReadOnly="True" ToolTip="根据Work Order自动补全"/>
+                <TextBox x:Name="txt_lineNo" Grid.Row="3" Grid.Column="3" Margin="3" ToolTip="根据Work Order自动补全，可手动修改"/>
 
                 <Label Content="回线RT工令" Grid.Row="4"/>
                 <CheckBox x:Name="chk_genReturnRt" Grid.Row="4" Grid.Column="1" VerticalAlignment="Center"
@@ -72,7 +72,9 @@
                         <ColumnDefinition/>
                         <ColumnDefinition Width="auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBox x:Name="txt_sn" VerticalContentAlignment="Center" TextWrapping="WrapWithOverflow"/>
+                    <TextBox x:Name="txt_sn" TextWrapping="Wrap" AcceptsReturn="True" AcceptsTab="True"
+                             MinLines="2" MaxLines="8" VerticalScrollBarVisibility="Auto"
+                             VerticalContentAlignment="Top" Padding="2"/>
                     <Button x:Name="btn_snFile" Content="选择文件..." Grid.Column="1" Margin="5,0,0,0"
                             Padding="10,2" Click="Btn_SnFile_Click" Visibility="Collapsed"/>
                     <TextBlock x:Name="txt_snFileName" Grid.Column="0" VerticalAlignment="Center"
@@ -105,12 +107,12 @@
                 <Label Content="工作编号" Grid.Row="2"/>
                 <TextBox x:Name="txt_jobNo" Grid.Row="2" Grid.Column="1" Margin="3" IsReadOnly="True" ToolTip="自动生成 RT{当前年月}{编号}"/>
                 <Label Content="样品数" Grid.Row="2" Grid.Column="2"/>
-                <TextBox x:Name="txt_sampleSize" Grid.Row="2" Grid.Column="3" Margin="3" IsReadOnly="True" ToolTip="与领出数量一致"/>
+                <TextBox x:Name="txt_sampleSize" Grid.Row="2" Grid.Column="3" Margin="3" ToolTip="默认与领出数量一致，可修改"/>
 
                 <Label Content="产品别" Grid.Row="3"/>
-                <TextBox x:Name="txt_product" Grid.Row="3" Grid.Column="1" Margin="3" IsReadOnly="True" ToolTip="根据机种名自动查询"/>
+                <TextBox x:Name="txt_product" Grid.Row="3" Grid.Column="1" Margin="3" ToolTip="根据机种名自动查询，可修改"/>
                 <Label Content="客户别" Grid.Row="3" Grid.Column="2"/>
-                <TextBox x:Name="txt_customer" Grid.Row="3" Grid.Column="3" Margin="3" IsReadOnly="True" ToolTip="根据机种名自动查询"/>
+                <TextBox x:Name="txt_customer" Grid.Row="3" Grid.Column="3" Margin="3" ToolTip="根据机种名自动查询，可修改"/>
             </Grid>
         </GroupBox>
 
@@ -125,11 +127,11 @@
                     <RowDefinition/><RowDefinition/><RowDefinition/>
                 </Grid.RowDefinitions>
                 <Label Content="负责人"/>
-                <TextBox x:Name="txt_owner" Grid.Column="1" Margin="3" IsReadOnly="True" ToolTip="根据测试项目自动查询"/>
+                <TextBox x:Name="txt_owner" Grid.Column="1" Margin="3" ToolTip="根据测试项目自动查询，可修改"/>
                 <Label Content="试验时间" Grid.Row="1"/>
-                <TextBox x:Name="txt_testPeriod" Grid.Row="1" Grid.Column="1" Margin="3" IsReadOnly="True" ToolTip="根据测试项目自动查询"/>
+                <TextBox x:Name="txt_testPeriod" Grid.Row="1" Grid.Column="1" Margin="3" ToolTip="根据测试项目自动查询，可修改"/>
                 <Label Content="结束日期" Grid.Row="2"/>
-                <DatePicker x:Name="dp_endDate" Grid.Row="2" Grid.Column="1" Margin="3" IsEnabled="False" ToolTip="根据试验时间自动计算"/>
+                <DatePicker x:Name="dp_endDate" Grid.Row="2" Grid.Column="1" Margin="3" ToolTip="根据试验时间自动计算，可修改"/>
             </Grid>
         </GroupBox>
 

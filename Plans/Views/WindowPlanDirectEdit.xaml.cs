@@ -1,4 +1,3 @@
-using Microsoft.Extensions.DependencyInjection;
 using NLog;
 using ORT一键报告.Models;
 using ORT一键报告.Services;
@@ -12,6 +11,7 @@ namespace ORT一键报告.Plans.Views
     /// <summary>
     /// WindowPlanDirectEdit.xaml 的交互逻辑：计划表直接新增/编辑（第二种情况，非ORT正常领用试验，QRT前缀）。
     /// 必填：测试项目/开始时间/阶段/机种名/备注；自动补全：工作编号 QRT{年月}{编号}、产品别/客户别/负责人/试验时间/结束日期；状态默认 Ongoing。
+    /// 本对话框只构造结果，不写数据库；由调用方决定暂存或提审。
     /// </summary>
     public partial class WindowPlanDirectEdit : Window
     {
@@ -21,15 +21,14 @@ namespace ORT一键报告.Plans.Views
         private readonly AdminService _admin;
         private readonly PlanExcelService _excelService;
         private readonly Plan _editTarget;
-        private readonly bool _submitForReview;
 
         /// <summary>
-        /// 保存/构造的计划记录结果
+        /// 构造的计划记录结果（由调用方处理：暂存或提审）
         /// </summary>
         public Plan PlanResult { get; private set; }
 
         public WindowPlanDirectEdit(DatabaseService db, IPermissionService permission, AdminService admin,
-            PlanExcelService excelService, Plan editTarget = null, bool submitForReview = false)
+            PlanExcelService excelService, Plan editTarget = null)
         {
             InitializeComponent();
             _db = db;
@@ -37,7 +36,6 @@ namespace ORT一键报告.Plans.Views
             _admin = admin;
             _excelService = excelService;
             _editTarget = editTarget;
-            _submitForReview = submitForReview;
 
             Title = editTarget == null ? "计划表新增（非领用）" : "计划表编辑";
 
@@ -85,7 +83,7 @@ namespace ORT一键报告.Plans.Views
         /* ###############################  自动补全  ################################ */
 
         /// <summary>
-        /// 根据测试项目自动补全负责人/试验时间/结束日期
+        /// 根据测试项目自动补全负责人/试验时间/结束日期（仅填充空字段，允许手动修改）
         /// </summary>
         private void UpdateAutoPlan()
         {
@@ -95,19 +93,27 @@ namespace ORT一键报告.Plans.Views
                 return;
             }
             TestItemCatalog item = _admin.GetTestItems().FirstOrDefault(t => t.Name == testItem);
-            if (item != null)
+            if (item == null)
+            {
+                return;
+            }
+            if (string.IsNullOrWhiteSpace(txt_owner.Text))
             {
                 txt_owner.Text = item.Owner;
+            }
+            if (string.IsNullOrWhiteSpace(txt_testPeriod.Text))
+            {
                 txt_testPeriod.Text = item.Period;
-                if (int.TryParse(item.Period, out int hours) && dp_startDate.SelectedDate is DateTime start)
-                {
-                    dp_endDate.SelectedDate = start.AddHours(hours);
-                }
+            }
+            if (dp_endDate.SelectedDate == null && int.TryParse(item.Period, out int hours) && dp_startDate.SelectedDate is DateTime start)
+            {
+                dp_endDate.SelectedDate = start.AddHours(hours);
             }
         }
 
         /// <summary>
-        /// 根据机种名自动补全产品别/客户别
+        /// 根据机种名自动补全产品别/客户别（仅填充空字段）：
+        /// 产品别 = 机种名开始 2 位代码，客户别 = 机种名第 8 位起的 2 位代码；代码映射缺失时回退机种映射表。
         /// </summary>
         private void UpdateModelMapping()
         {
@@ -116,9 +122,16 @@ namespace ORT一键报告.Plans.Views
             {
                 return;
             }
-            ModelMapping mapping = _admin.FindModelMapping(model);
-            txt_product.Text = mapping?.Product ?? "";
-            txt_customer.Text = mapping?.Customer ?? "";
+            if (string.IsNullOrWhiteSpace(txt_product.Text))
+            {
+                string product = _admin.FindProductByModel(model);
+                txt_product.Text = product ?? _admin.FindModelMapping(model)?.Product ?? "";
+            }
+            if (string.IsNullOrWhiteSpace(txt_customer.Text))
+            {
+                string customer = _admin.FindCustomerByModel(model);
+                txt_customer.Text = customer ?? _admin.FindModelMapping(model)?.Customer ?? "";
+            }
         }
 
         /* ###############################  事件函数  ################################ */
@@ -139,11 +152,20 @@ namespace ORT一键报告.Plans.Views
                 return;
             }
             // 新增时自动生成工作编号 QRT{年月}{编号}
-            if (_editTarget == null && dp_startDate.SelectedDate is DateTime start)
+            if (_editTarget == null && dp_startDate.SelectedDate is DateTime start && string.IsNullOrWhiteSpace(txt_jobNo.Text))
             {
                 txt_jobNo.Text = _excelService.GenerateJobNo(start, "QRT");
             }
             UpdateAutoPlan();
+        }
+
+        private void Txt_Model_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+        {
+            if (txt_product == null)
+            {
+                return;
+            }
+            UpdateModelMapping();
         }
 
         private void Btn_Save_Click(object sender, RoutedEventArgs e)
@@ -214,31 +236,8 @@ namespace ORT一键报告.Plans.Views
 
             PlanResult = plan;
 
-            if (_submitForReview)
-            {
-                DialogResult = true;
-                return;
-            }
-
-            try
-            {
-                if (_editTarget == null)
-                {
-                    _db.FreeSql.Insert(plan).ExecuteAffrows();
-                    _logger.Info($"新增非领用计划: {plan.JobNo}, 机种={plan.ModelName}");
-                }
-                else
-                {
-                    _db.FreeSql.Update<Plan>().SetSource(plan).Where(p => p.Id == plan.Id).ExecuteAffrows();
-                    _logger.Info($"编辑计划: Id={plan.Id}, {plan.JobNo}");
-                }
-                DialogResult = true;
-            }
-            catch (Exception ex)
-            {
-                _logger.Error(ex, "保存计划记录失败");
-                _ = MessageBox.Show($"保存失败:\n{ex.Message}", "错误");
-            }
+            // 只构造结果，不写数据库；由调用方决定暂存/提审
+            DialogResult = true;
         }
 
         private void Btn_Cancel_Click(object sender, RoutedEventArgs e)
