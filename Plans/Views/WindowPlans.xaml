@@ -28,18 +28,19 @@
             <Setter Property="HorizontalContentAlignment" Value="Center"/>
             <Setter Property="Background" Value="Transparent"/>
         </Style>
-        <!-- 单元格通用样式：无内边距、边框填满、内容居中；选中时保持黑字白底避免文字消失 -->
+        <!-- 单元格通用样式：无内边距、内容居中；选中单元格浅灰（与选中行背景叠加显示），黑字不变 -->
         <Style x:Key="FullCell" TargetType="DataGridCell">
             <Setter Property="Padding" Value="0"/>
             <Setter Property="Margin" Value="0"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
             <Setter Property="HorizontalContentAlignment" Value="Center"/>
-            <Setter Property="Background" Value="White"/>
+            <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="Black"/>
             <Style.Triggers>
+                <!-- 选中单元格：浅灰色（行选中与单元格选中可同时显示） -->
                 <Trigger Property="IsSelected" Value="True">
-                    <Setter Property="Background" Value="White"/>
+                    <Setter Property="Background" Value="#FFE0E0E0"/>
                     <Setter Property="Foreground" Value="Black"/>
                 </Trigger>
             </Style.Triggers>
@@ -142,6 +143,7 @@
                           ClipboardCopyMode="None"
                           LoadingRow="Dg_Requisitions_LoadingRow"
                           CellEditEnding="Dg_Requisitions_CellEditEnding"
+                          CurrentCellChanged="Dg_Requisitions_CurrentCellChanged"
                           PreviewMouseRightButtonDown="Dg_Requisitions_PreviewMouseRightButtonDown"
                           VirtualizingPanel.IsVirtualizing="True">
                     <DataGrid.ContextMenu>
@@ -166,6 +168,10 @@
                                 <DataTrigger Binding="{Binding Id}" Value="0">
                                     <Setter Property="Background" Value="#FFFFF8E1"/>
                                 </DataTrigger>
+                                <!-- 选中行：很浅的灰色 -->
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter Property="Background" Value="#FFF2F2F2"/>
+                                </Trigger>
                             </Style.Triggers>
                         </Style>
                     </DataGrid.RowStyle>
@@ -258,12 +264,17 @@
                           ClipboardCopyMode="None"
                           LoadingRow="Dg_Plans_LoadingRow"
                           CellEditEnding="Dg_Plans_CellEditEnding"
+                          CurrentCellChanged="Dg_Plans_CurrentCellChanged"
                           PreviewMouseRightButtonDown="Dg_Plans_PreviewMouseRightButtonDown"
                           VirtualizingPanel.IsVirtualizing="True">
                     <DataGrid.ContextMenu>
                         <ContextMenu>
                             <MenuItem Header="编辑(对话框)" Click="Menu_EditPlan_Click"/>
                             <MenuItem Header="标记删除" Click="Menu_DeletePlan_Click"/>
+                            <Separator/>
+                            <MenuItem Header="打开报告文件夹" Click="Menu_OpenReportFolder_Click" ToolTip="打开该工作编号对应报告夹中的 Report 子文件夹"/>
+                            <MenuItem Header="打开报告概览" Click="Menu_OpenReportOverview_Click" ToolTip="打开该工作编号对应报告夹中的 Excel 概览文件"/>
+                            <MenuItem Header="打开一键报告" Click="Menu_OpenMainReport_Click" ToolTip="打开一键报告并将选中计划与对应领退数据填入相应位置"/>
                             <Separator/>
                             <MenuItem Header="复制行" Click="Menu_CopyPlanRow_Click"/>
                             <MenuItem Header="复制单元格" Click="Menu_CopyPlanCell_Click"/>
@@ -282,11 +293,38 @@
                                 <DataTrigger Binding="{Binding Id}" Value="0">
                                     <Setter Property="Background" Value="#FFFFF8E1"/>
                                 </DataTrigger>
+                                <!-- 选中行：很浅的灰色 -->
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter Property="Background" Value="#FFF2F2F2"/>
+                                </Trigger>
                             </Style.Triggers>
                         </Style>
                     </DataGrid.RowStyle>
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="工作編號" Binding="{Binding JobNo, UpdateSourceTrigger=PropertyChanged}" Width="90" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
+                        <DataGridTemplateColumn Header="工作編號" Width="90" SortMemberPath="JobNo">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding JobNo}">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock" BasedOn="{StaticResource CenterText}">
+                                                <Setter Property="Foreground" Value="Black"/>
+                                                <Style.Triggers>
+                                                    <!-- 无对应报告文件夹/概览：灰色区分（明显但不突兀，白/浅灰背景上均清晰） -->
+                                                    <DataTrigger Binding="{Binding HasReportLink}" Value="False">
+                                                        <Setter Property="Foreground" Value="#FF808080"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                            <DataGridTemplateColumn.CellEditingTemplate>
+                                <DataTemplate>
+                                    <TextBox Text="{Binding JobNo, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource CenterEdit}"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellEditingTemplate>
+                        </DataGridTemplateColumn>
                         <DataGridTemplateColumn Header="产品别" Width="80" SortMemberPath="Product">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>

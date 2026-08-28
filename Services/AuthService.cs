@@ -1,7 +1,9 @@
+using Newtonsoft.Json;
 using NLog;
 using ORT一键报告.Models;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -95,6 +97,7 @@ namespace ORT一键报告.Services
                     .Select(r => r.Value)
                     .ToList();
                 _logger.Info($"用户登录: {user.Username}（角色: {string.Join(",", CurrentRoles)}）");
+                SaveLoginCookie(username, password);
                 AuthChanged?.Invoke();
                 return true;
             }
@@ -106,7 +109,7 @@ namespace ORT一键报告.Services
         }
 
         /// <summary>
-        /// 登出，回到游客身份
+        /// 登出，回到游客身份；同时完全清除本地登录 cookie
         /// </summary>
         public void Logout()
         {
@@ -116,7 +119,120 @@ namespace ORT一键报告.Services
             }
             CurrentUser = null;
             CurrentRoles = [];
+            ClearLoginCookie();
             AuthChanged?.Invoke();
+        }
+
+        /* ###############################  本地登录 Cookie  ################################ */
+
+        /// <summary>
+        /// 登录 cookie 文件（程序目录 Data 下），密码以 DPAPI 按当前 Windows 用户加密
+        /// </summary>
+        private static string CookieFile => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data", "auth_cookie.json");
+
+        /// <summary>
+        /// cookie 有效期：一周
+        /// </summary>
+        private static readonly TimeSpan CookieLifetime = TimeSpan.FromDays(7);
+
+        private class CookieData
+        {
+            public string Username { get; set; }
+            public string PasswordEnc { get; set; }
+            public DateTime Expiry { get; set; }
+        }
+
+        /// <summary>
+        /// 保存登录信息到本地 cookie（保留上一次登录，有效期一周）
+        /// </summary>
+        private void SaveLoginCookie(string username, string password)
+        {
+            try
+            {
+                byte[] encrypted = ProtectedData.Protect(Encoding.UTF8.GetBytes(password), null, DataProtectionScope.CurrentUser);
+                CookieData cookie = new()
+                {
+                    Username = username,
+                    PasswordEnc = Convert.ToBase64String(encrypted),
+                    Expiry = DateTime.Now + CookieLifetime
+                };
+                Directory.CreateDirectory(Path.GetDirectoryName(CookieFile));
+                File.WriteAllText(CookieFile, JsonConvert.SerializeObject(cookie));
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn($"保存登录 cookie 失败: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 读取未过期的登录 cookie；不存在/已过期/损坏返回 null（过期时自动清除）
+        /// </summary>
+        public (string Username, string Password)? LoadValidCookie()
+        {
+            try
+            {
+                if (!File.Exists(CookieFile))
+                {
+                    return null;
+                }
+                CookieData cookie = JsonConvert.DeserializeObject<CookieData>(File.ReadAllText(CookieFile));
+                if (cookie == null || string.IsNullOrWhiteSpace(cookie.Username) || string.IsNullOrWhiteSpace(cookie.PasswordEnc))
+                {
+                    return null;
+                }
+                if (cookie.Expiry < DateTime.Now)
+                {
+                    ClearLoginCookie();
+                    return null;
+                }
+                byte[] decrypted = ProtectedData.Unprotect(Convert.FromBase64String(cookie.PasswordEnc), null, DataProtectionScope.CurrentUser);
+                return (cookie.Username, Encoding.UTF8.GetString(decrypted));
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn($"读取登录 cookie 失败: {ex.Message}");
+                ClearLoginCookie();
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// cookie 到期时间（无有效 cookie 时返回 null，供界面提示）
+        /// </summary>
+        public DateTime? GetCookieExpiry()
+        {
+            try
+            {
+                if (!File.Exists(CookieFile))
+                {
+                    return null;
+                }
+                CookieData cookie = JsonConvert.DeserializeObject<CookieData>(File.ReadAllText(CookieFile));
+                return cookie != null && cookie.Expiry >= DateTime.Now ? cookie.Expiry : null;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// 完全清除本地登录 cookie（注销时调用）
+        /// </summary>
+        public void ClearLoginCookie()
+        {
+            try
+            {
+                if (File.Exists(CookieFile))
+                {
+                    File.Delete(CookieFile);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn($"清除登录 cookie 失败: {ex.Message}");
+            }
         }
 
         /// <summary>

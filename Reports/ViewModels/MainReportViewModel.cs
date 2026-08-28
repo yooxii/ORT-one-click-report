@@ -76,6 +76,8 @@ namespace ORT一键报告.Reports.ViewModels
         /// </summary>
         private void MatchPlanFromFolderName(string folderName)
         {
+            // 保留从计划表右键携带的预填记录：文件夹名未匹配到时仍使用携带记录
+            Plan prefilled = _reportService.MatchedPlan;
             _reportService.MatchedPlan = null;
             if (string.IsNullOrWhiteSpace(folderName))
             {
@@ -120,10 +122,10 @@ namespace ORT一键报告.Reports.ViewModels
                         matched = candidates.FirstOrDefault(p => p.ModelName?.ToUpper() == modelName);
                     }
                 }
-                _reportService.MatchedPlan = matched;
-                if (matched != null)
+                _reportService.MatchedPlan = matched ?? prefilled;
+                if (_reportService.MatchedPlan != null)
                 {
-                    _logger.Info($"文件夹[{folderName}]匹配到计划记录: Id={matched.Id} 机种={matched.ModelName} 工作編號={matched.JobNo} 负责人={matched.Owner}");
+                    _logger.Info($"报告数据匹配到计划记录: Id={_reportService.MatchedPlan.Id} 机种={_reportService.MatchedPlan.ModelName} 工作編號={_reportService.MatchedPlan.JobNo} 负责人={_reportService.MatchedPlan.Owner}");
                 }
                 else
                 {

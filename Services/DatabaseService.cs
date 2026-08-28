@@ -38,11 +38,12 @@ namespace ORT一键报告.Services
 
         public DatabaseService()
         {
-            DataDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data");
+            // 数据库路径可在设置中修改（保存在程序目录文件，重启生效）
+            DbPath = AppSettingsService.ResolveDbPath();
+            DataDir = Path.GetDirectoryName(DbPath);
             OleDir = Path.Combine(DataDir, "OleFiles");
             Directory.CreateDirectory(DataDir);
             Directory.CreateDirectory(OleDir);
-            DbPath = Path.Combine(DataDir, "ort_plans.db");
 
             string connStr = $"Data Source={DbPath};Pooling=true;Min Pool Size=1;Max Pool Size=10";
             FreeSql = new FreeSqlBuilder()

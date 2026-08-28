@@ -1,4 +1,5 @@
 ﻿using ORT一键报告.Models;
+using ORT一键报告.Reports.Models;
 
 namespace ORT一键报告.Services
 {
@@ -18,5 +19,17 @@ namespace ORT一键报告.Services
         /// 用于补充报告表头信息（项目名/阶段/负责人等）
         /// </summary>
         public Plan MatchedPlan { get; set; }
+
+        /// <summary>
+        /// 匹配计划对应的领退记录（从计划表右键打开一键报告时携带），
+        /// 用于补充 S/N 等领退数据到报告相应位置
+        /// </summary>
+        public Requisition MatchedRequisition { get; set; }
+
+        /// <summary>
+        /// 预填的一键报告输入模型实例（从计划 + 领退构建）。
+        /// 只要提供该实例即可直接生成报告，与 UI 解耦。
+        /// </summary>
+        public ReportInputModel PrefilledReportModel { get; set; }
     }
 }

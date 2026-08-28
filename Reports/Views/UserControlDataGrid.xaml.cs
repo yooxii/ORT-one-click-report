@@ -1,4 +1,5 @@
 ﻿using ORT一键报告.Models;
+using ORT一键报告.Reports.Models;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Reflection;
@@ -203,6 +204,11 @@ namespace ORT一键报告.Reports.Views
                 InspectionPrev = ReportStatus.Pass,
                 HiPot = ReportStatus.Pass,
             };
+            // DataGridSource 是 DependencyProperty，绑定可能尚未求值，需要初始化
+            if (DataGridSource == null)
+            {
+                DataGridSource = [];
+            }
             if (index < 0 || index > DataGridSource.Count)
             {
                 index = DataGridSource.Count; // 如果索引无效，则添加到末尾

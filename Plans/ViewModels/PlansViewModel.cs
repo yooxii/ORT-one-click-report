@@ -10,6 +10,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Windows;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Threading;
@@ -90,6 +91,12 @@ namespace ORT一键报告.Plans.ViewModels
         private readonly IPermissionService _permission;
         private readonly ReviewService _reviewService;
         private readonly AdminService _adminService;
+        private readonly AppSettingsService _appSettings;
+
+        /// <summary>
+        /// 报告链接缓存：工作编号 → 报告夹信息（扫描自报告路径）
+        /// </summary>
+        private readonly Dictionary<string, ReportLink> _reportLinks = [];
 
         /// <summary>
         /// 计划表可筛选的字段定义：(字段名, 是否日期字段)
@@ -282,7 +289,7 @@ namespace ORT一键报告.Plans.ViewModels
             => FilterFields.Select(f => f.Name).Where(n => ActiveFilters.All(c => c.Field != n)).ToList();
 
         public PlansViewModel(DatabaseService db, PlanExcelService excelService, IPathService pathService,
-            IPermissionService permission, ReviewService reviewService, AdminService adminService)
+            IPermissionService permission, ReviewService reviewService, AdminService adminService, AppSettingsService appSettings)
         {
             _db = db;
             _excelService = excelService;
@@ -290,6 +297,7 @@ namespace ORT一键报告.Plans.ViewModels
             _permission = permission;
             _reviewService = reviewService;
             _adminService = adminService;
+            _appSettings = appSettings;
 
             PlansView = CollectionViewSource.GetDefaultView(Plans);
             PlansView.Filter = PlanFilter;
@@ -311,7 +319,16 @@ namespace ORT一键报告.Plans.ViewModels
         /* ###############################  命令  ################################ */
 
         private RelayCommand _refreshCommand;
-        public ICommand RefreshCommand => _refreshCommand ??= new RelayCommand(Refresh);
+        public ICommand RefreshCommand => _refreshCommand ??= new RelayCommand(RefreshAndRescan);
+
+        /// <summary>
+        /// 刷新：重新加载数据 + 重新遍历报告文件夹（后台）
+        /// </summary>
+        private void RefreshAndRescan()
+        {
+            Refresh();
+            StartReportScan();
+        }
 
         private RelayCommand _exportRequisitionCommand;
         public ICommand ExportRequisitionCommand => _exportRequisitionCommand ??= new RelayCommand(ExportRequisition);
@@ -397,7 +414,6 @@ namespace ORT一键报告.Plans.ViewModels
                 foreach (Plan plan in plans)
                 {
                     Plans.Add(plan);
-                    _planOriginals[plan.Id] = ClonePlan(plan);
                 }
 
                 List<Requisition> reqs = _db.FreeSql.Select<Requisition>().OrderByDescending(r => r.Id).ToList();
@@ -416,6 +432,19 @@ namespace ORT一键报告.Plans.ViewModels
                     RefreshConditionOptions(cond);
                 }
                 LoadCatalogs();
+                // 打开窗口仅从数据库加载报告夹扫描结果（不重新遍历文件系统，提速）
+                LoadReportLinksFromDb();
+                UpdatePlanReportFlags();
+                if (_reportLinks.Count == 0 && _appSettings.ReportDir != null && Plans.Count > 0)
+                {
+                    // 首次尚无扫描结果时后台扫描一次
+                    StartReportScan();
+                }
+                // 计划表快照在报告标记（HasReportLink 已 JsonIgnore，不参与对比）加载后捕获
+                foreach (Plan plan in Plans)
+                {
+                    _planOriginals[plan.Id] = ClonePlan(plan);
+                }
                 PlansView.Refresh();
                 RequisitionsView.Refresh();
                 OnPropertyChanged(nameof(HasPendingChanges));
@@ -442,6 +471,198 @@ namespace ORT一键报告.Plans.ViewModels
             OnPropertyChanged(nameof(CatalogProducts));
             OnPropertyChanged(nameof(CatalogCustomers));
             OnPropertyChanged(nameof(CatalogStages));
+        }
+
+        /* ###############################  报告扫描（按工作编号对应）  ################################ */
+
+        /// <summary>
+        /// 查找指定工作编号对应的报告夹信息（未找到返回 null）
+        /// </summary>
+        public ReportLink FindReportLink(string jobNo)
+            => string.IsNullOrWhiteSpace(jobNo) || !_reportLinks.TryGetValue(jobNo, out ReportLink link) ? null : link;
+
+        /// <summary>
+        /// 从数据库加载已保存的报告夹扫描结果（打开窗口时调用，不遍历文件系统）
+        /// </summary>
+        private void LoadReportLinksFromDb()
+        {
+            _reportLinks.Clear();
+            try
+            {
+                foreach (ReportLink link in _db.FreeSql.Select<ReportLink>().ToList())
+                {
+                    _reportLinks[link.JobNo] = link;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn($"加载报告夹记录失败: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 查找计划记录对应的领退记录（右键打开一键报告时携带）。
+        /// 匹配规则：备注含回线RT工令 → 备注含 WorkOrder → 机种相同且领用日期同开始日期。
+        /// </summary>
+        public Requisition FindRequisitionForPlan(Plan plan)
+        {
+            if (plan == null)
+            {
+                return null;
+            }
+            List<Requisition> reqs = _db.FreeSql.Select<Requisition>().ToList();
+            return reqs.FirstOrDefault(r => !string.IsNullOrWhiteSpace(r.ReturnRtOrder)
+                    && plan.Remark != null && plan.Remark.Contains(r.ReturnRtOrder))
+                ?? reqs.FirstOrDefault(r => !string.IsNullOrWhiteSpace(r.WorkOrder)
+                    && plan.Remark != null && plan.Remark.Contains(r.WorkOrder))
+                ?? reqs.FirstOrDefault(r => r.ModelName == plan.ModelName
+                    && r.RequisitionDate != null && plan.StartDate != null
+                    && r.RequisitionDate.Value.Date == plan.StartDate.Value.Date);
+        }
+
+        /// <summary>
+        /// 扫描序号：防止多次刷新时旧扫描结果覆盖新结果；异步扫描避免阻塞窗口打开。
+        /// </summary>
+        private int _scanSeq;
+
+        /// <summary>
+        /// 后台遍历报告路径，按工作编号匹配报告文件夹并保存到 report_links 表。
+        /// 报告夹结构：文件夹名包含工作编号，内含 Report 子文件夹与一个 Excel 报告概览文件。
+        /// </summary>
+        private void StartReportScan()
+        {
+            string root = _appSettings.ReportDir;
+            List<string> jobNos = Plans
+                .Where(p => !string.IsNullOrWhiteSpace(p.JobNo))
+                .Select(p => p.JobNo)
+                .Distinct()
+                .ToList();
+            if (root == null || jobNos.Count == 0)
+            {
+                UpdatePlanReportFlags();
+                return;
+            }
+            int seq = ++_scanSeq;
+            System.Threading.Tasks.Task.Run(() =>
+            {
+                try
+                {
+                    List<ReportLink> found = ScanReportLinksCore(root, jobNos);
+                    Application.Current?.Dispatcher.Invoke(() =>
+                    {
+                        if (seq != _scanSeq)
+                        {
+                            return;
+                        }
+                        // 记录到数据库（全量刷新）
+                        _db.FreeSql.Delete<ReportLink>().Where("1=1").ExecuteAffrows();
+                        if (found.Count > 0)
+                        {
+                            _db.FreeSql.Insert(found).ExecuteAffrows();
+                        }
+                        _reportLinks.Clear();
+                        foreach (ReportLink link in found)
+                        {
+                            _reportLinks[link.JobNo] = link;
+                        }
+                        UpdatePlanReportFlags();
+                        PlansView.Refresh();
+                        _logger.Info($"报告扫描完成: {root} 下匹配 {found.Count} 个报告夹");
+                    });
+                }
+                catch (Exception ex)
+                {
+                    _logger.Warn($"报告扫描失败: {ex.Message}");
+                }
+            });
+        }
+
+        /// <summary>
+        /// 报告夹目录扫描核心逻辑（纯文件系统操作，可在后台线程执行）
+        /// </summary>
+        private static List<ReportLink> ScanReportLinksCore(string root, List<string> jobNos)
+        {
+            List<ReportLink> found = [];
+            HashSet<string> matched = [];
+            foreach (string dir in EnumerateDirs(root, 4))
+            {
+                string name = Path.GetFileName(dir);
+                string job = jobNos.FirstOrDefault(j => !matched.Contains(j) && name.IndexOf(j, StringComparison.OrdinalIgnoreCase) >= 0);
+                if (job == null)
+                {
+                    continue;
+                }
+                string reportSub;
+                string overview;
+                try
+                {
+                    reportSub = Directory.GetDirectories(dir)
+                        .FirstOrDefault(d => Path.GetFileName(d).Equals("Report", StringComparison.OrdinalIgnoreCase));
+                    overview = Directory.GetFiles(dir, "*.xls*")
+                        .OrderByDescending(f => f.EndsWith(".xlsx", StringComparison.OrdinalIgnoreCase))
+                        .FirstOrDefault();
+                }
+                catch
+                {
+                    continue;
+                }
+                if (reportSub == null || overview == null)
+                {
+                    continue;
+                }
+                matched.Add(job);
+                found.Add(new ReportLink
+                {
+                    JobNo = job,
+                    ReportDir = reportSub,
+                    OverviewFile = overview,
+                    UpdatedAt = DateTime.Now
+                });
+                if (matched.Count == jobNos.Count)
+                {
+                    break; // 全部匹配完成，提前结束扫描
+                }
+            }
+            return found;
+        }
+
+        /// <summary>
+        /// 按计划表工作编号是否有对应报告夹刷新显示标记（无对应时界面用近黑色区分）
+        /// </summary>
+        private void UpdatePlanReportFlags()
+        {
+            foreach (Plan plan in Plans)
+            {
+                plan.HasReportLink = !string.IsNullOrWhiteSpace(plan.JobNo) && _reportLinks.ContainsKey(plan.JobNo);
+            }
+        }
+
+        /// <summary>
+        /// 递归枚举子目录（限制深度，避免过深目录树）
+        /// </summary>
+        private static IEnumerable<string> EnumerateDirs(string root, int depth)
+        {
+            if (depth < 0)
+            {
+                yield break;
+            }
+            string[] dirs;
+            try
+            {
+                dirs = Directory.GetDirectories(root);
+            }
+            catch
+            {
+                yield break;
+            }
+            foreach (string dir in dirs)
+            {
+                yield return dir;
+                foreach (string sub in EnumerateDirs(dir, depth - 1))
+                {
+                    yield return sub;
+                }
+            }
         }
 
         private static Plan ClonePlan(Plan source)

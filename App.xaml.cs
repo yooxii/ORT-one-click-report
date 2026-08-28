@@ -40,6 +40,7 @@ namespace ORT一键报告
                 services.AddSingleton<PlanExcelService>();
                 services.AddSingleton<AdminService>();
                 services.AddSingleton<ReviewService>();
+                services.AddSingleton<ReportGenerationService>();
 
                 // ViewModels
                 services.AddTransient<MainViewModel>();

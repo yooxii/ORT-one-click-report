@@ -8,6 +8,12 @@
         WindowStartupLocation="CenterOwner">
 
     <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition/>
+            <RowDefinition Height="auto"/>
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="220"/>
             <ColumnDefinition Width="5"/>
@@ -23,11 +29,12 @@
                         <TreeViewItem Header="字体" Tag="sec_font"/>
                     </TreeViewItem>
                     <TreeViewItem Header="路径" IsExpanded="True" Tag="sec_paths">
+                        <TreeViewItem Header="ATE数据路径" Tag="sec_ate"/>
+                        <TreeViewItem Header="EMI数据路径" Tag="sec_emi"/>
+                        <TreeViewItem Header="数据库路径" Tag="sec_dbpath"/>
                         <TreeViewItem Header="计划表路径" Tag="sec_schedule"/>
                         <TreeViewItem Header="领用表路径" Tag="sec_requisition"/>
                         <TreeViewItem Header="报告路径" Tag="sec_report"/>
-                        <TreeViewItem Header="ATE数据路径" Tag="sec_ate"/>
-                        <TreeViewItem Header="EMI数据路径" Tag="sec_emi"/>
                     </TreeViewItem>
                 </TreeView>
             </DockPanel>
@@ -60,11 +67,9 @@
                                 <ColumnDefinition Width="100"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="字体族" VerticalAlignment="Center"/>
-                            <ComboBox x:Name="cb_fontFamily" Grid.Column="1" VerticalContentAlignment="Center"
-                                      SelectionChanged="Cb_FontFamily_SelectionChanged"/>
+                            <ComboBox x:Name="cb_fontFamily" Grid.Column="1" VerticalContentAlignment="Center"/>
                             <TextBlock Text="字号" Grid.Column="3" VerticalAlignment="Center"/>
-                            <ComboBox x:Name="cb_fontSize" Grid.Column="4" VerticalContentAlignment="Center" IsEditable="True"
-                                      SelectionChanged="Cb_FontSize_SelectionChanged"/>
+                            <ComboBox x:Name="cb_fontSize" Grid.Column="4" VerticalContentAlignment="Center" IsEditable="True"/>
                         </Grid>
                     </StackPanel>
                 </Border>
@@ -79,6 +84,54 @@
                     </StackPanel>
                 </Border>
 
+                <Border x:Name="sec_ate" Padding="0,10">
+                    <StackPanel>
+                        <TextBlock Text="ATE数据路径" FontSize="16" FontWeight="SemiBold"/>
+                        <TextBlock Text="选择ATE数据时的默认打开目录。此设置与数据库路径保存在同一位置。" Foreground="Gray" Margin="0,2,0,8" TextWrapping="Wrap"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="70"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="txt_ate" VerticalContentAlignment="Center"/>
+                            <Button Content="浏览..." Grid.Column="2" Padding="6,3" Click="Btn_Browse_Click" Tag="AteDataPath"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <Border x:Name="sec_emi" Padding="0,10">
+                    <StackPanel>
+                        <TextBlock Text="EMI数据路径" FontSize="16" FontWeight="SemiBold"/>
+                        <TextBlock Text="选择EMI数据时的默认打开目录。此设置与数据库路径保存在同一位置。" Foreground="Gray" Margin="0,2,0,8" TextWrapping="Wrap"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="70"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="txt_emi" VerticalContentAlignment="Center"/>
+                            <Button Content="浏览..." Grid.Column="2" Padding="6,3" Click="Btn_Browse_Click" Tag="EmiDataPath"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <Border x:Name="sec_dbpath" Padding="0,10">
+                    <StackPanel>
+                        <TextBlock Text="数据库路径" FontSize="16" FontWeight="SemiBold"/>
+                        <TextBlock Text="数据库文件（ort_plans.db）保存目录。此设置保存在程序目录，修改后需重启程序生效。" Foreground="Gray" Margin="0,2,0,8" TextWrapping="Wrap"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="70"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="txt_dbpath" VerticalContentAlignment="Center"/>
+                            <Button x:Name="btn_dbpathBrowse" Content="浏览..." Grid.Column="2" Padding="6,3" Click="Btn_DbPathBrowse_Click"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
                 <Border x:Name="sec_schedule" Padding="0,10">
                     <StackPanel>
                         <TextBlock Text="计划表路径" FontSize="16" FontWeight="SemiBold"/>
@@ -89,7 +142,7 @@
                                 <ColumnDefinition Width="8"/>
                                 <ColumnDefinition Width="70"/>
                             </Grid.ColumnDefinitions>
-                            <TextBox x:Name="txt_schedule" VerticalContentAlignment="Center" TextChanged="Txt_Path_TextChanged" Tag="SchedulePath"/>
+                            <TextBox x:Name="txt_schedule" VerticalContentAlignment="Center"/>
                             <Button Content="浏览..." Grid.Column="2" Padding="6,3" Click="Btn_Browse_Click" Tag="SchedulePath"/>
                         </Grid>
                     </StackPanel>
@@ -105,7 +158,7 @@
                                 <ColumnDefinition Width="8"/>
                                 <ColumnDefinition Width="70"/>
                             </Grid.ColumnDefinitions>
-                            <TextBox x:Name="txt_requisition" VerticalContentAlignment="Center" TextChanged="Txt_Path_TextChanged" Tag="RequisitionPath"/>
+                            <TextBox x:Name="txt_requisition" VerticalContentAlignment="Center"/>
                             <Button Content="浏览..." Grid.Column="2" Padding="6,3" Click="Btn_Browse_Click" Tag="RequisitionPath"/>
                         </Grid>
                     </StackPanel>
@@ -121,40 +174,8 @@
                                 <ColumnDefinition Width="8"/>
                                 <ColumnDefinition Width="70"/>
                             </Grid.ColumnDefinitions>
-                            <TextBox x:Name="txt_report" VerticalContentAlignment="Center" TextChanged="Txt_Path_TextChanged" Tag="ReportPath"/>
+                            <TextBox x:Name="txt_report" VerticalContentAlignment="Center"/>
                             <Button Content="浏览..." Grid.Column="2" Padding="6,3" Click="Btn_Browse_Click" Tag="ReportPath"/>
-                        </Grid>
-                    </StackPanel>
-                </Border>
-
-                <Border x:Name="sec_ate" Padding="0,10">
-                    <StackPanel>
-                        <TextBlock Text="ATE数据路径" FontSize="16" FontWeight="SemiBold"/>
-                        <TextBlock Text="选择ATE数据时的默认打开目录。" Foreground="Gray" Margin="0,2,0,8"/>
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition/>
-                                <ColumnDefinition Width="8"/>
-                                <ColumnDefinition Width="70"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBox x:Name="txt_ate" VerticalContentAlignment="Center" TextChanged="Txt_Path_TextChanged" Tag="AteDataPath"/>
-                            <Button Content="浏览..." Grid.Column="2" Padding="6,3" Click="Btn_Browse_Click" Tag="AteDataPath"/>
-                        </Grid>
-                    </StackPanel>
-                </Border>
-
-                <Border x:Name="sec_emi" Padding="0,10">
-                    <StackPanel>
-                        <TextBlock Text="EMI数据路径" FontSize="16" FontWeight="SemiBold"/>
-                        <TextBlock Text="选择EMI数据时的默认打开目录。" Foreground="Gray" Margin="0,2,0,8"/>
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition/>
-                                <ColumnDefinition Width="8"/>
-                                <ColumnDefinition Width="70"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBox x:Name="txt_emi" VerticalContentAlignment="Center" TextChanged="Txt_Path_TextChanged" Tag="EmiDataPath"/>
-                            <Button Content="浏览..." Grid.Column="2" Padding="6,3" Click="Btn_Browse_Click" Tag="EmiDataPath"/>
                         </Grid>
                     </StackPanel>
                 </Border>
@@ -162,5 +183,15 @@
                 <Border Padding="0,20,0,40"/>
             </StackPanel>
         </ScrollViewer>
+        </Grid>
+
+        <!--底部：保存/应用/取消--> 
+        <Border Grid.Row="1" BorderBrush="#FFDDDDDD" BorderThickness="0,1,0,0" Padding="16,10">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button x:Name="btn_save" Content="保存" Width="90" Height="30" Click="Btn_Save_Click" IsDefault="True"/>
+                <Button x:Name="btn_apply" Content="应用" Width="90" Height="30" Margin="10,0,0,0" Click="Btn_Apply_Click"/>
+                <Button x:Name="btn_cancel" Content="取消" Width="90" Height="30" Margin="10,0,0,0" Click="Btn_Cancel_Click" IsCancel="True"/>
+            </StackPanel>
+        </Border>
     </Grid>
 </Window>

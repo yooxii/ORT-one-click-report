@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using ORT一键报告.Services;
+using System;
 using System.Windows;
 using System.Windows.Input;
 
@@ -12,11 +13,57 @@ namespace ORT一键报告.Main.Views
     {
         private readonly AuthService _auth;
 
+        /// <summary>
+        /// 检测到的有效登录 cookie（用户名/密码）
+        /// </summary>
+        private (string Username, string Password)? _cookie;
+
         public WindowLogin()
         {
             InitializeComponent();
             _auth = App.ServiceProvider.GetRequiredService<AuthService>();
-            Loaded += (s, e) => txt_username.Focus();
+            Loaded += (s, e) =>
+            {
+                ShowCookieHint();
+                txt_username.Focus();
+            };
+        }
+
+        /// <summary>
+        /// 检测本地登录 cookie，有效时提示用户是否继续上一次登录
+        /// </summary>
+        private void ShowCookieHint()
+        {
+            _cookie = _auth.LoadValidCookie();
+            if (_cookie == null)
+            {
+                return;
+            }
+            txt_username.Text = _cookie.Value.Username;
+            DateTime? expiry = _auth.GetCookieExpiry();
+            txt_cookieHint.Text = $"检测到上次登录：{_cookie.Value.Username}（有效期至 {expiry:yyyy/M/d}），是否继续？";
+            panel_cookie.Visibility = Visibility.Visible;
+        }
+
+        private void Btn_ContinueLogin_Click(object sender, RoutedEventArgs e)
+        {
+            if (_cookie == null)
+            {
+                return;
+            }
+            if (_auth.Login(_cookie.Value.Username, _cookie.Value.Password))
+            {
+                DialogResult = true;
+            }
+            else
+            {
+                // 账号被禁用/密码已变更：清除失效 cookie，改为手动登录
+                _auth.ClearLoginCookie();
+                _cookie = null;
+                panel_cookie.Visibility = Visibility.Collapsed;
+                txt_error.Text = "上次登录信息已失效，请重新输入密码登录";
+                txt_password.Focus();
+            }
         }
 
         private void Btn_Login_Click(object sender, RoutedEventArgs e)

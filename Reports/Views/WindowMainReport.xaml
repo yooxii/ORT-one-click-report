@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:sys="clr-namespace:System;assembly=mscorlib"
         xmlns:local="clr-namespace:ORT一键报告.Reports.Views"
+        xmlns:models="clr-namespace:ORT一键报告.Reports.Models"
         xmlns:viewmodels="clr-namespace:ORT一键报告.Reports.ViewModels"
         d:DataContext="{d:DesignInstance Type=viewmodels:MainReportViewModel}"
         mc:Ignorable="d"
@@ -14,7 +15,7 @@
         <!--Create list of enumeration values-->
         <ObjectDataProvider x:Key="RpstatusEnum" MethodName="GetValues" ObjectType="{x:Type sys:Enum}">
             <ObjectDataProvider.MethodParameters>
-                <x:Type Type="local:ReportStatus" />
+                <x:Type Type="models:ReportStatus" />
             </ObjectDataProvider.MethodParameters>
         </ObjectDataProvider>
     </Window.Resources>
@@ -26,25 +27,17 @@
             <RowDefinition Height="20" />
         </Grid.RowDefinitions>
         <Menu x:Name="_Menu" Grid.Row="0">
-            <MenuItem Header="文件">
-                <MenuItem Header="新建" />
-                <MenuItem Header="打开" />
-            </MenuItem>
-            <MenuItem Header="选项">
-                <MenuItem Header="重置" />
-                <MenuItem Header="设置" />
-            </MenuItem>
             <MenuItem Header="工具">
                 <MenuItem Header="ATE数据" Click="MenuItem_ATE_Click" />
                 <MenuItem Header="报告模板" Click="MenuItem_ReportTemplate_Click"/>
             </MenuItem>
             <MenuItem Header="视图">
                 <MenuItem Header="查看日志" Click="MenuItem_ViewLog_Click"/>
+                <Separator/>
+                <MenuItem x:Name="menu_tab_thermalshock" Header="Thermal Shock 报告" IsCheckable="True" Click="Menu_TabToggle_Click"/>
+                <MenuItem x:Name="menu_tab_burnin" Header="Burn In 报告" IsCheckable="True" Click="Menu_TabToggle_Click"/>
+                <MenuItem x:Name="menu_tab_emi" Header="EMI 报告" IsCheckable="True" Click="Menu_TabToggle_Click"/>
             </MenuItem>
-            <MenuItem Header="帮助" >
-
-            </MenuItem>
-            <!--<MenuItem Header="EMF测试" Command="{Binding EMFTestCommand}"/>-->
         </Menu>
         <Grid Grid.Row="1">
             <Grid.RowDefinitions>
@@ -65,17 +58,7 @@
                     <Button x:Name="btn_readReport_t" Content="一键报告" Cursor="Hand" Click="DoReport_Click" Margin="3,0,3,0" Grid.Column="3" />
                 </Grid>
             </Grid>
-            <TabControl Margin="10,3,10,3" Grid.Row="1" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
-                <TabItem Header="Thermal Shock">
-                    <local:BaseReportPage x:Name="thermalshockPage" ReportType="Thermal Shock" TestTime="1" />
-                </TabItem>
-                <TabItem Header="Burn In">
-                    <local:BaseReportPage x:Name="burninPage" ReportType="Burn In" TestTime="7" />
-                </TabItem>
-                <TabItem Header="EMI">
-                    <local:EMIReportPage x:Name="emiPage" ReportType="EMI" TestTime="1" />
-                </TabItem>
-            </TabControl>
+            <TabControl x:Name="tab_report" Margin="10,3,10,3" Grid.Row="1" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
         </Grid>
         <StatusBar Grid.Row="2" Margin="5,0,5,0" Visibility="Collapsed">
             <StatusBarItem x:Name="StatusBarMsg" Content="请选择" />

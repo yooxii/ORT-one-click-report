@@ -2,6 +2,8 @@
 using NLog;
 using ORT一键报告.Models;
 using ORT一键报告.Plans.ViewModels;
+using ORT一键报告.Reports.Models;
+using ORT一键报告.Reports.Views;
 using ORT一键报告.Services;
 using System;
 using System.Collections.Generic;
@@ -43,6 +45,45 @@ namespace ORT一键报告.Plans.Views
         }
 
         /* ###############################  行号  ################################ */
+
+        /// <summary>
+        /// 当前单元格所在行的高亮画刷（很浅灰，与选中单元格的浅灰区分）
+        /// </summary>
+        private static readonly SolidColorBrush RowHighlightBrush = CreateFrozenBrush("#FFF2F2F2");
+
+        private DataGridRow _lastReqHighlightRow;
+        private DataGridRow _lastPlanHighlightRow;
+
+        private static SolidColorBrush CreateFrozenBrush(string color)
+        {
+            SolidColorBrush brush = new((Color)ColorConverter.ConvertFromString(color));
+            brush.Freeze();
+            return brush;
+        }
+
+        private void Dg_Requisitions_CurrentCellChanged(object sender, EventArgs e)
+            => UpdateCurrentRowHighlight(dg_requisitions, ref _lastReqHighlightRow);
+
+        private void Dg_Plans_CurrentCellChanged(object sender, EventArgs e)
+            => UpdateCurrentRowHighlight(dg_plans, ref _lastPlanHighlightRow);
+
+        /// <summary>
+        /// 当前单元格变化时高亮其所在行（与单元格选中效果同时显示，两色区分）
+        /// </summary>
+        private static void UpdateCurrentRowHighlight(DataGrid grid, ref DataGridRow lastRow)
+        {
+            if (lastRow != null)
+            {
+                lastRow.ClearValue(DataGridRow.BackgroundProperty);
+                lastRow = null;
+            }
+            if (grid.CurrentCell.IsValid && grid.CurrentCell.Item != null
+                && grid.ItemContainerGenerator.ContainerFromItem(grid.CurrentCell.Item) is DataGridRow row)
+            {
+                row.Background = RowHighlightBrush;
+                lastRow = row;
+            }
+        }
 
         private void Dg_Requisitions_LoadingRow(object sender, DataGridRowEventArgs e)
         {
@@ -184,6 +225,124 @@ namespace ORT一键报告.Plans.Views
             {
                 _vm.DeletePlanCommand.Execute(plan);
             }
+        }
+
+        /* ###############################  右键菜单：报告对应  ################################ */
+
+        private Plan CurrentPlan => (dg_plans.CurrentCell.Item as Plan) ?? dg_plans.SelectedItem as Plan;
+
+        private void Menu_OpenReportFolder_Click(object sender, RoutedEventArgs e)
+        {
+            Plan plan = CurrentPlan;
+            ReportLink link = plan == null ? null : _vm.FindReportLink(plan.JobNo);
+            if (link == null || !System.IO.Directory.Exists(link.ReportDir))
+            {
+                _ = MessageBox.Show("未找到该工作编号对应的报告文件夹。\n请确认设置中的报告路径正确，且报告夹名称包含工作编号。", "提示");
+                return;
+            }
+            try
+            {
+                System.Diagnostics.Process.Start("explorer.exe", $"\"{link.ReportDir}\"");
+            }
+            catch (Exception ex)
+            {
+                _ = MessageBox.Show($"打开失败:\n{ex.Message}", "错误");
+            }
+        }
+
+        private void Menu_OpenReportOverview_Click(object sender, RoutedEventArgs e)
+        {
+            Plan plan = CurrentPlan;
+            ReportLink link = plan == null ? null : _vm.FindReportLink(plan.JobNo);
+            if (link == null || !System.IO.File.Exists(link.OverviewFile))
+            {
+                _ = MessageBox.Show("未找到该工作编号对应的报告概览文件。\n请确认设置中的报告路径正确，且报告夹中包含 Excel 概览文件。", "提示");
+                return;
+            }
+            try
+            {
+                System.Diagnostics.Process.Start(link.OverviewFile);
+            }
+            catch (Exception ex)
+            {
+                _ = MessageBox.Show($"打开失败:\n{ex.Message}", "错误");
+            }
+        }
+
+        /// <summary>
+        /// 打开一键报告，并将选中的计划记录（含对应领退数据）携带到报告服务；
+        /// 同时构建预填的 BurnInReportModel 实例，下游生成报告时可直接使用该模型。
+        /// </summary>
+        private void Menu_OpenMainReport_Click(object sender, RoutedEventArgs e)
+        {
+            Plan plan = CurrentPlan;
+            if (plan == null)
+            {
+                return;
+            }
+            ReportService reportService = App.ServiceProvider.GetRequiredService<ReportService>();
+            reportService.MatchedPlan = plan;
+            Requisition req = _vm.FindRequisitionForPlan(plan);
+            reportService.MatchedRequisition = req;
+
+            // 预填 UUTInfos（用户未读取报告概览时也能让 Tab 有数据）
+            List<string> snList = ParseSnLines(req?.SN);
+            reportService.UUTInfos = new UUTInfoFromExcel
+            {
+                SNs = snList,
+                WorkOrder = req?.WorkOrder ?? "",
+                Revision = req?.Rev ?? "",
+                DC = req?.DC ?? "",
+                TestItems = string.IsNullOrWhiteSpace(plan.TestItem)
+                    ? []
+                    : [new TestItemInfo { TestItemName = plan.TestItem, Date = plan.StartDate?.ToString("yyyy/M/d") ?? "" }]
+            };
+
+            // 构建 BurnInReportModel（ORT 最常用的 Burn In 报告类型），预填表头与 UUT 来源
+            BurnInReportModel prefilled = new()
+            {
+                Header = new ReportHeaderData
+                {
+                    TestedBy = plan.Owner,
+                    ProjectName = plan.TestItem != null ? $"{plan.ModelName} {plan.TestItem}" : plan.ModelName,
+                    TestStage = plan.Stage,
+                    TestDescription = plan.TestPeriod != null ? $"{plan.TestItem} ({plan.TestPeriod}hrs)" : plan.TestItem,
+                    TestStart = plan.StartDate ?? DateTime.Now,
+                    TestEnd = plan.EndDate ?? DateTime.Now.AddDays(7),
+                    TestPass = true
+                },
+                UUTSource = new UUTSourceData
+                {
+                    SNs = snList,
+                    WorkOrder = req?.WorkOrder,
+                    Revision = req?.Rev,
+                    DC = req?.DC,
+                    TestItems = string.IsNullOrWhiteSpace(plan.TestItem)
+                        ? []
+                        : [new TestItemInfo { TestItemName = plan.TestItem, Date = plan.StartDate?.ToString("yyyy/M/d") ?? "" }]
+                },
+                RootReportPath = reportService.RootPath,
+                TempPath = reportService.TempPath
+            };
+            reportService.PrefilledReportModel = prefilled;
+
+            WindowMainReport window = new();
+            window.Show();
+        }
+
+        /// <summary>
+        /// 解析 SN 字符串（支持多行换行）为 SN 列表
+        /// </summary>
+        private static List<string> ParseSnLines(string snText)
+        {
+            if (string.IsNullOrWhiteSpace(snText))
+            {
+                return [];
+            }
+            return snText.Split(['\n', '\r'], StringSplitOptions.RemoveEmptyEntries)
+                .Select(s => s.Trim())
+                .Where(s => s.Length > 0)
+                .ToList();
         }
 
         /* ###############################  右键菜单：复制/粘贴  ################################ */

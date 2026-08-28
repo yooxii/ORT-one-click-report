@@ -8,6 +8,7 @@ using ORT一键报告.Review.Views;
 using ORT一键报告.Services;
 using ORT一键报告.ViewModels;
 using System;
+using System.Collections.Generic;
 using System.Windows;
 
 namespace ORT一键报告
@@ -51,7 +52,16 @@ namespace ORT一键报告
         /* ###############################  功能函数  ################################ */
 
         /// <summary>
-        /// 根据当前登录状态与角色刷新入口可用性
+        /// 主窗口关闭时一并关闭所有子窗口（退出程序）
+        /// </summary>
+        protected override void OnClosed(EventArgs e)
+        {
+            base.OnClosed(e);
+            Application.Current.Shutdown();
+        }
+
+        /// <summary>
+        /// 根据当前登录状态与角色刷新入口可用性，并关闭当前无权限访问的子窗口
         /// </summary>
         private void UpdateUIByPermission()
         {
@@ -64,6 +74,52 @@ namespace ORT一键报告
             btn_review.Content = _permission.Can("review.view")
                 ? $"审核 ({_reviewService.PendingCount()})"
                 : "审核";
+
+            // 权限变化时关闭当前无权限访问的子窗口
+            CloseUnauthorizedWindows();
+        }
+
+        /// <summary>
+        /// 关闭当前登录状态无权限访问的子窗口。
+        /// 游客：关闭领退和计划 / 一键报告 / 管理 / 审核；
+        /// 已登录：按权限关闭对应子窗口。
+        /// </summary>
+        private void CloseUnauthorizedWindows()
+        {
+            List<Window> toClose = [];
+            foreach (Window w in Application.Current.Windows)
+            {
+                if (w == this)
+                {
+                    continue;
+                }
+                switch (w)
+                {
+                    case Plans.Views.WindowPlans when !_permission.Can("plan.view") || _auth.CurrentUser == null:
+                        toClose.Add(w);
+                        break;
+                    case Reports.Views.WindowMainReport when !_permission.Can("report.use"):
+                        toClose.Add(w);
+                        break;
+                    case Admin.Views.WindowAdmin when !_permission.Can("admin.manage"):
+                        toClose.Add(w);
+                        break;
+                    case Review.Views.WindowReview when !_permission.Can("review.view"):
+                        toClose.Add(w);
+                        break;
+                }
+            }
+            foreach (Window w in toClose)
+            {
+                try
+                {
+                    w.Close();
+                }
+                catch (Exception ex)
+                {
+                    _logger.Warn($"关闭无权限窗口失败: {w.GetType().Name}, {ex.Message}");
+                }
+            }
         }
 
         /* ###############################  事件函数  ################################ */
@@ -124,7 +180,20 @@ namespace ORT一键报告
 
         private void Button_Plans_Click(object sender, RoutedEventArgs e)
         {
-            WindowPlans windowPlans = new()
+            // 已打开的领退和计划窗口则聚焦，不重复打开
+            foreach (Window w in Application.Current.Windows)
+            {
+                if (w is Plans.Views.WindowPlans existing)
+                {
+                    if (existing.WindowState == WindowState.Minimized)
+                    {
+                        existing.WindowState = WindowState.Normal;
+                    }
+                    existing.Activate();
+                    return;
+                }
+            }
+            Plans.Views.WindowPlans windowPlans = new()
             {
             };
             windowPlans.Show();

@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ORT一键报告.Reports.Views"
+             xmlns:models="clr-namespace:ORT一键报告.Reports.Models"
              xmlns:sys="clr-namespace:System;assembly=mscorlib"
              mc:Ignorable="d" 
              x:Name="root"
@@ -21,7 +22,7 @@
         <!--Create list of enumeration values-->
         <ObjectDataProvider x:Key="RpstatusEnum" MethodName="GetValues" ObjectType="{x:Type sys:Enum}">
             <ObjectDataProvider.MethodParameters>
-                <x:Type Type="local:ReportStatus"/>
+                <x:Type Type="models:ReportStatus"/>
             </ObjectDataProvider.MethodParameters>
         </ObjectDataProvider>
         <Style x:Key="DynamicComboBoxStyle" TargetType="ComboBox">

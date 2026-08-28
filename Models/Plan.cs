@@ -134,5 +134,13 @@ namespace ORT一键报告.Models
         private System.DateTime? _updatedAt;
         [Column(IsNullable = true)]
         public System.DateTime? UpdatedAt { get => _updatedAt; set => SetProperty(ref _updatedAt, value); }
+
+        private bool _hasReportLink;
+        /// <summary>
+        /// 工作编号是否存在对应的报告文件夹（仅用于界面颜色区分，不参与数据库存储与快照对比）
+        /// </summary>
+        [Column(IsIgnore = true)]
+        [Newtonsoft.Json.JsonIgnore]
+        public bool HasReportLink { get => _hasReportLink; set => SetProperty(ref _hasReportLink, value); }
     }
 }

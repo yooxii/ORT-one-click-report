@@ -121,50 +121,52 @@
     <Compile Include="Models\User.cs" />
     <Compile Include="Services\IPathService.cs" />
     <Compile Include="Services\ReportService.cs" />
-        <Compile Include="Models\Plan.cs" />
-        <Compile Include="Models\Requisition.cs" />
-        <Compile Include="Models\Review.cs" />
-        <Compile Include="Models\AdminCatalogs.cs" />
-        <Compile Include="Models\AppSettings.cs" />
-        <Compile Include="Utils\PlanValidation.cs" />
-        <Compile Include="Services\AuthService.cs" />
-        <Compile Include="Services\AdminService.cs" />
-        <Compile Include="Services\ReviewService.cs" />
-        <Compile Include="Services\AppSettingsService.cs" />
-        <Compile Include="Main\Views\WindowAppSettings.xaml.cs">
-          <DependentUpon>WindowAppSettings.xaml</DependentUpon>
-        </Compile>
-        <Compile Include="Main\Views\WindowLogin.xaml.cs">
-          <DependentUpon>WindowLogin.xaml</DependentUpon>
-        </Compile>
-        <Compile Include="Admin\Views\WindowAdmin.xaml.cs">
-          <DependentUpon>WindowAdmin.xaml</DependentUpon>
-        </Compile>
-        <Compile Include="Admin\Views\WindowAdminInput.xaml.cs">
-          <DependentUpon>WindowAdminInput.xaml</DependentUpon>
-        </Compile>
-        <Compile Include="Review\Views\WindowReview.xaml.cs">
-          <DependentUpon>WindowReview.xaml</DependentUpon>
-        </Compile>
-        <Compile Include="Review\Views\WindowReviewDetail.xaml.cs">
-          <DependentUpon>WindowReviewDetail.xaml</DependentUpon>
-        </Compile>
-        <Compile Include="Services\DatabaseService.cs" />
-        <Compile Include="Services\PermissionService.cs" />
-        <Compile Include="Services\PlanExcelService.cs" />
-        <Compile Include="Plans\ViewModels\PlansViewModel.cs" />
-        <Compile Include="Plans\Views\FilterDropDown.xaml.cs">
-          <DependentUpon>FilterDropDown.xaml</DependentUpon>
-        </Compile>
-        <Compile Include="Plans\Views\WindowPlans.xaml.cs">
-          <DependentUpon>WindowPlans.xaml</DependentUpon>
-        </Compile>
-        <Compile Include="Plans\Views\WindowRequisitionEdit.xaml.cs">
-          <DependentUpon>WindowRequisitionEdit.xaml</DependentUpon>
-        </Compile>
-        <Compile Include="Plans\Views\WindowPlanDirectEdit.xaml.cs">
-          <DependentUpon>WindowPlanDirectEdit.xaml</DependentUpon>
-        </Compile>
+    <Compile Include="Models\Plan.cs" />
+    <Compile Include="Models\Requisition.cs" />
+    <Compile Include="Reports\Models\ReportInputModels.cs" />
+    <Compile Include="Models\Review.cs" />
+    <Compile Include="Models\AdminCatalogs.cs" />
+    <Compile Include="Models\AppSettings.cs" />
+    <Compile Include="Utils\PlanValidation.cs" />
+    <Compile Include="Services\AuthService.cs" />
+    <Compile Include="Services\AdminService.cs" />
+    <Compile Include="Services\ReviewService.cs" />
+    <Compile Include="Services\ReportGenerationService.cs" />
+    <Compile Include="Services\AppSettingsService.cs" />
+    <Compile Include="Main\Views\WindowAppSettings.xaml.cs">
+      <DependentUpon>WindowAppSettings.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Main\Views\WindowLogin.xaml.cs">
+      <DependentUpon>WindowLogin.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Admin\Views\WindowAdmin.xaml.cs">
+      <DependentUpon>WindowAdmin.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Admin\Views\WindowAdminInput.xaml.cs">
+      <DependentUpon>WindowAdminInput.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Review\Views\WindowReview.xaml.cs">
+      <DependentUpon>WindowReview.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Review\Views\WindowReviewDetail.xaml.cs">
+      <DependentUpon>WindowReviewDetail.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Services\DatabaseService.cs" />
+    <Compile Include="Services\PermissionService.cs" />
+    <Compile Include="Services\PlanExcelService.cs" />
+    <Compile Include="Plans\ViewModels\PlansViewModel.cs" />
+    <Compile Include="Plans\Views\FilterDropDown.xaml.cs">
+      <DependentUpon>FilterDropDown.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Plans\Views\WindowPlans.xaml.cs">
+      <DependentUpon>WindowPlans.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Plans\Views\WindowRequisitionEdit.xaml.cs">
+      <DependentUpon>WindowRequisitionEdit.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Plans\Views\WindowPlanDirectEdit.xaml.cs">
+      <DependentUpon>WindowPlanDirectEdit.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Utils\SmartTableExtractor.cs" />
     <Compile Include="Reports\ViewModels\BaseReportPageViewModel.cs" />
     <Compile Include="Reports\ViewModels\EMIReportViewModel.cs" />
@@ -470,6 +472,9 @@
     <PackageReference Include="NLog">
       <Version>6.1.4</Version>
     </PackageReference>
+    <PackageReference Include="Ookii.Dialogs.Wpf">
+      <Version>5.0.1</Version>
+    </PackageReference>
     <PackageReference Include="NLog.Schema">
       <Version>6.1.4</Version>
     </PackageReference>
@@ -486,9 +491,6 @@
       <Version>10.0.10</Version>
     </PackageReference>
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Plans\ViewModels\" />
-    <Folder Include="Plans\Views\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
