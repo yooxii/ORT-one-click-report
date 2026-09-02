@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using NLog;
 using ORT一键报告.Models;
 using ORT一键报告.Plans.ViewModels;
@@ -275,59 +275,67 @@ namespace ORT一键报告.Plans.Views
         /// </summary>
         private void Menu_OpenMainReport_Click(object sender, RoutedEventArgs e)
         {
-            Plan plan = CurrentPlan;
-            if (plan == null)
+            try
             {
-                return;
-            }
-            ReportService reportService = App.ServiceProvider.GetRequiredService<ReportService>();
-            reportService.MatchedPlan = plan;
-            Requisition req = _vm.FindRequisitionForPlan(plan);
-            reportService.MatchedRequisition = req;
-
-            // 预填 UUTInfos（用户未读取报告概览时也能让 Tab 有数据）
-            List<string> snList = ParseSnLines(req?.SN);
-            reportService.UUTInfos = new UUTInfoFromExcel
-            {
-                SNs = snList,
-                WorkOrder = req?.WorkOrder ?? "",
-                Revision = req?.Rev ?? "",
-                DC = req?.DC ?? "",
-                TestItems = string.IsNullOrWhiteSpace(plan.TestItem)
-                    ? []
-                    : [new TestItemInfo { TestItemName = plan.TestItem, Date = plan.StartDate?.ToString("yyyy/M/d") ?? "" }]
-            };
-
-            // 构建 BurnInReportModel（ORT 最常用的 Burn In 报告类型），预填表头与 UUT 来源
-            BurnInReportModel prefilled = new()
-            {
-                Header = new ReportHeaderData
+                Plan plan = CurrentPlan;
+                if (plan == null)
                 {
-                    TestedBy = plan.Owner,
-                    ProjectName = plan.TestItem != null ? $"{plan.ModelName} {plan.TestItem}" : plan.ModelName,
-                    TestStage = plan.Stage,
-                    TestDescription = plan.TestPeriod != null ? $"{plan.TestItem} ({plan.TestPeriod}hrs)" : plan.TestItem,
-                    TestStart = plan.StartDate ?? DateTime.Now,
-                    TestEnd = plan.EndDate ?? DateTime.Now.AddDays(7),
-                    TestPass = true
-                },
-                UUTSource = new UUTSourceData
+                    return;
+                }
+                ReportService reportService = App.ServiceProvider.GetRequiredService<ReportService>();
+                reportService.MatchedPlan = plan;
+                Requisition req = _vm.FindRequisitionForPlan(plan);
+                reportService.MatchedRequisition = req;
+
+                // 预填 UUTInfos（用户未读取报告概览时也能让 Tab 有数据）
+                List<string> snList = ParseSnLines(req?.SN);
+                reportService.UUTInfos = new UUTInfoFromExcel
                 {
                     SNs = snList,
-                    WorkOrder = req?.WorkOrder,
-                    Revision = req?.Rev,
-                    DC = req?.DC,
+                    WorkOrder = req?.WorkOrder ?? "",
+                    Revision = req?.Rev ?? "",
+                    DC = req?.DC ?? "",
                     TestItems = string.IsNullOrWhiteSpace(plan.TestItem)
                         ? []
                         : [new TestItemInfo { TestItemName = plan.TestItem, Date = plan.StartDate?.ToString("yyyy/M/d") ?? "" }]
-                },
-                RootReportPath = reportService.RootPath,
-                TempPath = reportService.TempPath
-            };
-            reportService.PrefilledReportModel = prefilled;
+                };
 
-            WindowMainReport window = new();
-            window.Show();
+                // 构建 BurnInReportModel（ORT 最常用的 Burn In 报告类型），预填表头与 UUT 来源
+                BurnInReportModel prefilled = new()
+                {
+                    Header = new ReportHeaderData
+                    {
+                        TestedBy = plan.Owner,
+                        ProjectName = plan.TestItem != null ? $"{plan.ModelName} {plan.TestItem}" : plan.ModelName,
+                        TestStage = plan.Stage,
+                        TestDescription = plan.TestPeriod != null ? $"{plan.TestItem} ({plan.TestPeriod}hrs)" : plan.TestItem,
+                        TestStart = plan.StartDate ?? DateTime.Now,
+                        TestEnd = plan.EndDate ?? DateTime.Now.AddDays(7),
+                        TestPass = true
+                    },
+                    UUTSource = new UUTSourceData
+                    {
+                        SNs = snList,
+                        WorkOrder = req?.WorkOrder,
+                        Revision = req?.Rev,
+                        DC = req?.DC,
+                        TestItems = string.IsNullOrWhiteSpace(plan.TestItem)
+                            ? []
+                            : [new TestItemInfo { TestItemName = plan.TestItem, Date = plan.StartDate?.ToString("yyyy/M/d") ?? "" }]
+                    },
+                    RootReportPath = reportService.RootPath,
+                    TempPath = reportService.TempPath
+                };
+                reportService.PrefilledReportModel = prefilled;
+
+                WindowMainReport window = new();
+                window.Show();
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "从计划表打开一键报告失败");
+                _ = MessageBox.Show($"打开一键报告失败：{ex.Message}", "错误");
+            }
         }
 
         /// <summary>

@@ -1,6 +1,8 @@
-﻿using System.Windows;
+using System;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using ORT一键报告.Reports.ViewModels;
 
 namespace ORT一键报告.Reports.Views
 {
@@ -53,13 +55,15 @@ namespace ORT一键报告.Reports.Views
         }
         private void Datepicker_start_SelectedDateChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (sender is DatePicker datepicker_start)
+            if (sender is DatePicker datepicker_start && datepicker_start.SelectedDate is DateTime startDate)
             {
-                if (datepicker_start.SelectedDate == null)
+                DateTime endDate = startDate.AddDays(TestTime);
+                datepicker_end.SelectedDate = endDate;
+                if (DataContext is ReportHeaderViewModel vm)
                 {
-                    return;
+                    vm.TestStart = startDate;
+                    vm.TestEnd = endDate;
                 }
-                datepicker_end.SelectedDate = datepicker_start.SelectedDate.Value.AddDays(TestTime);
             }
         }
     }

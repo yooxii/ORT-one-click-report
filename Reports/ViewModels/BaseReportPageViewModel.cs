@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Win32;
 using NLog;
@@ -57,8 +57,18 @@ namespace ORT一键报告.Reports.ViewModels
             try
             {
                 string currentPath = Directory.GetCurrentDirectory();
-                FileInfo reportFI = new(GetTemplatePath(Path.Combine(currentPath, "Templates"), ReportType));
-                string initDir = Path.GetDirectoryName(GetTemplatePath(_reportService.RootPath, ReportType));
+                string templatePath = GetTemplatePath(Path.Combine(currentPath, "Templates"), ReportType);
+                if (string.IsNullOrWhiteSpace(templatePath) || !File.Exists(templatePath))
+                {
+                    _logger.Warn($"未找到{ReportType}报告模板，无法生成报告");
+                    MessageBox.Show($"未找到{ReportType}报告模板，无法生成报告", "错误");
+                    return;
+                }
+                FileInfo reportFI = new(templatePath);
+                string templateInReport = GetTemplatePath(_reportService.RootPath, ReportType);
+                string initDir = string.IsNullOrWhiteSpace(templateInReport)
+                    ? Path.GetDirectoryName(templatePath)
+                    : Path.GetDirectoryName(templateInReport);
                 SaveFileDialog saveFileDialog = new()
                 {
                     FileName = reportFI.Name,

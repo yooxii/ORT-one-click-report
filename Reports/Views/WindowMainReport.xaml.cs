@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using NLog;
 using OfficeOpenXml;
 using ORT一键报告.Main.Views;
@@ -188,18 +188,25 @@ namespace ORT一键报告.Reports.Views
         /// </summary>
         private void FillFromPrefilledOnLoad()
         {
-            foreach ((TabItem _, UserControl page) in _tabs.Values)
+            try
             {
-                InitSinglePage(page);
+                foreach ((TabItem _, UserControl page) in _tabs.Values)
+                {
+                    InitSinglePage(page);
+                }
+                // 从计划表右键菜单携带记录打开时：预填表头 + 预填单体数据（无需等待读取报告概览）
+                if (ReportService.MatchedPlan != null || ReportService.PrefilledReportModel != null)
+                {
+                    ApplyMatchedPlanToAllTabs();
+                }
+                if (ReportService.UUTInfos != null && (ReportService.UUTInfos.SNs?.Count ?? 0) > 0)
+                {
+                    FillDetailsFromPrefilledUUT();
+                }
             }
-            // 从计划表右键菜单携带记录打开时：预填表头 + 预填单体数据（无需等待读取报告概览）
-            if (ReportService.MatchedPlan != null || ReportService.PrefilledReportModel != null)
+            catch (Exception ex)
             {
-                ApplyMatchedPlanToAllTabs();
-            }
-            if (ReportService.UUTInfos != null && (ReportService.UUTInfos.SNs?.Count ?? 0) > 0)
-            {
-                FillDetailsFromPrefilledUUT();
+                _logger.Error(ex, "窗口加载预填数据失败");
             }
         }
 
@@ -243,7 +250,7 @@ namespace ORT一键报告.Reports.Views
             {
                 popup.Show();
                 string ReportName = MainVM.ReportPath;
-                if (!File.Exists(ReportName))
+                if (string.IsNullOrWhiteSpace(ReportName) || !File.Exists(ReportName))
                 {
                     throw new FileNotFoundException("报告概览文件不存在");
                 }
@@ -356,6 +363,20 @@ namespace ORT一键报告.Reports.Views
                     header.TestDescription ??= new DataCell();
                     header.TestDescription.Data = value;
                 }
+            }
+            // 测试起止日期：计划/预填模型有值且表头为空时带入
+            if (header.TestStart == null)
+            {
+                header.TestStart = plan?.StartDate ?? prefilledHeader?.TestStart;
+            }
+            if (header.TestEnd == null)
+            {
+                header.TestEnd = plan?.EndDate ?? prefilledHeader?.TestEnd;
+            }
+            // 仅当表头还是默认 PASS 且预填模型明确给出结论时同步（避免覆盖用户手动选择）
+            if (prefilledHeader != null && header.TestPass)
+            {
+                header.TestPass = prefilledHeader.TestPass;
             }
             // 携带的领退记录：S/N 等领退数据填入仍为空的相应位置（尽力填充，不覆盖已有内容）
             Requisition req = ReportService.MatchedRequisition;

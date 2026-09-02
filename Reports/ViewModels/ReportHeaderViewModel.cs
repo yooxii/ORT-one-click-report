@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using ORT一键报告.Models;
 using System;
 
@@ -24,9 +24,12 @@ namespace ORT一键报告.Reports.ViewModels
         public DataCell Issue_Photos_Pics { get; set; }
         public DataCell Test_Setup_Pics { get; set; }
         public DataCell Test_ATE_Data { get; set; }
-        public DateTime TestStart { get; set; }
-        public DateTime TestEnd { get; set; }
-        public bool TestPass { get; set; }
+        private DateTime? _testStart;
+        public DateTime? TestStart { get => _testStart; set => SetProperty(ref _testStart, value); }
+        private DateTime? _testEnd;
+        public DateTime? TestEnd { get => _testEnd; set => SetProperty(ref _testEnd, value); }
+        private bool _testPass = true;
+        public bool TestPass { get => _testPass; set => SetProperty(ref _testPass, value); }
 
         public string[] HeaderInfoList
         {
@@ -34,14 +37,14 @@ namespace ORT一键报告.Reports.ViewModels
             {
                 string[] res =
                 [
-                    TESTED_BY.Data,
-                    APPROVED_BY.Data,
-                    PROJECT_NAME.Data,
-                    TEST_STAGE.Data,
-                    TestStart.ToString("d"),
-                    TestEnd.ToString("d"),
+                    TESTED_BY?.Data ?? "",
+                    APPROVED_BY?.Data ?? "",
+                    PROJECT_NAME?.Data ?? "",
+                    TEST_STAGE?.Data ?? "",
+                    TestStart?.ToString("d") ?? "",
+                    TestEnd?.ToString("d") ?? "",
                     TestPass ? "Pass" : "Fail",
-                    TestDescription.Data,
+                    TestDescription?.Data ?? "",
                 ];
                 return res;
             }

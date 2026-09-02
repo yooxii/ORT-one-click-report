@@ -4,9 +4,13 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ORT一键报告"
+               xmlns:conv="clr-namespace:ORT一键报告.Converters"
              mc:Ignorable="d" 
              x:Name="root"
              d:DesignHeight="300" d:DesignWidth="1000">
+    <UserControl.Resources>
+        <conv:InverseBoolConverter x:Key="InverseBool"/>
+    </UserControl.Resources>
 
     <Grid>
         <Grid.RowDefinitions>
@@ -29,17 +33,17 @@
                     <RowDefinition Height="25"/>
                 </Grid.RowDefinitions>
                 <Label Content="TESTED BY" Grid.Row="0" Grid.Column="0"/>
-                <TextBox x:Name="textbox_testedby" Text="{Binding TestedBy, ElementName=root}" VerticalContentAlignment="Center" Margin="1" Grid.Row="0" Grid.Column="1"/>
+                <TextBox x:Name="textbox_testedby" Text="{Binding TESTED_BY.Data, UpdateSourceTrigger=PropertyChanged}" VerticalContentAlignment="Center" Margin="1" Grid.Row="0" Grid.Column="1"/>
                 <Label Content="PROJECT NAME" Grid.Row="1" Grid.Column="0"/>
-                <TextBox x:Name="textbox_projectname" Text="{Binding ProjectName, ElementName=root}" VerticalContentAlignment="Center" Margin="1" Grid.Row="1" Grid.Column="1"/>
+                <TextBox x:Name="textbox_projectname" Text="{Binding PROJECT_NAME.Data, UpdateSourceTrigger=PropertyChanged}" VerticalContentAlignment="Center" Margin="1" Grid.Row="1" Grid.Column="1"/>
                 <Label Content="TEST PERIOD" Grid.Row="2" Grid.Column="0"/>
                 <Grid Grid.Row="2" Margin="1" Grid.Column="1">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition/>
                         <ColumnDefinition/>
                     </Grid.ColumnDefinitions>
-                    <DatePicker x:Name="datepicker_start" Tag="datepicker_end" SelectedDateChanged="Datepicker_start_SelectedDateChanged" Grid.Column="0"/>
-                    <DatePicker x:Name="datepicker_end" Grid.Column="1"/>
+                    <DatePicker x:Name="datepicker_start" Tag="datepicker_end" SelectedDate="{Binding TestStart, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" SelectedDateChanged="Datepicker_start_SelectedDateChanged" Grid.Column="0"/>
+                    <DatePicker x:Name="datepicker_end" SelectedDate="{Binding TestEnd, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Grid.Column="1"/>
                 </Grid>
             </Grid>
 
@@ -54,9 +58,9 @@
                     <RowDefinition Height="25"/>
                 </Grid.RowDefinitions>
                 <Label Content="APPROVED BY" Grid.Row="0" Grid.Column="0"/>
-                <TextBox x:Name="textbox_approvedby" Text="{Binding ApprovedBy, ElementName=root}" VerticalContentAlignment="Center" Margin="1" Grid.Row="0" Grid.Column="1"/>
+                <TextBox x:Name="textbox_approvedby" Text="{Binding APPROVED_BY.Data, UpdateSourceTrigger=PropertyChanged}" VerticalContentAlignment="Center" Margin="1" Grid.Row="0" Grid.Column="1"/>
                 <Label Content="TEST STAGE" Grid.Row="1" Grid.Column="0"/>
-                <ComboBox x:Name="textbox_teststage" Text="{Binding TestStage, ElementName=root}" VerticalContentAlignment="Center" IsEditable="True" Margin="1" Grid.Row="1" Grid.Column="1">
+                <ComboBox x:Name="textbox_teststage" Text="{Binding TEST_STAGE.Data, UpdateSourceTrigger=PropertyChanged}" VerticalContentAlignment="Center" IsEditable="True" Margin="1" Grid.Row="1" Grid.Column="1">
                     <ComboBoxItem Content="MP"/>
                     <ComboBoxItem Content="MVT"/>
                     <ComboBoxItem Content="DVT"/>
@@ -68,8 +72,8 @@
                         <ColumnDefinition/>
                         <ColumnDefinition/>
                     </Grid.ColumnDefinitions>
-                    <RadioButton x:Name="rbtn_testPass" Content="PASS" IsChecked="True" Grid.Column="0" VerticalContentAlignment="Center"/>
-                    <RadioButton x:Name="rbtn_testFail" Content="FAIL" Grid.Column="1" VerticalContentAlignment="Center"/>
+                    <RadioButton x:Name="rbtn_testPass" Content="PASS" IsChecked="{Binding TestPass, Mode=TwoWay}" Grid.Column="0" VerticalContentAlignment="Center"/>
+                    <RadioButton x:Name="rbtn_testFail" Content="FAIL" IsChecked="{Binding TestPass, Mode=TwoWay, Converter={StaticResource InverseBool}}" Grid.Column="1" VerticalContentAlignment="Center"/>
                 </Grid>
             </Grid>
         </Grid>
@@ -80,7 +84,7 @@
                     <ColumnDefinition/>
                 </Grid.ColumnDefinitions>
                 <GroupBox Header="Test Condition and Pass/Fail Criteria" Grid.Row="0">
-                    <TextBox x:Name="text_TestDescription" Text="{Binding TextTestDescription, ElementName=root}" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto">
+                    <TextBox x:Name="text_TestDescription" Text="{Binding TestDescription.Data, UpdateSourceTrigger=PropertyChanged}" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto">
                     </TextBox>
                 </GroupBox>
                 <Border BorderBrush="Gray" BorderThickness="1" Margin="6" Grid.Column="1">

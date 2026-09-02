@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using Newtonsoft.Json;
 using NLog;
 using ORT一键报告.Models;
@@ -510,7 +510,8 @@ namespace ORT一键报告.Plans.ViewModels
             {
                 return null;
             }
-            List<Requisition> reqs = _db.FreeSql.Select<Requisition>().ToList();
+            // 优先使用当前界面内存数据（含暂存新增/编辑），避免右键打开报告时读不到未提交的领退记录
+            List<Requisition> reqs = Requisitions.ToList();
             return reqs.FirstOrDefault(r => !string.IsNullOrWhiteSpace(r.ReturnRtOrder)
                     && plan.Remark != null && plan.Remark.Contains(r.ReturnRtOrder))
                 ?? reqs.FirstOrDefault(r => !string.IsNullOrWhiteSpace(r.WorkOrder)

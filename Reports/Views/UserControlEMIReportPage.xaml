@@ -15,7 +15,7 @@
                     <RowDefinition Height="auto" />
                 </Grid.RowDefinitions>
                 <StackPanel>
-                    <local:ReportHeaderWidget x:Name="ReportHeader" DataContext="{Binding ReportHeaderVM}" TestTime="1" />
+                    <local:ReportHeaderWidget x:Name="ReportHeader" TestTime="1" />
                     <StackPanel>
                         <Grid>
                             <Grid.ColumnDefinitions>

@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using NLog;
 using OfficeOpenXml;
 using ORT一键报告.Models;
@@ -54,6 +54,7 @@ namespace ORT一键报告.Reports.Views
             BaseReportPageVM = App.ServiceProvider.GetRequiredService<BaseReportPageViewModel>();
             BaseReportPageVM.ReportType = ReportType;
             ReportHeaderInfo = BaseReportPageVM.ReportHeaderVM;
+            ReportHeader.DataContext = ReportHeaderInfo;
             DataContext = BaseReportPageVM;
         }
 
@@ -75,16 +76,26 @@ namespace ORT一键报告.Reports.Views
             BaseReportPageVM.DetailsList.Clear();
             ReportService reportService = App.ServiceProvider.GetRequiredService<ReportService>();
             UUTInfoFromExcel _UUTInfos = reportService.UUTInfos;
-            foreach (TestItemInfo testItem in _UUTInfos.TestItems)
+            if (_UUTInfos == null)
             {
-                if (testItem.TestItemName.ToLower().Contains(ReportType.ToLower()))
+                _logger.Warn($"{ReportType}报告：UUTInfos 为空，跳过单体数据填充");
+                return;
+            }
+            foreach (TestItemInfo testItem in _UUTInfos.TestItems ?? [])
+            {
+                if (testItem.TestItemName?.ToLower().Contains(ReportType.ToLower()) == true)
                 {
-                    ReportHeader.datepicker_start.SelectedDate = DateTime.Parse(testItem.Date);
-                    ReportHeaderInfo.TestStart = DateTime.Parse(testItem.Date);
-                    ReportHeaderInfo.TestEnd = DateTime.Parse(testItem.Date).AddDays(TestTime);
+                    if (!DateTime.TryParse(testItem.Date, out DateTime parsedDate))
+                    {
+                        _logger.Warn($"{ReportType}报告：测试项目 {testItem.TestItemName} 的日期无效（{testItem.Date}），跳过日期填充");
+                        continue;
+                    }
+                    ReportHeader.datepicker_start.SelectedDate = parsedDate;
+                    ReportHeaderInfo.TestStart = parsedDate;
+                    ReportHeaderInfo.TestEnd = parsedDate.AddDays(TestTime);
                 }
             }
-            foreach (string uutSNs in _UUTInfos.SNs)
+            foreach (string uutSNs in _UUTInfos.SNs ?? [])
             {
                 BaseReportPageVM.DetailsList.Add(new ResultDetails()
                 {
@@ -134,11 +145,11 @@ namespace ORT一键报告.Reports.Views
                 }
             }
 
-            ReportHeader.ApprovedBy = ReportHeaderInfo.APPROVED_BY.Data;
-            ReportHeader.TestedBy = ReportHeaderInfo.TESTED_BY.Data;
-            ReportHeader.ProjectName = ReportHeaderInfo.PROJECT_NAME.Data;
-            ReportHeader.TestStage = ReportHeaderInfo.TEST_STAGE.Data;
-            ReportHeader.TextTestDescription = ReportHeaderInfo.TestDescription.Data;
+            ReportHeader.ApprovedBy = ReportHeaderInfo.APPROVED_BY?.Data ?? "";
+            ReportHeader.TestedBy = ReportHeaderInfo.TESTED_BY?.Data ?? "";
+            ReportHeader.ProjectName = ReportHeaderInfo.PROJECT_NAME?.Data ?? "";
+            ReportHeader.TestStage = ReportHeaderInfo.TEST_STAGE?.Data ?? "";
+            ReportHeader.TextTestDescription = ReportHeaderInfo.TestDescription?.Data ?? "";
 
             if (ReportHeaderInfo.Issue_Photos_Pics != null)
             {

@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using NLog;
 using OfficeOpenXml;
 using ORT一键报告.Models;
@@ -158,15 +158,24 @@ namespace ORT一键报告.Reports.ViewModels
                 _logger.Error(ex, "读取报告概览时出现错误");
                 return;
             }
-            foreach (TestItemInfo testItem in _reportService.UUTInfos.TestItems)
+            if (_reportService.UUTInfos == null)
             {
-                if (testItem.TestItemName.ToLower().Contains("thermal shock"))
+                _logger.Warn("读取报告概览返回空数据，跳过测试项日期解析");
+                return;
+            }
+            foreach (TestItemInfo testItem in _reportService.UUTInfos.TestItems ?? [])
+            {
+                string name = testItem.TestItemName?.ToLower() ?? "";
+                if (name.Contains("thermal shock") || name.Contains("burn in"))
                 {
-                    t_start = DateTime.Parse(testItem.Date);
-                }
-                if (testItem.TestItemName.ToLower().Contains("burn in"))
-                {
-                    t_start = DateTime.Parse(testItem.Date);
+                    if (DateTime.TryParse(testItem.Date, out DateTime parsedDate))
+                    {
+                        t_start = parsedDate;
+                    }
+                    else
+                    {
+                        _logger.Warn($"测试项目 {testItem.TestItemName} 的日期无效（{testItem.Date}），跳过日期解析");
+                    }
                 }
             }
 

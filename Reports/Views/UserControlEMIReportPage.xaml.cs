@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using NLog;
 using OfficeOpenXml;
 using ORT一键报告.Models;
@@ -48,6 +48,7 @@ namespace ORT一键报告.Reports.Views
             InitializeComponent();
             emiVM = App.ServiceProvider.GetRequiredService<EMIReportViewModel>();
             ReportHeaderInfo = emiVM.ReportHeaderVM;
+            ReportHeader.DataContext = ReportHeaderInfo;
             DataContext = emiVM;
         }
 
@@ -57,7 +58,13 @@ namespace ORT一键报告.Reports.Views
         {
             _logger.Info($"读取{ReportType}报告表头...");
             ReportService reportService = App.ServiceProvider.GetRequiredService<ReportService>();
-            FileInfo fileInfo = new(GetTemplatePath(reportService.RootPath, ReportType));
+            string templatePath = GetTemplatePath(reportService.RootPath, ReportType);
+            if (string.IsNullOrWhiteSpace(templatePath) || !File.Exists(templatePath))
+            {
+                _logger.Warn($"未找到{ReportType}报告模板，跳过读取该报告表头");
+                return;
+            }
+            FileInfo fileInfo = new(templatePath);
             using (ExcelPackage package = new(fileInfo))
             {
                 ExcelWorksheet ws = package.Workbook.Worksheets[0];
@@ -66,16 +73,26 @@ namespace ORT一键报告.Reports.Views
                 _logger.Info($"{ReportType}表头读取完成");
             }
             UUTInfoFromExcel _UUTInfos = reportService.UUTInfos;
+            if (_UUTInfos == null)
+            {
+                _logger.Warn($"{ReportType}报告：UUTInfos 为空，跳过 EMI 数据填充");
+                return;
+            }
             emiVM.DC = _UUTInfos.DC;
             emiVM.Version = _UUTInfos.Revision;
             emiVM.WorkOrder = _UUTInfos.WorkOrder;
-            foreach (TestItemInfo testItem in _UUTInfos.TestItems)
+            foreach (TestItemInfo testItem in _UUTInfos.TestItems ?? [])
             {
-                if (testItem.TestItemName.ToLower().Contains(ReportType.ToLower()))
+                if (testItem.TestItemName?.ToLower().Contains(ReportType.ToLower()) == true)
                 {
-                    ReportHeader.datepicker_start.SelectedDate = DateTime.Parse(testItem.Date);
-                    ReportHeaderInfo.TestStart = DateTime.Parse(testItem.Date);
-                    ReportHeaderInfo.TestEnd = DateTime.Parse(testItem.Date).AddDays(TestTime);
+                    if (!DateTime.TryParse(testItem.Date, out DateTime parsedDate))
+                    {
+                        _logger.Warn($"{ReportType}报告：测试项目 {testItem.TestItemName} 的日期无效（{testItem.Date}），跳过日期填充");
+                        continue;
+                    }
+                    ReportHeader.datepicker_start.SelectedDate = parsedDate;
+                    ReportHeaderInfo.TestStart = parsedDate;
+                    ReportHeaderInfo.TestEnd = parsedDate.AddDays(TestTime);
                 }
             }
             SetInfoToWindow();
@@ -91,11 +108,11 @@ namespace ORT一键报告.Reports.Views
                 }
             }
 
-            ReportHeader.ApprovedBy = ReportHeaderInfo.APPROVED_BY.Data;
-            ReportHeader.TestedBy = ReportHeaderInfo.TESTED_BY.Data;
-            ReportHeader.ProjectName = ReportHeaderInfo.PROJECT_NAME.Data;
-            ReportHeader.TestStage = ReportHeaderInfo.TEST_STAGE.Data;
-            ReportHeader.TextTestDescription = ReportHeaderInfo.TestDescription.Data;
+            ReportHeader.ApprovedBy = ReportHeaderInfo.APPROVED_BY?.Data ?? "";
+            ReportHeader.TestedBy = ReportHeaderInfo.TESTED_BY?.Data ?? "";
+            ReportHeader.ProjectName = ReportHeaderInfo.PROJECT_NAME?.Data ?? "";
+            ReportHeader.TestStage = ReportHeaderInfo.TEST_STAGE?.Data ?? "";
+            ReportHeader.TextTestDescription = ReportHeaderInfo.TestDescription?.Data ?? "";
 
             if (ReportHeaderInfo.Issue_Photos_Pics != null)
             {

@@ -1,4 +1,4 @@
-﻿using NLog;
+using NLog;
 using OfficeOpenXml;
 using OfficeOpenXml.Drawing;
 using OfficeOpenXml.Drawing.OleObject;
@@ -390,6 +390,14 @@ namespace ORT一键报告.Utils
 
         public static string GetTemplatePath(string rootPath, string reportType)
         {
+            if (string.IsNullOrWhiteSpace(rootPath) || string.IsNullOrWhiteSpace(reportType))
+            {
+                return "";
+            }
+            if (!Directory.Exists(rootPath))
+            {
+                return "";
+            }
             string[] excelExtensions = [".xlsx", ".xls", ".xlsm"];
             string[] excelFiles = Directory.GetFiles(rootPath, "*.*", SearchOption.AllDirectories).Where(file => excelExtensions.Contains(Path.GetExtension(file))).ToArray();
             Regex regex = new(@"[^a-zA-Z0-9]");
