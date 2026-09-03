@@ -1,4 +1,4 @@
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using NLog;
 using ORT一键报告.Models;
 using ORT一键报告.Plans.ViewModels;
@@ -119,7 +119,7 @@ namespace ORT一键报告.Plans.Views
                 string error = _vm.ValidateField("JobNo", plan.JobNo);
                 if (error != null)
                 {
-                    _ = MessageBox.Show(error, "格式校验失败");
+                    _ = MessageBox.Show(error, LanguageService.Get("Cap_FormatValidationFailed"));
                     e.Cancel = true;
                     return;
                 }
@@ -129,7 +129,7 @@ namespace ORT一键报告.Plans.Views
                 string error = _vm.ValidateField("Status", plan.Status);
                 if (error != null)
                 {
-                    _ = MessageBox.Show(error, "校验失败");
+                    _ = MessageBox.Show(error, LanguageService.Get("Cap_ValidationFailed"));
                     e.Cancel = true;
                     return;
                 }
@@ -139,7 +139,7 @@ namespace ORT一键报告.Plans.Views
                 string error = _vm.ValidateField("TestItem", plan.TestItem);
                 if (error != null)
                 {
-                    _ = MessageBox.Show(error, "校验失败");
+                    _ = MessageBox.Show(error, LanguageService.Get("Cap_ValidationFailed"));
                     e.Cancel = true;
                     return;
                 }
@@ -237,7 +237,7 @@ namespace ORT一键报告.Plans.Views
             ReportLink link = plan == null ? null : _vm.FindReportLink(plan.JobNo);
             if (link == null || !System.IO.Directory.Exists(link.ReportDir))
             {
-                _ = MessageBox.Show("未找到该工作编号对应的报告文件夹。\n请确认设置中的报告路径正确，且报告夹名称包含工作编号。", "提示");
+                _ = MessageBox.Show(LocalizationHelper.Get("Msg_FolderNotFound"), LanguageService.Get("Cap_Info"));
                 return;
             }
             try
@@ -246,7 +246,7 @@ namespace ORT一键报告.Plans.Views
             }
             catch (Exception ex)
             {
-                _ = MessageBox.Show($"打开失败:\n{ex.Message}", "错误");
+                _ = MessageBox.Show($"打开失败:\n{ex.Message}", LanguageService.Get("Cap_Error"));
             }
         }
 
@@ -256,7 +256,7 @@ namespace ORT一键报告.Plans.Views
             ReportLink link = plan == null ? null : _vm.FindReportLink(plan.JobNo);
             if (link == null || !System.IO.File.Exists(link.OverviewFile))
             {
-                _ = MessageBox.Show("未找到该工作编号对应的报告概览文件。\n请确认设置中的报告路径正确，且报告夹中包含 Excel 概览文件。", "提示");
+                _ = MessageBox.Show(LocalizationHelper.Get("Msg_OverviewNotFound"), LanguageService.Get("Cap_Info"));
                 return;
             }
             try
@@ -265,7 +265,7 @@ namespace ORT一键报告.Plans.Views
             }
             catch (Exception ex)
             {
-                _ = MessageBox.Show($"打开失败:\n{ex.Message}", "错误");
+                _ = MessageBox.Show($"打开失败:\n{ex.Message}", LanguageService.Get("Cap_Error"));
             }
         }
 
@@ -334,7 +334,7 @@ namespace ORT一键报告.Plans.Views
             catch (Exception ex)
             {
                 _logger.Error(ex, "从计划表打开一键报告失败");
-                _ = MessageBox.Show($"打开一键报告失败：{ex.Message}", "错误");
+                _ = MessageBox.Show($"打开一键报告失败：{ex.Message}", LanguageService.Get("Cap_Error"));
             }
         }
 
@@ -470,7 +470,7 @@ namespace ORT一键报告.Plans.Views
                     string error = SetPlanFieldValue(target, columns[colIndex].SortMemberPath, rows[i][j]);
                     if (error != null)
                     {
-                        _ = MessageBox.Show($"{columns[colIndex].Header}: {error}", "粘贴校验失败");
+                        _ = MessageBox.Show($"{columns[colIndex].Header}: {error}", LanguageService.Get("Cap_PasteValidationFailed"));
                     }
                 }
             }
@@ -653,7 +653,7 @@ namespace ORT一键报告.Plans.Views
             catch (Exception ex)
             {
                 _logger.Error(ex, "打开回线转移单失败");
-                _ = MessageBox.Show($"打开回线转移单失败:\n{ex.Message}", "错误");
+                _ = MessageBox.Show($"打开回线转移单失败:\n{ex.Message}", LanguageService.Get("Cap_Error"));
             }
         }
 

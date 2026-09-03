@@ -1,4 +1,4 @@
-using NLog;
+﻿using NLog;
 using ORT一键报告.Models;
 using ORT一键报告.Services;
 using System;
@@ -282,7 +282,7 @@ namespace ORT一键报告.Plans.Views
         {
             Microsoft.Win32.OpenFileDialog dialog = new()
             {
-                Title = "选择序列号文件",
+                Title = LanguageService.Get("Title_SelectSNFile"),
                 Filter = "Excel文件|*.xls;*.xlsx;*.xlsm|文本文件|*.txt;*.csv|所有文件|*.*"
             };
             if (dialog.ShowDialog() == true)
@@ -327,42 +327,42 @@ namespace ORT一键报告.Plans.Views
             // 必填校验
             if (dp_reqDate.SelectedDate == null)
             {
-                _ = MessageBox.Show("請填寫領用日期", "提示");
+                _ = MessageBox.Show(LocalizationHelper.Get("Msg_FillReqDate"), LanguageService.Get("Cap_Info"));
                 return;
             }
             if (string.IsNullOrWhiteSpace(txt_reqNo.Text))
             {
-                _ = MessageBox.Show("請填寫領料單据號", "提示");
+                _ = MessageBox.Show(LocalizationHelper.Get("Msg_FillDocNo"), LanguageService.Get("Cap_Info"));
                 return;
             }
             if (string.IsNullOrWhiteSpace(txt_model.Text))
             {
-                _ = MessageBox.Show("請填寫機種名稱", "提示");
+                _ = MessageBox.Show(LocalizationHelper.Get("Msg_FillModelName"), LanguageService.Get("Cap_Info"));
                 return;
             }
             if (string.IsNullOrWhiteSpace(txt_outQty.Text))
             {
-                _ = MessageBox.Show("請填寫領出數量", "提示");
+                _ = MessageBox.Show(LocalizationHelper.Get("Msg_FillQty"), LanguageService.Get("Cap_Info"));
                 return;
             }
             if (string.IsNullOrWhiteSpace(txt_rev.Text))
             {
-                _ = MessageBox.Show("請填寫REV.", "提示");
+                _ = MessageBox.Show(LocalizationHelper.Get("Msg_FillRev"), LanguageService.Get("Cap_Info"));
                 return;
             }
             if (string.IsNullOrWhiteSpace(txt_workOrder.Text))
             {
-                _ = MessageBox.Show("請填寫Work Order", "提示");
+                _ = MessageBox.Show(LocalizationHelper.Get("Msg_FillWorkOrder"), LanguageService.Get("Cap_Info"));
                 return;
             }
             if (rb_snInput.IsChecked == true && string.IsNullOrWhiteSpace(txt_sn.Text))
             {
-                _ = MessageBox.Show("請填寫S/N或上傳附件", "提示");
+                _ = MessageBox.Show(LocalizationHelper.Get("Msg_FillSN"), LanguageService.Get("Cap_Info"));
                 return;
             }
             if (rb_snFile.IsChecked == true && _uploadedSnFile == null)
             {
-                _ = MessageBox.Show("請先選擇要上傳的序列號文件", "提示");
+                _ = MessageBox.Show(LocalizationHelper.Get("Msg_SelectSNFile"), LanguageService.Get("Cap_Info"));
                 return;
             }
             // 计划表同步必填（仅新增时）
@@ -370,12 +370,12 @@ namespace ORT一键报告.Plans.Views
             {
                 if (cb_testItem.SelectedItem == null)
                 {
-                    _ = MessageBox.Show("請選擇測試項目", "提示");
+                    _ = MessageBox.Show(LocalizationHelper.Get("Msg_SelectTestItem"), LanguageService.Get("Cap_Info"));
                     return;
                 }
                 if (cb_stage.SelectedItem == null)
                 {
-                    _ = MessageBox.Show("請選擇階段", "提示");
+                    _ = MessageBox.Show(LocalizationHelper.Get("Msg_SelectStage"), LanguageService.Get("Cap_Info"));
                     return;
                 }
             }
@@ -384,7 +384,7 @@ namespace ORT一键报告.Plans.Views
             long selfId = _editTarget?.Id ?? 0;
             if (_db.FreeSql.Select<Requisition>().Where(r => r.RequisitionNo == txt_reqNo.Text.Trim() && r.Id != selfId).Any())
             {
-                _ = MessageBox.Show($"領料單据號 [{txt_reqNo.Text.Trim()}] 已存在", "提示");
+                _ = MessageBox.Show($"領料單据號 [{txt_reqNo.Text.Trim()}] 已存在", LanguageService.Get("Cap_Info"));
                 return;
             }
 
@@ -454,7 +454,7 @@ namespace ORT一键报告.Plans.Views
                 };
                 if (_db.FreeSql.Select<Plan>().Where(p => p.JobNo == plan.JobNo).Any())
                 {
-                    _ = MessageBox.Show($"工作編號 [{plan.JobNo}] 已存在", "提示");
+                    _ = MessageBox.Show($"工作編號 [{plan.JobNo}] 已存在", LanguageService.Get("Cap_Info"));
                     return;
                 }
                 PlanResult = plan;
@@ -504,7 +504,7 @@ namespace ORT一键报告.Plans.Views
             catch (Exception ex)
             {
                 _logger.Error(ex, "保存上传的SN文件失败");
-                _ = MessageBox.Show($"保存上传文件失败:\n{ex.Message}", "错误");
+                _ = MessageBox.Show($"保存上传文件失败:\n{ex.Message}", LanguageService.Get("Cap_Error"));
                 return null;
             }
         }

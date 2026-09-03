@@ -1,4 +1,5 @@
-﻿using ORT一键报告.ViewModels;
+﻿using ORT一键报告.Services;
+using ORT一键报告.ViewModels;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -41,7 +42,7 @@ namespace ORT一键报告.Views
             }
             else
             {
-                MessageBox.Show("SettingControl的DataContext为空", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(LocalizationHelper.Get("Msg_SettingDCNull"), "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
     }

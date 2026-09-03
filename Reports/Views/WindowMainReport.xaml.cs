@@ -1,4 +1,4 @@
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using NLog;
 using OfficeOpenXml;
 using ORT一键报告.Main.Views;
@@ -239,7 +239,7 @@ namespace ORT一键报告.Reports.Views
 
         private async void DoReport_Click(object sender, RoutedEventArgs e)
         {
-            PopupWindow popup = new() { Title = "处理中", Message = "请耐心等待..." };
+            PopupWindow popup = new() { Title = LanguageService.Get("Title_Processing"), Message = "请耐心等待..." };
             if (sender is not Button btn)
             {
                 return;
@@ -276,12 +276,12 @@ namespace ORT一键报告.Reports.Views
             catch (FileNotFoundException ex)
             {
                 _logger.Error(ex, "报告文件不存在");
-                _ = MessageBox.Show("报告文件不存在, 请正确选择", "错误");
+                _ = MessageBox.Show(LocalizationHelper.Get("Msg_ReportFileNotFound"), LanguageService.Get("Cap_Error"));
             }
             catch (Exception ex)
             {
                 _logger.Error(ex, "读取报告出现错误");
-                _ = MessageBox.Show($"读取报告出现错误{ex}", "错误");
+                _ = MessageBox.Show($"读取报告出现错误{ex}", LanguageService.Get("Cap_Error"));
             }
             finally
             {

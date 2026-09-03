@@ -1,4 +1,4 @@
-using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Win32;
 using NLog;
@@ -61,7 +61,7 @@ namespace ORT一键报告.Reports.ViewModels
                 if (string.IsNullOrWhiteSpace(templatePath) || !File.Exists(templatePath))
                 {
                     _logger.Warn($"未找到{ReportType}报告模板，无法生成报告");
-                    MessageBox.Show($"未找到{ReportType}报告模板，无法生成报告", "错误");
+                    MessageBox.Show($"未找到{ReportType}报告模板，无法生成报告", LanguageService.Get("Cap_Error"));
                     return;
                 }
                 FileInfo reportFI = new(templatePath);
@@ -155,7 +155,7 @@ namespace ORT一键报告.Reports.ViewModels
                 return;
             }
             _logger.Info($"{ReportType}报告生成完成, 保存在{saveReportPath}");
-            MessageBox.Show($"{ReportType}报告生成完成, 保存在{saveReportPath}", "成功");
+            MessageBox.Show($"{ReportType}报告生成完成, 保存在{saveReportPath}", LanguageService.Get("Cap_Success"));
         }
 
         private RelayCommand finishCommand;
@@ -163,7 +163,7 @@ namespace ORT一键报告.Reports.ViewModels
 
         private async void Finish()
         {
-            PopupWindow popup = new() { Title = "保存报告", Message = "处理中..." };
+            PopupWindow popup = new() { Title = LanguageService.Get("Title_SaveReport"), Message = "处理中..." };
             try
             {
                 popup.Show();
@@ -185,7 +185,7 @@ namespace ORT一键报告.Reports.ViewModels
 
         private void SelectATEDatas()
         {
-            ATEPath = _Service.OpenPathDialog("选择ATE数据", initPath: _appSettings.AteDataDir);
+            ATEPath = _Service.OpenPathDialog(LanguageService.Get("Dlg_SelectATEData"), initPath: _appSettings.AteDataDir);
         }
     }
 }

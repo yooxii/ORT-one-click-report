@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using ORT一键报告.Services;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -64,7 +65,7 @@ namespace ORT一键报告.Main.Views
             cb_logFiles.Items.Clear();
             if (!Directory.Exists(_logDir))
             {
-                status_file.Content = $"日志目录不存在: {_logDir}";
+                status_file.Content = string.Format(LanguageService.Get("Log_DirNotExist"), _logDir);
                 return;
             }
             string[] files = Directory.GetFiles(_logDir, "*.log")
@@ -80,7 +81,7 @@ namespace ORT一键报告.Main.Views
             }
             else
             {
-                status_file.Content = "没有日志文件";
+                status_file.Content = LanguageService.Get("Log_NoLogFiles");
             }
         }
 
@@ -121,7 +122,7 @@ namespace ORT一键报告.Main.Views
             }
             catch (Exception ex)
             {
-                status_file.Content = $"读取日志失败: {ex.Message}";
+                status_file.Content = string.Format(LanguageService.Get("Log_ReadFailed"), ex.Message);
                 return;
             }
 
@@ -170,8 +171,8 @@ namespace ORT一键报告.Main.Views
                 return false;
             }
             if (cb_level.SelectedItem is ComboBoxItem levelItem
-                && levelItem.Content is string level
-                && level != "全部"
+                && levelItem.Tag is string level
+                && !string.IsNullOrEmpty(level)
                 && !string.Equals(entry.Level, level, StringComparison.OrdinalIgnoreCase))
             {
                 return false;
@@ -221,7 +222,7 @@ namespace ORT一键报告.Main.Views
 
         private void UpdateStatus()
         {
-            status_count.Content = $"共 {_allEntries.Count} 条，筛选后 {_viewSource.View.Cast<object>().Count()} 条";
+            status_count.Content = string.Format(LanguageService.Get("Log_CountFiltered"), _allEntries.Count, _viewSource.View.Cast<object>().Count());
         }
 
         /* ###############################  事件函数  ################################ */

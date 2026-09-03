@@ -1,10 +1,11 @@
-<Window x:Class="ORT一键报告.Main.Views.WindowAppSettings"
+﻿<Window x:Class="ORT一键报告.Main.Views.WindowAppSettings" Background="{DynamicResource WindowBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:lex="http://wpflocalizeextension.codeplex.com"
         mc:Ignorable="d"
-        Title="设置" Height="600" Width="900" MinHeight="450" MinWidth="720"
+        Title="{lex:Loc Settings_Title}" Height="600" Width="900" MinHeight="450" MinWidth="720"
         WindowStartupLocation="CenterOwner">
 
     <Grid>
@@ -21,20 +22,22 @@
         </Grid.ColumnDefinitions>
 
         <!--左侧：树状目录预览-->
-        <Border Grid.Column="0" BorderBrush="#FFDDDDDD" BorderThickness="0,0,1,0" Padding="8">
+        <Border Grid.Column="0" BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="0,0,1,0" Padding="8">
             <DockPanel>
-                <TextBlock DockPanel.Dock="Top" Text="设置目录" FontWeight="Bold" FontSize="14" Margin="4,2,4,8"/>
+                <TextBlock DockPanel.Dock="Top" Text="{lex:Loc Settings_DirTab}" FontWeight="Bold" FontSize="14" Margin="4,2,4,8"/>
                 <TreeView x:Name="tv_settings" BorderThickness="0" SelectedItemChanged="Tv_Settings_SelectedItemChanged">
                     <TreeViewItem Header="UI" IsExpanded="True" Tag="sec_ui">
-                        <TreeViewItem Header="字体" Tag="sec_font"/>
+                        <TreeViewItem Header="{lex:Loc Settings_Theme}" Tag="sec_theme"/>
+                        <TreeViewItem Header="{lex:Loc Settings_Language}" Tag="sec_language"/>
+                        <TreeViewItem Header="{lex:Loc Settings_Font}" Tag="sec_font"/>
                     </TreeViewItem>
-                    <TreeViewItem Header="路径" IsExpanded="True" Tag="sec_paths">
-                        <TreeViewItem Header="ATE数据路径" Tag="sec_ate"/>
-                        <TreeViewItem Header="EMI数据路径" Tag="sec_emi"/>
-                        <TreeViewItem Header="数据库路径" Tag="sec_dbpath"/>
-                        <TreeViewItem Header="计划表路径" Tag="sec_schedule"/>
-                        <TreeViewItem Header="领用表路径" Tag="sec_requisition"/>
-                        <TreeViewItem Header="报告路径" Tag="sec_report"/>
+                    <TreeViewItem Header="{lex:Loc Settings_Path}" IsExpanded="True" Tag="sec_paths">
+                        <TreeViewItem Header="{lex:Loc Settings_ATEPath}" Tag="sec_ate"/>
+                        <TreeViewItem Header="{lex:Loc Settings_EMIPath}" Tag="sec_emi"/>
+                        <TreeViewItem Header="{lex:Loc Settings_DBPath}" Tag="sec_dbpath"/>
+                        <TreeViewItem Header="{lex:Loc Settings_PlanPath}" Tag="sec_schedule"/>
+                        <TreeViewItem Header="{lex:Loc Settings_RequisitionPath}" Tag="sec_requisition"/>
+                        <TreeViewItem Header="{lex:Loc Settings_ReportPath}" Tag="sec_report"/>
                     </TreeViewItem>
                 </TreeView>
             </DockPanel>
@@ -50,14 +53,60 @@
                 <Border x:Name="sec_ui" Padding="0,4">
                     <StackPanel>
                         <TextBlock Text="UI" FontSize="20" FontWeight="Bold"/>
-                        <TextBlock Text="界面外观相关设置" Foreground="Gray" Margin="0,2,0,0"/>
+                        <TextBlock Text="{lex:Loc Settings_AppearanceTab}" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
                     </StackPanel>
                 </Border>
 
+                <Border x:Name="sec_theme" Padding="0,10">
+                    <StackPanel>
+                        <TextBlock Text="{lex:Loc Settings_Theme}" FontSize="16" FontWeight="SemiBold"/>
+                        <TextBlock Text="{lex:Loc Settings_ThemeHint}" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,8"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="80"/>
+                                <ColumnDefinition Width="240"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{lex:Loc Settings_Theme}" VerticalAlignment="Center"/>
+                            <ComboBox x:Name="cb_theme" Grid.Column="1" VerticalContentAlignment="Center" SelectedValuePath="Code" SelectionChanged="Cb_Theme_SelectionChanged">
+                                                            <ComboBox.ItemTemplate>
+                                                                <DataTemplate>
+                                                                    <TextBlock Text="{Binding DisplayName}"/>
+                                                                </DataTemplate>
+                                                            </ComboBox.ItemTemplate>
+                                                        </ComboBox>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <Separator Margin="0,12"/>
+
+                <Border x:Name="sec_language" Padding="0,10">
+                    <StackPanel>
+                        <TextBlock Text="{lex:Loc Settings_Language}" FontSize="16" FontWeight="SemiBold"/>
+                        <TextBlock Text="{lex:Loc Settings_LanguageHint}" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,8"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="80"/>
+                                <ColumnDefinition Width="200"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{lex:Loc Settings_Language}" VerticalAlignment="Center"/>
+                            <ComboBox x:Name="cb_language" Grid.Column="1" VerticalContentAlignment="Center" SelectedValuePath="Code" SelectionChanged="Cb_Language_SelectionChanged">
+                                                            <ComboBox.ItemTemplate>
+                                                                <DataTemplate>
+                                                                    <TextBlock Text="{Binding DisplayName}"/>
+                                                                </DataTemplate>
+                                                            </ComboBox.ItemTemplate>
+                                                        </ComboBox>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <Separator Margin="0,12"/>
+
                 <Border x:Name="sec_font" Padding="0,10">
                     <StackPanel>
-                        <TextBlock Text="字体" FontSize="16" FontWeight="SemiBold"/>
-                        <TextBlock Text="全局字体族与字号，保存后立即应用到所有窗口。" Foreground="Gray" Margin="0,2,0,8"/>
+                        <TextBlock Text="{lex:Loc Settings_Font}" FontSize="16" FontWeight="SemiBold"/>
+                        <TextBlock Text="{lex:Loc Settings_FontHint}" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,8"/>
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="80"/>
@@ -66,9 +115,9 @@
                                 <ColumnDefinition Width="80"/>
                                 <ColumnDefinition Width="100"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="字体族" VerticalAlignment="Center"/>
+                            <TextBlock Text="{lex:Loc Settings_FontFamily}" VerticalAlignment="Center"/>
                             <ComboBox x:Name="cb_fontFamily" Grid.Column="1" VerticalContentAlignment="Center"/>
-                            <TextBlock Text="字号" Grid.Column="3" VerticalAlignment="Center"/>
+                            <TextBlock Text="{lex:Loc Settings_FontSize}" Grid.Column="3" VerticalAlignment="Center"/>
                             <ComboBox x:Name="cb_fontSize" Grid.Column="4" VerticalContentAlignment="Center" IsEditable="True"/>
                         </Grid>
                     </StackPanel>
@@ -79,15 +128,15 @@
                 <!-- 路径 -->
                 <Border x:Name="sec_paths" Padding="0,4">
                     <StackPanel>
-                        <TextBlock Text="路径" FontSize="20" FontWeight="Bold"/>
-                        <TextBlock Text="各对话框的默认打开目录。留空则使用系统默认位置。" Foreground="Gray" Margin="0,2,0,0"/>
+                        <TextBlock Text="{lex:Loc Settings_Path}" FontSize="20" FontWeight="Bold"/>
+                        <TextBlock Text="{lex:Loc Settings_DirHint}" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
                     </StackPanel>
                 </Border>
 
                 <Border x:Name="sec_ate" Padding="0,10">
                     <StackPanel>
-                        <TextBlock Text="ATE数据路径" FontSize="16" FontWeight="SemiBold"/>
-                        <TextBlock Text="选择ATE数据时的默认打开目录。此设置与数据库路径保存在同一位置。" Foreground="Gray" Margin="0,2,0,8" TextWrapping="Wrap"/>
+                        <TextBlock Text="{lex:Loc Settings_ATEPath}" FontSize="16" FontWeight="SemiBold"/>
+                        <TextBlock Text="{lex:Loc Settings_ATEPathHint}" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,8" TextWrapping="Wrap"/>
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition/>
@@ -95,15 +144,15 @@
                                 <ColumnDefinition Width="70"/>
                             </Grid.ColumnDefinitions>
                             <TextBox x:Name="txt_ate" VerticalContentAlignment="Center"/>
-                            <Button Content="浏览..." Grid.Column="2" Padding="6,3" Click="Btn_Browse_Click" Tag="AteDataPath"/>
+                            <Button Content="{lex:Loc Common_BrowseEllipsis}" Grid.Column="2" Padding="6,3" Click="Btn_Browse_Click" Tag="AteDataPath"/>
                         </Grid>
                     </StackPanel>
                 </Border>
 
                 <Border x:Name="sec_emi" Padding="0,10">
                     <StackPanel>
-                        <TextBlock Text="EMI数据路径" FontSize="16" FontWeight="SemiBold"/>
-                        <TextBlock Text="选择EMI数据时的默认打开目录。此设置与数据库路径保存在同一位置。" Foreground="Gray" Margin="0,2,0,8" TextWrapping="Wrap"/>
+                        <TextBlock Text="{lex:Loc Settings_EMIPath}" FontSize="16" FontWeight="SemiBold"/>
+                        <TextBlock Text="{lex:Loc Settings_EMIPathHint}" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,8" TextWrapping="Wrap"/>
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition/>
@@ -111,15 +160,15 @@
                                 <ColumnDefinition Width="70"/>
                             </Grid.ColumnDefinitions>
                             <TextBox x:Name="txt_emi" VerticalContentAlignment="Center"/>
-                            <Button Content="浏览..." Grid.Column="2" Padding="6,3" Click="Btn_Browse_Click" Tag="EmiDataPath"/>
+                            <Button Content="{lex:Loc Common_BrowseEllipsis}" Grid.Column="2" Padding="6,3" Click="Btn_Browse_Click" Tag="EmiDataPath"/>
                         </Grid>
                     </StackPanel>
                 </Border>
 
                 <Border x:Name="sec_dbpath" Padding="0,10">
                     <StackPanel>
-                        <TextBlock Text="数据库路径" FontSize="16" FontWeight="SemiBold"/>
-                        <TextBlock Text="数据库文件（ort_plans.db）保存目录。此设置保存在程序目录，修改后需重启程序生效。" Foreground="Gray" Margin="0,2,0,8" TextWrapping="Wrap"/>
+                        <TextBlock Text="{lex:Loc Settings_DBPath}" FontSize="16" FontWeight="SemiBold"/>
+                        <TextBlock Text="{lex:Loc Settings_DBPathHint}" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,8" TextWrapping="Wrap"/>
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition/>
@@ -127,15 +176,15 @@
                                 <ColumnDefinition Width="70"/>
                             </Grid.ColumnDefinitions>
                             <TextBox x:Name="txt_dbpath" VerticalContentAlignment="Center"/>
-                            <Button x:Name="btn_dbpathBrowse" Content="浏览..." Grid.Column="2" Padding="6,3" Click="Btn_DbPathBrowse_Click"/>
+                            <Button x:Name="btn_dbpathBrowse" Content="{lex:Loc Common_BrowseEllipsis}" Grid.Column="2" Padding="6,3" Click="Btn_DbPathBrowse_Click"/>
                         </Grid>
                     </StackPanel>
                 </Border>
 
                 <Border x:Name="sec_schedule" Padding="0,10">
                     <StackPanel>
-                        <TextBlock Text="计划表路径" FontSize="16" FontWeight="SemiBold"/>
-                        <TextBlock Text="导入计划表（ORT Test Schedule）时的默认目录。" Foreground="Gray" Margin="0,2,0,8"/>
+                        <TextBlock Text="{lex:Loc Settings_PlanPath}" FontSize="16" FontWeight="SemiBold"/>
+                        <TextBlock Text="{lex:Loc Settings_PlanPathHint}" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,8"/>
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition/>
@@ -143,15 +192,15 @@
                                 <ColumnDefinition Width="70"/>
                             </Grid.ColumnDefinitions>
                             <TextBox x:Name="txt_schedule" VerticalContentAlignment="Center"/>
-                            <Button Content="浏览..." Grid.Column="2" Padding="6,3" Click="Btn_Browse_Click" Tag="SchedulePath"/>
+                            <Button Content="{lex:Loc Common_BrowseEllipsis}" Grid.Column="2" Padding="6,3" Click="Btn_Browse_Click" Tag="SchedulePath"/>
                         </Grid>
                     </StackPanel>
                 </Border>
 
                 <Border x:Name="sec_requisition" Padding="0,10">
                     <StackPanel>
-                        <TextBlock Text="领用表路径" FontSize="16" FontWeight="SemiBold"/>
-                        <TextBlock Text="导入领用表（成品領用記錄）时的默认目录。" Foreground="Gray" Margin="0,2,0,8"/>
+                        <TextBlock Text="{lex:Loc Settings_RequisitionPath}" FontSize="16" FontWeight="SemiBold"/>
+                        <TextBlock Text="{lex:Loc Settings_ReqPathHint}" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,8"/>
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition/>
@@ -159,15 +208,15 @@
                                 <ColumnDefinition Width="70"/>
                             </Grid.ColumnDefinitions>
                             <TextBox x:Name="txt_requisition" VerticalContentAlignment="Center"/>
-                            <Button Content="浏览..." Grid.Column="2" Padding="6,3" Click="Btn_Browse_Click" Tag="RequisitionPath"/>
+                            <Button Content="{lex:Loc Common_BrowseEllipsis}" Grid.Column="2" Padding="6,3" Click="Btn_Browse_Click" Tag="RequisitionPath"/>
                         </Grid>
                     </StackPanel>
                 </Border>
 
                 <Border x:Name="sec_report" Padding="0,10">
                     <StackPanel>
-                        <TextBlock Text="报告路径" FontSize="16" FontWeight="SemiBold"/>
-                        <TextBlock Text="一键报告选择报告概览时的默认打开目录。" Foreground="Gray" Margin="0,2,0,8"/>
+                        <TextBlock Text="{lex:Loc Settings_ReportPath}" FontSize="16" FontWeight="SemiBold"/>
+                        <TextBlock Text="{lex:Loc Settings_ReportPathHint}" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,8"/>
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition/>
@@ -175,7 +224,7 @@
                                 <ColumnDefinition Width="70"/>
                             </Grid.ColumnDefinitions>
                             <TextBox x:Name="txt_report" VerticalContentAlignment="Center"/>
-                            <Button Content="浏览..." Grid.Column="2" Padding="6,3" Click="Btn_Browse_Click" Tag="ReportPath"/>
+                            <Button Content="{lex:Loc Common_BrowseEllipsis}" Grid.Column="2" Padding="6,3" Click="Btn_Browse_Click" Tag="ReportPath"/>
                         </Grid>
                     </StackPanel>
                 </Border>
@@ -186,11 +235,11 @@
         </Grid>
 
         <!--底部：保存/应用/取消--> 
-        <Border Grid.Row="1" BorderBrush="#FFDDDDDD" BorderThickness="0,1,0,0" Padding="16,10">
+        <Border Grid.Row="1" BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="0,1,0,0" Padding="16,10">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                <Button x:Name="btn_save" Content="保存" Width="90" Height="30" Click="Btn_Save_Click" IsDefault="True"/>
-                <Button x:Name="btn_apply" Content="应用" Width="90" Height="30" Margin="10,0,0,0" Click="Btn_Apply_Click"/>
-                <Button x:Name="btn_cancel" Content="取消" Width="90" Height="30" Margin="10,0,0,0" Click="Btn_Cancel_Click" IsCancel="True"/>
+                <Button x:Name="btn_save" Content="{lex:Loc Common_Save}" Width="90" Height="30" Click="Btn_Save_Click" IsDefault="True"/>
+                <Button x:Name="btn_apply" Content="{lex:Loc Common_Apply}" Width="90" Height="30" Margin="10,0,0,0" Click="Btn_Apply_Click"/>
+                <Button x:Name="btn_cancel" Content="{lex:Loc Common_Cancel}" Width="90" Height="30" Margin="10,0,0,0" Click="Btn_Cancel_Click" IsCancel="True"/>
             </StackPanel>
         </Border>
     </Grid>

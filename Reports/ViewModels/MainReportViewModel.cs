@@ -1,4 +1,4 @@
-using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 using NLog;
 using OfficeOpenXml;
 using ORT一键报告.Models;
@@ -39,7 +39,7 @@ namespace ORT一键报告.Reports.ViewModels
             }
         }
 
-        private string _title = "ORT一键报告";
+        private string _title = LanguageService.Get("App_ReportTitle");
         public string Title
         {
             get => _title;
@@ -52,7 +52,7 @@ namespace ORT一键报告.Reports.ViewModels
 
         private void SelectReportPath()
         {
-            ReportPath = Service.OpenPathDialog("选择报告概览", initPath: _appSettings.ReportDir);
+            ReportPath = Service.OpenPathDialog(LanguageService.Get("Dlg_SelectReportOverview"), initPath: _appSettings.ReportDir);
             if (ReportPath == null)
             {
                 return;
@@ -191,7 +191,7 @@ namespace ORT一键报告.Reports.ViewModels
                 DataCell rev = FindCellByValue(ws_cover, "rev");
                 if (rev == null)
                 {
-                    MessageBox.Show("未找到Rev列", "错误");
+                    MessageBox.Show(LocalizationHelper.Get("Msg_RevColNotFound"), LanguageService.Get("Cap_Error"));
                     return null;
                 }
                 for (int c = rev.Column + 1; c < ws_cover.Dimension.End.Column; c++)
@@ -205,14 +205,14 @@ namespace ORT一键报告.Reports.ViewModels
                 DataCell snTitleCell = FindCellByValue(ws_waterfall, "s/n", "uut");
                 if (snTitleCell == null)
                 {
-                    MessageBox.Show("未找到SN列", "错误");
+                    MessageBox.Show(LocalizationHelper.Get("Msg_SNColNotFound"), LanguageService.Get("Cap_Error"));
                     return null;
                 }
 
                 List<DataCell> snCells = FindSNs(ws_waterfall, snTitleCell);
                 if (snCells.Count == 0)
                 {
-                    MessageBox.Show("没有SN", "错误");
+                    MessageBox.Show(LocalizationHelper.Get("Msg_NoSN"), LanguageService.Get("Cap_Error"));
                     return null;
                 }
                 else

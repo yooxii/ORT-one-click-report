@@ -6,7 +6,10 @@ using ORT一键报告.Reports.Views;
 using ORT一键报告.Services;
 using ORT一键报告.ViewModels;
 using System;
+using System.Globalization;
+using System.Linq;
 using System.Windows;
+using WPFLocalizeExtension.Engine;
 
 namespace ORT一键报告
 {
@@ -28,6 +31,17 @@ namespace ORT一键报告
 
                 // EPPlus 非商业许可统一在程序入口设置（各服务不再重复设置）
                 OfficeOpenXml.ExcelPackage.License.SetNonCommercialPersonal("Lucas");
+
+                // 初始化语言服务（读取上次保存的语言或使用系统语言）
+                ORT一键报告.Services.LanguageService.Initialize();
+
+                // 初始化 UI 主题（读取上次保存的方案，默认 Fluent）
+                ORT一键报告.Services.ThemeService.Initialize();
+
+                // 使用自定义本地化提供程序（直接读取 Resources.Strings 资源），
+                // 解决 WPFLocalizeExtension 内置 Provider 对含中文程序集名解析失败、UI 显示 Key:xxx 的问题。
+                WPFLocalizeExtension.Engine.LocalizeDictionary.Instance.DefaultProvider =
+                    new ORT一键报告.Services.OrtLocalizationProvider();
 
                 ServiceCollection services = new();
                 // Services

@@ -1,12 +1,13 @@
-﻿<Window x:Class="ORT一键报告.Plans.Views.WindowPlans"
+﻿<Window x:Class="ORT一键报告.Plans.Views.WindowPlans" Background="{DynamicResource WindowBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:lex="http://wpflocalizeextension.codeplex.com"
         xmlns:local="clr-namespace:ORT一键报告.Plans.Views"
         xmlns:sys="clr-namespace:System;assembly=mscorlib"
         mc:Ignorable="d"
-        Title="领退和计划" Height="700" Width="1300" MinHeight="450" MinWidth="900"
+        Title="{lex:Loc Plans_Title}" Height="700" Width="1300" MinHeight="450" MinWidth="900"
         WindowStartupLocation="CenterScreen">
 
     <Window.Resources>
@@ -36,12 +37,12 @@
             <Setter Property="VerticalContentAlignment" Value="Center"/>
             <Setter Property="HorizontalContentAlignment" Value="Center"/>
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="Black"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
             <Style.Triggers>
                 <!-- 选中单元格：浅灰色（行选中与单元格选中可同时显示） -->
                 <Trigger Property="IsSelected" Value="True">
-                    <Setter Property="Background" Value="#FFE0E0E0"/>
-                    <Setter Property="Foreground" Value="Black"/>
+                    <Setter Property="Background" Value="{DynamicResource TableCellSelectedBrush}"/>
+                    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
                 </Trigger>
             </Style.Triggers>
         </Style>
@@ -58,40 +59,40 @@
         <!--工具栏-->
         <ToolBarTray>
             <ToolBar Band="0" BandIndex="0">
-                <Button Content="领退新增" Command="{Binding AddRequisitionCommand}" ToolTip="新增领退记录并同步新增计划"/>
-                <Button Content="计划新增" Command="{Binding AddPlanCommand}" ToolTip="直接新增非领用计划（QRT前缀）"/>
-                <Button Content="编辑" Command="{Binding EditRequisitionCommand}" ToolTip="编辑选中记录"/>
+                <Button Content="{lex:Loc Plans_AddRequisition}" Command="{Binding AddRequisitionCommand}" ToolTip="{lex:Loc Plans_AddRequisitionWithPlan}"/>
+                <Button Content="{lex:Loc Plans_AddPlan}" Command="{Binding AddPlanCommand}" ToolTip="{lex:Loc Plans_AddPlanDirect}"/>
+                <Button Content="{lex:Loc Common_Edit}" Command="{Binding EditRequisitionCommand}" ToolTip="{lex:Loc Plans_EditSelected}"/>
                 <Separator/>
-                <Button Content="提交保存" Command="{Binding SaveChangesCommand}" FontWeight="Bold"
-                        ToolTip="将暂存的修改写入数据库并记录变更日志"/>
-                <Button Content="丢弃修改" Command="{Binding DiscardChangesCommand}"
-                        ToolTip="放弃所有暂存修改，还原为数据库状态"/>
+                <Button Content="{lex:Loc Plans_SubmitSave}" Command="{Binding SaveChangesCommand}" FontWeight="Bold"
+                        ToolTip="{lex:Loc Plans_ToolTip_SubmitSave}"/>
+                <Button Content="{lex:Loc Plans_Discard}" Command="{Binding DiscardChangesCommand}"
+                        ToolTip="{lex:Loc Plans_ToolTip_Discard}"/>
                 <Separator/>
-                <Button Content="导出领退表" Command="{Binding ExportRequisitionCommand}" ToolTip="导出为成品領退管理表格式"/>
-                <Button Content="导出计划表" Command="{Binding ExportScheduleCommand}" ToolTip="导出为 ORT Test Schedule 格式"/>
+                <Button Content="{lex:Loc Plans_ExportRequisition}" Command="{Binding ExportRequisitionCommand}" ToolTip="{lex:Loc Plans_ToolTip_ExportReq}"/>
+                <Button Content="{lex:Loc Plans_ExportPlan}" Command="{Binding ExportScheduleCommand}" ToolTip="{lex:Loc Plans_ToolTip_ExportPlan}"/>
                 <Separator/>
-                <Button Content="回线转移单" Click="Btn_ReturnLine_Click" ToolTip="打开回线转移单工具"/>
+                <Button Content="{lex:Loc Plans_ReturnTransfer}" Click="Btn_ReturnLine_Click" ToolTip="{lex:Loc Plans_ToolTip_ReturnTransfer}"/>
                 <Separator/>
-                <Button Content="刷新" Command="{Binding RefreshCommand}" ToolTip="重新加载数据（会丢弃未提交修改）"/>
+                <Button Content="{lex:Loc Common_Refresh}" Command="{Binding RefreshCommand}" ToolTip="{lex:Loc Plans_ToolTip_Reload}"/>
             </ToolBar>
         </ToolBarTray>
 
         <!--筛选区（可折叠）-->
-        <Expander Grid.Row="1" Header="筛选" IsExpanded="True" Margin="0,5,0,0">
+        <Expander Grid.Row="1" Header="{lex:Loc Common_Filter}" IsExpanded="True" Margin="0,5,0,0">
             <StackPanel Margin="5">
                 <WrapPanel>
-                    <Label Content="领退搜索" VerticalContentAlignment="Center"/>
+                    <Label Content="{lex:Loc Plans_RequisitionSearch}" VerticalContentAlignment="Center"/>
                     <TextBox Width="180" Margin="0,0,15,3" VerticalContentAlignment="Center"
                              Text="{Binding ReqKeyword, UpdateSourceTrigger=PropertyChanged}"
-                             ToolTip="按机种/单据号/工令/SN等筛选领退表"/>
-                    <Label Content="计划搜索" VerticalContentAlignment="Center"/>
+                             ToolTip="{lex:Loc Plans_FilterRequisition}"/>
+                    <Label Content="{lex:Loc Plans_PlanSearch}" VerticalContentAlignment="Center"/>
                     <TextBox Width="180" Margin="0,0,15,3" VerticalContentAlignment="Center"
                              Text="{Binding Keyword, UpdateSourceTrigger=PropertyChanged}"
-                             ToolTip="按机种/工作编号/测试项目等筛选计划表"/>
+                             ToolTip="{lex:Loc Plans_FilterPlan}"/>
                     <ComboBox Width="140" Margin="0,0,10,3" VerticalContentAlignment="Center"
                               ItemsSource="{Binding AvailableFields}"
                               SelectedItem="{Binding AddFilterField, Mode=TwoWay}"
-                              ToolTip="选择字段以添加计划表筛选条件"/>
+                              ToolTip="{lex:Loc Plans_SelectFieldForFilter}"/>
                     <ItemsControl ItemsSource="{Binding ActiveFilters}" VerticalAlignment="Center">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
@@ -100,8 +101,8 @@
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border BorderBrush="#FFBBBBBB" BorderThickness="1" CornerRadius="3"
-                                        Margin="0,0,8,3" Padding="5,2" Background="#FFF8F8F8">
+                                <Border BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="1" CornerRadius="3"
+                                        Margin="0,0,8,3" Padding="5,2" Background="{DynamicResource HeaderBackgroundBrush}">
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="{Binding Field}" VerticalAlignment="Center"
                                                    FontWeight="Bold" Margin="0,0,5,0"/>
@@ -111,12 +112,12 @@
                                             Visibility="{Binding IsValueField, Converter={StaticResource BoolToVis}}"/>
                                         <StackPanel Orientation="Horizontal"
                                                     Visibility="{Binding IsDateField, Converter={StaticResource BoolToVis}}">
-                                            <DatePicker Width="112" SelectedDate="{Binding DateFrom, Mode=TwoWay}" ToolTip="起始日期"/>
+                                            <DatePicker Width="112" SelectedDate="{Binding DateFrom, Mode=TwoWay}" ToolTip="{lex:Loc Plans_FromDate}"/>
                                             <TextBlock Text="~" VerticalAlignment="Center" Margin="3,0"/>
-                                            <DatePicker Width="112" SelectedDate="{Binding DateTo, Mode=TwoWay}" ToolTip="截止日期"/>
+                                            <DatePicker Width="112" SelectedDate="{Binding DateTo, Mode=TwoWay}" ToolTip="{lex:Loc Plans_EndDate}"/>
                                         </StackPanel>
                                         <Button Content="✕" Margin="5,0,0,0" Padding="3,0" BorderThickness="0"
-                                                Background="Transparent" Foreground="Gray" ToolTip="删除该筛选条件"
+                                                Background="Transparent" Foreground="{DynamicResource TextSecondaryBrush}" ToolTip="{lex:Loc Plans_DeleteFilter}"
                                                 Command="{Binding DataContext.RemoveFilterCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                                 CommandParameter="{Binding}"/>
                                     </StackPanel>
@@ -131,7 +132,7 @@
         <!--两 Tab：领退表 / 计划表-->
         <TabControl Grid.Row="2" Margin="0,5,0,0">
             <!--领退表-->
-            <TabItem Header="领退表">
+            <TabItem Header="{lex:Loc Plans_RequisitionTab}">
                 <DataGrid x:Name="dg_requisitions"
                           ItemsSource="{Binding RequisitionsView}"
                           SelectedItem="{Binding SelectedRequisition, Mode=TwoWay}"
@@ -148,14 +149,14 @@
                           VirtualizingPanel.IsVirtualizing="True">
                     <DataGrid.ContextMenu>
                         <ContextMenu>
-                            <MenuItem Header="编辑(对话框)" Click="Menu_EditRequisition_Click"/>
-                            <MenuItem Header="标记删除" Click="Menu_DeleteRequisition_Click"/>
+                            <MenuItem Header="{lex:Loc Plans_EditDialog}" Click="Menu_EditRequisition_Click"/>
+                            <MenuItem Header="{lex:Loc Plans_MarkDelete}" Click="Menu_DeleteRequisition_Click"/>
                             <Separator/>
-                            <MenuItem Header="复制行" Click="Menu_CopyReqRow_Click"/>
-                            <MenuItem Header="复制单元格" Click="Menu_CopyReqCell_Click"/>
-                            <MenuItem Header="粘贴" Click="Menu_PasteReq_Click"/>
+                            <MenuItem Header="{lex:Loc Common_CopyRow}" Click="Menu_CopyReqRow_Click"/>
+                            <MenuItem Header="{lex:Loc Common_CopyCell}" Click="Menu_CopyReqCell_Click"/>
+                            <MenuItem Header="{lex:Loc Common_Paste}" Click="Menu_PasteReq_Click"/>
                             <Separator/>
-                            <MenuItem Header="显示/隐藏列" x:Name="menu_req_columns" SubmenuOpened="Menu_ReqColumns_SubmenuOpened"/>
+                            <MenuItem Header="{lex:Loc Plans_ShowHideColumns}" x:Name="menu_req_columns" SubmenuOpened="Menu_ReqColumns_SubmenuOpened"/>
                         </ContextMenu>
                     </DataGrid.ContextMenu>
                     <DataGrid.CellStyle>
@@ -163,20 +164,20 @@
                     </DataGrid.CellStyle>
                     <DataGrid.RowStyle>
                         <Style TargetType="DataGridRow">
-                            <Setter Property="Background" Value="White"/>
+                            <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding Id}" Value="0">
-                                    <Setter Property="Background" Value="#FFFFF8E1"/>
+                                    <Setter Property="Background" Value="{DynamicResource StatusWarnBgBrush}"/>
                                 </DataTrigger>
                                 <!-- 选中行：很浅的灰色 -->
                                 <Trigger Property="IsSelected" Value="True">
-                                    <Setter Property="Background" Value="#FFF2F2F2"/>
+                                    <Setter Property="Background" Value="{DynamicResource TableRowSelectedBrush}"/>
                                 </Trigger>
                             </Style.Triggers>
                         </Style>
                     </DataGrid.RowStyle>
                     <DataGrid.Columns>
-                        <DataGridTemplateColumn Header="領用日期" Width="90" SortMemberPath="RequisitionDate">
+                        <DataGridTemplateColumn Header="{lex:Loc Plans_RequisitionDateTC}" Width="90" SortMemberPath="RequisitionDate">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <TextBlock Text="{Binding RequisitionDate, StringFormat={}{0:yyyy/M/d}}" Style="{StaticResource CenterText}"/>
@@ -188,9 +189,9 @@
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellEditingTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTextColumn Header="領料單据號" Binding="{Binding RequisitionNo, UpdateSourceTrigger=PropertyChanged}" Width="110" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
-                        <DataGridTextColumn Header="機種名稱" Binding="{Binding ModelName, UpdateSourceTrigger=PropertyChanged}" Width="130" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
-                        <DataGridTextColumn Header="領出數量" Binding="{Binding OutQty, UpdateSourceTrigger=PropertyChanged}" Width="70" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
+                        <DataGridTextColumn Header="{lex:Loc Plans_RequisitionDocNo}" Binding="{Binding RequisitionNo, UpdateSourceTrigger=PropertyChanged}" Width="110" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
+                        <DataGridTextColumn Header="{lex:Loc Plans_ModelNameTC}" Binding="{Binding ModelName, UpdateSourceTrigger=PropertyChanged}" Width="130" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
+                        <DataGridTextColumn Header="{lex:Loc Plans_IssueQty}" Binding="{Binding OutQty, UpdateSourceTrigger=PropertyChanged}" Width="70" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
                         <DataGridTemplateColumn Header="S/N" Width="170" SortMemberPath="SN">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
@@ -198,7 +199,7 @@
                                         <TextBlock x:Name="txtSn" Text="{Binding SN}" VerticalAlignment="Center"
                                                    TextTrimming="CharacterEllipsis" Visibility="Collapsed"/>
                                         <TextBlock x:Name="linkSn" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
-                                                   ToolTip="点击打开SN文件">
+                                                   ToolTip="{lex:Loc Plans_ClickOpenSN}">
                                             <Hyperlink Command="{Binding DataContext.OpenSnFileCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
                                                        CommandParameter="{Binding}">
                                                 <Run Text="{Binding SnFilePath, Mode=OneWay}"/>
@@ -217,10 +218,10 @@
                         <DataGridTextColumn Header="D/C" Binding="{Binding DC, UpdateSourceTrigger=PropertyChanged}" Width="50" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
                         <DataGridTextColumn Header="REV" Binding="{Binding Rev, UpdateSourceTrigger=PropertyChanged}" Width="50" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
                         <DataGridTextColumn Header="Work Order" Binding="{Binding WorkOrder, UpdateSourceTrigger=PropertyChanged}" Width="150" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
-                        <DataGridTextColumn Header="回线RT工令" Binding="{Binding ReturnRtOrder, UpdateSourceTrigger=PropertyChanged}" Width="100" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
-                        <DataGridTextColumn Header="回线数量" Binding="{Binding ReturnQty, UpdateSourceTrigger=PropertyChanged}" Width="65" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
-                        <DataGridTextColumn Header="线别" Binding="{Binding LineNo, UpdateSourceTrigger=PropertyChanged}" Width="50" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
-                        <DataGridTemplateColumn Header="回线日期" Width="90" SortMemberPath="ReturnDate">
+                        <DataGridTextColumn Header="{lex:Loc Plans_ReturnRTOrder}" Binding="{Binding ReturnRtOrder, UpdateSourceTrigger=PropertyChanged}" Width="100" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
+                        <DataGridTextColumn Header="{lex:Loc Plans_ReturnQty}" Binding="{Binding ReturnQty, UpdateSourceTrigger=PropertyChanged}" Width="65" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
+                        <DataGridTextColumn Header="{lex:Loc Plans_Line}" Binding="{Binding LineNo, UpdateSourceTrigger=PropertyChanged}" Width="50" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
+                        <DataGridTemplateColumn Header="{lex:Loc Plans_ReturnDate}" Width="90" SortMemberPath="ReturnDate">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <TextBlock Text="{Binding ReturnDate, StringFormat={}{0:yyyy/M/d}}" Style="{StaticResource CenterText}"/>
@@ -232,9 +233,9 @@
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellEditingTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTextColumn Header="入库单号" Binding="{Binding StockInNo, UpdateSourceTrigger=PropertyChanged}" Width="110" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
-                        <DataGridTextColumn Header="入库数量" Binding="{Binding StockInQty, UpdateSourceTrigger=PropertyChanged}" Width="65" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
-                        <DataGridTemplateColumn Header="入库日期" Width="90" SortMemberPath="StockInDate">
+                        <DataGridTextColumn Header="{lex:Loc Plans_StockInNo}" Binding="{Binding StockInNo, UpdateSourceTrigger=PropertyChanged}" Width="110" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
+                        <DataGridTextColumn Header="{lex:Loc Plans_StockInQty}" Binding="{Binding StockInQty, UpdateSourceTrigger=PropertyChanged}" Width="65" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
+                        <DataGridTemplateColumn Header="{lex:Loc Plans_StockInDate}" Width="90" SortMemberPath="StockInDate">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <TextBlock Text="{Binding StockInDate, StringFormat={}{0:yyyy/M/d}}" Style="{StaticResource CenterText}"/>
@@ -246,13 +247,13 @@
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellEditingTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTextColumn Header="备注" Binding="{Binding Remark, UpdateSourceTrigger=PropertyChanged}" Width="140" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
+                        <DataGridTextColumn Header="{lex:Loc Admin_Remark}" Binding="{Binding Remark, UpdateSourceTrigger=PropertyChanged}" Width="140" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
                     </DataGrid.Columns>
                 </DataGrid>
             </TabItem>
 
             <!--计划表-->
-            <TabItem Header="计划表">
+            <TabItem Header="{lex:Loc Plans_PlanTab}">
                 <DataGrid x:Name="dg_plans"
                           ItemsSource="{Binding PlansView}"
                           SelectedItem="{Binding SelectedPlan, Mode=TwoWay}"
@@ -269,18 +270,18 @@
                           VirtualizingPanel.IsVirtualizing="True">
                     <DataGrid.ContextMenu>
                         <ContextMenu>
-                            <MenuItem Header="编辑(对话框)" Click="Menu_EditPlan_Click"/>
-                            <MenuItem Header="标记删除" Click="Menu_DeletePlan_Click"/>
+                            <MenuItem Header="{lex:Loc Plans_EditDialog}" Click="Menu_EditPlan_Click"/>
+                            <MenuItem Header="{lex:Loc Plans_MarkDelete}" Click="Menu_DeletePlan_Click"/>
                             <Separator/>
-                            <MenuItem Header="打开报告文件夹" Click="Menu_OpenReportFolder_Click" ToolTip="打开该工作编号对应报告夹中的 Report 子文件夹"/>
-                            <MenuItem Header="打开报告概览" Click="Menu_OpenReportOverview_Click" ToolTip="打开该工作编号对应报告夹中的 Excel 概览文件"/>
-                            <MenuItem Header="打开一键报告" Click="Menu_OpenMainReport_Click" ToolTip="打开一键报告并将选中计划与对应领退数据填入相应位置"/>
+                            <MenuItem Header="{lex:Loc Plans_OpenReportFolder}" Click="Menu_OpenReportFolder_Click" ToolTip="{lex:Loc Plans_ToolTip_OpenFolder}"/>
+                            <MenuItem Header="{lex:Loc Plans_OpenOverview}" Click="Menu_OpenReportOverview_Click" ToolTip="{lex:Loc Plans_ToolTip_OpenOverview}"/>
+                            <MenuItem Header="{lex:Loc Plans_OpenMainReport}" Click="Menu_OpenMainReport_Click" ToolTip="{lex:Loc Plans_ToolTip_OpenMainReport}"/>
                             <Separator/>
-                            <MenuItem Header="复制行" Click="Menu_CopyPlanRow_Click"/>
-                            <MenuItem Header="复制单元格" Click="Menu_CopyPlanCell_Click"/>
-                            <MenuItem Header="粘贴" Click="Menu_PastePlan_Click"/>
+                            <MenuItem Header="{lex:Loc Common_CopyRow}" Click="Menu_CopyPlanRow_Click"/>
+                            <MenuItem Header="{lex:Loc Common_CopyCell}" Click="Menu_CopyPlanCell_Click"/>
+                            <MenuItem Header="{lex:Loc Common_Paste}" Click="Menu_PastePlan_Click"/>
                             <Separator/>
-                            <MenuItem Header="显示/隐藏列" x:Name="menu_plan_columns" SubmenuOpened="Menu_PlanColumns_SubmenuOpened"/>
+                            <MenuItem Header="{lex:Loc Plans_ShowHideColumns}" x:Name="menu_plan_columns" SubmenuOpened="Menu_PlanColumns_SubmenuOpened"/>
                         </ContextMenu>
                     </DataGrid.ContextMenu>
                     <DataGrid.CellStyle>
@@ -288,30 +289,30 @@
                     </DataGrid.CellStyle>
                     <DataGrid.RowStyle>
                         <Style TargetType="DataGridRow">
-                            <Setter Property="Background" Value="White"/>
+                            <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding Id}" Value="0">
-                                    <Setter Property="Background" Value="#FFFFF8E1"/>
+                                    <Setter Property="Background" Value="{DynamicResource StatusWarnBgBrush}"/>
                                 </DataTrigger>
                                 <!-- 选中行：很浅的灰色 -->
                                 <Trigger Property="IsSelected" Value="True">
-                                    <Setter Property="Background" Value="#FFF2F2F2"/>
+                                    <Setter Property="Background" Value="{DynamicResource TableRowSelectedBrush}"/>
                                 </Trigger>
                             </Style.Triggers>
                         </Style>
                     </DataGrid.RowStyle>
                     <DataGrid.Columns>
-                        <DataGridTemplateColumn Header="工作編號" Width="90" SortMemberPath="JobNo">
+                        <DataGridTemplateColumn Header="{lex:Loc Plans_WorkNumber}" Width="90" SortMemberPath="JobNo">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <TextBlock Text="{Binding JobNo}">
                                         <TextBlock.Style>
                                             <Style TargetType="TextBlock" BasedOn="{StaticResource CenterText}">
-                                                <Setter Property="Foreground" Value="Black"/>
+                                                <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
                                                 <Style.Triggers>
                                                     <!-- 无对应报告文件夹/概览：灰色区分（明显但不突兀，白/浅灰背景上均清晰） -->
                                                     <DataTrigger Binding="{Binding HasReportLink}" Value="False">
-                                                        <Setter Property="Foreground" Value="#FF808080"/>
+                                                        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
                                                     </DataTrigger>
                                                 </Style.Triggers>
                                             </Style>
@@ -325,51 +326,51 @@
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellEditingTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTemplateColumn Header="产品别" Width="80" SortMemberPath="Product">
+                        <DataGridTemplateColumn Header="{lex:Loc Plans_ProductType}" Width="80" SortMemberPath="Product">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <ComboBox ItemsSource="{Binding DataContext.CatalogProducts, RelativeSource={RelativeSource AncestorType=DataGrid}}"
                                               SelectedValue="{Binding Product, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
                                               VerticalContentAlignment="Center" BorderThickness="0"
-                                              ToolTip="产品别取自字典，如需新增请到管理模块添加"/>
+                                              ToolTip="{lex:Loc Plans_ProductTypeHint}"/>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTemplateColumn Header="客户别" Width="95" SortMemberPath="Customer">
+                        <DataGridTemplateColumn Header="{lex:Loc PlanEdit_Customer}" Width="95" SortMemberPath="Customer">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <ComboBox ItemsSource="{Binding DataContext.CatalogCustomers, RelativeSource={RelativeSource AncestorType=DataGrid}}"
                                               SelectedValue="{Binding Customer, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
                                               VerticalContentAlignment="Center" BorderThickness="0"
-                                              ToolTip="客户别取自字典，如需新增请到管理模块添加"/>
+                                              ToolTip="{lex:Loc Plans_CustomerHint}"/>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTextColumn Header="机种名称" Binding="{Binding ModelName, UpdateSourceTrigger=PropertyChanged}" Width="130" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
-                        <DataGridTemplateColumn Header="阶段" Width="65" SortMemberPath="Stage">
+                        <DataGridTextColumn Header="{lex:Loc Plans_ModelName}" Binding="{Binding ModelName, UpdateSourceTrigger=PropertyChanged}" Width="130" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
+                        <DataGridTemplateColumn Header="{lex:Loc Plans_Stage}" Width="65" SortMemberPath="Stage">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <ComboBox ItemsSource="{Binding DataContext.CatalogStages, RelativeSource={RelativeSource AncestorType=DataGrid}}"
                                               SelectedValue="{Binding Stage, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
                                               VerticalContentAlignment="Center" BorderThickness="0"
-                                              ToolTip="阶段取自字典，如需新增请到管理模块添加"/>
+                                              ToolTip="{lex:Loc Plans_StageHint}"/>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTemplateColumn Header="测试项目" Width="150" SortMemberPath="TestItem">
+                        <DataGridTemplateColumn Header="{lex:Loc Plans_TestItem}" Width="150" SortMemberPath="TestItem">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <ComboBox ItemsSource="{Binding DataContext.CatalogTestItems, RelativeSource={RelativeSource AncestorType=DataGrid}}"
                                               SelectedValue="{Binding TestItem, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
                                               IsEditable="False" VerticalContentAlignment="Center" BorderThickness="0"
-                                              ToolTip="测试项目取自字典，如需新增请到管理模块添加"/>
+                                              ToolTip="{lex:Loc Plans_TestItemHint}"/>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTextColumn Header="样品数" Binding="{Binding SampleSize, UpdateSourceTrigger=PropertyChanged}" Width="55" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
-                        <DataGridTextColumn Header="试验时间" Binding="{Binding TestPeriod, UpdateSourceTrigger=PropertyChanged}" Width="65" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
-                        <DataGridTextColumn Header="负责人" Binding="{Binding Owner, UpdateSourceTrigger=PropertyChanged}" Width="80" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
-                        <DataGridTemplateColumn Header="开始日期" Width="90" SortMemberPath="StartDate">
+                        <DataGridTextColumn Header="{lex:Loc PlanEdit_SampleQty}" Binding="{Binding SampleSize, UpdateSourceTrigger=PropertyChanged}" Width="55" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
+                        <DataGridTextColumn Header="{lex:Loc Admin_TestTime}" Binding="{Binding TestPeriod, UpdateSourceTrigger=PropertyChanged}" Width="65" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
+                        <DataGridTextColumn Header="{lex:Loc Plans_Owner}" Binding="{Binding Owner, UpdateSourceTrigger=PropertyChanged}" Width="80" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
+                        <DataGridTemplateColumn Header="{lex:Loc Plans_StartDate}" Width="90" SortMemberPath="StartDate">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <TextBlock Text="{Binding StartDate, StringFormat={}{0:yyyy/M/d}}" Style="{StaticResource CenterText}"/>
@@ -381,7 +382,7 @@
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellEditingTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTemplateColumn Header="结束日期" Width="90" SortMemberPath="EndDate">
+                        <DataGridTemplateColumn Header="{lex:Loc PlanEdit_EndDate}" Width="90" SortMemberPath="EndDate">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <TextBlock Text="{Binding EndDate, StringFormat={}{0:yyyy/M/d}}" Style="{StaticResource CenterText}"/>
@@ -393,17 +394,17 @@
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellEditingTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTemplateColumn Header="状况" Width="75" SortMemberPath="Status">
+                        <DataGridTemplateColumn Header="{lex:Loc Plans_Status}" Width="75" SortMemberPath="Status">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <ComboBox ItemsSource="{Binding DataContext.CatalogStatuses, RelativeSource={RelativeSource AncestorType=DataGrid}}"
                                               SelectedValue="{Binding Status, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
                                               VerticalContentAlignment="Center" BorderThickness="0"
-                                              ToolTip="状况仅可选 Ongoing / Close / Pending"/>
+                                              ToolTip="{lex:Loc Plans_StatusHint}"/>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTextColumn Header="备注" Binding="{Binding Remark, UpdateSourceTrigger=PropertyChanged}" Width="150" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
+                        <DataGridTextColumn Header="{lex:Loc Admin_Remark}" Binding="{Binding Remark, UpdateSourceTrigger=PropertyChanged}" Width="150" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
                     </DataGrid.Columns>
                 </DataGrid>
             </TabItem>
@@ -413,7 +414,7 @@
             <StatusBarItem Content="{Binding StatusMessage}"/>
             <Separator/>
             <StatusBarItem>
-                <TextBlock Text="{Binding PendingText}" Foreground="#FFB26A00" FontWeight="Bold"/>
+                <TextBlock Text="{Binding PendingText}" Foreground="{DynamicResource StatusWarnBrush}" FontWeight="Bold"/>
             </StatusBarItem>
         </StatusBar>
     </Grid>

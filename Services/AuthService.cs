@@ -244,8 +244,8 @@ namespace ORT一键报告.Services
         /// 当前显示名称（未登录为"游客"）
         /// </summary>
         public string CurrentDisplayName => CurrentUser == null
-            ? "游客"
-            : (CurrentUser.DisplayName ?? CurrentUser.Username) + $"({string.Join("/", CurrentRoles)})";
+            ? LanguageService.Get("Role_Guest")
+            : (CurrentUser.DisplayName ?? CurrentUser.Username) + $"({string.Join("/", CurrentRoles.Select(r => LanguageService.Get("Role_" + r)))})";
 
         /// <summary>
         /// 用于审计字段的操作者名称

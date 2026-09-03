@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ORT 管理系统 — UI 设计方案</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif; background: #f0f2f5; color: #1a1a2e; line-height: 1.6; }
+  
+  .hero {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    color: white; padding: 80px 40px; text-align: center;
+  }
+  .hero h1 { font-size: 2.8em; font-weight: 300; margin-bottom: 12px; letter-spacing: 2px; }
+  .hero .subtitle { font-size: 1.1em; opacity: 0.8; max-width: 700px; margin: 0 auto 30px; }
+  .hero .badge { display: inline-block; background: rgba(255,255,255,0.15); padding: 6px 18px; border-radius: 20px; font-size: 0.85em; margin: 4px; }
+  
+  .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
+  
+  .section-title { font-size: 1.6em; font-weight: 600; margin: 50px 0 20px; color: #1a1a2e; }
+  .section-title::after { content: ''; display: block; width: 60px; height: 3px; background: #0f3460; margin-top: 8px; border-radius: 2px; }
+  
+  .requirements {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 40px;
+  }
+  .req-card {
+    background: white; border-radius: 12px; padding: 28px; box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    border-left: 4px solid #0f3460;
+  }
+  .req-card h3 { font-size: 1.05em; margin-bottom: 8px; color: #0f3460; }
+  .req-card p { font-size: 0.92em; color: #555; }
+  
+  .proposals { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 28px; }
+  
+  .proposal-card {
+    background: white; border-radius: 16px; overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08); transition: transform 0.3s, box-shadow 0.3s;
+    cursor: pointer; text-decoration: none; color: inherit; display: block;
+  }
+  .proposal-card:hover { transform: translateY(-6px); box-shadow: 0 12px 40px rgba(0,0,0,0.15); }
+  
+  .proposal-preview {
+    height: 220px; display: flex; align-items: center; justify-content: center;
+    position: relative; overflow: hidden;
+  }
+  .proposal-preview .mock-window {
+    width: 85%; height: 80%; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  
+  /* Proposal 1: Fluent 2 */
+  .p1-preview { background: linear-gradient(135deg, #e8f4f8 0%, #d4e8f0 100%); }
+  .p1-preview .mock-window { background: rgba(255,255,255,0.85); backdrop-filter: blur(20px); }
+  .p1-preview .titlebar { background: rgba(255,255,255,0.6); height: 28px; display: flex; align-items: center; padding: 0 12px; font-size: 11px; color: #333; }
+  .p1-preview .sidebar { width: 40px; background: rgba(0,120,212,0.1); }
+  .p1-preview .content { flex: 1; padding: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .p1-preview .tile { background: rgba(0,120,212,0.08); border-radius: 6px; height: 50px; }
+  
+  /* Proposal 2: Material */
+  .p2-preview { background: linear-gradient(135deg, #e0f2f1 0%, #b2dfdb 100%); }
+  .p2-preview .mock-window { background: #fafafa; }
+  .p2-preview .titlebar { background: #00695C; height: 36px; display: flex; align-items: center; padding: 0 16px; font-size: 13px; color: white; font-weight: 500; }
+  .p2-preview .content { flex: 1; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+  .p2-preview .card { background: white; border-radius: 8px; height: 40px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+  
+  /* Proposal 3: Dark Lab */
+  .p3-preview { background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3e 100%); }
+  .p3-preview .mock-window { background: #12122a; border: 1px solid #2a2a4a; }
+  .p3-preview .titlebar { background: #1a1a3e; height: 28px; display: flex; align-items: center; padding: 0 12px; font-size: 11px; color: #8888cc; border-bottom: 1px solid #2a2a4a; }
+  .p3-preview .content { flex: 1; padding: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .p3-preview .tile { background: #1e1e3a; border: 1px solid #2a2a5a; border-radius: 6px; height: 50px; }
+  .p3-preview .tile.accent { border-color: #00d4ff; }
+  
+  .proposal-info { padding: 24px; }
+  .proposal-info h3 { font-size: 1.2em; margin-bottom: 6px; }
+  .proposal-info .tag { display: inline-block; font-size: 0.75em; padding: 3px 10px; border-radius: 12px; margin-right: 6px; margin-bottom: 8px; }
+  .proposal-info p { font-size: 0.9em; color: #666; margin-top: 8px; }
+  .proposal-info .library { font-size: 0.82em; color: #888; margin-top: 12px; padding-top: 12px; border-top: 1px solid #eee; }
+  .proposal-info .library code { background: #f5f5f5; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+  
+  .tag-fluent { background: #e3f2fd; color: #1565c0; }
+  .tag-material { background: #e0f2f1; color: #00695c; }
+  .tag-dark { background: #e8eaf6; color: #283593; }
+  .tag-wpf { background: #fff3e0; color: #e65100; }
+  
+  .comparison { margin-top: 50px; }
+  .comparison table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+  .comparison th { background: #1a1a2e; color: white; padding: 14px 16px; text-align: left; font-weight: 500; font-size: 0.9em; }
+  .comparison td { padding: 12px 16px; border-bottom: 1px solid #f0f0f0; font-size: 0.9em; }
+  .comparison tr:last-child td { border-bottom: none; }
+  .comparison .check { color: #2e7d32; font-weight: bold; }
+  .comparison .partial { color: #f57f17; }
+  
+  .footer { text-align: center; padding: 40px; color: #999; font-size: 0.85em; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>ORT 管理系统</h1>
+  <p class="subtitle">UI 现代化改造设计方案 — 为 ORT 实验室工作流量身定制的三套视觉方案</p>
+  <div>
+    <span class="badge">简约实用</span>
+    <span class="badge">商务风格</span>
+    <span class="badge">现代 UI</span>
+    <span class="badge">统一风格</span>
+    <span class="badge">4 人团队 + 客户查阅</span>
+  </div>
+</div>
+
+<div class="container">
+  <h2 class="section-title">设计需求</h2>
+  <div class="requirements">
+    <div class="req-card">
+      <h3>🎯 核心目标</h3>
+      <p>替代原有 ORT 实验室工作流，实现自动化领用、排程、报告制作与审核。界面简约实用，减少操作步骤。</p>
+    </div>
+    <div class="req-card">
+      <h3>👥 用户场景</h3>
+      <p>4 人内部团队日常使用 + 客户查阅报告。需要专业商务感，客户打开时留下良好印象。</p>
+    </div>
+    <div class="req-card">
+      <h3>🎨 视觉要求</h3>
+      <p>符合 2025 年现代 UI 设计趋势，所有窗口统一风格。支持浅色/深色主题切换。</p>
+    </div>
+    <div class="req-card">
+      <h3> 技术约束</h3>
+      <p>WPF (.NET Framework) 桌面应用。可通过 NuGet 添加 UI 库。需兼容 Windows 10/11。</p>
+    </div>
+  </div>
+
+  <h2 class="section-title">三套设计方案</h2>
+  <div class="proposals">
+    
+    <!-- Proposal 1 -->
+    <a href="proposal-1-fluent.html" class="proposal-card">
+      <div class="proposal-preview p1-preview">
+        <div class="mock-window">
+          <div class="titlebar">
+            <div class="sidebar"></div>
+            <span>ORT 管理系统</span>
+          </div>
+          <div class="content">
+            <div class="tile"></div>
+            <div class="tile"></div>
+            <div class="tile"></div>
+            <div class="tile"></div>
+          </div>
+        </div>
+      </div>
+      <div class="proposal-info">
+        <h3>方案一：Fluent 2 原生风格</h3>
+        <span class="tag tag-fluent">Windows 11 原生</span>
+        <span class="tag tag-wpf">WPF 最佳兼容</span>
+        <p>采用微软 Fluent Design System 2.0，Mica 毛玻璃材质，圆角控件，NavigationView 侧边栏导航。与 Windows 11 系统完美融合，用户零学习成本。</p>
+        <div class="library">推荐库：<code>iNKORE.UI.WPF.Modern</code>（NuGet）</div>
+      </div>
+    </a>
+
+    <!-- Proposal 2 -->
+    <a href="proposal-2-material.html" class="proposal-card">
+      <div class="proposal-preview p2-preview">
+        <div class="mock-window">
+          <div class="titlebar">ORT 管理系统</div>
+          <div class="content">
+            <div class="card"></div>
+            <div class="card"></div>
+            <div class="card"></div>
+          </div>
+        </div>
+      </div>
+      <div class="proposal-info">
+        <h3>方案二：Material Design 3 商务风</h3>
+        <span class="tag tag-material">Google MD3</span>
+        <span class="tag tag-wpf">卡片式布局</span>
+        <p>Google Material Design 3 设计语言，卡片式信息组织，Teal 绿色主色调，大量留白。商务感强，客户查阅时专业度高。适合数据展示和报告预览。</p>
+        <div class="library">推荐库：<code>MaterialDesignInXamlToolkit</code>（NuGet）</div>
+      </div>
+    </a>
+
+    <!-- Proposal 3 -->
+    <a href="proposal-3-dark-lab.html" class="proposal-card">
+      <div class="proposal-preview p3-preview">
+        <div class="mock-window">
+          <div class="titlebar">ORT 管理系统</div>
+          <div class="content">
+            <div class="tile accent"></div>
+            <div class="tile"></div>
+            <div class="tile"></div>
+            <div class="tile accent"></div>
+          </div>
+        </div>
+      </div>
+      <div class="proposal-info">
+        <h3>方案三：深色实验室专业风</h3>
+        <span class="tag tag-dark">深色主题</span>
+        <span class="tag tag-wpf">数据密集型</span>
+        <p>深色背景 + Cyan 蓝色强调色，减少屏幕眩光，适合长时间实验室操作。数据密度高但层次清晰，状态用颜色编码。科技感强，适合工程师审美。</p>
+        <div class="library">推荐库：<code>HandyControl</code> + 自定义主题</div>
+      </div>
+    </a>
+  </div>
+
+  <h2 class="section-title">方案对比</h2>
+  <div class="comparison">
+    <table>
+      <thead>
+        <tr><th>维度</th><th>方案一 Fluent 2</th><th>方案二 Material 3</th><th>方案三 深色实验室</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>视觉风格</strong></td><td>Windows 11 原生，毛玻璃质感</td><td>Google 风格，卡片+留白</td><td>深色科技风，高对比度</td></tr>
+        <tr><td><strong>商务感</strong></td><td class="check">★★★★ 专业自然</td><td class="check">★★★★★ 最商务</td><td>★★★ 偏技术感</td></tr>
+        <tr><td><strong>数据密度</strong></td><td class="partial">★★★ 适中</td><td class="partial">★★★ 适中</td><td class="check">★★★★★ 高</td></tr>
+        <tr><td><strong>客户印象</strong></td><td class="check">熟悉亲切</td><td class="check">专业高端</td><td>酷炫但可能过暗</td></tr>
+        <tr><td><strong>WPF 兼容性</strong></td><td class="check">★★★★★ 原生支持</td><td class="check">★★★★ 成熟库</td><td class="check">★★★★ 可定制</td></tr>
+        <tr><td><strong>开发成本</strong></td><td class="check">低（替换控件样式）</td><td class="partial">中（需调整布局）</td><td class="partial">中（自定义主题）</td></tr>
+        <tr><td><strong>长时间使用</strong></td><td class="partial">浅色可能疲劳</td><td class="partial">浅色可能疲劳</td><td class="check">深色护眼</td></tr>
+        <tr><td><strong>主题切换</strong></td><td class="check">内置浅色/深色</td><td class="check">内置浅色/深色</td><td>默认深色，可加浅色</td></tr>
+        <tr><td><strong>推荐场景</strong></td><td>通用办公，Windows 11 用户</td><td>客户频繁查阅，报告展示</td><td>实验室环境，工程师为主</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 class="section-title">推荐方案</h2>
+  <div class="req-card" style="border-left-color: #00695c; margin-top: 20px;">
+    <h3>⭐ 综合推荐：方案一 Fluent 2 + 可选深色主题</h3>
+    <p style="margin-top: 10px;">
+      <strong>理由：</strong>Fluent 2 是微软官方设计语言，与 Windows 系统完全一致，用户零学习成本。iNKORE.UI.WPF.Modern 库成熟稳定，集成简单（仅需 NuGet 安装 + App.xaml 配置）。
+      内置浅色/深色主题切换，满足实验室不同环境需求。NavigationView 侧边栏导航可优雅地组织所有功能模块（领退计划、报告、管理、审核、设置），
+      替代现有的 4 按钮布局，扩展性更好。商务感适中，客户查阅时不会觉得简陋。
+    </p>
+    <p style="margin-top: 10px;">
+      <strong>实施路径：</strong>安装 iNKORE.UI.WPF.Modern → App.xaml 引入主题资源 → 逐个窗口替换控件为 Modern 控件 → 调整布局为 NavigationView + Content 模式。
+      预计 2-3 天可完成全部窗口改造。
+    </p>
+  </div>
+</div>
+
+<div class="footer">
+  ORT 管理系统 UI 设计方案 · 2026-09-03 · 点击方案卡片查看完整界面 Mockup
+</div>
+
+</body>
+</html>

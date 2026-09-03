@@ -1,4 +1,4 @@
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using ORT一键报告.Services;
 using System;
 using System.Collections.Generic;
@@ -68,6 +68,8 @@ namespace ORT一键报告.Main.Views
             CollectTreeNodes(tv_settings);
 
             LoadFontOptions();
+            LoadLanguageOptions();
+            LoadThemeOptions();
             LoadValues();
 
             // 数据库路径仅管理员可修改
@@ -126,6 +128,28 @@ namespace ORT一键报告.Main.Views
             cb_fontSize.ItemsSource = new[] { 10, 11, 12, 13, 14, 15, 16, 18, 20, 22, 24, 28, 32 };
         }
 
+        private void LoadLanguageOptions()
+        {
+            cb_language.ItemsSource = LanguageService.SupportedLanguages;
+            cb_language.SelectedValuePath = "Code";
+            string current = LanguageService.GetCurrentLanguage();
+            foreach (var lang in LanguageService.SupportedLanguages)
+            {
+                if (current.StartsWith(lang.Code))
+                {
+                    cb_language.SelectedValue = lang.Code;
+                    break;
+                }
+            }
+        }
+
+        private void LoadThemeOptions()
+        {
+            cb_theme.ItemsSource = ThemeService.SupportedThemes;
+            cb_theme.SelectedValuePath = "Code";
+            cb_theme.SelectedValue = ThemeService.CurrentTheme;
+        }
+
         private void LoadValues()
         {
             Models.AppSettings settings = _settings.Settings;
@@ -162,7 +186,7 @@ namespace ORT一键报告.Main.Views
             }
             else
             {
-                _ = MessageBox.Show("字号无效，请输入 8~72 之间的数字。", "提示");
+                _ = MessageBox.Show(LocalizationHelper.Get("Msg_InvalidFontSize"), LanguageService.Get("Cap_Info"));
                 return false;
             }
 
@@ -193,12 +217,30 @@ namespace ORT一键报告.Main.Views
                 {
                     _settings.SetDatabasePath(dbPath);
                     _initialDbPath = dbPath;
-                    _ = MessageBox.Show("数据库路径已保存，重启程序后生效。", "提示");
+                    _ = MessageBox.Show(LocalizationHelper.Get("Msg_DBPathSaved"), LanguageService.Get("Cap_Info"));
                 }
             }
             return true;
         }
 
+        private void Cb_Language_SelectionChanged(object sender, SelectionChangedEventArgs e)
+                {
+                    if (_loading || cb_language.SelectedValue is not string code)
+                    {
+                        return;
+                    }
+                    LanguageService.SetLanguage(code);
+                }
+        
+                private void Cb_Theme_SelectionChanged(object sender, SelectionChangedEventArgs e)
+                {
+                    if (_loading || cb_theme.SelectedValue is not string code)
+                    {
+                        return;
+                    }
+                    ThemeService.ApplyTheme(code);
+                }
+        
         private void Btn_Save_Click(object sender, RoutedEventArgs e)
         {
             if (ApplyAll())
@@ -241,7 +283,7 @@ namespace ORT一键报告.Main.Views
             {
                 return;
             }
-            string dir = _pathService.OpenPathDialog("选择目录", initPath: target.Text, isDir: true);
+            string dir = _pathService.OpenPathDialog(LanguageService.Get("Dlg_SelectDir"), initPath: target.Text, isDir: true);
             if (dir != null)
             {
                 target.Text = dir;
@@ -254,7 +296,7 @@ namespace ORT一键报告.Main.Views
             {
                 return;
             }
-            string dir = _pathService.OpenPathDialog("选择数据库保存目录", initPath: txt_dbpath.Text, isDir: true);
+            string dir = _pathService.OpenPathDialog(LanguageService.Get("Dlg_SelectDBDir"), initPath: txt_dbpath.Text, isDir: true);
             if (dir != null)
             {
                 txt_dbpath.Text = dir;

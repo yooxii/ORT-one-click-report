@@ -2,6 +2,7 @@
 using NLog;
 using OfficeOpenXml;
 using ORT一键报告.Models;
+using ORT一键报告.Services;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -366,7 +367,7 @@ namespace ORT一键报告.Reports.Views
                 if (startCell.Row >= maxSpecCell.Row)
                 {
                     _logger.Warn("无ATE数据");
-                    _ = MessageBox.Show("无ATE数据");
+                    _ = MessageBox.Show(LocalizationHelper.Get("Msg_NoATEData"));
                     return;
                 }
 
@@ -400,7 +401,7 @@ namespace ORT一键报告.Reports.Views
             catch (Exception ex)
             {
                 _logger.Error(ex, "读取ATE数据发生错误");
-                _ = MessageBox.Show(ex + "读取ATE数据发生错误", "错误");
+                _ = MessageBox.Show(ex + "读取ATE数据发生错误", LanguageService.Get("Cap_Error"));
             }
         }
 
@@ -454,8 +455,8 @@ namespace ORT一键报告.Reports.Views
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "ATE报告生成失败");
-                _ = MessageBox.Show(ex.Message, "ATE报告生成失败");
+                _logger.Error(ex, LanguageService.Get("Cap_ATEReportFailed"));
+                _ = MessageBox.Show(ex.Message, LanguageService.Get("Cap_ATEReportFailed"));
             }
         }
 
@@ -548,7 +549,7 @@ namespace ORT一键报告.Reports.Views
             };
             if (ateDialog.ShowDialog() == true)
             {
-                PopupWindow popup = new PopupWindow() { Title = "处理中", Message = "请耐心等待..." };
+                PopupWindow popup = new PopupWindow() { Title = LanguageService.Get("Title_Processing"), Message = "请耐心等待..." };
 
                 try
                 {
@@ -560,7 +561,7 @@ namespace ORT一键报告.Reports.Views
                         if (string.IsNullOrEmpty(ATEFilePath))
                         {
                             _logger.Warn("ATE数据路径选择错误");
-                            _ = MessageBox.Show("ATE数据路径选择错误", "错误");
+                            _ = MessageBox.Show(LocalizationHelper.Get("Msg_ATEPathError"), LanguageService.Get("Cap_Error"));
                             throw new Exception("ATE数据路径选择错误");
                         }
 
@@ -577,7 +578,7 @@ namespace ORT一键报告.Reports.Views
             else
             {
                 _logger.Warn("未选择ATE数据文件");
-                _ = MessageBox.Show("未选择ATE数据文件");
+                _ = MessageBox.Show(LocalizationHelper.Get("Msg_NoATEFile"));
             }
         }
 

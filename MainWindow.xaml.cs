@@ -39,6 +39,7 @@ namespace ORT一键报告
 
             MainVM = App.ServiceProvider.GetRequiredService<MainViewModel>();
             DataContext = MainVM;
+            MainVM.SubscribeLanguageChange();
 
             Loaded += (s, e) => Activate();
             // 启动时应用设置字体，并在设置变更时实时刷新
@@ -66,14 +67,14 @@ namespace ORT一键报告
         private void UpdateUIByPermission()
         {
             menu_account.Header = _auth.CurrentUser == null
-                ? "登录"
-                : $"注销 [{_auth.CurrentDisplayName}]";
+                ? LanguageService.Get("Main_Login")
+                : string.Format(LanguageService.Get("Main_LogoutFormat"), _auth.CurrentDisplayName);
             btn_report.IsEnabled = _permission.Can("report.use");
             btn_admin.IsEnabled = _permission.Can("admin.manage");
             btn_review.IsEnabled = _permission.Can("review.view");
             btn_review.Content = _permission.Can("review.view")
-                ? $"审核 ({_reviewService.PendingCount()})"
-                : "审核";
+                ? string.Format(LanguageService.Get("Main_ReviewCountFormat"), _reviewService.PendingCount())
+                : LanguageService.Get("Main_Review");
 
             // 权限变化时关闭当前无权限访问的子窗口
             CloseUnauthorizedWindows();
@@ -129,7 +130,7 @@ namespace ORT一键报告
             if (_auth.CurrentUser != null)
             {
                 // 已登录 → 注销
-                if (MessageBox.Show($"确认注销当前用户 [{_auth.CurrentDisplayName}]？", "注销确认",
+                if (MessageBox.Show(string.Format(LanguageService.Get("Msg_ConfirmLogout"), _auth.CurrentDisplayName), LanguageService.Get("Cap_LogoutConfirm"),
                     MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
                 {
                     _auth.Logout();
@@ -171,7 +172,7 @@ namespace ORT一键报告
         {
             if (!_permission.Can("report.use"))
             {
-                _ = MessageBox.Show("一键报告需要技术员及以上权限，请先登录。", "无权限");
+                _ = MessageBox.Show(LocalizationHelper.Get("Msg_ReportNeedLogin"), LanguageService.Get("Cap_NoPermission"));
                 return;
             }
             WindowMainReport windowMainReport = new();
@@ -203,7 +204,7 @@ namespace ORT一键报告
         {
             if (!_permission.Can("admin.manage"))
             {
-                _ = MessageBox.Show("管理模块需要管理员权限，请先登录。", "无权限");
+                _ = MessageBox.Show(LocalizationHelper.Get("Msg_AdminNeedLogin"), LanguageService.Get("Cap_NoPermission"));
                 return;
             }
             WindowAdmin windowAdmin = new()
@@ -216,7 +217,7 @@ namespace ORT一键报告
         {
             if (!_permission.Can("review.view"))
             {
-                _ = MessageBox.Show("审核模块需要审核员及以上权限，请先登录。", "无权限");
+                _ = MessageBox.Show(LocalizationHelper.Get("Msg_ReviewNeedLogin"), LanguageService.Get("Cap_NoPermission"));
                 return;
             }
             WindowReview windowReview = new()

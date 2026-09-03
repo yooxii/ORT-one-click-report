@@ -87,7 +87,7 @@
                     <TextBox x:Name="text_TestDescription" Text="{Binding TestDescription.Data, UpdateSourceTrigger=PropertyChanged}" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto">
                     </TextBox>
                 </GroupBox>
-                <Border BorderBrush="Gray" BorderThickness="1" Margin="6" Grid.Column="1">
+                <Border BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="1" Margin="6" Grid.Column="1">
                     <Image x:Name="pic_TestDescription" Source="{Binding PicTestDescription,ElementName=root}"/>
                 </Border>
             </Grid>

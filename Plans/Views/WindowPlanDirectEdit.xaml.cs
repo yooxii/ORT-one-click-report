@@ -1,4 +1,4 @@
-using NLog;
+﻿using NLog;
 using ORT一键报告.Models;
 using ORT一键报告.Services;
 using ORT一键报告.Utils;
@@ -173,27 +173,27 @@ namespace ORT一键报告.Plans.Views
             // 必填校验
             if (cb_testItem.SelectedItem == null)
             {
-                _ = MessageBox.Show("請選擇測試項目", "提示");
+                _ = MessageBox.Show(LocalizationHelper.Get("Msg_SelectTestItem"), LanguageService.Get("Cap_Info"));
                 return;
             }
             if (dp_startDate.SelectedDate == null)
             {
-                _ = MessageBox.Show("請填寫開始時間", "提示");
+                _ = MessageBox.Show(LocalizationHelper.Get("Msg_FillStartTime"), LanguageService.Get("Cap_Info"));
                 return;
             }
             if (cb_stage.SelectedItem == null)
             {
-                _ = MessageBox.Show("請選擇階段", "提示");
+                _ = MessageBox.Show(LocalizationHelper.Get("Msg_SelectStage"), LanguageService.Get("Cap_Info"));
                 return;
             }
             if (string.IsNullOrWhiteSpace(txt_model.Text))
             {
-                _ = MessageBox.Show("請填寫機種名稱", "提示");
+                _ = MessageBox.Show(LocalizationHelper.Get("Msg_FillModelName"), LanguageService.Get("Cap_Info"));
                 return;
             }
             if (string.IsNullOrWhiteSpace(txt_remark.Text))
             {
-                _ = MessageBox.Show("請填寫備註", "提示");
+                _ = MessageBox.Show(LocalizationHelper.Get("Msg_FillRemark"), LanguageService.Get("Cap_Info"));
                 return;
             }
 
@@ -205,13 +205,13 @@ namespace ORT一键报告.Plans.Views
             string jobNoError = PlanValidation.ValidateJobNo(jobNo);
             if (jobNoError != null)
             {
-                _ = MessageBox.Show(jobNoError, "格式校验失败");
+                _ = MessageBox.Show(jobNoError, LanguageService.Get("Cap_FormatValidationFailed"));
                 return;
             }
             long selfId = _editTarget?.Id ?? 0;
             if (_db.FreeSql.Select<Plan>().Where(p => p.JobNo == jobNo && p.Id != selfId).Any())
             {
-                _ = MessageBox.Show($"工作編號 [{jobNo}] 已存在", "提示");
+                _ = MessageBox.Show($"工作編號 [{jobNo}] 已存在", LanguageService.Get("Cap_Info"));
                 return;
             }
 

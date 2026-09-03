@@ -1,0 +1,71 @@
+<!--
+  DarkLabTheme.xaml — 方案三：深色实验室专业风
+  深色背景 #0A0A1A、Cyan 强调色 #00D4FF、高对比度、护眼
+-->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- 字体 -->
+    <FontFamily x:Key="FontFamilyUI">Inter, Segoe UI, Microsoft YaHei UI, Microsoft YaHei</FontFamily>
+    <FontFamily x:Key="FontFamilyData">Cascadia Mono, Consolas, Microsoft YaHei UI</FontFamily>
+
+    <!-- 圆角 -->
+    <CornerRadius x:Key="CornerRadiusSmall">6</CornerRadius>
+    <CornerRadius x:Key="CornerRadiusButton">8</CornerRadius>
+    <CornerRadius x:Key="CornerRadiusCard">10</CornerRadius>
+    <CornerRadius x:Key="CornerRadiusLarge">14</CornerRadius>
+    <sys:Double x:Key="DisabledOpacity" xmlns:sys="clr-namespace:System;assembly=mscorlib">0.4</sys:Double>
+
+    <!-- 背景层级（深色） -->
+    <SolidColorBrush x:Key="WindowBackgroundBrush" Color="#FF0A0A1A"/>
+    <SolidColorBrush x:Key="CardBackgroundBrush" Color="#FF12122A"/>
+    <SolidColorBrush x:Key="AlternateRowBrush" Color="#FF101026"/>
+    <SolidColorBrush x:Key="SidebarBackgroundBrush" Color="#FF0E0E24"/>
+    <SolidColorBrush x:Key="HeaderBackgroundBrush" Color="#FF0E0E24"/>
+    <SolidColorBrush x:Key="TableHeaderForegroundBrush" Color="#FF8888AA"/>
+
+    <!-- 主色 Cyan -->
+    <SolidColorBrush x:Key="PrimaryBrush" Color="#FF00D4FF"/>
+    <SolidColorBrush x:Key="PrimaryHoverBrush" Color="#FF33DDFF"/>
+    <SolidColorBrush x:Key="PrimaryForegroundBrush" Color="#FF0A0A14"/>
+
+    <!-- 按钮（深色底 + 边框，hover 泛青光） -->
+    <SolidColorBrush x:Key="ButtonBackgroundBrush" Color="#FF16163A"/>
+    <SolidColorBrush x:Key="ButtonHoverBrush" Color="#FF1E1E4A"/>
+    <SolidColorBrush x:Key="ButtonPressedBrush" Color="#FF26265A"/>
+    <SolidColorBrush x:Key="ButtonBorderBrush" Color="#FF2A2A5A"/>
+    <SolidColorBrush x:Key="ButtonForegroundBrush" Color="#FFCCCCDD"/>
+
+    <!-- 文字 -->
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="#FFE0E0F0"/>
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="#FF8888AA"/>
+    <SolidColorBrush x:Key="BorderSubtleBrush" Color="#FF2A2A4A"/>
+
+    <!-- 输入框 -->
+    <SolidColorBrush x:Key="InputBackgroundBrush" Color="#FF0E0E24"/>
+    <SolidColorBrush x:Key="InputForegroundBrush" Color="#FFE0E0F0"/>
+    <SolidColorBrush x:Key="InputBorderBrush" Color="#FF2A2A5A"/>
+    <SolidColorBrush x:Key="InputFocusBorderBrush" Color="#FF00D4FF"/>
+
+    <!-- 表格选中/悬停 -->
+    <SolidColorBrush x:Key="TableRowHoverBrush" Color="#FF16163A"/>
+    <SolidColorBrush x:Key="TableRowSelectedBrush" Color="#FF1A2A4A"/>
+    <SolidColorBrush x:Key="TableCellSelectedBrush" Color="#FF1E3A5A"/>
+
+    <!-- 下拉项 -->
+    <SolidColorBrush x:Key="ItemHoverBrush" Color="#FF1A1A3E"/>
+    <SolidColorBrush x:Key="ItemSelectedBrush" Color="#FF16304A"/>
+
+    <!-- 状态色（深色背景适配的亮色） -->
+    <SolidColorBrush x:Key="StatusOkBrush" Color="#FF4CAF50"/>
+    <SolidColorBrush x:Key="StatusOkBgBrush" Color="#FF14291A"/>
+    <SolidColorBrush x:Key="StatusWarnBrush" Color="#FFFF9800"/>
+    <SolidColorBrush x:Key="StatusWarnBgBrush" Color="#FF2E2010"/>
+    <SolidColorBrush x:Key="StatusErrorBrush" Color="#FFF44336"/>
+    <SolidColorBrush x:Key="StatusErrorBgBrush" Color="#FF2E1512"/>
+
+    <!-- 菜单 -->
+    <SolidColorBrush x:Key="MenuBackgroundBrush" Color="#FF12122A"/>
+    <SolidColorBrush x:Key="MenuForegroundBrush" Color="#FFCCCCDD"/>
+
+</ResourceDictionary>

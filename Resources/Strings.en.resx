@@ -21,1150 +21,1150 @@
   <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
   <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
   <data name="Common_OK" xml:space="preserve">
-    <value>确定</value>
+    <value>OK</value>
   </data>
   <data name="Common_Cancel" xml:space="preserve">
-    <value>取消</value>
+    <value>Cancel</value>
   </data>
   <data name="Common_Save" xml:space="preserve">
-    <value>保存</value>
+    <value>Save</value>
   </data>
   <data name="Common_Apply" xml:space="preserve">
-    <value>应用</value>
+    <value>Apply</value>
   </data>
   <data name="Common_Close" xml:space="preserve">
-    <value>关闭</value>
+    <value>Close</value>
   </data>
   <data name="Common_Delete" xml:space="preserve">
-    <value>删除</value>
+    <value>Delete</value>
   </data>
   <data name="Common_Edit" xml:space="preserve">
-    <value>编辑</value>
+    <value>Edit</value>
   </data>
   <data name="Common_Add" xml:space="preserve">
-    <value>新增</value>
+    <value>Add</value>
   </data>
   <data name="Common_Refresh" xml:space="preserve">
-    <value>刷新</value>
+    <value>Refresh</value>
   </data>
   <data name="Common_Browse" xml:space="preserve">
-    <value>浏览</value>
+    <value>Browse</value>
   </data>
   <data name="Common_BrowseEllipsis" xml:space="preserve">
-    <value>浏览...</value>
+    <value>Browse...</value>
   </data>
   <data name="Common_Open" xml:space="preserve">
-    <value>打开</value>
+    <value>Open</value>
   </data>
   <data name="Common_Select" xml:space="preserve">
-    <value>选择</value>
+    <value>Select</value>
   </data>
   <data name="Common_Reset" xml:space="preserve">
-    <value>重置</value>
+    <value>Reset</value>
   </data>
   <data name="Common_Preview" xml:space="preserve">
-    <value>预览</value>
+    <value>Preview</value>
   </data>
   <data name="Common_All" xml:space="preserve">
-    <value>全部</value>
+    <value>All</value>
   </data>
   <data name="Common_PleaseSelect" xml:space="preserve">
-    <value>请选择</value>
+    <value>Please select</value>
   </data>
   <data name="Common_Exit" xml:space="preserve">
-    <value>退出</value>
+    <value>Exit</value>
   </data>
   <data name="Common_SaveAs" xml:space="preserve">
-    <value>另存为</value>
+    <value>Save As</value>
   </data>
   <data name="Common_Create" xml:space="preserve">
-    <value>制作</value>
+    <value>Create</value>
   </data>
   <data name="Common_Complete" xml:space="preserve">
-    <value>完成</value>
+    <value>Complete</value>
   </data>
   <data name="Common_Approve" xml:space="preserve">
-    <value>通过</value>
+    <value>Approve</value>
   </data>
   <data name="Common_Reject" xml:space="preserve">
-    <value>驳回</value>
+    <value>Reject</value>
   </data>
   <data name="Common_UploadFile" xml:space="preserve">
-    <value>上传文件</value>
+    <value>Upload File</value>
   </data>
   <data name="Common_SelectFileEllipsis" xml:space="preserve">
-    <value>选择文件...</value>
+    <value>Select File...</value>
   </data>
   <data name="Common_Paste" xml:space="preserve">
-    <value>粘贴</value>
+    <value>Paste</value>
   </data>
   <data name="Common_CopyRow" xml:space="preserve">
-    <value>复制行</value>
+    <value>Copy Row</value>
   </data>
   <data name="Common_CopyCell" xml:space="preserve">
-    <value>复制单元格</value>
+    <value>Copy Cell</value>
   </data>
   <data name="Common_Search" xml:space="preserve">
-    <value>搜索</value>
+    <value>Search</value>
   </data>
   <data name="Common_Filter" xml:space="preserve">
-    <value>筛选</value>
+    <value>Filter</value>
   </data>
   <data name="Plans_Title" xml:space="preserve">
-    <value>领退和计划</value>
+    <value>Return &amp; Plan</value>
   </data>
   <data name="Plans_RequisitionSearch" xml:space="preserve">
-    <value>领退搜索</value>
+    <value>Return Search</value>
   </data>
   <data name="Plans_PlanSearch" xml:space="preserve">
-    <value>计划搜索</value>
+    <value>Plan Search</value>
   </data>
   <data name="Plans_FilterRequisition" xml:space="preserve">
-    <value>按机种/单据号/工令/SN等筛选领退表</value>
+    <value>Filter returns by model/doc number/work order/SN etc.</value>
   </data>
   <data name="Plans_FilterPlan" xml:space="preserve">
-    <value>按机种/工作编号/测试项目等筛选计划表</value>
+    <value>Filter plans by model/work number/test item etc.</value>
   </data>
   <data name="Plans_AddRequisition" xml:space="preserve">
-    <value>领退新增</value>
+    <value>Add Return</value>
   </data>
   <data name="Plans_AddPlan" xml:space="preserve">
-    <value>计划新增</value>
+    <value>Add Plan</value>
   </data>
   <data name="Plans_AddPlanDirect" xml:space="preserve">
-    <value>直接新增非领用计划（QRT前缀）</value>
+    <value>Add non-requisition plan (QRT prefix)</value>
   </data>
   <data name="Plans_AddRequisitionWithPlan" xml:space="preserve">
-    <value>新增领退记录并同步新增计划</value>
+    <value>Add return record and sync new plan</value>
   </data>
   <data name="Plans_SubmitSave" xml:space="preserve">
-    <value>提交保存</value>
+    <value>Submit &amp; Save</value>
   </data>
   <data name="Plans_ToolTip_SubmitSave" xml:space="preserve">
-    <value>将暂存的修改写入数据库并记录变更日志</value>
+    <value>Write staged changes to database and log</value>
   </data>
   <data name="Plans_Discard" xml:space="preserve">
-    <value>丢弃修改</value>
+    <value>Discard</value>
   </data>
   <data name="Plans_ToolTip_Discard" xml:space="preserve">
-    <value>放弃所有暂存修改，还原为数据库状态</value>
+    <value>Discard all staged changes, restore to database state</value>
   </data>
   <data name="Plans_ToolTip_Reload" xml:space="preserve">
-    <value>重新加载数据（会丢弃未提交修改）</value>
+    <value>Reload data (discards uncommitted changes)</value>
   </data>
   <data name="Plans_ExportRequisition" xml:space="preserve">
-    <value>导出领退表</value>
+    <value>Export Returns</value>
   </data>
   <data name="Plans_ToolTip_ExportReq" xml:space="preserve">
-    <value>导出为成品領退管理表格式</value>
+    <value>Export in finished product return management format</value>
   </data>
   <data name="Plans_ExportPlan" xml:space="preserve">
-    <value>导出计划表</value>
+    <value>Export Plans</value>
   </data>
   <data name="Plans_ToolTip_ExportPlan" xml:space="preserve">
-    <value>导出为 ORT Test Schedule 格式</value>
+    <value>Export as ORT Test Schedule format</value>
   </data>
   <data name="Plans_ReturnTransfer" xml:space="preserve">
-    <value>回线转移单</value>
+    <value>Return Transfer</value>
   </data>
   <data name="Plans_ToolTip_ReturnTransfer" xml:space="preserve">
-    <value>打开回线转移单工具</value>
+    <value>Open return transfer tool</value>
   </data>
   <data name="Plans_EditSelected" xml:space="preserve">
-    <value>编辑选中记录</value>
+    <value>Edit Selected</value>
   </data>
   <data name="Plans_EditDialog" xml:space="preserve">
-    <value>编辑(对话框)</value>
+    <value>Edit (Dialog)</value>
   </data>
   <data name="Plans_MarkDelete" xml:space="preserve">
-    <value>标记删除</value>
+    <value>Mark Delete</value>
   </data>
   <data name="Plans_ShowHideColumns" xml:space="preserve">
-    <value>显示/隐藏列</value>
+    <value>Show/Hide Columns</value>
   </data>
   <data name="Plans_OpenReportFolder" xml:space="preserve">
-    <value>打开报告文件夹</value>
+    <value>Open Report Folder</value>
   </data>
   <data name="Plans_ToolTip_OpenFolder" xml:space="preserve">
-    <value>打开该工作编号对应报告夹中的 Report 子文件夹</value>
+    <value>Open Report subfolder for this work number</value>
   </data>
   <data name="Plans_OpenOverview" xml:space="preserve">
-    <value>打开报告概览</value>
+    <value>Open Report Overview</value>
   </data>
   <data name="Plans_ToolTip_OpenOverview" xml:space="preserve">
-    <value>打开该工作编号对应报告夹中的 Excel 概览文件</value>
+    <value>Open Excel overview for this work number</value>
   </data>
   <data name="Plans_OpenMainReport" xml:space="preserve">
-    <value>打开一键报告</value>
+    <value>Open One-Click Report</value>
   </data>
   <data name="Plans_ToolTip_OpenMainReport" xml:space="preserve">
-    <value>打开一键报告并将选中计划与对应领退数据填入相应位置</value>
+    <value>Open one-click report and fill in selected plan and return data</value>
   </data>
   <data name="Plans_ClickOpenSN" xml:space="preserve">
-    <value>点击打开SN文件</value>
+    <value>Click to open SN file</value>
   </data>
   <data name="Plans_DeleteFilter" xml:space="preserve">
-    <value>删除该筛选条件</value>
+    <value>Delete this filter</value>
   </data>
   <data name="Plans_SelectFieldForFilter" xml:space="preserve">
-    <value>选择字段以添加计划表筛选条件</value>
+    <value>Select field to add plan filter</value>
   </data>
   <data name="Plans_ClickExpandFilter" xml:space="preserve">
-    <value>点击展开筛选列表</value>
+    <value>Click to expand filter list</value>
   </data>
   <data name="Plans_RequisitionTab" xml:space="preserve">
-    <value>领退表</value>
+    <value>Returns</value>
   </data>
   <data name="Plans_PlanTab" xml:space="preserve">
-    <value>计划表</value>
+    <value>Plans</value>
   </data>
   <data name="Plans_ModelName" xml:space="preserve">
-    <value>机种名称</value>
+    <value>Model Name</value>
   </data>
   <data name="Plans_ModelNameTC" xml:space="preserve">
-    <value>機種名稱</value>
+    <value>Model Name</value>
   </data>
   <data name="Plans_WorkNumber" xml:space="preserve">
-    <value>工作編號</value>
+    <value>Work Number</value>
   </data>
   <data name="Plans_TestItem" xml:space="preserve">
-    <value>测试项目</value>
+    <value>Test Item</value>
   </data>
   <data name="Plans_TestItemHint" xml:space="preserve">
-    <value>测试项目取自字典，如需新增请到管理模块添加</value>
+    <value>Test items from dictionary. Add in Admin module.</value>
   </data>
   <data name="Plans_ProductType" xml:space="preserve">
-    <value>产品别</value>
+    <value>Product Type</value>
   </data>
   <data name="Plans_ProductTypeHint" xml:space="preserve">
-    <value>产品别取自字典，如需新增请到管理模块添加</value>
+    <value>Product types from dictionary. Add in Admin module.</value>
   </data>
   <data name="Plans_Stage" xml:space="preserve">
-    <value>阶段</value>
+    <value>Stage</value>
   </data>
   <data name="Plans_StageHint" xml:space="preserve">
-    <value>阶段取自字典，如需新增请到管理模块添加</value>
+    <value>Stages from dictionary. Add in Admin module.</value>
   </data>
   <data name="Plans_CustomerHint" xml:space="preserve">
-    <value>客户别取自字典，如需新增请到管理模块添加</value>
+    <value>Customer types from dictionary. Add in Admin module.</value>
   </data>
   <data name="Plans_Owner" xml:space="preserve">
-    <value>负责人</value>
+    <value>Owner</value>
   </data>
   <data name="Plans_StartDate" xml:space="preserve">
-    <value>开始日期</value>
+    <value>Start Date</value>
   </data>
   <data name="Plans_EndDate" xml:space="preserve">
-    <value>截止日期</value>
+    <value>End Date</value>
   </data>
   <data name="Plans_FromDate" xml:space="preserve">
-    <value>起始日期</value>
+    <value>From Date</value>
   </data>
   <data name="Plans_RequisitionDate" xml:space="preserve">
-    <value>领用日期</value>
+    <value>Requisition Date</value>
   </data>
   <data name="Plans_RequisitionDocNo" xml:space="preserve">
-    <value>領料單据號</value>
+    <value>Requisition Doc No.</value>
   </data>
   <data name="Plans_IssueQty" xml:space="preserve">
-    <value>領出數量</value>
+    <value>Issue Qty</value>
   </data>
   <data name="Plans_StockInNo" xml:space="preserve">
-    <value>入库单号</value>
+    <value>Stock-in No.</value>
   </data>
   <data name="Plans_StockInDate" xml:space="preserve">
-    <value>入库日期</value>
+    <value>Stock-in Date</value>
   </data>
   <data name="Plans_StockInQty" xml:space="preserve">
-    <value>入库数量</value>
+    <value>Stock-in Qty</value>
   </data>
   <data name="Plans_ReturnDate" xml:space="preserve">
-    <value>回线日期</value>
+    <value>Return Date</value>
   </data>
   <data name="Plans_ReturnQty" xml:space="preserve">
-    <value>回线数量</value>
+    <value>Return Qty</value>
   </data>
   <data name="Plans_ReturnRTOrder" xml:space="preserve">
-    <value>回线RT工令</value>
+    <value>Return RT Order</value>
   </data>
   <data name="Plans_Line" xml:space="preserve">
-    <value>线别</value>
+    <value>Line</value>
   </data>
   <data name="Plans_Status" xml:space="preserve">
-    <value>状况</value>
+    <value>Status</value>
   </data>
   <data name="Plans_StatusHint" xml:space="preserve">
-    <value>状况仅可选 Ongoing / Close / Pending</value>
+    <value>Status: Ongoing / Close / Pending only</value>
   </data>
   <data name="Admin_Title" xml:space="preserve">
-    <value>管理</value>
+    <value>Admin</value>
   </data>
   <data name="Admin_UserTab" xml:space="preserve">
-    <value>人员管理</value>
+    <value>User Management</value>
   </data>
   <data name="Admin_CustomerTab" xml:space="preserve">
-    <value>客户管理</value>
+    <value>Customer Management</value>
   </data>
   <data name="Admin_TestItemTab" xml:space="preserve">
-    <value>测试项目管理</value>
+    <value>Test Item Management</value>
   </data>
   <data name="Admin_ProductTypeTab" xml:space="preserve">
-    <value>产品类型管理</value>
+    <value>Product Type Management</value>
   </data>
   <data name="Admin_StageTab" xml:space="preserve">
-    <value>阶段管理</value>
+    <value>Stage Management</value>
   </data>
   <data name="Admin_NewUser" xml:space="preserve">
-    <value>新建用户</value>
+    <value>New User</value>
   </data>
   <data name="Admin_UserSettings" xml:space="preserve">
-    <value>选中用户设置</value>
+    <value>Selected User Settings</value>
   </data>
   <data name="Admin_Username" xml:space="preserve">
-    <value>用户名</value>
+    <value>Username</value>
   </data>
   <data name="Admin_Role" xml:space="preserve">
-    <value>角色</value>
+    <value>Role</value>
   </data>
   <data name="Admin_RoleMulti" xml:space="preserve">
-    <value>角色（可多选）</value>
+    <value>Role (multi-select)</value>
   </data>
   <data name="Admin_Status" xml:space="preserve">
-    <value>状态</value>
+    <value>Status</value>
   </data>
   <data name="Admin_EnableDisable" xml:space="preserve">
-    <value>禁用/启用</value>
+    <value>Disable/Enable</value>
   </data>
   <data name="Admin_ResetPassword" xml:space="preserve">
-    <value>重置密码</value>
+    <value>Reset Password</value>
   </data>
   <data name="Admin_ApplyIdentity" xml:space="preserve">
-    <value>应用身份与显示名</value>
+    <value>Apply Identity &amp; Display Name</value>
   </data>
   <data name="Admin_DisplayName" xml:space="preserve">
-    <value>显示名</value>
+    <value>Display Name</value>
   </data>
   <data name="Admin_DisplayNameFull" xml:space="preserve">
-    <value>显示名称</value>
+    <value>Display Name</value>
   </data>
   <data name="Admin_Description" xml:space="preserve">
-    <value>描述</value>
+    <value>Description</value>
   </data>
   <data name="Admin_Remark" xml:space="preserve">
-    <value>备注</value>
+    <value>Remark</value>
   </data>
   <data name="Admin_CustomerCode" xml:space="preserve">
-    <value>客户代码</value>
+    <value>Customer Code</value>
   </data>
   <data name="Admin_CustomerName" xml:space="preserve">
-    <value>客户名称</value>
+    <value>Customer Name</value>
   </data>
   <data name="Admin_ProductCode" xml:space="preserve">
-    <value>产品代码</value>
+    <value>Product Code</value>
   </data>
   <data name="Admin_ProductTypeName" xml:space="preserve">
-    <value>产品类型名称</value>
+    <value>Product Type Name</value>
   </data>
   <data name="Admin_StageName" xml:space="preserve">
-    <value>阶段名</value>
+    <value>Stage Name</value>
   </data>
   <data name="Admin_TestExperiment" xml:space="preserve">
-    <value>试验项目</value>
+    <value>Experiment Item</value>
   </data>
   <data name="Admin_TestTime" xml:space="preserve">
-    <value>试验时间</value>
+    <value>Test Time</value>
   </data>
   <data name="Admin_Technician" xml:space="preserve">
-    <value>技术员</value>
+    <value>Technician</value>
   </data>
   <data name="Admin_Reviewer" xml:space="preserve">
-    <value>审核员</value>
+    <value>Reviewer</value>
   </data>
   <data name="Admin_Administrator" xml:space="preserve">
-    <value>管理员</value>
+    <value>Administrator</value>
   </data>
   <data name="Admin_GeneralUser" xml:space="preserve">
-    <value>普通用户</value>
+    <value>General User</value>
   </data>
   <data name="Admin_ImportPlan" xml:space="preserve">
-    <value>导入计划表</value>
+    <value>Import Plans</value>
   </data>
   <data name="Admin_ToolTip_ImportPlan" xml:space="preserve">
-    <value>导入ORT Test Schedule Excel，并同步客户/测试项目/产品别/机种映射字典</value>
+    <value>Import ORT Test Schedule Excel and sync mappings</value>
   </data>
   <data name="Admin_ImportRequisition" xml:space="preserve">
-    <value>导入领用表</value>
+    <value>Import Requisitions</value>
   </data>
   <data name="Admin_ToolTip_ImportReq" xml:space="preserve">
-    <value>导入成品領用記錄Excel，与已有记录合并到同一行</value>
+    <value>Import requisition Excel, merge with existing records</value>
   </data>
   <data name="Admin_SyncFromFile" xml:space="preserve">
-    <value>从计划表文件同步</value>
+    <value>Sync from plan file</value>
   </data>
   <data name="Admin_SyncFromData" xml:space="preserve">
-    <value>从计划数据同步</value>
+    <value>Sync from plan data</value>
   </data>
   <data name="Admin_ToolTip_SyncFromFile" xml:space="preserve">
-    <value>从 ORT Test Schedule 文件的 Test Items 工作表同步</value>
+    <value>Sync from ORT Test Schedule Test Items sheet</value>
   </data>
   <data name="Admin_ToolTip_SyncFromData" xml:space="preserve">
-    <value>从已导入的计划数据（客户别）同步客户字典</value>
+    <value>Sync customer dictionary from imported plan data</value>
   </data>
   <data name="Admin_ClearPlanData" xml:space="preserve">
-    <value>清空计划数据</value>
+    <value>Clear Plan Data</value>
   </data>
   <data name="Admin_ToolTip_ClearData" xml:space="preserve">
-    <value>清空领退表和计划表全部数据（仅管理员，需二次确认，不可恢复）</value>
+    <value>Clear all return and plan data (admin only, requires confirmation, irreversible)</value>
   </data>
   <data name="Settings_Title" xml:space="preserve">
-    <value>设置</value>
+    <value>Settings</value>
   </data>
   <data name="Settings_DirTab" xml:space="preserve">
-    <value>设置目录</value>
+    <value>Directory Settings</value>
   </data>
   <data name="Settings_AppearanceTab" xml:space="preserve">
-    <value>界面外观相关设置</value>
+    <value>Appearance Settings</value>
   </data>
   <data name="Settings_Path" xml:space="preserve">
-    <value>路径</value>
+    <value>Path</value>
   </data>
   <data name="Settings_ReportPath" xml:space="preserve">
-    <value>报告路径</value>
+    <value>Report Path</value>
   </data>
   <data name="Settings_PlanPath" xml:space="preserve">
-    <value>计划表路径</value>
+    <value>Plan Path</value>
   </data>
   <data name="Settings_RequisitionPath" xml:space="preserve">
-    <value>领用表路径</value>
+    <value>Requisition Path</value>
   </data>
   <data name="Settings_ATEPath" xml:space="preserve">
-    <value>ATE数据路径</value>
+    <value>ATE Data Path</value>
   </data>
   <data name="Settings_EMIPath" xml:space="preserve">
-    <value>EMI数据路径</value>
+    <value>EMI Data Path</value>
   </data>
   <data name="Settings_DBPath" xml:space="preserve">
-    <value>数据库路径</value>
+    <value>Database Path</value>
   </data>
   <data name="Settings_PlanPathHint" xml:space="preserve">
-    <value>导入计划表（ORT Test Schedule）时的默认目录。</value>
+    <value>Default directory when importing plans (ORT Test Schedule).</value>
   </data>
   <data name="Settings_ReqPathHint" xml:space="preserve">
-    <value>导入领用表（成品領用記錄）时的默认目录。</value>
+    <value>Default directory when importing requisitions.</value>
   </data>
   <data name="Settings_ReportPathHint" xml:space="preserve">
-    <value>一键报告选择报告概览时的默认打开目录。</value>
+    <value>Default directory when selecting report overview.</value>
   </data>
   <data name="Settings_ATEPathHint" xml:space="preserve">
-    <value>选择ATE数据时的默认打开目录。此设置与数据库路径保存在同一位置。</value>
+    <value>Default directory for ATE data. Saved with database path.</value>
   </data>
   <data name="Settings_EMIPathHint" xml:space="preserve">
-    <value>选择EMI数据时的默认打开目录。此设置与数据库路径保存在同一位置。</value>
+    <value>Default directory for EMI data. Saved with database path.</value>
   </data>
   <data name="Settings_DBPathHint" xml:space="preserve">
-    <value>数据库文件（ort_plans.db）保存目录。此设置保存在程序目录，修改后需重启程序生效。</value>
+    <value>Database file (ort_plans.db) directory. Saved in app directory, restart required.</value>
   </data>
   <data name="Settings_DirHint" xml:space="preserve">
-    <value>各对话框的默认打开目录。留空则使用系统默认位置。</value>
+    <value>Default directories for dialogs. Leave empty for system default.</value>
   </data>
   <data name="Settings_FontHint" xml:space="preserve">
-    <value>全局字体族与字号，保存后立即应用到所有窗口。</value>
+    <value>Global font family and size, applied to all windows after save.</value>
   </data>
   <data name="Settings_Font" xml:space="preserve">
-    <value>字体</value>
+    <value>Font</value>
   </data>
   <data name="Settings_FontSize" xml:space="preserve">
-    <value>字号</value>
+    <value>Font Size</value>
   </data>
   <data name="Settings_FontFamily" xml:space="preserve">
-    <value>字体族</value>
+    <value>Font Family</value>
   </data>
   <data name="Report_Title" xml:space="preserve">
-    <value>一键报告</value>
+    <value>One-Click Report</value>
   </data>
   <data name="Report_ViewMenu" xml:space="preserve">
-    <value>视图</value>
+    <value>View</value>
   </data>
   <data name="Report_ViewLog" xml:space="preserve">
-    <value>查看日志</value>
+    <value>View Log</value>
   </data>
   <data name="Report_ToolsMenu" xml:space="preserve">
-    <value>工具</value>
+    <value>Tools</value>
   </data>
   <data name="Report_TemplateMenu" xml:space="preserve">
-    <value>报告模板</value>
+    <value>Report Template</value>
   </data>
   <data name="Report_ThermalShockTab" xml:space="preserve">
-    <value>Thermal Shock 报告</value>
+    <value>Thermal Shock Report</value>
   </data>
   <data name="Report_BurnInTab" xml:space="preserve">
-    <value>Burn In 报告</value>
+    <value>Burn In Report</value>
   </data>
   <data name="Report_EMITab" xml:space="preserve">
-    <value>EMI 报告</value>
+    <value>EMI Report</value>
   </data>
   <data name="Report_ClickBrowse" xml:space="preserve">
-    <value>点击浏览来选择</value>
+    <value>Click to browse</value>
   </data>
   <data name="Review_Title" xml:space="preserve">
-    <value>审核</value>
+    <value>Review</value>
   </data>
   <data name="Review_Pending" xml:space="preserve">
-    <value>待审核</value>
+    <value>Pending</value>
   </data>
   <data name="Review_Approved" xml:space="preserve">
-    <value>已通过</value>
+    <value>Approved</value>
   </data>
   <data name="Review_Rejected" xml:space="preserve">
-    <value>已驳回</value>
+    <value>Rejected</value>
   </data>
   <data name="Review_Requester" xml:space="preserve">
-    <value>请求人</value>
+    <value>Requester</value>
   </data>
   <data name="Review_RequestTime" xml:space="preserve">
-    <value>请求时间</value>
+    <value>Request Time</value>
   </data>
   <data name="Review_Summary" xml:space="preserve">
-    <value>摘要</value>
+    <value>Summary</value>
   </data>
   <data name="Review_Type" xml:space="preserve">
-    <value>类型</value>
+    <value>Type</value>
   </data>
   <data name="Review_Action" xml:space="preserve">
-    <value>操作</value>
+    <value>Action</value>
   </data>
   <data name="Review_Reviewer" xml:space="preserve">
-    <value>审核人</value>
+    <value>Reviewer</value>
   </data>
   <data name="Review_ReviewTime" xml:space="preserve">
-    <value>审核时间</value>
+    <value>Review Time</value>
   </data>
   <data name="Review_OpenDetail" xml:space="preserve">
-    <value>打开详情</value>
+    <value>Open Detail</value>
   </data>
   <data name="Review_ToolTip_OpenDetail" xml:space="preserve">
-    <value>查看选中请求的详情并审核</value>
+    <value>View selected request detail and review</value>
   </data>
   <data name="Review_DoubleClickHint" xml:space="preserve">
-    <value>双击请求行打开详情</value>
+    <value>Double-click request row to open detail</value>
   </data>
   <data name="ReviewDetail_Title" xml:space="preserve">
-    <value>请求详情</value>
+    <value>Request Detail</value>
   </data>
   <data name="ReviewDetail_ChangeContent" xml:space="preserve">
-    <value>更改内容：</value>
+    <value>Change Content:</value>
   </data>
   <data name="ReviewDetail_Opinion" xml:space="preserve">
-    <value>审核意见</value>
+    <value>Review Opinion</value>
   </data>
   <data name="ReviewDetail_RejectHint" xml:space="preserve">
-    <value>驳回时建议填写原因</value>
+    <value>Recommend filling reason when rejecting</value>
   </data>
   <data name="Log_Title" xml:space="preserve">
-    <value>日志查看</value>
+    <value>Log Viewer</value>
   </data>
   <data name="Log_LogFile" xml:space="preserve">
-    <value>日志文件</value>
+    <value>Log File</value>
   </data>
   <data name="Log_Level" xml:space="preserve">
-    <value>级别</value>
+    <value>Level</value>
   </data>
   <data name="Log_Time" xml:space="preserve">
-    <value>时间</value>
+    <value>Time</value>
   </data>
   <data name="Log_Source" xml:space="preserve">
-    <value>来源</value>
+    <value>Source</value>
   </data>
   <data name="Log_Content" xml:space="preserve">
-    <value>内容</value>
+    <value>Content</value>
   </data>
   <data name="Log_Count" xml:space="preserve">
-    <value>共 0 条</value>
+    <value>Total 0</value>
   </data>
   <data name="Log_SearchHint" xml:space="preserve">
-    <value>输入关键字筛选日志内容</value>
+    <value>Enter keyword to filter log content</value>
   </data>
   <data name="Log_AutoRefresh" xml:space="preserve">
-    <value>自动刷新</value>
+    <value>Auto Refresh</value>
   </data>
   <data name="ATE_Title" xml:space="preserve">
-    <value>ATE数据制作</value>
+    <value>ATE Data Creator</value>
   </data>
   <data name="ATE_Template" xml:space="preserve">
-    <value>ATE模板</value>
+    <value>ATE Template</value>
   </data>
   <data name="ATE_Reload" xml:space="preserve">
-    <value>重新读取</value>
+    <value>Reload</value>
   </data>
   <data name="EMI_SaveSettings" xml:space="preserve">
-    <value>保存设置</value>
+    <value>Save Settings</value>
   </data>
   <data name="EMI_Reload" xml:space="preserve">
-    <value>重新加载</value>
+    <value>Reload</value>
   </data>
   <data name="ReportPage_ATEData" xml:space="preserve">
-    <value>ATE数据</value>
+    <value>ATE Data</value>
   </data>
   <data name="DataGrid_InsertRow" xml:space="preserve">
-    <value>插入行</value>
+    <value>Insert Row</value>
   </data>
   <data name="DataGrid_ToolTip_Insert" xml:space="preserve">
-    <value>在选中行上方新增一行</value>
+    <value>Insert a row above selected row</value>
   </data>
   <data name="DataGrid_DeleteRow" xml:space="preserve">
-    <value>删除行</value>
+    <value>Delete Row</value>
   </data>
   <data name="DataGrid_DeleteSelectedRow" xml:space="preserve">
-    <value>删除选中行</value>
+    <value>Delete Selected Row</value>
   </data>
   <data name="DataGrid_CopyFirstRow" xml:space="preserve">
-    <value>该列等于第一行</value>
+    <value>Column equals first row</value>
   </data>
   <data name="DataGrid_ClearColumn" xml:space="preserve">
-    <value>清空列</value>
+    <value>Clear Column</value>
   </data>
   <data name="DataGrid_RefreshTable" xml:space="preserve">
-    <value>刷新表格</value>
+    <value>Refresh Table</value>
   </data>
   <data name="EMI_Version" xml:space="preserve">
-    <value>版本:</value>
+    <value>Version:</value>
   </data>
   <data name="EMI_WorkOrder" xml:space="preserve">
-    <value>工令:</value>
+    <value>Work Order:</value>
   </data>
   <data name="EMI_UnitCycle" xml:space="preserve">
-    <value>单体周期:</value>
+    <value>Unit Cycle:</value>
   </data>
   <data name="EMI_DataPath" xml:space="preserve">
-    <value>数据路径:</value>
+    <value>Data Path:</value>
   </data>
   <data name="EMI_TemplatePath" xml:space="preserve">
-    <value>模板路径:</value>
+    <value>Template Path:</value>
   </data>
   <data name="EMI_Footer" xml:space="preserve">
-    <value>注脚</value>
+    <value>Footer</value>
   </data>
   <data name="EMI_ToPDF" xml:space="preserve">
-    <value>转PDF</value>
+    <value>To PDF</value>
   </data>
   <data name="EMI_StartCreate" xml:space="preserve">
-    <value>开始制作</value>
+    <value>Start Create</value>
   </data>
   <data name="Pictures_DblClickInsert" xml:space="preserve">
-    <value>双击插入图片</value>
+    <value>Double-click to insert image</value>
   </data>
   <data name="ReturnLine_Title" xml:space="preserve">
-    <value>单体回线转移单</value>
+    <value>Unit Return Transfer</value>
   </data>
   <data name="ReturnLine_RTOrder" xml:space="preserve">
-    <value>RT工令:</value>
+    <value>RT Order:</value>
   </data>
   <data name="ReturnLine_RequisitionDate" xml:space="preserve">
-    <value>领用日期:</value>
+    <value>Requisition Date:</value>
   </data>
   <data name="ReturnLine_FormPath" xml:space="preserve">
-    <value>领退表单路径:</value>
+    <value>Return Form Path:</value>
   </data>
   <data name="ReturnLine_CheckHint" xml:space="preserve">
-    <value>请检查表单路径和筛选条件是否正确</value>
+    <value>Please check form path and filter conditions</value>
   </data>
   <data name="ReturnLineSingle_Title" xml:space="preserve">
-    <value>Reliability Test 单体回线转移单</value>
+    <value>Reliability Test Unit Return Transfer</value>
   </data>
   <data name="ReqEdit_Title" xml:space="preserve">
-    <value>领退表新增/编辑</value>
+    <value>Return Add/Edit</value>
   </data>
   <data name="ReqEdit_ReturnInfo" xml:space="preserve">
-    <value>领退信息</value>
+    <value>Return Info</value>
   </data>
   <data name="ReqEdit_DocNo" xml:space="preserve">
-    <value>领料單据號*</value>
+    <value>Requisition Doc No.*</value>
   </data>
   <data name="ReqEdit_Date" xml:space="preserve">
-    <value>领用日期*</value>
+    <value>Requisition Date*</value>
   </data>
   <data name="ReqEdit_Qty" xml:space="preserve">
-    <value>领出数量*</value>
+    <value>Issue Qty*</value>
   </data>
   <data name="ReqEdit_QtyHint" xml:space="preserve">
-    <value>默认与领出数量一致，可修改</value>
+    <value>Default same as issue qty, modifiable</value>
   </data>
   <data name="ReqEdit_ModelName" xml:space="preserve">
-    <value>機種名稱*</value>
+    <value>Model Name*</value>
   </data>
   <data name="ReqEdit_ModelNameHint" xml:space="preserve">
-    <value>根据机种名自动查询，可修改</value>
+    <value>Auto-lookup by model name, modifiable</value>
   </data>
   <data name="ReqEdit_SN" xml:space="preserve">
-    <value>S/N *（字符串或附件）</value>
+    <value>S/N * (string or attachment)</value>
   </data>
   <data name="ReqEdit_SNHint" xml:space="preserve">
-    <value>根据Work Order自动补全，可手动修改</value>
+    <value>Auto-fill from Work Order, modifiable</value>
   </data>
   <data name="ReqEdit_PlanSync" xml:space="preserve">
-    <value>计划表同步信息 *（领退新增时同步新增计划）</value>
+    <value>Plan sync info * (sync new plan when adding return)</value>
   </data>
   <data name="ReqEdit_AutoGen" xml:space="preserve">
-    <value>自动生成</value>
+    <value>Auto Generate</value>
   </data>
   <data name="ReqEdit_AutoGenRT" xml:space="preserve">
-    <value>自动生成 RT{当前年月}{编号}</value>
+    <value>Auto generate RT{YYYYMM}{No}</value>
   </data>
   <data name="ReqEdit_AutoGenRTAH" xml:space="preserve">
-    <value>自动生成 RTAH{当前年月}{编号}</value>
+    <value>Auto generate RTAH{YYYYMM}{No}</value>
   </data>
   <data name="ReqEdit_CustomInput" xml:space="preserve">
-    <value>自定义输入</value>
+    <value>Custom Input</value>
   </data>
   <data name="PlanEdit_Title" xml:space="preserve">
-    <value>计划表新增/编辑（非领用）</value>
+    <value>Plan Add/Edit (non-requisition)</value>
   </data>
   <data name="PlanEdit_PlanInfo" xml:space="preserve">
-    <value>计划信息 *</value>
+    <value>Plan Info *</value>
   </data>
   <data name="PlanEdit_WorkNumber" xml:space="preserve">
-    <value>工作编号</value>
+    <value>Work Number</value>
   </data>
   <data name="PlanEdit_WorkNumberHint" xml:space="preserve">
-    <value>自动生成 QRT{当前年月}{编号}（非领用计划）</value>
+    <value>Auto generate QRT{YYYYMM}{No} (non-requisition)</value>
   </data>
   <data name="PlanEdit_TestItem" xml:space="preserve">
-    <value>测试项目*</value>
+    <value>Test Item*</value>
   </data>
   <data name="PlanEdit_TestItemHint" xml:space="preserve">
-    <value>根据测试项目自动查询，可修改</value>
+    <value>Auto-lookup by test item, modifiable</value>
   </data>
   <data name="PlanEdit_Customer" xml:space="preserve">
-    <value>客户别</value>
+    <value>Customer Type</value>
   </data>
   <data name="PlanEdit_EndDateHint" xml:space="preserve">
-    <value>根据试验时间自动计算，可修改</value>
+    <value>Auto-calculated from test time, modifiable</value>
   </data>
   <data name="PlanEdit_StartTime" xml:space="preserve">
-    <value>开始时间*</value>
+    <value>Start Time*</value>
   </data>
   <data name="PlanEdit_EndDate" xml:space="preserve">
-    <value>结束日期</value>
+    <value>End Date</value>
   </data>
   <data name="PlanEdit_SampleQty" xml:space="preserve">
-    <value>样品数</value>
+    <value>Sample Qty</value>
   </data>
   <data name="PlanEdit_Remark" xml:space="preserve">
-    <value>备注*</value>
+    <value>Remark*</value>
   </data>
   <data name="PlanEdit_Other" xml:space="preserve">
-    <value>其他</value>
+    <value>Other</value>
   </data>
   <data name="AdminInput_Title" xml:space="preserve">
-    <value>输入</value>
+    <value>Input</value>
   </data>
   <data name="TestPdf_SelectPDF" xml:space="preserve">
-    <value>选择PDF文件：</value>
+    <value>Select PDF File:</value>
   </data>
   <data name="ReportTemplate_File" xml:space="preserve">
-    <value>文件</value>
+    <value>File</value>
   </data>
   <data name="Filter_SelectAll" xml:space="preserve">
-    <value>(全选)</value>
+    <value>(Select All)</value>
   </data>
   <data name="Filter_SearchOptions" xml:space="preserve">
-    <value>搜索选项</value>
+    <value>Search Options</value>
   </data>
   <data name="PlanEdit_StageTC" xml:space="preserve">
-    <value>階段*</value>
+    <value>Stage*</value>
   </data>
   <data name="ReqEdit_DateTC" xml:space="preserve">
-    <value>領用日期*</value>
+    <value>Requisition Date*</value>
   </data>
   <data name="ReqEdit_DocNoTC" xml:space="preserve">
-    <value>領料單据號*</value>
+    <value>Requisition Doc No.*</value>
   </data>
   <data name="ReqEdit_QtyTC" xml:space="preserve">
-    <value>領出數量*</value>
+    <value>Issue Qty*</value>
   </data>
   <data name="ReqEdit_LineTC" xml:space="preserve">
-    <value>線別</value>
+    <value>Line</value>
   </data>
   <data name="ReqEdit_Stage" xml:space="preserve">
-    <value>阶段*</value>
+    <value>Stage*</value>
   </data>
   <data name="Plans_RequisitionDateTC" xml:space="preserve">
-    <value>領用日期</value>
+    <value>Requisition Date</value>
   </data>
   <data name="Msg_UserCreated" xml:space="preserve">
-    <value>用户已创建（默认角色：普通用户），可在右侧调整其身份。</value>
+    <value>User created (default role: General User). Adjust identity on the right.</value>
   </data>
   <data name="Msg_SelectUserFirst" xml:space="preserve">
-    <value>请先在左侧选择一个用户</value>
+    <value>Please select a user on the left first</value>
   </data>
   <data name="Msg_SelectRole" xml:space="preserve">
-    <value>请至少勾选一个角色</value>
+    <value>Please select at least one role</value>
   </data>
   <data name="Msg_CannotDisableSelf" xml:space="preserve">
-    <value>不能禁用当前登录用户</value>
+    <value>Cannot disable the currently logged-in user</value>
   </data>
   <data name="Msg_IdentityChanged" xml:space="preserve">
-    <value>调整了当前登录用户的身份，已注销，请重新登录。</value>
+    <value>Your identity has been changed. Please log in again.</value>
   </data>
   <data name="Msg_SelectCustomer" xml:space="preserve">
-    <value>请先选择一个客户</value>
+    <value>Please select a customer first</value>
   </data>
   <data name="Msg_SelectTestItem" xml:space="preserve">
-    <value>请先选择一个测试项目</value>
+    <value>Please select a test item first</value>
   </data>
   <data name="Msg_SelectProductType" xml:space="preserve">
-    <value>请先选择一个产品类型</value>
+    <value>Please select a product type first</value>
   </data>
   <data name="Msg_SelectStage" xml:space="preserve">
-    <value>请先选择一个阶段</value>
+    <value>Please select a stage first</value>
   </data>
   <data name="Msg_OnlyAdminClear" xml:space="preserve">
-    <value>只有管理员可以清空计划数据</value>
+    <value>Only administrators can clear plan data</value>
   </data>
   <data name="Msg_ConfirmClearAll" xml:space="preserve">
-    <value>确认清空领退表和计划表的全部数据？此操作不可恢复！\n建议操作前先导出备份。</value>
+    <value>Clear all return and plan data? This is irreversible!\nConsider exporting a backup first.</value>
   </data>
   <data name="Msg_ConfirmClearAgain" xml:space="preserve">
-    <value>再次确认：真的要清空全部计划数据吗？</value>
+    <value>Confirm again: Really clear all plan data?</value>
   </data>
   <data name="Msg_InvalidFontSize" xml:space="preserve">
-    <value>字号无效，请输入 8~72 之间的数字。</value>
+    <value>Invalid font size. Please enter a number between 8 and 72.</value>
   </data>
   <data name="Msg_DBPathSaved" xml:space="preserve">
-    <value>数据库路径已保存，重启程序后生效。</value>
+    <value>Database path saved. Restart to take effect.</value>
   </data>
   <data name="Msg_AddSubmitted" xml:space="preserve">
-    <value>新增请求已提交审核，待审核员通过后生效。</value>
+    <value>Add request submitted for review.</value>
   </data>
   <data name="Msg_EditSubmitted" xml:space="preserve">
-    <value>编辑请求已提交审核，待审核员通过后生效。</value>
+    <value>Edit request submitted for review.</value>
   </data>
   <data name="Msg_ConfirmDiscard" xml:space="preserve">
-    <value>确认丢弃所有未提交的修改？</value>
+    <value>Discard all uncommitted changes?</value>
   </data>
   <data name="Msg_FillModelName" xml:space="preserve">
-    <value>請填寫機種名稱</value>
+    <value>Please fill in model name</value>
   </data>
   <data name="Msg_FillStartTime" xml:space="preserve">
-    <value>請填寫開始時間</value>
+    <value>Please fill in start time</value>
   </data>
   <data name="Msg_FillTestItem" xml:space="preserve">
-    <value>請填寫測試項目</value>
+    <value>Please fill in test item</value>
   </data>
   <data name="Msg_FillStage" xml:space="preserve">
-    <value>請填寫階段</value>
+    <value>Please fill in stage</value>
   </data>
   <data name="Msg_FillRemark" xml:space="preserve">
-    <value>請填寫備註</value>
+    <value>Please fill in remark</value>
   </data>
   <data name="Msg_OverviewNotFound" xml:space="preserve">
-    <value>未找到该工作编号对应的报告概览文件。\n请确认设置中的报告路径正确，且报告夹中包含 Excel 概览文件。</value>
+    <value>Report overview file not found.\nPlease check report path in settings.</value>
   </data>
   <data name="Msg_FolderNotFound" xml:space="preserve">
-    <value>未找到该工作编号对应的报告文件夹。\n请确认设置中的报告路径正确，且报告夹名称包含工作编号。</value>
+    <value>Report folder not found.\nPlease check report path in settings.</value>
   </data>
   <data name="Msg_FillDocNo" xml:space="preserve">
-    <value>請填寫領料單据號</value>
+    <value>Please fill in requisition doc no.</value>
   </data>
   <data name="Msg_FillReqDate" xml:space="preserve">
-    <value>請填寫領用日期</value>
+    <value>Please fill in requisition date</value>
   </data>
   <data name="Msg_FillQty" xml:space="preserve">
-    <value>請填寫領出數量</value>
+    <value>Please fill in issue qty</value>
   </data>
   <data name="Msg_FillRev" xml:space="preserve">
-    <value>請填寫REV.</value>
+    <value>Please fill in REV.</value>
   </data>
   <data name="Msg_FillWorkOrder" xml:space="preserve">
-    <value>請填寫Work Order</value>
+    <value>Please fill in Work Order</value>
   </data>
   <data name="Msg_FillSN" xml:space="preserve">
-    <value>請填寫S/N或上傳附件</value>
+    <value>Please fill in S/N or upload attachment</value>
   </data>
   <data name="Msg_SelectSNFile" xml:space="preserve">
-    <value>請先選擇要上傳的序列號文件</value>
+    <value>Please select SN file to upload first</value>
   </data>
   <data name="Msg_SelectTestItem" xml:space="preserve">
-    <value>請選擇測試項目</value>
+    <value>Please select test item</value>
   </data>
   <data name="Msg_SelectStage" xml:space="preserve">
-    <value>請選擇階段</value>
+    <value>Please select stage</value>
   </data>
   <data name="Msg_ExcelNoJSON" xml:space="preserve">
-    <value>Excel文件中未找到有效的JSON数据！使用默认设置。</value>
+    <value>No valid JSON data in Excel! Using default settings.</value>
   </data>
   <data name="Msg_RevColNotFound" xml:space="preserve">
-    <value>未找到Rev列</value>
+    <value>Rev column not found</value>
   </data>
   <data name="Msg_SNColNotFound" xml:space="preserve">
-    <value>未找到SN列</value>
+    <value>SN column not found</value>
   </data>
   <data name="Msg_NoSN" xml:space="preserve">
-    <value>没有SN</value>
+    <value>No SN</value>
   </data>
   <data name="Msg_NoImage" xml:space="preserve">
-    <value>未选择图片</value>
+    <value>No image selected</value>
   </data>
   <data name="Msg_NoATEData" xml:space="preserve">
-    <value>无ATE数据</value>
+    <value>No ATE data</value>
   </data>
   <data name="Msg_ATEPathError" xml:space="preserve">
-    <value>ATE数据路径选择错误</value>
+    <value>ATE data path selection error</value>
   </data>
   <data name="Msg_NoATEFile" xml:space="preserve">
-    <value>未选择ATE数据文件</value>
+    <value>No ATE data file selected</value>
   </data>
   <data name="Msg_ReportFileNotFound" xml:space="preserve">
-    <value>报告文件不存在, 请正确选择</value>
+    <value>Report file not found. Please select correctly.</value>
   </data>
   <data name="Msg_SelectRequest" xml:space="preserve">
-    <value>请先选择一个请求</value>
+    <value>Please select a request first</value>
   </data>
   <data name="Msg_ConfirmApprove" xml:space="preserve">
-    <value>确认通过该请求并应用更改？</value>
+    <value>Approve this request and apply changes?</value>
   </data>
   <data name="Msg_ConfirmReject" xml:space="preserve">
-    <value>确认驳回该请求？</value>
+    <value>Reject this request?</value>
   </data>
   <data name="Msg_FillRejectReason" xml:space="preserve">
-    <value>驳回时请填写审核意见</value>
+    <value>Please fill in review opinion when rejecting</value>
   </data>
   <data name="Msg_Approved" xml:space="preserve">
-    <value>已通过并应用更改</value>
+    <value>Approved and changes applied</value>
   </data>
   <data name="Msg_Rejected" xml:space="preserve">
-    <value>已驳回</value>
+    <value>Rejected</value>
   </data>
   <data name="Msg_ReportNeedLogin" xml:space="preserve">
-    <value>一键报告需要技术员及以上权限，请先登录。</value>
+    <value>One-Click Report requires Technician or above. Please log in.</value>
   </data>
   <data name="Msg_AdminNeedLogin" xml:space="preserve">
-    <value>管理模块需要管理员权限，请先登录。</value>
+    <value>Admin module requires Administrator. Please log in.</value>
   </data>
   <data name="Msg_ReviewNeedLogin" xml:space="preserve">
-    <value>审核模块需要审核员及以上权限，请先登录。</value>
+    <value>Review module requires Reviewer or above. Please log in.</value>
   </data>
   <data name="Msg_SettingDCNull" xml:space="preserve">
-    <value>SettingControl的DataContext为空</value>
+    <value>SettingControl DataContext is null</value>
   </data>
   <data name="ReturnLineSingle_Model" xml:space="preserve">
-    <value>机种:</value>
+    <value>Model:</value>
   </data>
   <data name="ReturnLineSingle_Version" xml:space="preserve">
-    <value>版本:</value>
+    <value>Version:</value>
   </data>
   <data name="ReturnLineSingle_DC" xml:space="preserve">
     <value>D/C:</value>
   </data>
   <data name="ReturnLineSingle_Count" xml:space="preserve">
-    <value>数量:</value>
+    <value>Count:</value>
   </data>
   <data name="ReturnLineSingle_TestItem" xml:space="preserve">
-    <value>实验项目:</value>
+    <value>Test Item:</value>
   </data>
   <data name="ReturnLineSingle_WorkerNo" xml:space="preserve">
-    <value>工令:</value>
+    <value>Work Order:</value>
   </data>
   <data name="ReturnLineSingle_Date" xml:space="preserve">
-    <value>日期:</value>
+    <value>Date:</value>
   </data>
   <data name="ReturnLineSingle_Steps" xml:space="preserve">
-    <value>ORT 回线流程:</value>
+    <value>ORT Return Flow:</value>
   </data>
   <data name="ReturnLineSingle_ReturnBy" xml:space="preserve">
-    <value>送出者:</value>
+    <value>Return By:</value>
   </data>
   <data name="ReturnLineSingle_Phone" xml:space="preserve">
-    <value>电话:</value>
+    <value>Phone:</value>
   </data>
   <data name="ReturnLineSingle_Receive" xml:space="preserve">
-    <value>接收者:</value>
+    <value>Receive By:</value>
   </data>
   <data name="ReturnLineSingle_LineNo" xml:space="preserve">
-    <value>线别:</value>
+    <value>Line:</value>
   </data>
   <data name="Settings_Language" xml:space="preserve">
-    <value>语言</value>
+    <value>Language</value>
   </data>
   <data name="Settings_LanguageHint" xml:space="preserve">
-    <value>切换界面语言，立即生效并保存。</value>
+    <value>Switch interface language. Takes effect immediately and is saved.</value>
   </data>
   <data name="MainWindow_Menu_File" xml:space="preserve">
-    <value>文件</value>
+    <value>File</value>
   </data>
   <data name="MainWindow_Menu_View" xml:space="preserve">
-    <value>视图</value>
+    <value>View</value>
   </data>
   <data name="MainWindow_Menu_ViewLog" xml:space="preserve">
-    <value>查看日志</value>
+    <value>View Log</value>
   </data>
   <data name="MainWindow_Menu_Settings" xml:space="preserve">
-    <value>设置</value>
+    <value>Settings</value>
   </data>
   <data name="MainWindow_Menu_Account" xml:space="preserve">
-    <value>登录</value>
+    <value>Login</value>
   </data>
   <data name="MainWindow_Menu_Logout" xml:space="preserve">
-    <value>退出</value>
+    <value>Exit</value>
   </data>
   <data name="MainWindow_Button_Report" xml:space="preserve">
-    <value>一键报告</value>
+    <value>One-Click Report</value>
   </data>
   <data name="MainWindow_Button_Plans" xml:space="preserve">
-    <value>领退和计划</value>
+    <value>Return &amp; Plan</value>
   </data>
   <data name="MainWindow_Button_Admin" xml:space="preserve">
-    <value>管理</value>
+    <value>Admin</value>
   </data>
   <data name="MainWindow_Button_Review" xml:space="preserve">
-    <value>审核</value>
+    <value>Review</value>
   </data>
   <data name="MainWindow_ToolTip_Report" xml:space="preserve">
-    <value>读取报告概览并自动生成报告</value>
+    <value>Read report overview and generate report automatically</value>
   </data>
   <data name="MainWindow_ToolTip_Plans" xml:space="preserve">
-    <value>领退与计划数据的查看与编辑</value>
+    <value>View and edit return and plan data</value>
   </data>
   <data name="MainWindow_ToolTip_Admin" xml:space="preserve">
-    <value>人员/客户/测试项目/产品别/阶段管理与数据导入</value>
+    <value>User/Customer/Test Item/Product/Stage management and data import</value>
   </data>
   <data name="MainWindow_ToolTip_Review" xml:space="preserve">
-    <value>审核计划表单更改请求</value>
+    <value>Review plan form change requests</value>
   </data>
   <data name="WindowLogin_Title" xml:space="preserve">
-    <value>登录</value>
+    <value>Login</value>
   </data>
   <data name="WindowLogin_Label_Username" xml:space="preserve">
-    <value>用户名</value>
+    <value>Username</value>
   </data>
   <data name="WindowLogin_Label_Password" xml:space="preserve">
-    <value>密码</value>
+    <value>Password</value>
   </data>
   <data name="WindowLogin_Button_Login" xml:space="preserve">
-    <value>登录</value>
+    <value>Login</value>
   </data>
   <data name="WindowLogin_Button_Cancel" xml:space="preserve">
-    <value>取消</value>
+    <value>Cancel</value>
   </data>
   <data name="WindowLogin_Button_ContinueLogin" xml:space="preserve">
-    <value>继续登录</value>
+    <value>Continue Login</value>
   </data>
   <data name="Cap_Info" xml:space="preserve">
-    <value>提示</value>
+    <value>Notice</value>
   </data>
   <data name="Cap_Error" xml:space="preserve">
-    <value>错误</value>
+    <value>Error</value>
   </data>
   <data name="Cap_Warning" xml:space="preserve">
-    <value>警告</value>
+    <value>Warning</value>
   </data>
   <data name="Cap_Success" xml:space="preserve">
-    <value>成功</value>
+    <value>Success</value>
   </data>
   <data name="Cap_Complete" xml:space="preserve">
-    <value>完成</value>
+    <value>Complete</value>
   </data>
   <data name="Cap_SaveFailed" xml:space="preserve">
-    <value>保存失败</value>
+    <value>Save Failed</value>
   </data>
   <data name="Cap_SaveSuccess" xml:space="preserve">
-    <value>保存成功</value>
+    <value>Saved</value>
   </data>
   <data name="Cap_DeleteConfirm" xml:space="preserve">
-    <value>删除确认</value>
+    <value>Delete Confirmation</value>
   </data>
   <data name="Cap_ClearConfirm" xml:space="preserve">
-    <value>清空确认</value>
+    <value>Clear Confirmation</value>
   </data>
   <data name="Cap_SecondConfirm" xml:space="preserve">
-    <value>二次确认</value>
+    <value>Confirm Again</value>
   </data>
   <data name="Cap_DiscardConfirm" xml:space="preserve">
-    <value>丢弃确认</value>
+    <value>Discard Confirmation</value>
   </data>
   <data name="Cap_SubmitSuccess" xml:space="preserve">
-    <value>提交成功</value>
+    <value>Submitted</value>
   </data>
   <data name="Cap_SyncResult" xml:space="preserve">
-    <value>同步结果</value>
+    <value>Sync Result</value>
   </data>
   <data name="Cap_ImportResult" xml:space="preserve">
-    <value>导入结果</value>
+    <value>Import Result</value>
   </data>
   <data name="Cap_InsufficientPermission" xml:space="preserve">
-    <value>权限不足</value>
+    <value>Insufficient Permission</value>
   </data>
   <data name="Cap_NoPermission" xml:space="preserve">
-    <value>无权限</value>
+    <value>No Permission</value>
   </data>
   <data name="Cap_FormatValidationFailed" xml:space="preserve">
-    <value>格式校验失败</value>
+    <value>Format Validation Failed</value>
   </data>
   <data name="Cap_ValidationFailed" xml:space="preserve">
-    <value>校验失败</value>
+    <value>Validation Failed</value>
   </data>
   <data name="Cap_PasteValidationFailed" xml:space="preserve">
-    <value>粘贴校验失败</value>
+    <value>Paste Validation Failed</value>
   </data>
   <data name="Cap_ATEReportFailed" xml:space="preserve">
-    <value>ATE报告生成失败</value>
+    <value>ATE Report Generation Failed</value>
   </data>
   <data name="Cap_ReviewConfirm" xml:space="preserve">
-    <value>审核确认</value>
+    <value>Review Confirmation</value>
   </data>
   <data name="Cap_ReviewFailed" xml:space="preserve">
-    <value>审核失败</value>
+    <value>Review Failed</value>
   </data>
   <data name="Cap_ReviewComplete" xml:space="preserve">
-    <value>审核完成</value>
+    <value>Review Complete</value>
   </data>
   <data name="Cap_LogoutConfirm" xml:space="preserve">
-    <value>注销确认</value>
+    <value>Logout Confirmation</value>
   </data>
   <data name="Cap_NewUserFailed" xml:space="preserve">
-    <value>新建用户失败</value>
+    <value>New User Failed</value>
   </data>
   <data name="Title_SelectSNFile" xml:space="preserve">
-    <value>选择序列号文件</value>
+    <value>Select SN File</value>
   </data>
   <data name="Title_SaveReport" xml:space="preserve">
-    <value>保存报告</value>
+    <value>Save Report</value>
   </data>
   <data name="Title_Processing" xml:space="preserve">
-    <value>处理中</value>
+    <value>Processing</value>
   </data>
   <data name="Title_PlanAdd" xml:space="preserve">
-    <value>计划表新增（非领用）</value>
+    <value>Add Plan (non-requisition)</value>
   </data>
   <data name="Title_PlanEdit" xml:space="preserve">
-    <value>计划表编辑</value>
+    <value>Edit Plan</value>
   </data>
   <data name="Title_ReqAdd" xml:space="preserve">
-    <value>领退表新增</value>
+    <value>Add Return</value>
   </data>
   <data name="Title_ReqEdit" xml:space="preserve">
-    <value>领退表编辑</value>
+    <value>Edit Return</value>
   </data>
   <data name="Main_Login" xml:space="preserve">
-    <value>登录</value>
+    <value>Login</value>
   </data>
   <data name="Main_Review" xml:space="preserve">
-    <value>审核</value>
+    <value>Review</value>
   </data>
   <data name="Login_CookieExpired" xml:space="preserve">
-    <value>上次登录信息已失效，请重新输入密码登录</value>
+    <value>Last login expired. Please re-enter password.</value>
   </data>
   <data name="Login_EnterUserPass" xml:space="preserve">
-    <value>请输入用户名和密码</value>
+    <value>Please enter username and password</value>
   </data>
   <data name="Login_InvalidUserPass" xml:space="preserve">
-    <value>用户名或密码错误，或账号已禁用</value>
+    <value>Invalid username/password, or account disabled</value>
   </data>
   <data name="Role_Guest" xml:space="preserve">
-    <value>游客</value>
+    <value>Guest</value>
   </data>
   <data name="Role_GeneralUser" xml:space="preserve">
-    <value>GeneralUser</value>
+    <value>General User</value>
   </data>
   <data name="Role_Technician" xml:space="preserve">
     <value>Technician</value>
@@ -1176,112 +1176,112 @@
     <value>Administrator</value>
   </data>
   <data name="Plans_NoPending" xml:space="preserve">
-    <value>无未提交修改</value>
+    <value>No unsaved changes</value>
   </data>
   <data name="Plans_NoAddPermission" xml:space="preserve">
-    <value>无新增权限，请登录相应账号</value>
+    <value>No add permission. Please log in.</value>
   </data>
   <data name="Plans_AddSubmitted" xml:space="preserve">
-    <value>新增请求已提交审核，待审核员通过后生效</value>
+    <value>Add request submitted for review</value>
   </data>
   <data name="Plans_EditSubmitted" xml:space="preserve">
-    <value>编辑请求已提交审核，待审核员通过后生效</value>
+    <value>Edit request submitted for review</value>
   </data>
   <data name="Log_NoLogFiles" xml:space="preserve">
-    <value>没有日志文件</value>
+    <value>No log files</value>
   </data>
   <data name="Main_LogoutFormat" xml:space="preserve">
-    <value>注销 [{0}]</value>
+    <value>Logout [{0}]</value>
   </data>
   <data name="Main_ReviewCountFormat" xml:space="preserve">
-    <value>审核 ({0})</value>
+    <value>Review ({0})</value>
   </data>
   <data name="Msg_ConfirmLogout" xml:space="preserve">
-    <value>确认注销当前用户 [{0}]？</value>
+    <value>Log out current user [{0}]?</value>
   </data>
   <data name="Login_CookieDetected" xml:space="preserve">
-    <value>检测到上次登录：{0}（有效期至 {1}），是否继续？</value>
+    <value>Last login detected: {0} (valid until {1}). Continue?</value>
   </data>
   <data name="Plans_PendingFormat" xml:space="preserve">
-    <value>未提交修改: 领退新增{0} 计划新增{1} 修改{2} 删除{3}</value>
+    <value>Unsaved: returns added {0}, plans added {1}, modified {2}, deleted {3}</value>
   </data>
   <data name="Plans_StatusCount" xml:space="preserve">
-    <value>领退表 {0} 条 / 计划表 {1} 条</value>
+    <value>Returns: {0} / Plans: {1}</value>
   </data>
   <data name="Plans_LoadFailed" xml:space="preserve">
-    <value>加载失败: {0}</value>
+    <value>Load failed: {0}</value>
   </data>
   <data name="Review_RequestCount" xml:space="preserve">
-    <value>共 {0} 条请求</value>
+    <value>{0} requests</value>
   </data>
   <data name="ReviewDetail_Meta" xml:space="preserve">
-    <value>请求人: {0}    请求时间: {1}    状态: {2}</value>
+    <value>Requester: {0}    Time: {1}    Status: {2}</value>
   </data>
   <data name="Log_DirNotExist" xml:space="preserve">
-    <value>日志目录不存在: {0}</value>
+    <value>Log directory not found: {0}</value>
   </data>
   <data name="Log_ReadFailed" xml:space="preserve">
-    <value>读取日志失败: {0}</value>
+    <value>Failed to read log: {0}</value>
   </data>
   <data name="Log_CountFiltered" xml:space="preserve">
-    <value>共 {0} 条，筛选后 {1} 条</value>
+    <value>{0} total, {1} after filter</value>
   </data>
   <data name="ReviewDetail_Reviewer" xml:space="preserve">
-    <value>    审核人: {0} ({1})</value>
+    <value>    Reviewer: {0} ({1})</value>
   </data>
   <data name="ReviewDetail_Comment" xml:space="preserve">
-    <value>    审核意见: {0}</value>
+    <value>    Comment: {0}</value>
   </data>
   <data name="Plans_SNFileNotExist" xml:space="preserve">
-    <value>SN文件不存在: {0}</value>
+    <value>SN file not found: {0}</value>
   </data>
   <data name="Plans_SNFileNotExistMsg" xml:space="preserve">
-    <value>SN文件不存在:
+    <value>SN file not found:
 {0}</value>
   </data>
   <data name="App_MainTitle" xml:space="preserve">
-    <value>ORT管理系统</value>
+    <value>ORT Management System</value>
   </data>
   <data name="App_ReportTitle" xml:space="preserve">
-    <value>ORT一键报告</value>
+    <value>ORT One-Click Report</value>
   </data>
   <data name="Dlg_SelectATEData" xml:space="preserve">
-    <value>选择ATE数据</value>
+    <value>Select ATE Data</value>
   </data>
   <data name="Dlg_SelectDir" xml:space="preserve">
-    <value>选择目录</value>
+    <value>Select Directory</value>
   </data>
   <data name="Dlg_SelectDBDir" xml:space="preserve">
-    <value>选择数据库保存目录</value>
+    <value>Select Database Directory</value>
   </data>
   <data name="Dlg_SelectPlanFile" xml:space="preserve">
-    <value>选择计划表文件(ORT Test Schedule)</value>
+    <value>Select Plan File (ORT Test Schedule)</value>
   </data>
   <data name="Dlg_SelectReqFile" xml:space="preserve">
-    <value>选择领用表(成品領用記錄)</value>
+    <value>Select Requisition File</value>
   </data>
   <data name="Dlg_SelectPlanFile2" xml:space="preserve">
-    <value>选择计划表(ORT Test Schedule)</value>
+    <value>Select Plan (ORT Test Schedule)</value>
   </data>
   <data name="Dlg_SelectReportOverview" xml:space="preserve">
-    <value>选择报告概览</value>
+    <value>Select Report Overview</value>
   </data>
   <data name="Dlg_SaveSettingsTo" xml:space="preserve">
-    <value>保存设置到</value>
+    <value>Save Settings To</value>
   </data>
   <data name="Dlg_SelectEMITemplate" xml:space="preserve">
-    <value>请选择EMI模板</value>
+    <value>Select EMI Template</value>
   </data>
   <data name="Dlg_SelectEMIData" xml:space="preserve">
-    <value>请选择EMI数据</value>
+    <value>Select EMI Data</value>
   </data>
   <data name="Dlg_SelectReturnPath" xml:space="preserve">
-    <value>选择领退路径</value>
+    <value>Select Return Path</value>
   </data>
   <data name="Settings_Theme" xml:space="preserve">
-    <value>UI 方案</value>
+    <value>UI Theme</value>
   </data>
   <data name="Settings_ThemeHint" xml:space="preserve">
-    <value>切换界面视觉方案，立即生效并保存。</value>
+    <value>Switch interface theme. Takes effect immediately and is saved.</value>
   </data>
 </root>

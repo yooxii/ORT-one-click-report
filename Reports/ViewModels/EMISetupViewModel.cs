@@ -48,7 +48,7 @@ namespace ORT一键报告.Reports.ViewModels
 
         private string SaveJsonToExcel(string updatedJson)
         {
-            string filePath = _emiService.OpenPathDialog("保存设置到", initPath: Path.GetDirectoryName(TemplatePath));
+            string filePath = _emiService.OpenPathDialog(LanguageService.Get("Dlg_SaveSettingsTo"), initPath: Path.GetDirectoryName(TemplatePath));
             FileInfo fileInfo = new(filePath);
             using ExcelPackage package = new(fileInfo);
             ExcelWorksheet worksheet = package.Workbook.Worksheets["Setup"]; // 获取名为"setup"的工作表
@@ -64,7 +64,7 @@ namespace ORT一键报告.Reports.ViewModels
 
             if (string.IsNullOrEmpty(TemplatePath))
             {
-                excelFilePath = _emiService.OpenPathDialog("请选择EMI模板", filter: "Excel Files|*.xlsx;*.xlsm");
+                excelFilePath = _emiService.OpenPathDialog(LanguageService.Get("Dlg_SelectEMITemplate"), filter: "Excel Files|*.xlsx;*.xlsm");
                 TemplatePath = excelFilePath;
             }
             else
@@ -82,12 +82,12 @@ namespace ORT一键报告.Reports.ViewModels
                 }
                 else
                 {
-                    MessageBox.Show("Excel文件中未找到有效的JSON数据！使用默认设置。", "警告", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show(LocalizationHelper.Get("Msg_ExcelNoJSON"), LanguageService.Get("Cap_Warning"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"加载Excel文件失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"加载Excel文件失败: {ex.Message}", LanguageService.Get("Cap_Error"), MessageBoxButton.OK, MessageBoxImage.Error);
             }
             LoadFromJson(defaultJson);
         }
@@ -142,7 +142,7 @@ namespace ORT一键报告.Reports.ViewModels
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"验证过程中出错: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"验证过程中出错: {ex.Message}", LanguageService.Get("Cap_Error"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
             }
         }
@@ -163,11 +163,11 @@ namespace ORT一键报告.Reports.ViewModels
                 };
                 string updatedJson = JsonSerializer.Serialize(SettingItemViewModel.GetDictionary(RootItems), options);
                 string savepath = SaveJsonToExcel(updatedJson);
-                MessageBox.Show($"设置已保存!\nJSON:\n{savepath}", "保存成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show($"设置已保存!\nJSON:\n{savepath}", LanguageService.Get("Cap_SaveSuccess"), MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"保存设置失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"保存设置失败: {ex.Message}", LanguageService.Get("Cap_Error"), MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 

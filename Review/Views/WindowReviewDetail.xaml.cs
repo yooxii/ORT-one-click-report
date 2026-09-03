@@ -1,4 +1,4 @@
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using ORT一键报告.Models;
@@ -25,9 +25,9 @@ namespace ORT一键报告.Review.Views
             _auth = App.ServiceProvider.GetRequiredService<AuthService>();
 
             txt_summary.Text = $"[{request.Type}] {request.Action} - {request.Summary}";
-            txt_meta.Text = $"请求人: {request.RequesterName}    请求时间: {request.CreatedAt:yyyy-MM-dd HH:mm}    状态: {request.Status}"
-                + (request.ReviewerName != null ? $"    审核人: {request.ReviewerName} ({request.ReviewedAt:yyyy-MM-dd HH:mm})" : "")
-                + (request.ReviewComment != null ? $"    审核意见: {request.ReviewComment}" : "");
+            txt_meta.Text = string.Format(LanguageService.Get("ReviewDetail_Meta"), request.RequesterName, request.CreatedAt.ToString("yyyy-MM-dd HH:mm"), request.Status)
+                + (request.ReviewerName != null ? string.Format(LanguageService.Get("ReviewDetail_Reviewer"), request.ReviewerName, request.ReviewedAt?.ToString("yyyy-MM-dd HH:mm") ?? "") : "")
+                + (request.ReviewComment != null ? string.Format(LanguageService.Get("ReviewDetail_Comment"), request.ReviewComment) : "");
             txt_payload.Text = PrettyJson(request.PayloadJson);
 
             // 非待审核状态不允许再审核
@@ -64,7 +64,7 @@ namespace ORT一键报告.Review.Views
 
         private void Btn_Approve_Click(object sender, RoutedEventArgs e)
         {
-            if (MessageBox.Show("确认通过该请求并应用更改？", "审核确认",
+            if (MessageBox.Show(LocalizationHelper.Get("Msg_ConfirmApprove"), LanguageService.Get("Cap_ReviewConfirm"),
                 MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
             {
                 return;
@@ -72,10 +72,10 @@ namespace ORT一键报告.Review.Views
             string error = _reviewService.Approve(_request.Id, _auth.CurrentOperatorName, txt_comment.Text?.Trim());
             if (error != null)
             {
-                _ = MessageBox.Show(error, "审核失败");
+                _ = MessageBox.Show(error, LanguageService.Get("Cap_ReviewFailed"));
                 return;
             }
-            _ = MessageBox.Show("已通过并应用更改", "审核完成");
+            _ = MessageBox.Show(LocalizationHelper.Get("Msg_Approved"), LanguageService.Get("Cap_ReviewComplete"));
             DialogResult = true;
         }
 
@@ -83,10 +83,10 @@ namespace ORT一键报告.Review.Views
         {
             if (string.IsNullOrWhiteSpace(txt_comment.Text))
             {
-                _ = MessageBox.Show("驳回时请填写审核意见", "提示");
+                _ = MessageBox.Show(LocalizationHelper.Get("Msg_FillRejectReason"), LanguageService.Get("Cap_Info"));
                 return;
             }
-            if (MessageBox.Show("确认驳回该请求？", "审核确认",
+            if (MessageBox.Show(LocalizationHelper.Get("Msg_ConfirmReject"), LanguageService.Get("Cap_ReviewConfirm"),
                 MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
             {
                 return;
@@ -94,10 +94,10 @@ namespace ORT一键报告.Review.Views
             string error = _reviewService.Reject(_request.Id, _auth.CurrentOperatorName, txt_comment.Text?.Trim());
             if (error != null)
             {
-                _ = MessageBox.Show(error, "审核失败");
+                _ = MessageBox.Show(error, LanguageService.Get("Cap_ReviewFailed"));
                 return;
             }
-            _ = MessageBox.Show("已驳回", "审核完成");
+            _ = MessageBox.Show(LocalizationHelper.Get("Msg_Rejected"), LanguageService.Get("Cap_ReviewComplete"));
             DialogResult = true;
         }
 

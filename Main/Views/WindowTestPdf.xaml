@@ -1,8 +1,9 @@
-﻿<Window x:Class="ORT一键报告.TestPdfWindow"
+﻿<Window x:Class="ORT一键报告.TestPdfWindow" Background="{DynamicResource WindowBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:lex="http://wpflocalizeextension.codeplex.com"
         xmlns:local="clr-namespace:ORT一键报告"
         mc:Ignorable="d"
         Title="TestPdfWindow" Height="450" Width="800">
@@ -17,9 +18,9 @@
                 <ColumnDefinition Width="6*"/>
                 <ColumnDefinition Width="1*"/>
             </Grid.ColumnDefinitions>
-            <Label Content="选择PDF文件：" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="3"/>
+            <Label Content="{lex:Loc TestPdf_SelectPDF}" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="3"/>
             <TextBox x:Name="TextBox_PdfPath" Grid.Column="1" Margin="3"/>
-            <Button x:Name="Btn_PDFPath" Content="浏览" Grid.Column="2" Margin="3" Click="Btn_PDFPath_Click"/>
+            <Button x:Name="Btn_PDFPath" Content="{lex:Loc Common_Browse}" Grid.Column="2" Margin="3" Click="Btn_PDFPath_Click"/>
         </Grid>
         <ScrollViewer Grid.Row="1">
             <TextBlock x:Name="TextBlock_PdfContent" Margin="3" TextWrapping="Wrap"/>

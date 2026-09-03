@@ -2,6 +2,7 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:lex="http://wpflocalizeextension.codeplex.com"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:ORT一键报告.Reports.Views" xmlns:viewmodels="clr-namespace:ORT一键报告.Reports.ViewModels"
              d:DataContext="{d:DesignInstance Type=viewmodels:EMIReportViewModel}"
@@ -29,7 +30,7 @@
                                     <ColumnDefinition Width="auto" />
                                     <ColumnDefinition />
                                 </Grid.ColumnDefinitions>
-                                <Label Content="单体周期:" Margin="3" VerticalContentAlignment="Center" />
+                                <Label Content="{lex:Loc EMI_UnitCycle}" Margin="3" VerticalContentAlignment="Center" />
                                 <TextBox x:Name="DC_text" Grid.Column="1" Text="{Binding DC}" VerticalContentAlignment="Center" TextWrapping="Wrap" Margin="3" />
                             </Grid>
                             <Grid Grid.Column="1">
@@ -37,7 +38,7 @@
                                     <ColumnDefinition Width="auto" />
                                     <ColumnDefinition />
                                 </Grid.ColumnDefinitions>
-                                <Label Content="版本:" Margin="3" VerticalContentAlignment="Center" />
+                                <Label Content="{lex:Loc EMI_Version}" Margin="3" VerticalContentAlignment="Center" />
                                 <TextBox x:Name="Version_text" Grid.Column="1" Text="{Binding Version}" VerticalContentAlignment="Center" TextWrapping="Wrap" Margin="3" />
                             </Grid>
                             <Grid Grid.Column="2">
@@ -45,7 +46,7 @@
                                     <ColumnDefinition Width="auto" />
                                     <ColumnDefinition />
                                 </Grid.ColumnDefinitions>
-                                <Label Content="工令:" Margin="3" VerticalContentAlignment="Center" />
+                                <Label Content="{lex:Loc EMI_WorkOrder}" Margin="3" VerticalContentAlignment="Center" />
                                 <TextBox x:Name="WorkOrder_text" Grid.Column="1" Text="{Binding WorkOrder}" VerticalContentAlignment="Center" TextWrapping="Wrap" Margin="3" />
                             </Grid>
                         </Grid>
@@ -56,10 +57,10 @@
                                 <ColumnDefinition Width="auto" />
                                 <ColumnDefinition Width="auto" />
                             </Grid.ColumnDefinitions>
-                            <Label Content="模板路径:" Margin="3" VerticalContentAlignment="Center" />
+                            <Label Content="{lex:Loc EMI_TemplatePath}" Margin="3" VerticalContentAlignment="Center" />
                             <TextBox x:Name="TemplatePath_text" Text="{Binding TemplatePath}" Grid.Column="1" VerticalContentAlignment="Center" TextWrapping="Wrap" Margin="3" />
-                            <Button Tag="TemplatePath_text" x:Name="btnTemplatePath" Content="选择" Width="70" Grid.Column="2" Margin="3,3,3,0" Height="25" VerticalAlignment="Top" Command="{Binding FileSelectCommand}" />
-                            <Button Tag="TemplatePath_text" x:Name="btnEMISetup" Content="设置" Width="70" Grid.Column="3" Margin="3,3,3,0" Height="25" VerticalAlignment="Top" Click="BTNEMISetup_Click" />
+                            <Button Tag="TemplatePath_text" x:Name="btnTemplatePath" Content="{lex:Loc Common_Select}" Width="70" Grid.Column="2" Margin="3,3,3,0" Height="25" VerticalAlignment="Top" Command="{Binding FileSelectCommand}" />
+                            <Button Tag="TemplatePath_text" x:Name="btnEMISetup" Content="{lex:Loc Settings_Title}" Width="70" Grid.Column="3" Margin="3,3,3,0" Height="25" VerticalAlignment="Top" Click="BTNEMISetup_Click" />
                         </Grid>
                         <Grid>
                             <Grid.ColumnDefinitions>
@@ -69,23 +70,23 @@
                                 <ColumnDefinition Width="auto" />
                                 <ColumnDefinition Width="auto" />
                             </Grid.ColumnDefinitions>
-                            <Label Content="数据路径:" Margin="3" VerticalContentAlignment="Center" />
+                            <Label Content="{lex:Loc EMI_DataPath}" Margin="3" VerticalContentAlignment="Center" />
                             <TextBox x:Name="DataPath_text" Text="{Binding DataPath}" Grid.Column="1" VerticalContentAlignment="Center" TextWrapping="Wrap" Margin="3" />
-                            <Button Tag="DataPath_text" x:Name="btnDataPath" Content="选择" Width="70" Grid.Column="2" Margin="3" Command="{Binding DirSelectCommand}" />
-                            <Button x:Name="btnToPDF" Content="转PDF" Width="70" Grid.Column="3" Margin="3" Command="{Binding ToPDFCommand}" />
+                            <Button Tag="DataPath_text" x:Name="btnDataPath" Content="{lex:Loc Common_Select}" Width="70" Grid.Column="2" Margin="3" Command="{Binding DirSelectCommand}" />
+                            <Button x:Name="btnToPDF" Content="{lex:Loc EMI_ToPDF}" Width="70" Grid.Column="3" Margin="3" Command="{Binding ToPDFCommand}" />
                             <Button x:Name="btnAlertTime" Content="Alert" Width="70" Grid.Column="4" Margin="3" Command="{Binding AlertTimeCommand}" />
                         </Grid>
                     </StackPanel>
                     <local:ReportPicturesWidget x:Name="widget_pic" />
-                    <GroupBox Header="注脚" Margin="0">
+                    <GroupBox Header="{lex:Loc EMI_Footer}" Margin="0">
                         <Border Margin="2" BorderBrush="LightGray" BorderThickness="0.5">
                             <TextBox TextWrapping="Wrap" Text="{Binding Remark}"/>
                         </Border>
                     </GroupBox>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right"  Grid.Row="1">
-                    <Button Content="重置" Margin="5" MinWidth="120" Grid.Column="1" Cursor="Hand" />
-                    <Button Tag="emi" Content="开始制作" Margin="5"  MinWidth="120" Cursor="Hand" Command="{Binding EMIFinishCommand}"/>
+                    <Button Content="{lex:Loc Common_Reset}" Margin="5" MinWidth="120" Grid.Column="1" Cursor="Hand" />
+                    <Button Tag="emi" Content="{lex:Loc EMI_StartCreate}" Margin="5"  MinWidth="120" Cursor="Hand" Command="{Binding EMIFinishCommand}"/>
                 </StackPanel>
             </Grid>
         </ScrollViewer>

@@ -71,7 +71,7 @@ namespace ORT一键报告.ViewModels
 
         private void SelectLTPath()
         {
-            LTPath = _service.OpenPathDialog("选择领退路径");
+            LTPath = _service.OpenPathDialog(LanguageService.Get("Dlg_SelectReturnPath"));
         }
     }
 }

@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>方案三：深色实验室专业风 — ORT 管理系统</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: 'Inter', 'Segoe UI', 'Microsoft YaHei', sans-serif; background: #0a0a14; color: #e0e0e0; }
+  
+  .back-nav { background: #12122a; color: #8888cc; padding: 12px 24px; font-size: 0.9em; border-bottom: 1px solid #2a2a4a; }
+  .back-nav a { color: #8888cc; text-decoration: none; }
+  
+  .page-header { padding: 40px 40px 20px; }
+  .page-header h1 { font-size: 2em; font-weight: 600; color: #00d4ff; }
+  .page-header .desc { color: #8888aa; margin-top: 8px; font-size: 1.05em; }
+  .page-header .tag { display: inline-block; background: rgba(0,212,255,0.1); color: #00d4ff; padding: 4px 12px; border-radius: 12px; font-size: 0.8em; margin-right: 8px; margin-top: 12px; border: 1px solid rgba(0,212,255,0.2); }
+  
+  .design-principles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; padding: 20px 40px; }
+  .dp-card { background: #12122a; border: 1px solid #2a2a4a; border-radius: 12px; padding: 24px; }
+  .dp-card .icon { font-size: 1.8em; margin-bottom: 8px; }
+  .dp-card h4 { font-size: 0.95em; color: #00d4ff; margin-bottom: 6px; }
+  .dp-card p { font-size: 0.82em; color: #8888aa; }
+  
+  .screen-section { padding: 30px 40px; }
+  .screen-section h2 { font-size: 1.3em; margin-bottom: 16px; color: #ccccdd; display: flex; align-items: center; gap: 10px; }
+  .screen-section h2 .num { background: #00d4ff; color: #0a0a14; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8em; font-weight: 700; }
+  
+  .mockup-container { display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap; }
+  .mockup { background: #12122a; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.4); border: 1px solid #2a2a4a; }
+  .mockup-label { font-size: 0.85em; color: #6666aa; margin-top: 8px; text-align: center; }
+  
+  /* Dark Window */
+  .dark-window { width: 780px; }
+  .dark-titlebar { 
+    background: #1a1a3e; height: 32px; display: flex; align-items: center; padding: 0 12px;
+    font-size: 12px; color: #8888cc; border-bottom: 1px solid #2a2a4a;
+  }
+  .dark-titlebar .dots { display: flex; gap: 8px; margin-right: 12px; }
+  .dark-titlebar .dot { width: 12px; height: 12px; border-radius: 50%; }
+  .dark-titlebar .dot.r { background: #ff5f57; }
+  .dark-titlebar .dot.y { background: #febc2e; }
+  .dark-titlebar .dot.g { background: #28c840; }
+  
+  /* Login */
+  .login-body { 
+    background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3e 50%, #0f0f2e 100%);
+    padding: 60px 40px; display: flex; justify-content: center; align-items: center; min-height: 380px;
+  }
+  .login-card {
+    background: #16163a; border: 1px solid #2a2a5a; border-radius: 12px; padding: 36px; width: 340px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  }
+  .login-card .logo { text-align: center; margin-bottom: 24px; }
+  .login-card .logo .hex { 
+    width: 56px; height: 56px; background: linear-gradient(135deg, #00d4ff, #0088cc);
+    border-radius: 12px; display: inline-flex; align-items: center; justify-content: center;
+    color: white; font-size: 1.5em; margin-bottom: 12px;
+  }
+  .login-card h2 { text-align: center; font-size: 1.3em; font-weight: 600; color: #e0e0f0; }
+  .login-card .sub { text-align: center; font-size: 0.82em; color: #6666aa; margin-bottom: 24px; }
+  .dark-field { margin-bottom: 16px; }
+  .dark-field label { display: block; font-size: 0.8em; color: #8888aa; margin-bottom: 6px; }
+  .dark-field input { 
+    width: 100%; padding: 10px 12px; background: #0e0e24; border: 1px solid #2a2a5a; border-radius: 8px;
+    font-size: 0.9em; color: #e0e0f0; outline: none; transition: border-color 0.2s;
+  }
+  .dark-field input:focus { border-color: #00d4ff; }
+  .dark-btn { 
+    width: 100%; padding: 12px; background: linear-gradient(135deg, #00d4ff, #0088cc); color: #0a0a14; border: none;
+    border-radius: 8px; font-size: 0.95em; font-weight: 600; cursor: pointer; margin-top: 8px;
+  }
+  .dark-btn:hover { opacity: 0.9; }
+  .dark-btn-outline { 
+    width: 100%; padding: 12px; background: transparent; color: #00d4ff; 
+    border: 1px solid #00d4ff; border-radius: 8px; font-size: 0.95em; cursor: pointer; margin-top: 8px;
+  }
+  
+  /* Dashboard */
+  .dark-layout { display: flex; min-height: 420px; }
+  .dark-sidebar { 
+    width: 200px; background: #0e0e24; border-right: 1px solid #2a2a4a; padding: 8px 0;
+  }
+  .dark-nav-item { 
+    padding: 10px 20px; font-size: 0.88em; color: #8888aa; cursor: pointer;
+    display: flex; align-items: center; gap: 10px; transition: all 0.15s;
+  }
+  .dark-nav-item:hover { background: rgba(0,212,255,0.05); color: #ccccdd; }
+  .dark-nav-item.active { background: rgba(0,212,255,0.1); color: #00d4ff; border-right: 3px solid #00d4ff; }
+  .dark-nav-item .icon { font-size: 1.1em; width: 20px; text-align: center; }
+  .dark-nav-item .badge { 
+    margin-left: auto; background: #00d4ff; color: #0a0a14; 
+    padding: 1px 7px; border-radius: 8px; font-size: 0.8em; font-weight: 600;
+  }
+  .dark-nav-divider { height: 1px; background: #2a2a4a; margin: 8px 16px; }
+  .dark-nav-user { 
+    padding: 12px 20px; font-size: 0.82em; border-top: 1px solid #2a2a4a;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .dark-nav-user .avatar { width: 28px; height: 28px; border-radius: 50%; background: #00d4ff; color: #0a0a14; display: flex; align-items: center; justify-content: center; font-size: 0.8em; font-weight: 700; }
+  
+  .dark-content { flex: 1; padding: 24px; background: #0a0a1a; }
+  .dark-content h3 { font-size: 1.2em; font-weight: 600; margin-bottom: 20px; color: #e0e0f0; }
+  
+  .dark-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+  .dark-stat { 
+    background: #12122a; border: 1px solid #2a2a4a; border-radius: 10px; padding: 16px;
+  }
+  .dark-stat .stat-label { font-size: 0.72em; color: #6666aa; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .dark-stat .stat-value { font-size: 1.6em; font-weight: 700; color: #00d4ff; font-family: 'Consolas', monospace; }
+  .dark-stat .stat-sub { font-size: 0.7em; color: #4caf50; margin-top: 4px; }
+  
+  .dark-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .dark-card {
+    background: #12122a; border: 1px solid #2a2a4a; border-radius: 10px; padding: 20px;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .dark-card:hover { border-color: #00d4ff; box-shadow: 0 0 16px rgba(0,212,255,0.1); }
+  .dark-card .card-header { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .dark-card .card-icon { 
+    width: 40px; height: 40px; border-radius: 10px; 
+    display: flex; align-items: center; justify-content: center; font-size: 1.2em;
+    background: rgba(0,212,255,0.1); border: 1px solid rgba(0,212,255,0.2);
+  }
+  .dark-card h4 { font-size: 0.95em; font-weight: 600; color: #e0e0f0; }
+  .dark-card p { font-size: 0.8em; color: #6666aa; }
+  
+  /* DataGrid */
+  .dark-toolbar { 
+    display: flex; gap: 8px; padding: 12px 16px; background: #12122a;
+    border-bottom: 1px solid #2a2a4a; align-items: center; flex-wrap: wrap;
+  }
+  .dark-btn-sm { 
+    padding: 6px 14px; border-radius: 6px; font-size: 0.82em; cursor: pointer;
+    border: 1px solid #2a2a5a; background: #16163a; color: #ccccdd; transition: all 0.15s;
+  }
+  .dark-btn-sm:hover { border-color: #00d4ff; color: #00d4ff; }
+  .dark-btn-sm.primary { background: #00d4ff; color: #0a0a14; border-color: #00d4ff; font-weight: 600; }
+  .dark-btn-sm.primary:hover { opacity: 0.9; }
+  .dark-search { 
+    margin-left: auto; padding: 6px 12px; background: #0e0e24; border: 1px solid #2a2a5a; border-radius: 6px;
+    font-size: 0.82em; width: 200px; outline: none; color: #e0e0f0;
+  }
+  .dark-search:focus { border-color: #00d4ff; }
+  .dark-search::placeholder { color: #4a4a7a; }
+  
+  .dark-tabs { display: flex; background: #12122a; border-bottom: 1px solid #2a2a4a; }
+  .dark-tab { padding: 10px 20px; font-size: 0.88em; cursor: pointer; color: #6666aa; border-bottom: 2px solid transparent; }
+  .dark-tab.active { color: #00d4ff; border-bottom-color: #00d4ff; font-weight: 600; }
+  
+  .dark-table { width: 100%; border-collapse: collapse; font-size: 0.82em; }
+  .dark-table th { 
+    background: #0e0e24; padding: 10px 12px; text-align: left; font-weight: 600;
+    color: #6666aa; border-bottom: 1px solid #2a2a4a; font-size: 0.85em;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .dark-table td { padding: 8px 12px; border-bottom: 1px solid #1a1a3e; color: #ccccdd; font-family: 'Consolas', monospace; font-size: 0.95em; }
+  .dark-table tr:hover td { background: rgba(0,212,255,0.03); }
+  .dark-status { 
+    display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.85em; font-weight: 600;
+  }
+  .dark-status.ok { background: rgba(76,175,80,0.15); color: #4caf50; border: 1px solid rgba(76,175,80,0.3); }
+  .dark-status.pending { background: rgba(255,152,0,0.15); color: #ff9800; border: 1px solid rgba(255,152,0,0.3); }
+  .dark-status.error { background: rgba(244,67,54,0.15); color: #f44336; border: 1px solid rgba(244,67,54,0.3); }
+  
+  .dark-footer { 
+    padding: 8px 16px; background: #12122a; border-top: 1px solid #2a2a4a;
+    font-size: 0.8em; color: #6666aa; display: flex; justify-content: space-between;
+    font-family: 'Consolas', monospace;
+  }
+  
+  /* Settings */
+  .dark-settings { display: flex; min-height: 380px; }
+  .dark-settings-side { width: 180px; background: #0e0e24; border-right: 1px solid #2a2a4a; padding: 16px 0; }
+  .dark-settings-item { padding: 8px 20px; font-size: 0.85em; color: #8888aa; cursor: pointer; border-left: 3px solid transparent; }
+  .dark-settings-item.active { color: #00d4ff; font-weight: 600; background: rgba(0,212,255,0.05); border-left-color: #00d4ff; }
+  .dark-settings-content { flex: 1; padding: 24px; background: #0a0a1a; }
+  .dark-settings-card { background: #12122a; border: 1px solid #2a2a4a; border-radius: 10px; padding: 20px; margin-bottom: 16px; }
+  .dark-settings-card h4 { font-size: 0.95em; margin-bottom: 14px; color: #e0e0f0; font-weight: 600; }
+  .dark-settings-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+  .dark-settings-row label { font-size: 0.85em; color: #8888aa; width: 100px; }
+  .dark-settings-row select { 
+    flex: 1; padding: 8px 12px; background: #0e0e24; border: 1px solid #2a2a5a; border-radius: 6px; 
+    font-size: 0.85em; color: #e0e0f0; outline: none;
+  }
+  .dark-settings-row select:focus { border-color: #00d4ff; }
+  .dark-toggle { width: 44px; height: 22px; background: #00d4ff; border-radius: 11px; position: relative; cursor: pointer; }
+  .dark-toggle::after { content: ''; position: absolute; width: 18px; height: 18px; background: #0a0a14; border-radius: 50%; top: 2px; right: 2px; }
+  
+  .notes { padding: 20px 40px 40px; }
+  .notes h3 { font-size: 1.1em; margin-bottom: 12px; color: #ccccdd; }
+  .notes ul { padding-left: 20px; }
+  .notes li { font-size: 0.9em; color: #8888aa; margin-bottom: 6px; }
+  .notes code { background: #1a1a3e; padding: 2px 6px; border-radius: 4px; font-size: 0.85em; color: #00d4ff; }
+</style>
+</head>
+<body>
+
+<div class="back-nav"><a href="index.html">← 返回方案总览</a></div>
+
+<div class="page-header">
+  <h1>方案三：深色实验室专业风</h1>
+  <p class="desc">深色背景 + Cyan 蓝色强调色，减少屏幕眩光，适合长时间实验室操作，科技感强</p>
+  <div>
+    <span class="tag">深色主题</span>
+    <span class="tag">Cyan 强调色</span>
+    <span class="tag">等宽字体数据</span>
+    <span class="tag">状态颜色编码</span>
+    <span class="tag">高数据密度</span>
+  </div>
+</div>
+
+<div class="design-principles">
+  <div class="dp-card">
+    <div class="icon"></div>
+    <h4>护眼深色</h4>
+    <p>#0a0a1a 深色背景，减少屏幕眩光，适合实验室长时间操作</p>
+  </div>
+  <div class="dp-card">
+    <div class="icon"></div>
+    <h4>Cyan 强调色</h4>
+    <p>#00d4ff 蓝色高亮关键信息，科技感强，与深色背景高对比</p>
+  </div>
+  <div class="dp-card">
+    <div class="icon"></div>
+    <h4>等宽数据字体</h4>
+    <p>Consolas 等宽字体显示数据，对齐整齐，便于快速扫描</p>
+  </div>
+  <div class="dp-card">
+    <div class="icon"></div>
+    <h4>状态颜色编码</h4>
+    <p>绿/橙/红三色状态标签，一目了然，带边框增强辨识度</p>
+  </div>
+</div>
+
+<!-- Login -->
+<div class="screen-section">
+  <h2><span class="num">1</span> 登录窗口</h2>
+  <div class="mockup-container">
+    <div>
+      <div class="mockup dark-window">
+        <div class="dark-titlebar">
+          <div class="dots"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+          <span>ORT 管理系统</span>
+        </div>
+        <div class="login-body">
+          <div class="login-card">
+            <div class="logo">
+              <div class="hex"></div>
+              <h2>ORT 管理系统</h2>
+            </div>
+            <p class="sub">实验室工作流自动化平台</p>
+            <div class="dark-field">
+              <label>用户名</label>
+              <input type="text" value="admin">
+            </div>
+            <div class="dark-field">
+              <label>密码</label>
+              <input type="password" placeholder="输入密码">
+            </div>
+            <button class="dark-btn">登 录</button>
+            <button class="dark-btn-outline">使用上次登录</button>
+          </div>
+        </div>
+      </div>
+      <p class="mockup-label">登录窗口 — 深色卡片 + Cyan 渐变按钮</p>
+    </div>
+  </div>
+</div>
+
+<!-- Dashboard -->
+<div class="screen-section">
+  <h2><span class="num">2</span> 主界面（Dashboard）</h2>
+  <div class="mockup-container">
+    <div>
+      <div class="mockup dark-window">
+        <div class="dark-titlebar">
+          <div class="dots"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+          <span>ORT 管理系统</span>
+        </div>
+        <div class="dark-layout">
+          <div class="dark-sidebar">
+            <div class="dark-nav-item active"><span class="icon"></span> 工作台</div>
+            <div class="dark-nav-item"><span class="icon"></span> 领退与计划</div>
+            <div class="dark-nav-item"><span class="icon"></span> 一键报告</div>
+            <div class="dark-nav-divider"></div>
+            <div class="dark-nav-item"><span class="icon">✅</span> 审核 <span class="badge">3</span></div>
+            <div class="dark-nav-item"><span class="icon">⚙️</span> 管理</div>
+            <div class="dark-nav-divider"></div>
+            <div class="dark-nav-item"><span class="icon">📁</span> 设置</div>
+            <div class="dark-nav-item"><span class="icon">📄</span> 查看日志</div>
+            <div class="dark-nav-user">
+              <div class="avatar">A</div>
+              <div>
+                <div style="color:#e0e0f0;font-weight:600;">Admin</div>
+                <div style="font-size:0.85em;color:#6666aa;">管理员</div>
+              </div>
+            </div>
+          </div>
+          <div class="dark-content">
+            <h3>工作台</h3>
+            <div class="dark-stats">
+              <div class="dark-stat">
+                <div class="stat-label">待审核</div>
+                <div class="stat-value">3</div>
+                <div class="stat-sub">↑ 2</div>
+              </div>
+              <div class="dark-stat">
+                <div class="stat-label">本月报告</div>
+                <div class="stat-value">28</div>
+              </div>
+              <div class="dark-stat">
+                <div class="stat-label">活跃计划</div>
+                <div class="stat-value">156</div>
+              </div>
+              <div class="dark-stat">
+                <div class="stat-label">领退记录</div>
+                <div class="stat-value">227</div>
+              </div>
+            </div>
+            <div class="dark-grid">
+              <div class="dark-card">
+                <div class="card-header">
+                  <div class="card-icon">📋</div>
+                  <h4>领退与计划</h4>
+                </div>
+                <p>管理材料领用、退回与试验排程</p>
+              </div>
+              <div class="dark-card">
+                <div class="card-header">
+                  <div class="card-icon"></div>
+                  <h4>一键报告</h4>
+                </div>
+                <p>自动生成 Thermal Shock / Burn In / EMI 报告</p>
+              </div>
+              <div class="dark-card">
+                <div class="card-header">
+                  <div class="card-icon">✅</div>
+                  <h4>审核中心</h4>
+                </div>
+                <p>处理待审核的变更请求</p>
+              </div>
+              <div class="dark-card">
+                <div class="card-header">
+                  <div class="card-icon">⚙️</div>
+                  <h4>系统管理</h4>
+                </div>
+                <p>用户、客户、测试项目配置</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="mockup-label">主界面 — 深色侧边栏 + 统计面板 + 功能卡片</p>
+    </div>
+  </div>
+</div>
+
+<!-- DataGrid -->
+<div class="screen-section">
+  <h2><span class="num">3</span> 领退与计划（DataGrid）</h2>
+  <div class="mockup-container">
+    <div>
+      <div class="mockup dark-window" style="width:820px;">
+        <div class="dark-titlebar">
+          <div class="dots"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+          <span>领退与计划 — ORT 管理系统</span>
+        </div>
+        <div class="dark-tabs">
+          <div class="dark-tab active">领退表</div>
+          <div class="dark-tab">计划表</div>
+        </div>
+        <div class="dark-toolbar">
+          <button class="dark-btn-sm primary">+ 新增领退</button>
+          <button class="dark-btn-sm">+ 新增计划</button>
+          <button class="dark-btn-sm">编辑</button>
+          <button class="dark-btn-sm">提交保存</button>
+          <button class="dark-btn-sm">导出</button>
+          <button class="dark-btn-sm">刷新</button>
+          <input class="dark-search" placeholder="搜索机种/工令/SN...">
+        </div>
+        <div style="overflow-x:auto; max-height:220px;">
+          <table class="dark-table">
+            <thead>
+              <tr><th>日期</th><th>单据号</th><th>机种</th><th>数量</th><th>S/N</th><th>D/C</th><th>REV</th><th>工令</th><th>状态</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>2026/4/16</td><td>T01260300154</td><td>FSM010-930G</td><td>3</td><td>FSM01000693...</td><td>2615</td><td>06</td><td>AH00M0100014P01152</td><td><span class="dark-status ok">已完成</span></td></tr>
+              <tr><td>2026/4/15</td><td>T01260400405</td><td>WAQ002-F94GK</td><td>23</td><td>FSM01000693...</td><td>2615</td><td>1</td><td>AH00Q2940017P03154</td><td><span class="dark-status pending">待审核</span></td></tr>
+              <tr><td>2026/4/15</td><td>T01260400400</td><td>PCM010-242G</td><td>3</td><td>CN0RDN4WABD00...</td><td>2614</td><td>A01</td><td>AH00M1020014P09145</td><td><span class="dark-status ok">已完成</span></td></tr>
+              <tr><td>2026/4/10</td><td>T01260300153</td><td>FSL031-243G</td><td>3</td><td>CN03MY6RABD00...</td><td>2613</td><td>A01</td><td>AH00L3130017P09133</td><td><span class="dark-status ok">已完成</span></td></tr>
+              <tr><td>2026/4/8</td><td>T01260400381</td><td>FSF050-9TAG</td><td>3</td><td>FSF050A059TAG...</td><td>2614</td><td>A05</td><td>AH00F50K0093P01144</td><td><span class="dark-status error">异常</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="dark-footer">
+          <span>领退表 227 条 / 计划表 286 条</span>
+          <span style="color:#00d4ff;">无未提交修改</span>
+        </div>
+      </div>
+      <p class="mockup-label">领退与计划 — 等宽数据 + 三色状态标签 + 深色工具栏</p>
+    </div>
+  </div>
+</div>
+
+<!-- Settings -->
+<div class="screen-section">
+  <h2><span class="num">4</span> 设置窗口</h2>
+  <div class="mockup-container">
+    <div>
+      <div class="mockup dark-window">
+        <div class="dark-titlebar">
+          <div class="dots"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+          <span>设置 — ORT 管理系统</span>
+        </div>
+        <div class="dark-settings">
+          <div class="dark-settings-side">
+            <div class="dark-settings-item active"> 外观</div>
+            <div class="dark-settings-item">🌐 语言</div>
+            <div class="dark-settings-item"> 路径配置</div>
+            <div class="dark-settings-item">️ 数据库</div>
+          </div>
+          <div class="dark-settings-content">
+            <div class="dark-settings-card">
+              <h4>外观设置</h4>
+              <div class="dark-settings-row">
+                <label>主题模式</label>
+                <select><option>深色（默认）</option><option>浅色</option><option>跟随系统</option></select>
+              </div>
+              <div class="dark-settings-row">
+                <label>字体</label>
+                <select><option>Inter</option><option>Consolas（数据）</option><option>Microsoft YaHei</option></select>
+              </div>
+              <div class="dark-settings-row">
+                <label>强调色</label>
+                <select><option>Cyan #00d4ff</option><option>Blue #2196F3</option><option>Green #4CAF50</option></select>
+              </div>
+            </div>
+            <div class="dark-settings-card">
+              <h4>语言</h4>
+              <div class="dark-settings-row">
+                <label>界面语言</label>
+                <select><option>简体中文</option><option>繁體中文</option><option>English</option></select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="mockup-label">设置窗口 — 深色卡片 + 可切换强调色</p>
+    </div>
+  </div>
+</div>
+
+<div class="notes">
+  <h3>📦 推荐 NuGet 包</h3>
+  <ul>
+    <li><code>HandyControl</code> — 现代化 WPF 控件库，内置深色主题支持，提供 DataGrid、Button、ComboBox 等全套控件的深色样式</li>
+    <li>或自定义 ResourceDictionary — 定义深色颜色资源和控件模板，完全掌控视觉效果</li>
+  </ul>
+  <h3 style="margin-top:20px;">🔧 实施步骤</h3>
+  <ul>
+    <li>1. 定义深色颜色资源（Colors.xaml）：背景、卡片、边框、文字、强调色</li>
+    <li>2. 定义控件样式（Styles.xaml）：Button、TextBox、DataGrid、ComboBox 深色样式</li>
+    <li>3. App.xaml 合并深色资源字典</li>
+    <li>4. 主窗口改为侧边栏 + 内容布局</li>
+    <li>5. DataGrid 应用等宽字体 + 状态颜色模板</li>
+    <li>6. 添加浅色主题资源字典，支持主题切换</li>
+  </ul>
+  <h3 style="margin-top:20px;">⏱️ 预计工期</h3>
+  <ul>
+    <li>深色主题资源定义（颜色 + 控件样式）：1 天</li>
+    <li>主窗口 + 登录窗口改造：0.5 天</li>
+    <li>领退计划窗口（DataGrid 深色样式 + 状态模板）：0.5 天</li>
+    <li>报告/管理/审核/设置窗口：1 天</li>
+    <li>浅色主题适配 + 测试：0.5 天</li>
+    <li><strong>合计：约 3.5 天</strong></li>
+  </ul>
+  <h3 style="margin-top:20px;"> 方案特点</h3>
+  <ul>
+    <li>✅ 长时间操作不累眼，适合实验室环境</li>
+    <li>✅ 数据密度高，等宽字体对齐整齐</li>
+    <li>✅ 状态颜色编码（绿/橙/红）一目了然</li>
+    <li>✅ 科技感强，工程师审美</li>
+    <li>⚠️ 客户查阅时可能觉得过暗（可提供浅色切换）</li>
+    <li>⚠️ 需要自定义主题，开发量略大于前两个方案</li>
+  </ul>
+</div>
+
+</body>
+</html>

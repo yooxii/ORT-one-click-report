@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>方案一：Fluent 2 原生风格 — ORT 管理系统</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: 'Segoe UI Variable', 'Segoe UI', 'Microsoft YaHei', sans-serif; background: #f3f3f3; color: #1a1a1a; }
+  
+  .back-nav { background: #0078D4; color: white; padding: 12px 24px; font-size: 0.9em; }
+  .back-nav a { color: white; text-decoration: none; opacity: 0.9; }
+  .back-nav a:hover { opacity: 1; }
+  
+  .page-header { padding: 40px 40px 20px; }
+  .page-header h1 { font-size: 2em; font-weight: 600; color: #1a1a1a; }
+  .page-header .desc { color: #666; margin-top: 8px; font-size: 1.05em; }
+  .page-header .tags { margin-top: 12px; }
+  .page-header .tag { display: inline-block; background: #e3f2fd; color: #1565c0; padding: 4px 12px; border-radius: 12px; font-size: 0.8em; margin-right: 8px; }
+  
+  .design-principles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; padding: 20px 40px; }
+  .dp-card { background: white; border-radius: 8px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  .dp-card .icon { font-size: 1.8em; margin-bottom: 8px; }
+  .dp-card h4 { font-size: 0.95em; color: #0078D4; margin-bottom: 6px; }
+  .dp-card p { font-size: 0.82em; color: #666; }
+  
+  .screen-section { padding: 30px 40px; }
+  .screen-section h2 { font-size: 1.3em; margin-bottom: 16px; color: #333; display: flex; align-items: center; gap: 10px; }
+  .screen-section h2 .num { background: #0078D4; color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8em; }
+  
+  .mockup-container { display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap; }
+  .mockup { 
+    background: white; border-radius: 12px; overflow: hidden; 
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1); border: 1px solid #e0e0e0;
+  }
+  .mockup-label { font-size: 0.85em; color: #888; margin-top: 8px; text-align: center; }
+  
+  /* Fluent 2 Window Chrome */
+  .fluent-window { width: 780px; }
+  .fluent-titlebar { 
+    background: rgba(243,243,243,0.8); backdrop-filter: blur(20px);
+    height: 32px; display: flex; align-items: center; padding: 0 12px;
+    font-size: 12px; color: #333; border-bottom: 1px solid #e8e8e8;
+  }
+  .fluent-titlebar .dots { display: flex; gap: 8px; margin-right: 12px; }
+  .fluent-titlebar .dot { width: 12px; height: 12px; border-radius: 50%; }
+  .fluent-titlebar .dot.r { background: #ff5f57; }
+  .fluent-titlebar .dot.y { background: #febc2e; }
+  .fluent-titlebar .dot.g { background: #28c840; }
+  
+  /* Login Screen */
+  .login-body { 
+    background: linear-gradient(135deg, #e8f4f8 0%, #d4e8f0 50%, #c8dce8 100%);
+    padding: 60px 40px; display: flex; justify-content: center; align-items: center; min-height: 380px;
+  }
+  .login-card {
+    background: rgba(255,255,255,0.92); backdrop-filter: blur(20px);
+    border-radius: 12px; padding: 36px; width: 340px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+  }
+  .login-card h2 { font-size: 1.3em; font-weight: 600; margin-bottom: 4px; color: #1a1a1a; }
+  .login-card .sub { font-size: 0.85em; color: #888; margin-bottom: 24px; }
+  .login-field { margin-bottom: 16px; }
+  .login-field label { display: block; font-size: 0.82em; color: #666; margin-bottom: 4px; }
+  .login-field input { 
+    width: 100%; padding: 10px 12px; border: 1px solid #d0d0d0; border-radius: 6px;
+    font-size: 0.9em; outline: none; transition: border-color 0.2s;
+  }
+  .login-field input:focus { border-color: #0078D4; }
+  .login-btn { 
+    width: 100%; padding: 10px; background: #0078D4; color: white; border: none;
+    border-radius: 6px; font-size: 0.95em; cursor: pointer; margin-top: 8px;
+  }
+  .login-btn:hover { background: #106ebe; }
+  .login-secondary { 
+    width: 100%; padding: 10px; background: transparent; color: #0078D4; border: 1px solid #0078D4;
+    border-radius: 6px; font-size: 0.95em; cursor: pointer; margin-top: 8px;
+  }
+  
+  /* Main Dashboard with NavigationView */
+  .nav-layout { display: flex; min-height: 420px; }
+  .nav-sidebar { 
+    width: 200px; background: rgba(249,249,249,0.95); backdrop-filter: blur(20px);
+    border-right: 1px solid #e8e8e8; padding: 8px 0;
+  }
+  .nav-item { 
+    padding: 10px 20px; font-size: 0.88em; color: #444; cursor: pointer;
+    display: flex; align-items: center; gap: 10px; transition: background 0.15s;
+  }
+  .nav-item:hover { background: rgba(0,120,212,0.06); }
+  .nav-item.active { background: rgba(0,120,212,0.1); color: #0078D4; font-weight: 600; border-right: 3px solid #0078D4; }
+  .nav-item .icon { font-size: 1.1em; width: 20px; text-align: center; }
+  .nav-divider { height: 1px; background: #e8e8e8; margin: 8px 16px; }
+  .nav-user { 
+    padding: 12px 20px; font-size: 0.82em; color: #888; border-top: 1px solid #e8e8e8;
+    margin-top: auto; display: flex; align-items: center; gap: 8px;
+  }
+  .nav-user .avatar { width: 28px; height: 28px; border-radius: 50%; background: #0078D4; color: white; display: flex; align-items: center; justify-content: center; font-size: 0.8em; }
+  
+  .nav-content { flex: 1; padding: 24px; background: #fafafa; }
+  .nav-content h3 { font-size: 1.2em; font-weight: 600; margin-bottom: 20px; color: #1a1a1a; }
+  
+  .dashboard-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .dash-card {
+    background: white; border-radius: 8px; padding: 24px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04); border: 1px solid #f0f0f0;
+    transition: box-shadow 0.2s, transform 0.2s; cursor: pointer;
+  }
+  .dash-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); transform: translateY(-2px); }
+  .dash-card .card-icon { font-size: 2em; margin-bottom: 12px; }
+  .dash-card h4 { font-size: 1em; font-weight: 600; margin-bottom: 6px; color: #1a1a1a; }
+  .dash-card p { font-size: 0.82em; color: #888; }
+  .dash-card .badge-count { 
+    display: inline-block; background: #0078D4; color: white; 
+    padding: 2px 8px; border-radius: 10px; font-size: 0.75em; margin-top: 8px;
+  }
+  
+  /* DataGrid Screen */
+  .datagrid-toolbar { 
+    display: flex; gap: 8px; padding: 12px 16px; background: white;
+    border-bottom: 1px solid #e8e8e8; align-items: center; flex-wrap: wrap;
+  }
+  .dg-btn { 
+    padding: 6px 14px; border-radius: 6px; font-size: 0.82em; cursor: pointer;
+    border: 1px solid #d0d0d0; background: white; color: #333; transition: all 0.15s;
+  }
+  .dg-btn:hover { background: #f5f5f5; }
+  .dg-btn.primary { background: #0078D4; color: white; border-color: #0078D4; }
+  .dg-btn.primary:hover { background: #106ebe; }
+  .dg-search { 
+    margin-left: auto; padding: 6px 12px; border: 1px solid #d0d0d0; border-radius: 6px;
+    font-size: 0.82em; width: 200px; outline: none;
+  }
+  .dg-search:focus { border-color: #0078D4; }
+  
+  .dg-tabs { display: flex; background: white; border-bottom: 1px solid #e8e8e8; }
+  .dg-tab { padding: 10px 20px; font-size: 0.88em; cursor: pointer; color: #666; border-bottom: 2px solid transparent; }
+  .dg-tab.active { color: #0078D4; border-bottom-color: #0078D4; font-weight: 600; }
+  
+  .dg-table { width: 100%; border-collapse: collapse; font-size: 0.82em; }
+  .dg-table th { 
+    background: #f9f9f9; padding: 10px 12px; text-align: left; font-weight: 600;
+    color: #555; border-bottom: 2px solid #e8e8e8; position: sticky; top: 0;
+  }
+  .dg-table td { padding: 8px 12px; border-bottom: 1px solid #f0f0f0; color: #333; }
+  .dg-table tr:hover td { background: rgba(0,120,212,0.03); }
+  .dg-table .status { padding: 2px 8px; border-radius: 10px; font-size: 0.85em; }
+  .dg-table .status.ok { background: #e8f5e9; color: #2e7d32; }
+  .dg-table .status.pending { background: #fff3e0; color: #e65100; }
+  
+  .dg-footer { 
+    padding: 8px 16px; background: white; border-top: 1px solid #e8e8e8;
+    font-size: 0.8em; color: #888; display: flex; justify-content: space-between;
+  }
+  
+  /* Settings Screen */
+  .settings-layout { display: flex; min-height: 380px; }
+  .settings-sidebar { width: 180px; background: white; border-right: 1px solid #e8e8e8; padding: 16px 0; }
+  .settings-item { padding: 8px 20px; font-size: 0.85em; color: #555; cursor: pointer; }
+  .settings-item.active { color: #0078D4; font-weight: 600; background: rgba(0,120,212,0.05); }
+  .settings-content { flex: 1; padding: 24px; background: #fafafa; }
+  .settings-group { background: white; border-radius: 8px; padding: 20px; margin-bottom: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
+  .settings-group h4 { font-size: 0.95em; margin-bottom: 12px; color: #333; }
+  .settings-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .settings-row label { font-size: 0.85em; color: #666; width: 100px; }
+  .settings-row input, .settings-row select { 
+    flex: 1; padding: 8px 12px; border: 1px solid #d0d0d0; border-radius: 6px; font-size: 0.85em;
+  }
+  .toggle-switch { width: 44px; height: 22px; background: #0078D4; border-radius: 11px; position: relative; cursor: pointer; }
+  .toggle-switch::after { content: ''; position: absolute; width: 18px; height: 18px; background: white; border-radius: 50%; top: 2px; right: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+  
+  .color-palette { display: flex; gap: 8px; margin-top: 16px; padding-top: 16px; border-top: 1px solid #f0f0f0; }
+  .color-swatch { width: 32px; height: 32px; border-radius: 6px; cursor: pointer; border: 2px solid transparent; }
+  .color-swatch.active { border-color: #333; }
+  
+  .notes { padding: 20px 40px 40px; }
+  .notes h3 { font-size: 1.1em; margin-bottom: 12px; }
+  .notes ul { padding-left: 20px; }
+  .notes li { font-size: 0.9em; color: #555; margin-bottom: 6px; }
+  .notes code { background: #f5f5f5; padding: 2px 6px; border-radius: 4px; font-size: 0.85em; }
+</style>
+</head>
+<body>
+
+<div class="back-nav">
+  <a href="index.html">← 返回方案总览</a>
+</div>
+
+<div class="page-header">
+  <h1>方案一：Fluent 2 原生风格</h1>
+  <p class="desc">基于微软 Fluent Design System 2.0，与 Windows 11 系统完美融合，用户零学习成本</p>
+  <div class="tags">
+    <span class="tag">Windows 11 原生</span>
+    <span class="tag">Mica 毛玻璃</span>
+    <span class="tag">NavigationView</span>
+    <span class="tag">圆角控件</span>
+    <span class="tag">浅色/深色主题</span>
+  </div>
+</div>
+
+<div class="design-principles">
+  <div class="dp-card">
+    <div class="icon">🪟</div>
+    <h4>Mica 材质</h4>
+    <p>窗口背景使用 Mica 毛玻璃效果，透出桌面色调，与系统深度集成</p>
+  </div>
+  <div class="dp-card">
+    <div class="icon">📐</div>
+    <h4>圆角设计</h4>
+    <p>所有控件 6-8px 圆角，窗口 12px 圆角，柔和现代</p>
+  </div>
+  <div class="dp-card">
+    <div class="icon">🧭</div>
+    <h4>侧边栏导航</h4>
+    <p>NavigationView 替代 4 按钮布局，可扩展，支持图标+文字</p>
+  </div>
+  <div class="dp-card">
+    <div class="icon"></div>
+    <h4>系统主题色</h4>
+    <p>自动跟随 Windows accent color，支持浅色/深色/高对比度</p>
+  </div>
+</div>
+
+<!-- Screen 1: Login -->
+<div class="screen-section">
+  <h2><span class="num">1</span> 登录窗口</h2>
+  <div class="mockup-container">
+    <div>
+      <div class="mockup fluent-window">
+        <div class="fluent-titlebar">
+          <div class="dots"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+          <span>ORT 管理系统</span>
+        </div>
+        <div class="login-body">
+          <div class="login-card">
+            <h2>欢迎回来</h2>
+            <p class="sub">登录以继续 ORT 实验室工作流</p>
+            <div class="login-field">
+              <label>用户名</label>
+              <input type="text" value="admin" placeholder="输入用户名">
+            </div>
+            <div class="login-field">
+              <label>密码</label>
+              <input type="password" placeholder="输入密码">
+            </div>
+            <button class="login-btn">登 录</button>
+            <button class="login-secondary">使用上次登录</button>
+          </div>
+        </div>
+      </div>
+      <p class="mockup-label">登录窗口 — Mica 背景 + 毛玻璃卡片</p>
+    </div>
+  </div>
+</div>
+
+<!-- Screen 2: Main Dashboard -->
+<div class="screen-section">
+  <h2><span class="num">2</span> 主界面（Dashboard）</h2>
+  <div class="mockup-container">
+    <div>
+      <div class="mockup fluent-window">
+        <div class="fluent-titlebar">
+          <div class="dots"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+          <span>ORT 管理系统</span>
+        </div>
+        <div class="nav-layout">
+          <div class="nav-sidebar">
+            <div class="nav-item active"><span class="icon">🏠</span> 首页</div>
+            <div class="nav-item"><span class="icon">📋</span> 领退与计划</div>
+            <div class="nav-item"><span class="icon">📊</span> 一键报告</div>
+            <div class="nav-divider"></div>
+            <div class="nav-item"><span class="icon">✅</span> 审核 <span style="margin-left:auto;background:#0078D4;color:white;padding:1px 7px;border-radius:8px;font-size:0.8em;">3</span></div>
+            <div class="nav-item"><span class="icon">️</span> 管理</div>
+            <div class="nav-divider"></div>
+            <div class="nav-item"><span class="icon">📁</span> 设置</div>
+            <div class="nav-item"><span class="icon">📄</span> 查看日志</div>
+            <div class="nav-user">
+              <div class="avatar">A</div>
+              <div>
+                <div style="color:#333;font-weight:600;">Admin</div>
+                <div style="font-size:0.85em;">管理员</div>
+              </div>
+            </div>
+          </div>
+          <div class="nav-content">
+            <h3>工作台</h3>
+            <div class="dashboard-grid">
+              <div class="dash-card">
+                <div class="card-icon">📋</div>
+                <h4>领退与计划</h4>
+                <p>管理材料领用、退回与试验排程</p>
+              </div>
+              <div class="dash-card">
+                <div class="card-icon">📊</div>
+                <h4>一键报告</h4>
+                <p>自动生成 Thermal Shock / Burn In / EMI 报告</p>
+              </div>
+              <div class="dash-card">
+                <div class="card-icon">✅</div>
+                <h4>审核中心</h4>
+                <p>处理待审核的变更请求</p>
+                <span class="badge-count">3 待处理</span>
+              </div>
+              <div class="dash-card">
+                <div class="card-icon">⚙️</div>
+                <h4>系统管理</h4>
+                <p>用户、客户、测试项目配置</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="mockup-label">主界面 — NavigationView 侧边栏 + 卡片式 Dashboard</p>
+    </div>
+  </div>
+</div>
+
+<!-- Screen 3: DataGrid (Plans) -->
+<div class="screen-section">
+  <h2><span class="num">3</span> 领退与计划（DataGrid）</h2>
+  <div class="mockup-container">
+    <div>
+      <div class="mockup fluent-window" style="width:820px;">
+        <div class="fluent-titlebar">
+          <div class="dots"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+          <span>领退与计划 — ORT 管理系统</span>
+        </div>
+        <div class="dg-tabs">
+          <div class="dg-tab active">领退表</div>
+          <div class="dg-tab">计划表</div>
+        </div>
+        <div class="datagrid-toolbar">
+          <button class="dg-btn primary">+ 新增领退</button>
+          <button class="dg-btn">+ 新增计划</button>
+          <button class="dg-btn">编辑</button>
+          <button class="dg-btn">提交保存</button>
+          <button class="dg-btn">导出</button>
+          <button class="dg-btn">刷新</button>
+          <input class="dg-search" placeholder="搜索机种/工令/SN...">
+        </div>
+        <div style="overflow-x:auto; max-height:220px;">
+          <table class="dg-table">
+            <thead>
+              <tr><th>日期</th><th>单据号</th><th>机种</th><th>数量</th><th>S/N</th><th>D/C</th><th>REV</th><th>工令</th><th>状态</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>2026/4/16</td><td>T01260300154</td><td>FSM010-930G</td><td>3</td><td>FSM01000693...</td><td>2615</td><td>06</td><td>AH00M0100014P01152</td><td><span class="status ok">已完成</span></td></tr>
+              <tr><td>2026/4/15</td><td>T01260400405</td><td>WAQ002-F94GK</td><td>23</td><td>FSM01000693...</td><td>2615</td><td>1</td><td>AH00Q2940017P03154</td><td><span class="status pending">待审核</span></td></tr>
+              <tr><td>2026/4/15</td><td>T01260400400</td><td>PCM010-242G</td><td>3</td><td>CN0RDN4WABD00...</td><td>2614</td><td>A01</td><td>AH00M1020014P09145</td><td><span class="status ok">已完成</span></td></tr>
+              <tr><td>2026/4/10</td><td>T01260300153</td><td>FSL031-243G</td><td>3</td><td>CN03MY6RABD00...</td><td>2613</td><td>A01</td><td>AH00L3130017P09133</td><td><span class="status ok">已完成</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="dg-footer">
+          <span>领退表 227 条 / 计划表 286 条</span>
+          <span style="color:#0078D4;">无未提交修改</span>
+        </div>
+      </div>
+      <p class="mockup-label">领退与计划 — 现代 DataGrid + 工具栏 + Tab 切换</p>
+    </div>
+  </div>
+</div>
+
+<!-- Screen 4: Settings -->
+<div class="screen-section">
+  <h2><span class="num">4</span> 设置窗口</h2>
+  <div class="mockup-container">
+    <div>
+      <div class="mockup fluent-window">
+        <div class="fluent-titlebar">
+          <div class="dots"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+          <span>设置 — ORT 管理系统</span>
+        </div>
+        <div class="settings-layout">
+          <div class="settings-sidebar">
+            <div class="settings-item active"> 外观</div>
+            <div class="settings-item">🌐 语言</div>
+            <div class="settings-item"> 路径配置</div>
+            <div class="settings-item">🗄️ 数据库</div>
+          </div>
+          <div class="settings-content">
+            <div class="settings-group">
+              <h4>外观设置</h4>
+              <div class="settings-row">
+                <label>主题模式</label>
+                <select><option>跟随系统</option><option>浅色</option><option>深色</option></select>
+              </div>
+              <div class="settings-row">
+                <label>字体</label>
+                <select><option>Segoe UI Variable</option><option>Microsoft YaHei</option></select>
+              </div>
+              <div class="settings-row">
+                <label>字号</label>
+                <select><option>14</option><option>16</option><option>18</option></select>
+              </div>
+              <div class="color-palette">
+                <div class="color-swatch active" style="background:#0078D4;"></div>
+                <div class="color-swatch" style="background:#00695C;"></div>
+                <div class="color-swatch" style="background:#6B4C9A;"></div>
+                <div class="color-swatch" style="background:#C30052;"></div>
+                <div class="color-swatch" style="background:#CA5010;"></div>
+              </div>
+            </div>
+            <div class="settings-group">
+              <h4>语言</h4>
+              <div class="settings-row">
+                <label>界面语言</label>
+                <select><option>简体中文</option><option>繁體中文</option><option>English</option></select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="mockup-label">设置窗口 — 侧边栏分类 + 分组卡片</p>
+    </div>
+  </div>
+</div>
+
+<div class="notes">
+  <h3>📦 推荐 NuGet 包</h3>
+  <ul>
+    <li><code>iNKORE.UI.WPF.Modern</code> — Fluent 2 控件库，提供 NavigationView、ModernButton、ModernWindow 等 50+ 控件</li>
+    <li><code>iNKORE.UI.WPF.Modern.Controls</code> — 附加控件（ TeachingTip、CommandBar 等）</li>
+  </ul>
+  <h3 style="margin-top:20px;">🔧 实施步骤</h3>
+  <ul>
+    <li>1. NuGet 安装 <code>iNKORE.UI.WPF.Modern</code></li>
+    <li>2. App.xaml 引入 Fluent 主题资源字典</li>
+    <li>3. MainWindow 改为 NavigationView + Content 布局</li>
+    <li>4. 逐个窗口替换控件（Button → ModernButton, TextBox → ModernTextBox 等）</li>
+    <li>5. 添加 Mica 背景效果（需 Windows 11）</li>
+    <li>6. 配置浅色/深色主题切换</li>
+  </ul>
+  <h3 style="margin-top:20px;">⏱️ 预计工期</h3>
+  <ul>
+    <li>基础框架搭建（NavigationView + 主题）：0.5 天</li>
+    <li>主窗口 + 登录窗口改造：0.5 天</li>
+    <li>领退计划窗口（DataGrid 样式）：0.5 天</li>
+    <li>报告/管理/审核/设置窗口：1 天</li>
+    <li>测试与微调：0.5 天</li>
+    <li><strong>合计：约 3 天</strong></li>
+  </ul>
+</div>
+
+</body>
+</html>

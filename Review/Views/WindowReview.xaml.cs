@@ -1,4 +1,4 @@
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using ORT一键报告.Models;
 using ORT一键报告.Services;
 using System.Collections.Generic;
@@ -24,17 +24,17 @@ namespace ORT一键报告.Review.Views
 
         private void LoadRequests()
         {
-            string status = (cb_status.SelectedItem as ComboBoxItem)?.Content?.ToString();
-            List<ReviewRequest> requests = _reviewService.GetRequests(status == "全部" ? null : status);
+            string status = (cb_status.SelectedItem as ComboBoxItem)?.Tag?.ToString();
+            List<ReviewRequest> requests = _reviewService.GetRequests(string.IsNullOrEmpty(status) ? null : status);
             dg_requests.ItemsSource = requests;
-            status_msg.Content = $"共 {requests.Count} 条请求";
+            status_msg.Content = string.Format(LanguageService.Get("Review_RequestCount"), requests.Count);
         }
 
         private void OpenDetail()
         {
             if (dg_requests.SelectedItem is not ReviewRequest request)
             {
-                _ = MessageBox.Show("请先选择一个请求", "提示");
+                _ = MessageBox.Show(LocalizationHelper.Get("Msg_SelectRequest"), LanguageService.Get("Cap_Info"));
                 return;
             }
             WindowReviewDetail detail = new(request)

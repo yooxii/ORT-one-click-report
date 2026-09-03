@@ -1,9 +1,10 @@
-﻿<Window x:Class="ORT一键报告.MainWindow"
+﻿<Window x:Class="ORT一键报告.MainWindow" Background="{DynamicResource WindowBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ORT一键报告"
+        xmlns:lex="http://wpflocalizeextension.codeplex.com"
         xmlns:sys="clr-namespace:System;assembly=mscorlib" xmlns:viewmodels="clr-namespace:ORT一键报告.ViewModels" d:DataContext="{d:DesignInstance Type=viewmodels:MainViewModel}"
         mc:Ignorable="d"
         Title="{Binding Title}" Height="400" Width="600" MinHeight="400" MinWidth="600" WindowStartupLocation="CenterScreen">
@@ -14,13 +15,13 @@
             <RowDefinition/>
         </Grid.RowDefinitions>
         <Menu>
-            <MenuItem Header="文件"></MenuItem>
-            <MenuItem Header="视图">
-                <MenuItem Header="查看日志" Click="MenuItem_ViewLog_Click"/>
+            <MenuItem Header="{lex:Loc MainWindow_Menu_File}"></MenuItem>
+            <MenuItem Header="{lex:Loc MainWindow_Menu_View}">
+                <MenuItem Header="{lex:Loc MainWindow_Menu_ViewLog}" Click="MenuItem_ViewLog_Click"/>
             </MenuItem>
-            <MenuItem Header="设置" Click="MenuItem_Settings_Click"/>
-            <MenuItem x:Name="menu_account" Header="登录" Click="MenuItem_Login_Click"/>
-            <MenuItem Header="退出" Click="MenuItem_Quit_Click"/>
+            <MenuItem Header="{lex:Loc MainWindow_Menu_Settings}" Click="MenuItem_Settings_Click"/>
+            <MenuItem x:Name="menu_account" Header="{lex:Loc MainWindow_Menu_Account}" Click="MenuItem_Login_Click"/>
+            <MenuItem Header="{lex:Loc MainWindow_Menu_Logout}" Click="MenuItem_Quit_Click"/>
         </Menu>
         <Grid Grid.Row="1" Margin="5">
             <Grid.ColumnDefinitions>
@@ -38,20 +39,20 @@
                 <RowDefinition Height="1*"/>
             </Grid.RowDefinitions>
             <Grid Grid.Row="1" Grid.Column="1">
-                <Button x:Name="btn_report" Content="一键报告" FontSize="32" FontWeight="ExtraBlack" Click="Button_YiJianBaoGao_Click"
-                        ToolTip="读取报告概览并自动生成报告"/>
+                <Button x:Name="btn_report" Content="{lex:Loc MainWindow_Button_Report}" Style="{StaticResource PrimaryButton}" FontSize="26" FontWeight="Bold" Click="Button_YiJianBaoGao_Click"
+                        ToolTip="{lex:Loc MainWindow_ToolTip_Report}"/>
             </Grid>
             <Grid Grid.Row="1" Grid.Column="3">
-                <Button x:Name="btn_plans" Content="领退和计划" FontSize="32" FontWeight="ExtraBlack" Click="Button_Plans_Click"
-                        ToolTip="领退与计划数据的查看与编辑"/>
+                <Button x:Name="btn_plans" Content="{lex:Loc MainWindow_Button_Plans}" Style="{StaticResource PrimaryButton}" FontSize="26" FontWeight="Bold" Click="Button_Plans_Click"
+                        ToolTip="{lex:Loc MainWindow_ToolTip_Plans}"/>
             </Grid>
             <Grid Grid.Row="3" Grid.Column="1">
-                <Button x:Name="btn_admin" Content="管理" FontSize="32" FontWeight="ExtraBlack" Click="Button_Admin_Click"
-                        ToolTip="人员/客户/测试项目/产品别/阶段管理与数据导入"/>
+                <Button x:Name="btn_admin" Content="{lex:Loc MainWindow_Button_Admin}" Style="{StaticResource PrimaryButton}" FontSize="26" FontWeight="Bold" Click="Button_Admin_Click"
+                        ToolTip="{lex:Loc MainWindow_ToolTip_Admin}"/>
             </Grid>
             <Grid Grid.Row="3" Grid.Column="3">
-                <Button x:Name="btn_review" Content="审核" FontSize="32" FontWeight="ExtraBlack" Click="Button_Review_Click"
-                        ToolTip="审核计划表单更改请求"/>
+                <Button x:Name="btn_review" Content="{lex:Loc MainWindow_Button_Review}" Style="{StaticResource PrimaryButton}" FontSize="26" FontWeight="Bold" Click="Button_Review_Click"
+                        ToolTip="{lex:Loc MainWindow_ToolTip_Review}"/>
             </Grid>
         </Grid>
     </Grid>

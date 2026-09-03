@@ -41,7 +41,7 @@ namespace ORT一键报告.Main.Views
             }
             txt_username.Text = _cookie.Value.Username;
             DateTime? expiry = _auth.GetCookieExpiry();
-            txt_cookieHint.Text = $"检测到上次登录：{_cookie.Value.Username}（有效期至 {expiry:yyyy/M/d}），是否继续？";
+            txt_cookieHint.Text = string.Format(LanguageService.Get("Login_CookieDetected"), _cookie.Value.Username, expiry?.ToString("yyyy/M/d") ?? "");
             panel_cookie.Visibility = Visibility.Visible;
         }
 
@@ -61,7 +61,7 @@ namespace ORT一键报告.Main.Views
                 _auth.ClearLoginCookie();
                 _cookie = null;
                 panel_cookie.Visibility = Visibility.Collapsed;
-                txt_error.Text = "上次登录信息已失效，请重新输入密码登录";
+                txt_error.Text = LanguageService.Get("Login_CookieExpired");
                 txt_password.Focus();
             }
         }
@@ -72,7 +72,7 @@ namespace ORT一键报告.Main.Views
             string password = txt_password.Password;
             if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
             {
-                txt_error.Text = "请输入用户名和密码";
+                txt_error.Text = LanguageService.Get("Login_EnterUserPass");
                 return;
             }
             if (_auth.Login(username, password))
@@ -81,7 +81,7 @@ namespace ORT一键报告.Main.Views
             }
             else
             {
-                txt_error.Text = "用户名或密码错误，或账号已禁用";
+                txt_error.Text = LanguageService.Get("Login_InvalidUserPass");
                 txt_password.Clear();
                 txt_password.Focus();
             }

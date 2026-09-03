@@ -78,11 +78,11 @@ namespace ORT一键报告.Admin.Views
             string error = _auth.CreateUser(input.Values[0], input.Values[1], input.Values[2], [UserRole.GeneralUser]);
             if (error != null)
             {
-                _ = MessageBox.Show(error, "新建用户失败");
+                _ = MessageBox.Show(error, LanguageService.Get("Cap_NewUserFailed"));
                 return;
             }
             LoadUsers();
-            _ = MessageBox.Show("用户已创建（默认角色：普通用户），可在右侧调整其身份。", "成功");
+            _ = MessageBox.Show(LocalizationHelper.Get("Msg_UserCreated"), LanguageService.Get("Cap_Success"));
         }
 
         private void Btn_ApplyRoles_Click(object sender, RoutedEventArgs e)
@@ -90,7 +90,7 @@ namespace ORT一键报告.Admin.Views
             UserView user = SelectedUser;
             if (user == null)
             {
-                _ = MessageBox.Show("请先在左侧选择一个用户", "提示");
+                _ = MessageBox.Show(LocalizationHelper.Get("Msg_SelectUserFirst"), LanguageService.Get("Cap_Info"));
                 return;
             }
             List<UserRole> roles = [];
@@ -100,7 +100,7 @@ namespace ORT一键报告.Admin.Views
             if (chk_admin.IsChecked == true) roles.Add(UserRole.Administrator);
             if (roles.Count == 0)
             {
-                _ = MessageBox.Show("请至少勾选一个角色", "提示");
+                _ = MessageBox.Show(LocalizationHelper.Get("Msg_SelectRole"), LanguageService.Get("Cap_Info"));
                 return;
             }
             _admin.UpdateUserRoles(user.Id, roles);
@@ -110,7 +110,7 @@ namespace ORT一键报告.Admin.Views
             if (_auth.CurrentUser?.Id == user.Id)
             {
                 _auth.Logout();
-                _ = MessageBox.Show("调整了当前登录用户的身份，已注销，请重新登录。", "提示");
+                _ = MessageBox.Show(LocalizationHelper.Get("Msg_IdentityChanged"), LanguageService.Get("Cap_Info"));
             }
         }
 
@@ -119,7 +119,7 @@ namespace ORT一键报告.Admin.Views
             UserView user = SelectedUser;
             if (user == null)
             {
-                _ = MessageBox.Show("请先在左侧选择一个用户", "提示");
+                _ = MessageBox.Show(LocalizationHelper.Get("Msg_SelectUserFirst"), LanguageService.Get("Cap_Info"));
                 return;
             }
             WindowAdminInput input = new($"重置密码 - {user.Username}", ("新密码（至少6位）", "", true))
@@ -138,12 +138,12 @@ namespace ORT一键报告.Admin.Views
             UserView user = SelectedUser;
             if (user == null)
             {
-                _ = MessageBox.Show("请先在左侧选择一个用户", "提示");
+                _ = MessageBox.Show(LocalizationHelper.Get("Msg_SelectUserFirst"), LanguageService.Get("Cap_Info"));
                 return;
             }
             if (_auth.CurrentUser?.Id == user.Id)
             {
-                _ = MessageBox.Show("不能禁用当前登录用户", "提示");
+                _ = MessageBox.Show(LocalizationHelper.Get("Msg_CannotDisableSelf"), LanguageService.Get("Cap_Info"));
                 return;
             }
             _admin.SetUserActive(user.Id, !user.IsActive);
@@ -183,7 +183,7 @@ namespace ORT一键报告.Admin.Views
             });
             if (error != null)
             {
-                _ = MessageBox.Show(error, "保存失败");
+                _ = MessageBox.Show(error, LanguageService.Get("Cap_SaveFailed"));
                 return;
             }
             LoadCustomers();
@@ -194,7 +194,7 @@ namespace ORT一键报告.Admin.Views
             Customer customer = SelectedCustomer;
             if (customer == null)
             {
-                _ = MessageBox.Show("请先选择一个客户", "提示");
+                _ = MessageBox.Show(LocalizationHelper.Get("Msg_SelectCustomer"), LanguageService.Get("Cap_Info"));
                 return;
             }
             WindowAdminInput input = new("编辑客户",
@@ -213,7 +213,7 @@ namespace ORT一键报告.Admin.Views
             string error = _admin.SaveCustomer(customer);
             if (error != null)
             {
-                _ = MessageBox.Show(error, "保存失败");
+                _ = MessageBox.Show(error, LanguageService.Get("Cap_SaveFailed"));
                 return;
             }
             LoadCustomers();
@@ -224,10 +224,10 @@ namespace ORT一键报告.Admin.Views
             Customer customer = SelectedCustomer;
             if (customer == null)
             {
-                _ = MessageBox.Show("请先选择一个客户", "提示");
+                _ = MessageBox.Show(LocalizationHelper.Get("Msg_SelectCustomer"), LanguageService.Get("Cap_Info"));
                 return;
             }
-            if (MessageBox.Show($"确认删除客户 [{customer.Name}]？", "删除确认",
+            if (MessageBox.Show($"确认删除客户 [{customer.Name}]？", LanguageService.Get("Cap_DeleteConfirm"),
                 MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
             {
                 return;
@@ -241,7 +241,7 @@ namespace ORT一键报告.Admin.Views
             (int cAdded, int pAdded, int mAdded) = _admin.SyncCatalogsFromPlans();
             LoadCustomers();
             LoadProducts();
-            _ = MessageBox.Show($"同步完成，客户+{cAdded}，产品别+{pAdded}，机种映射+{mAdded}", "同步结果");
+            _ = MessageBox.Show($"同步完成，客户+{cAdded}，产品别+{pAdded}，机种映射+{mAdded}", LanguageService.Get("Cap_SyncResult"));
         }
 
         private void Btn_RefreshCustomers_Click(object sender, RoutedEventArgs e) => LoadCustomers();
@@ -277,7 +277,7 @@ namespace ORT一键报告.Admin.Views
             });
             if (error != null)
             {
-                _ = MessageBox.Show(error, "保存失败");
+                _ = MessageBox.Show(error, LanguageService.Get("Cap_SaveFailed"));
                 return;
             }
             LoadTestItems();
@@ -288,7 +288,7 @@ namespace ORT一键报告.Admin.Views
             TestItemCatalog selected = SelectedTestItem;
             if (selected == null)
             {
-                _ = MessageBox.Show("请先选择一个测试项目", "提示");
+                _ = MessageBox.Show(LocalizationHelper.Get("Msg_SelectTestItem"), LanguageService.Get("Cap_Info"));
                 return;
             }
             WindowAdminInput input = new("编辑测试项目",
@@ -309,7 +309,7 @@ namespace ORT一键报告.Admin.Views
             string error = _admin.SaveTestItem(selected);
             if (error != null)
             {
-                _ = MessageBox.Show(error, "保存失败");
+                _ = MessageBox.Show(error, LanguageService.Get("Cap_SaveFailed"));
                 return;
             }
             LoadTestItems();
@@ -320,10 +320,10 @@ namespace ORT一键报告.Admin.Views
             TestItemCatalog item = SelectedTestItem;
             if (item == null)
             {
-                _ = MessageBox.Show("请先选择一个测试项目", "提示");
+                _ = MessageBox.Show(LocalizationHelper.Get("Msg_SelectTestItem"), LanguageService.Get("Cap_Info"));
                 return;
             }
-            if (MessageBox.Show($"确认删除测试项目 [{item.Name}]？", "删除确认",
+            if (MessageBox.Show($"确认删除测试项目 [{item.Name}]？", LanguageService.Get("Cap_DeleteConfirm"),
                 MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
             {
                 return;
@@ -334,7 +334,7 @@ namespace ORT一键报告.Admin.Views
 
         private void Btn_SyncTestItems_Click(object sender, RoutedEventArgs e)
         {
-            string file = _pathService.OpenPathDialog("选择计划表文件(ORT Test Schedule)", initPath: _appSettings.ScheduleDir);
+            string file = _pathService.OpenPathDialog(LanguageService.Get("Dlg_SelectPlanFile"), initPath: _appSettings.ScheduleDir);
             if (file == null)
             {
                 return;
@@ -343,11 +343,11 @@ namespace ORT一键报告.Admin.Views
             {
                 int added = _admin.SyncTestItemsFromScheduleFile(file);
                 LoadTestItems();
-                _ = MessageBox.Show($"同步完成，新增 {added} 个测试项目", "同步结果");
+                _ = MessageBox.Show($"同步完成，新增 {added} 个测试项目", LanguageService.Get("Cap_SyncResult"));
             }
             catch (Exception ex)
             {
-                _ = MessageBox.Show($"同步失败:\n{ex.Message}", "错误");
+                _ = MessageBox.Show($"同步失败:\n{ex.Message}", LanguageService.Get("Cap_Error"));
             }
         }
 
@@ -357,7 +357,7 @@ namespace ORT一键报告.Admin.Views
 
         private void Btn_ImportRequisition_Click(object sender, RoutedEventArgs e)
         {
-            string file = _pathService.OpenPathDialog("选择领用表(成品領用記錄)", initPath: _appSettings.RequisitionDir);
+            string file = _pathService.OpenPathDialog(LanguageService.Get("Dlg_SelectReqFile"), initPath: _appSettings.RequisitionDir);
             if (file == null)
             {
                 return;
@@ -365,17 +365,17 @@ namespace ORT一键报告.Admin.Views
             try
             {
                 (int added, int updated) = _planExcelService.ImportRequisition(file);
-                _ = MessageBox.Show($"领用表导入完成: 新增{added}条, 更新{updated}条", "导入结果");
+                _ = MessageBox.Show($"领用表导入完成: 新增{added}条, 更新{updated}条", LanguageService.Get("Cap_ImportResult"));
             }
             catch (Exception ex)
             {
-                _ = MessageBox.Show($"导入领用表失败:\n{ex.Message}", "错误");
+                _ = MessageBox.Show($"导入领用表失败:\n{ex.Message}", LanguageService.Get("Cap_Error"));
             }
         }
 
         private void Btn_ImportPlan_Click(object sender, RoutedEventArgs e)
         {
-            string file = _pathService.OpenPathDialog("选择计划表(ORT Test Schedule)", initPath: _appSettings.ScheduleDir);
+            string file = _pathService.OpenPathDialog(LanguageService.Get("Dlg_SelectPlanFile2"), initPath: _appSettings.ScheduleDir);
             if (file == null)
             {
                 return;
@@ -398,11 +398,11 @@ namespace ORT一键报告.Admin.Views
                         : string.Join("\n", unmatched);
                     message += $"\n\n以下 {unmatched.Count} 条备注中未找到工令且工作編號非 Q 开头，未关联到领用数据:\n{list}";
                 }
-                _ = MessageBox.Show(message, "导入结果");
+                _ = MessageBox.Show(message, LanguageService.Get("Cap_ImportResult"));
             }
             catch (Exception ex)
             {
-                _ = MessageBox.Show($"导入计划表失败:\n{ex.Message}", "错误");
+                _ = MessageBox.Show($"导入计划表失败:\n{ex.Message}", LanguageService.Get("Cap_Error"));
             }
         }
 
@@ -414,27 +414,25 @@ namespace ORT一键报告.Admin.Views
             IPermissionService permission = App.ServiceProvider.GetRequiredService<IPermissionService>();
             if (!permission.Can("admin.manage"))
             {
-                _ = MessageBox.Show("只有管理员可以清空计划数据", "权限不足");
+                _ = MessageBox.Show(LocalizationHelper.Get("Msg_OnlyAdminClear"), LanguageService.Get("Cap_InsufficientPermission"));
                 return;
             }
-            if (MessageBox.Show("确认清空领退表和计划表的全部数据？此操作不可恢复！\n建议操作前先导出备份。",
-                "清空确认", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+            if (MessageBox.Show(LocalizationHelper.Get("Msg_ConfirmClearAll"), LanguageService.Get("Cap_ClearConfirm"), MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
             {
                 return;
             }
-            if (MessageBox.Show("再次确认：真的要清空全部计划数据吗？",
-                "二次确认", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+            if (MessageBox.Show(LocalizationHelper.Get("Msg_ConfirmClearAgain"), LanguageService.Get("Cap_SecondConfirm"), MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
             {
                 return;
             }
             try
             {
                 int n = _planExcelService.ClearAll();
-                _ = MessageBox.Show($"已清空 {n} 条记录", "完成");
+                _ = MessageBox.Show($"已清空 {n} 条记录", LanguageService.Get("Cap_Complete"));
             }
             catch (Exception ex)
             {
-                _ = MessageBox.Show($"清空失败:\n{ex.Message}", "错误");
+                _ = MessageBox.Show($"清空失败:\n{ex.Message}", LanguageService.Get("Cap_Error"));
             }
         }
 
@@ -459,7 +457,7 @@ namespace ORT一键报告.Admin.Views
             string error = _admin.SaveStage(new Stage { Name = input.Values[0], Description = input.Values[1] });
             if (error != null)
             {
-                _ = MessageBox.Show(error, "保存失败");
+                _ = MessageBox.Show(error, LanguageService.Get("Cap_SaveFailed"));
                 return;
             }
             LoadStages();
@@ -470,7 +468,7 @@ namespace ORT一键报告.Admin.Views
             Stage stage = SelectedStage;
             if (stage == null)
             {
-                _ = MessageBox.Show("请先选择一个阶段", "提示");
+                _ = MessageBox.Show(LocalizationHelper.Get("Msg_SelectStage"), LanguageService.Get("Cap_Info"));
                 return;
             }
             WindowAdminInput input = new("编辑阶段", ("阶段名", stage.Name, false), ("描述", stage.Description, false))
@@ -485,7 +483,7 @@ namespace ORT一键报告.Admin.Views
             string error = _admin.SaveStage(stage);
             if (error != null)
             {
-                _ = MessageBox.Show(error, "保存失败");
+                _ = MessageBox.Show(error, LanguageService.Get("Cap_SaveFailed"));
                 return;
             }
             LoadStages();
@@ -496,10 +494,10 @@ namespace ORT一键报告.Admin.Views
             Stage stage = SelectedStage;
             if (stage == null)
             {
-                _ = MessageBox.Show("请先选择一个阶段", "提示");
+                _ = MessageBox.Show(LocalizationHelper.Get("Msg_SelectStage"), LanguageService.Get("Cap_Info"));
                 return;
             }
-            if (MessageBox.Show($"确认删除阶段 [{stage.Name}]？", "删除确认",
+            if (MessageBox.Show($"确认删除阶段 [{stage.Name}]？", LanguageService.Get("Cap_DeleteConfirm"),
                 MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
             {
                 return;
@@ -541,7 +539,7 @@ namespace ORT一键报告.Admin.Views
             });
             if (error != null)
             {
-                _ = MessageBox.Show(error, "保存失败");
+                _ = MessageBox.Show(error, LanguageService.Get("Cap_SaveFailed"));
                 return;
             }
             LoadProducts();
@@ -552,7 +550,7 @@ namespace ORT一键报告.Admin.Views
             Product product = SelectedProduct;
             if (product == null)
             {
-                _ = MessageBox.Show("请先选择一个产品类型", "提示");
+                _ = MessageBox.Show(LocalizationHelper.Get("Msg_SelectProductType"), LanguageService.Get("Cap_Info"));
                 return;
             }
             WindowAdminInput input = new("编辑产品类型",
@@ -571,7 +569,7 @@ namespace ORT一键报告.Admin.Views
             string error = _admin.SaveProduct(product);
             if (error != null)
             {
-                _ = MessageBox.Show(error, "保存失败");
+                _ = MessageBox.Show(error, LanguageService.Get("Cap_SaveFailed"));
                 return;
             }
             LoadProducts();
@@ -582,10 +580,10 @@ namespace ORT一键报告.Admin.Views
             Product product = SelectedProduct;
             if (product == null)
             {
-                _ = MessageBox.Show("请先选择一个产品类型", "提示");
+                _ = MessageBox.Show(LocalizationHelper.Get("Msg_SelectProductType"), LanguageService.Get("Cap_Info"));
                 return;
             }
-            if (MessageBox.Show($"确认删除产品类型 [{product.Name}]？", "删除确认",
+            if (MessageBox.Show($"确认删除产品类型 [{product.Name}]？", LanguageService.Get("Cap_DeleteConfirm"),
                 MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
             {
                 return;

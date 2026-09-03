@@ -1,5 +1,6 @@
 ﻿using Microsoft.Win32;
 using NLog;
+using ORT一键报告.Services;
 using System;
 using System.Windows;
 using System.Windows.Controls;
@@ -40,7 +41,7 @@ namespace ORT一键报告.Reports.Views
                 else
                 {
                     _logger.Warn("未选择图片");
-                    _ = MessageBox.Show("未选择图片");
+                    _ = MessageBox.Show(LocalizationHelper.Get("Msg_NoImage"));
                 }
             }
         }
@@ -62,7 +63,7 @@ namespace ORT一键报告.Reports.Views
             else
             {
                 _logger.Warn("未选择图片");
-                _ = MessageBox.Show("未选择图片");
+                _ = MessageBox.Show(LocalizationHelper.Get("Msg_NoImage"));
             }
         }
     }

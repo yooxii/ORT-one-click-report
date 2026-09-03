@@ -1,7 +1,8 @@
 ﻿<UserControl x:Class="ORT一键报告.Reports.Views.BaseReportPage"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:lex="http://wpflocalizeextension.codeplex.com" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ORT一键报告.Reports.Views"
              xmlns:viewmodels="clr-namespace:ORT一键报告.Reports.ViewModels"
@@ -26,24 +27,24 @@
                             <RowDefinition/>
                             <RowDefinition/>
                         </Grid.RowDefinitions>
-                        <Label Content="ATE数据"/>
+                        <Label Content="{lex:Loc ReportPage_ATEData}"/>
                         <Grid Grid.Row="1">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition/>
                                 <ColumnDefinition Width="80"/>
                             </Grid.ColumnDefinitions>
-                            <Border BorderBrush="Gray" BorderThickness="1" Margin="3" CornerRadius="1">
+                            <Border BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="1" Margin="3" CornerRadius="1">
                                 <TextBlock x:Name="ATEDatas_text" Text="{Binding ATEPath}" TextWrapping="Wrap" Margin="3"/>
                             </Border>
-                            <Button x:Name="btn_ATEDatas" Tag="ATEDatas_text" Grid.Column="1" Content="浏览" Margin="3" Command="{Binding SelectATEDatasCommand}"/>
+                            <Button x:Name="btn_ATEDatas" Tag="ATEDatas_text" Grid.Column="1" Content="{lex:Loc Common_Browse}" Margin="3" Command="{Binding SelectATEDatasCommand}"/>
                         </Grid>
                     </Grid>
 
                     <Border BorderBrush="Black" BorderThickness="1" Height="1" Margin="0,6,0,0"/>
                 </StackPanel>
                 <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
-                    <Button Content="重置" Margin="5" MinWidth="120" Cursor="Hand" Click="Info_Set_Click"/>
-                    <Button Tag="{Binding ReportType, ElementName=root}" Content="完成" Command="{Binding FinishCommand}" Margin="5,5,5,0" MinWidth="120" Cursor="Hand" Height="19" VerticalAlignment="Top" />
+                    <Button Content="{lex:Loc Common_Reset}" Margin="5" MinWidth="120" Cursor="Hand" Click="Info_Set_Click"/>
+                    <Button Tag="{Binding ReportType, ElementName=root}" Content="{lex:Loc Common_Complete}" Command="{Binding FinishCommand}" Margin="5,5,5,0" MinWidth="120" Cursor="Hand" Height="19" VerticalAlignment="Top" />
                 </StackPanel>
             </Grid>
         </ScrollViewer>

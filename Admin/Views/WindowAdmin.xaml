@@ -1,10 +1,11 @@
-<Window x:Class="ORT一键报告.Admin.Views.WindowAdmin"
+﻿<Window x:Class="ORT一键报告.Admin.Views.WindowAdmin" Background="{DynamicResource WindowBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:lex="http://wpflocalizeextension.codeplex.com"
         mc:Ignorable="d"
-        Title="管理" Height="600" Width="950" MinHeight="450" MinWidth="750"
+        Title="{lex:Loc Admin_Title}" Height="600" Width="950" MinHeight="450" MinWidth="750"
         WindowStartupLocation="CenterOwner">
 
     <Grid Margin="5">
@@ -15,20 +16,20 @@
 
         <!--导入入口（从领退和计划迁入）：导入计划表时一并同步客户/测试项目/产品别/机种映射-->
         <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
-            <Button Content="导入领用表" Padding="10,3" Click="Btn_ImportRequisition_Click"
-                    ToolTip="导入成品領用記錄Excel，与已有记录合并到同一行"/>
-            <Button Content="导入计划表" Padding="10,3" Margin="8,0,0,0" Click="Btn_ImportPlan_Click"
-                    ToolTip="导入ORT Test Schedule Excel，并同步客户/测试项目/产品别/机种映射字典"/>
+            <Button Content="{lex:Loc Admin_ImportRequisition}" Padding="10,3" Click="Btn_ImportRequisition_Click"
+                    ToolTip="{lex:Loc Admin_ToolTip_ImportReq}"/>
+            <Button Content="{lex:Loc Admin_ImportPlan}" Padding="10,3" Margin="8,0,0,0" Click="Btn_ImportPlan_Click"
+                    ToolTip="{lex:Loc Admin_ToolTip_ImportPlan}"/>
             <Separator Margin="10,2"/>
-            <Button x:Name="btn_clearAll" Content="清空计划数据" Padding="10,3" Foreground="DarkRed"
+            <Button x:Name="btn_clearAll" Content="{lex:Loc Admin_ClearPlanData}" Padding="10,3" Foreground="DarkRed"
                     Click="Btn_ClearAll_Click"
-                    ToolTip="清空领退表和计划表全部数据（仅管理员，需二次确认，不可恢复）"/>
+                    ToolTip="{lex:Loc Admin_ToolTip_ClearData}"/>
         </StackPanel>
 
         <TabControl Grid.Row="1">
 
         <!--人员管理-->
-        <TabItem Header="人员管理">
+        <TabItem Header="{lex:Loc Admin_UserTab}">
             <Grid Margin="5">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="5*"/>
@@ -40,138 +41,138 @@
                         <RowDefinition/>
                     </Grid.RowDefinitions>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
-                        <Button Content="新建用户" Padding="10,3" Click="Btn_NewUser_Click"/>
-                        <Button Content="刷新" Padding="10,3" Margin="8,0,0,0" Click="Btn_RefreshUsers_Click"/>
+                        <Button Content="{lex:Loc Admin_NewUser}" Padding="10,3" Click="Btn_NewUser_Click"/>
+                        <Button Content="{lex:Loc Common_Refresh}" Padding="10,3" Margin="8,0,0,0" Click="Btn_RefreshUsers_Click"/>
                     </StackPanel>
                     <DataGrid x:Name="dg_users" Grid.Row="1" AutoGenerateColumns="False" IsReadOnly="True"
                               CanUserAddRows="False" SelectionMode="Single" SelectionUnit="FullRow"
                               HeadersVisibility="Column" GridLinesVisibility="Horizontal"
                               SelectionChanged="Dg_Users_SelectionChanged">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="用户名" Binding="{Binding Username}" Width="110"/>
-                            <DataGridTextColumn Header="显示名" Binding="{Binding DisplayName}" Width="100"/>
-                            <DataGridTextColumn Header="角色" Binding="{Binding RolesText}" Width="*"/>
-                            <DataGridTextColumn Header="状态" Binding="{Binding IsActive}" Width="55"/>
+                            <DataGridTextColumn Header="{lex:Loc Admin_Username}" Binding="{Binding Username}" Width="110"/>
+                            <DataGridTextColumn Header="{lex:Loc Admin_DisplayName}" Binding="{Binding DisplayName}" Width="100"/>
+                            <DataGridTextColumn Header="{lex:Loc Admin_Role}" Binding="{Binding RolesText}" Width="*"/>
+                            <DataGridTextColumn Header="{lex:Loc Admin_Status}" Binding="{Binding IsActive}" Width="55"/>
                         </DataGrid.Columns>
                     </DataGrid>
                 </Grid>
-                <Border Grid.Column="1" BorderBrush="#FFCCCCCC" BorderThickness="1" Margin="8,0,0,0" Padding="10">
+                <Border Grid.Column="1" BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="1" Margin="8,0,0,0" Padding="10">
                     <StackPanel>
-                        <TextBlock Text="选中用户设置" FontWeight="Bold" Margin="0,0,0,8"/>
-                        <Label Content="显示名称"/>
+                        <TextBlock Text="{lex:Loc Admin_UserSettings}" FontWeight="Bold" Margin="0,0,0,8"/>
+                        <Label Content="{lex:Loc Admin_DisplayNameFull}"/>
                         <TextBox x:Name="txt_displayName" Margin="0,0,0,8"/>
-                        <Label Content="角色（可多选）"/>
-                        <CheckBox x:Name="chk_general" Content="普通用户" Margin="5,2"/>
-                        <CheckBox x:Name="chk_tech" Content="技术员" Margin="5,2"/>
-                        <CheckBox x:Name="chk_reviewer" Content="审核员" Margin="5,2"/>
-                        <CheckBox x:Name="chk_admin" Content="管理员" Margin="5,2"/>
-                        <Button Content="应用身份与显示名" Padding="8,4" Margin="0,10,0,0" Click="Btn_ApplyRoles_Click"/>
-                        <Button Content="重置密码" Padding="8,4" Margin="0,8,0,0" Click="Btn_ResetPassword_Click"/>
-                        <Button x:Name="btn_toggleActive" Content="禁用/启用" Padding="8,4" Margin="0,8,0,0" Click="Btn_ToggleActive_Click"/>
+                        <Label Content="{lex:Loc Admin_RoleMulti}"/>
+                        <CheckBox x:Name="chk_general" Content="{lex:Loc Admin_GeneralUser}" Margin="5,2"/>
+                        <CheckBox x:Name="chk_tech" Content="{lex:Loc Admin_Technician}" Margin="5,2"/>
+                        <CheckBox x:Name="chk_reviewer" Content="{lex:Loc Admin_Reviewer}" Margin="5,2"/>
+                        <CheckBox x:Name="chk_admin" Content="{lex:Loc Admin_Administrator}" Margin="5,2"/>
+                        <Button Content="{lex:Loc Admin_ApplyIdentity}" Padding="8,4" Margin="0,10,0,0" Click="Btn_ApplyRoles_Click"/>
+                        <Button Content="{lex:Loc Admin_ResetPassword}" Padding="8,4" Margin="0,8,0,0" Click="Btn_ResetPassword_Click"/>
+                        <Button x:Name="btn_toggleActive" Content="{lex:Loc Admin_EnableDisable}" Padding="8,4" Margin="0,8,0,0" Click="Btn_ToggleActive_Click"/>
                     </StackPanel>
                 </Border>
             </Grid>
         </TabItem>
 
         <!--客户管理-->
-        <TabItem Header="客户管理">
+        <TabItem Header="{lex:Loc Admin_CustomerTab}">
             <Grid Margin="5">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="auto"/>
                     <RowDefinition/>
                 </Grid.RowDefinitions>
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
-                    <Button Content="新增" Padding="10,3" Click="Btn_NewCustomer_Click"/>
-                    <Button Content="编辑" Padding="10,3" Margin="8,0,0,0" Click="Btn_EditCustomer_Click"/>
-                    <Button Content="删除" Padding="10,3" Margin="8,0,0,0" Click="Btn_DeleteCustomer_Click"/>
-                    <Button Content="从计划数据同步" Padding="10,3" Margin="20,0,0,0" Click="Btn_SyncCustomers_Click"
-                            ToolTip="从已导入的计划数据（客户别）同步客户字典"/>
-                    <Button Content="刷新" Padding="10,3" Margin="8,0,0,0" Click="Btn_RefreshCustomers_Click"/>
+                    <Button Content="{lex:Loc Common_Add}" Padding="10,3" Click="Btn_NewCustomer_Click"/>
+                    <Button Content="{lex:Loc Common_Edit}" Padding="10,3" Margin="8,0,0,0" Click="Btn_EditCustomer_Click"/>
+                    <Button Content="{lex:Loc Common_Delete}" Padding="10,3" Margin="8,0,0,0" Click="Btn_DeleteCustomer_Click"/>
+                    <Button Content="{lex:Loc Admin_SyncFromData}" Padding="10,3" Margin="20,0,0,0" Click="Btn_SyncCustomers_Click"
+                            ToolTip="{lex:Loc Admin_ToolTip_SyncFromData}"/>
+                    <Button Content="{lex:Loc Common_Refresh}" Padding="10,3" Margin="8,0,0,0" Click="Btn_RefreshCustomers_Click"/>
                 </StackPanel>
                 <DataGrid x:Name="dg_customers" Grid.Row="1" AutoGenerateColumns="False" IsReadOnly="True"
                           CanUserAddRows="False" SelectionMode="Single" SelectionUnit="FullRow"
                           HeadersVisibility="Column" GridLinesVisibility="Horizontal">
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="客户代码" Binding="{Binding Code}" Width="100" SortMemberPath="Code"/>
-                        <DataGridTextColumn Header="客户名称" Binding="{Binding Name}" Width="150" SortMemberPath="Name"/>
-                        <DataGridTextColumn Header="备注" Binding="{Binding Remark}" Width="*"/>
+                        <DataGridTextColumn Header="{lex:Loc Admin_CustomerCode}" Binding="{Binding Code}" Width="100" SortMemberPath="Code"/>
+                        <DataGridTextColumn Header="{lex:Loc Admin_CustomerName}" Binding="{Binding Name}" Width="150" SortMemberPath="Name"/>
+                        <DataGridTextColumn Header="{lex:Loc Admin_Remark}" Binding="{Binding Remark}" Width="*"/>
                     </DataGrid.Columns>
                 </DataGrid>
             </Grid>
         </TabItem>
 
         <!--测试项目管理-->
-        <TabItem Header="测试项目管理">
+        <TabItem Header="{lex:Loc Admin_TestItemTab}">
             <Grid Margin="5">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="auto"/>
                     <RowDefinition/>
                 </Grid.RowDefinitions>
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
-                    <Button Content="新增" Padding="10,3" Click="Btn_NewTestItem_Click"/>
-                    <Button Content="编辑" Padding="10,3" Margin="8,0,0,0" Click="Btn_EditTestItem_Click"/>
-                    <Button Content="删除" Padding="10,3" Margin="8,0,0,0" Click="Btn_DeleteTestItem_Click"/>
-                    <Button Content="从计划表文件同步" Padding="10,3" Margin="20,0,0,0" Click="Btn_SyncTestItems_Click"
-                            ToolTip="从 ORT Test Schedule 文件的 Test Items 工作表同步"/>
-                    <Button Content="刷新" Padding="10,3" Margin="8,0,0,0" Click="Btn_RefreshTestItems_Click"/>
+                    <Button Content="{lex:Loc Common_Add}" Padding="10,3" Click="Btn_NewTestItem_Click"/>
+                    <Button Content="{lex:Loc Common_Edit}" Padding="10,3" Margin="8,0,0,0" Click="Btn_EditTestItem_Click"/>
+                    <Button Content="{lex:Loc Common_Delete}" Padding="10,3" Margin="8,0,0,0" Click="Btn_DeleteTestItem_Click"/>
+                    <Button Content="{lex:Loc Admin_SyncFromFile}" Padding="10,3" Margin="20,0,0,0" Click="Btn_SyncTestItems_Click"
+                            ToolTip="{lex:Loc Admin_ToolTip_SyncFromFile}"/>
+                    <Button Content="{lex:Loc Common_Refresh}" Padding="10,3" Margin="8,0,0,0" Click="Btn_RefreshTestItems_Click"/>
                 </StackPanel>
                 <DataGrid x:Name="dg_testItems" Grid.Row="1" AutoGenerateColumns="False" IsReadOnly="True"
                           CanUserAddRows="False" SelectionMode="Single" SelectionUnit="FullRow"
                           HeadersVisibility="Column" GridLinesVisibility="Horizontal">
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="试验项目" Binding="{Binding Name}" Width="220"/>
-                        <DataGridTextColumn Header="试验时间" Binding="{Binding Period}" Width="80"/>
-                        <DataGridTextColumn Header="负责人" Binding="{Binding Owner}" Width="120"/>
-                        <DataGridTextColumn Header="备注" Binding="{Binding Remark}" Width="*"/>
+                        <DataGridTextColumn Header="{lex:Loc Admin_TestExperiment}" Binding="{Binding Name}" Width="220"/>
+                        <DataGridTextColumn Header="{lex:Loc Admin_TestTime}" Binding="{Binding Period}" Width="80"/>
+                        <DataGridTextColumn Header="{lex:Loc Plans_Owner}" Binding="{Binding Owner}" Width="120"/>
+                        <DataGridTextColumn Header="{lex:Loc Admin_Remark}" Binding="{Binding Remark}" Width="*"/>
                     </DataGrid.Columns>
                 </DataGrid>
             </Grid>
         </TabItem>
 
         <!--产品类型管理-->
-        <TabItem Header="产品类型管理">
+        <TabItem Header="{lex:Loc Admin_ProductTypeTab}">
             <Grid Margin="5">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="auto"/>
                     <RowDefinition/>
                 </Grid.RowDefinitions>
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
-                    <Button Content="新增" Padding="10,3" Click="Btn_NewProduct_Click"/>
-                    <Button Content="编辑" Padding="10,3" Margin="8,0,0,0" Click="Btn_EditProduct_Click"/>
-                    <Button Content="删除" Padding="10,3" Margin="8,0,0,0" Click="Btn_DeleteProduct_Click"/>
-                    <Button Content="刷新" Padding="10,3" Margin="20,0,0,0" Click="Btn_RefreshProducts_Click"/>
+                    <Button Content="{lex:Loc Common_Add}" Padding="10,3" Click="Btn_NewProduct_Click"/>
+                    <Button Content="{lex:Loc Common_Edit}" Padding="10,3" Margin="8,0,0,0" Click="Btn_EditProduct_Click"/>
+                    <Button Content="{lex:Loc Common_Delete}" Padding="10,3" Margin="8,0,0,0" Click="Btn_DeleteProduct_Click"/>
+                    <Button Content="{lex:Loc Common_Refresh}" Padding="10,3" Margin="20,0,0,0" Click="Btn_RefreshProducts_Click"/>
                 </StackPanel>
                 <DataGrid x:Name="dg_products" Grid.Row="1" AutoGenerateColumns="False" IsReadOnly="True"
                           CanUserAddRows="False" SelectionMode="Single" SelectionUnit="FullRow"
                           HeadersVisibility="Column" GridLinesVisibility="Horizontal">
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="产品代码" Binding="{Binding Code}" Width="100" SortMemberPath="Code"/>
-                        <DataGridTextColumn Header="产品类型名称" Binding="{Binding Name}" Width="150" SortMemberPath="Name"/>
-                        <DataGridTextColumn Header="备注" Binding="{Binding Remark}" Width="*"/>
+                        <DataGridTextColumn Header="{lex:Loc Admin_ProductCode}" Binding="{Binding Code}" Width="100" SortMemberPath="Code"/>
+                        <DataGridTextColumn Header="{lex:Loc Admin_ProductTypeName}" Binding="{Binding Name}" Width="150" SortMemberPath="Name"/>
+                        <DataGridTextColumn Header="{lex:Loc Admin_Remark}" Binding="{Binding Remark}" Width="*"/>
                     </DataGrid.Columns>
                 </DataGrid>
             </Grid>
         </TabItem>
 
         <!--阶段管理-->
-        <TabItem Header="阶段管理">
+        <TabItem Header="{lex:Loc Admin_StageTab}">
             <Grid Margin="5">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="auto"/>
                     <RowDefinition/>
                 </Grid.RowDefinitions>
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
-                    <Button Content="新增" Padding="10,3" Click="Btn_NewStage_Click"/>
-                    <Button Content="编辑" Padding="10,3" Margin="8,0,0,0" Click="Btn_EditStage_Click"/>
-                    <Button Content="删除" Padding="10,3" Margin="8,0,0,0" Click="Btn_DeleteStage_Click"/>
-                    <Button Content="刷新" Padding="10,3" Margin="20,0,0,0" Click="Btn_RefreshStages_Click"/>
+                    <Button Content="{lex:Loc Common_Add}" Padding="10,3" Click="Btn_NewStage_Click"/>
+                    <Button Content="{lex:Loc Common_Edit}" Padding="10,3" Margin="8,0,0,0" Click="Btn_EditStage_Click"/>
+                    <Button Content="{lex:Loc Common_Delete}" Padding="10,3" Margin="8,0,0,0" Click="Btn_DeleteStage_Click"/>
+                    <Button Content="{lex:Loc Common_Refresh}" Padding="10,3" Margin="20,0,0,0" Click="Btn_RefreshStages_Click"/>
                 </StackPanel>
                 <DataGrid x:Name="dg_stages" Grid.Row="1" AutoGenerateColumns="False" IsReadOnly="True"
                           CanUserAddRows="False" SelectionMode="Single" SelectionUnit="FullRow"
                           HeadersVisibility="Column" GridLinesVisibility="Horizontal">
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="阶段名" Binding="{Binding Name}" Width="150"/>
-                        <DataGridTextColumn Header="描述" Binding="{Binding Description}" Width="*"/>
+                        <DataGridTextColumn Header="{lex:Loc Admin_StageName}" Binding="{Binding Name}" Width="150"/>
+                        <DataGridTextColumn Header="{lex:Loc Admin_Description}" Binding="{Binding Description}" Width="*"/>
                     </DataGrid.Columns>
                 </DataGrid>
             </Grid>

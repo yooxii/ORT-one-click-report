@@ -1,4 +1,4 @@
-using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 using Newtonsoft.Json;
 using NLog;
 using ORT一键报告.Models;
@@ -200,8 +200,8 @@ namespace ORT一键报告.Plans.ViewModels
         /// 未提交修改的描述（状态栏显示）
         /// </summary>
         public string PendingText => HasPendingChanges
-            ? $"未提交修改: 领退新增{_pendingReqAdded.Count} 计划新增{_pendingPlanAdded.Count} 修改{DetectPlanModifiedCount() + DetectReqModifiedCount()} 删除{_pendingPlanDeleted.Count + _pendingReqDeleted.Count}"
-            : "无未提交修改";
+            ? string.Format(LanguageService.Get("Plans_PendingFormat"), _pendingReqAdded.Count, _pendingPlanAdded.Count, DetectPlanModifiedCount() + DetectReqModifiedCount(), _pendingPlanDeleted.Count + _pendingReqDeleted.Count)
+            : LanguageService.Get("Plans_NoPending");
 
         /* ###############################  字典  ################################ */
 
@@ -449,12 +449,12 @@ namespace ORT一键报告.Plans.ViewModels
                 RequisitionsView.Refresh();
                 OnPropertyChanged(nameof(HasPendingChanges));
                 OnPropertyChanged(nameof(PendingText));
-                StatusMessage = $"领退表 {Requisitions.Count} 条 / 计划表 {Plans.Count} 条";
+                StatusMessage = string.Format(LanguageService.Get("Plans_StatusCount"), Requisitions.Count, Plans.Count);
             }
             catch (Exception ex)
             {
                 _logger.Error(ex, "加载计划数据失败");
-                StatusMessage = $"加载失败: {ex.Message}";
+                StatusMessage = string.Format(LanguageService.Get("Plans_LoadFailed"), ex.Message);
             }
         }
 
@@ -894,7 +894,7 @@ namespace ORT一键报告.Plans.ViewModels
         {
             if (!CanEdit)
             {
-                StatusMessage = "无新增权限，请登录相应账号";
+                StatusMessage = LanguageService.Get("Plans_NoAddPermission");
                 return;
             }
             Views.WindowRequisitionEdit editWindow = new(_db, _permission, _adminService, _excelService, null)
@@ -910,8 +910,8 @@ namespace ORT一键报告.Plans.ViewModels
             {
                 _reviewService.SubmitPlanRequest("新增", planResult, null, _permission.CurrentUser);
                 _reviewService.SubmitRequisitionRequest("新增", reqResult, null, _permission.CurrentUser);
-                StatusMessage = "新增请求已提交审核，待审核员通过后生效";
-                _ = System.Windows.MessageBox.Show("新增请求已提交审核，待审核员通过后生效。", "提交成功");
+                StatusMessage = LanguageService.Get("Plans_AddSubmitted");
+                _ = System.Windows.MessageBox.Show(LocalizationHelper.Get("Msg_AddSubmitted"), LanguageService.Get("Cap_SubmitSuccess"));
             }
             else
             {
@@ -929,7 +929,7 @@ namespace ORT一键报告.Plans.ViewModels
         {
             if (!CanEdit)
             {
-                StatusMessage = "无新增权限，请登录相应账号";
+                StatusMessage = LanguageService.Get("Plans_NoAddPermission");
                 return;
             }
             Views.WindowPlanDirectEdit editWindow = new(_db, _permission, _adminService, _excelService, null)
@@ -943,8 +943,8 @@ namespace ORT一键报告.Plans.ViewModels
             if (NeedsReview)
             {
                 _reviewService.SubmitPlanRequest("新增", planResult, null, _permission.CurrentUser);
-                StatusMessage = "新增请求已提交审核，待审核员通过后生效";
-                _ = System.Windows.MessageBox.Show("新增请求已提交审核，待审核员通过后生效。", "提交成功");
+                StatusMessage = LanguageService.Get("Plans_AddSubmitted");
+                _ = System.Windows.MessageBox.Show(LocalizationHelper.Get("Msg_AddSubmitted"), LanguageService.Get("Cap_SubmitSuccess"));
             }
             else
             {
@@ -976,8 +976,8 @@ namespace ORT一键报告.Plans.ViewModels
                 {
                     _reviewService.SubmitPlanRequest("编辑", editWindow.PlanResult, editWindow.PlanResult.Id, _permission.CurrentUser);
                 }
-                StatusMessage = "编辑请求已提交审核，待审核员通过后生效";
-                _ = System.Windows.MessageBox.Show("编辑请求已提交审核，待审核员通过后生效。", "提交成功");
+                StatusMessage = LanguageService.Get("Plans_EditSubmitted");
+                _ = System.Windows.MessageBox.Show(LocalizationHelper.Get("Msg_EditSubmitted"), LanguageService.Get("Cap_SubmitSuccess"));
             }
             else
             {
@@ -1013,8 +1013,8 @@ namespace ORT一键报告.Plans.ViewModels
             if (NeedsReview)
             {
                 _reviewService.SubmitPlanRequest("编辑", editWindow.PlanResult, SelectedPlan.Id, _permission.CurrentUser);
-                StatusMessage = "编辑请求已提交审核，待审核员通过后生效";
-                _ = System.Windows.MessageBox.Show("编辑请求已提交审核，待审核员通过后生效。", "提交成功");
+                StatusMessage = LanguageService.Get("Plans_EditSubmitted");
+                _ = System.Windows.MessageBox.Show(LocalizationHelper.Get("Msg_EditSubmitted"), LanguageService.Get("Cap_SubmitSuccess"));
             }
             else
             {
@@ -1082,8 +1082,7 @@ namespace ORT一键报告.Plans.ViewModels
             string reqNo = req.RequisitionNo ?? "-";
             string reqModel = req.ModelName ?? "-";
             if (System.Windows.MessageBox.Show(
-                $"确认删除该领退记录？（暂存，提交后生效）\n領料單据號: {reqNo}  机种: {reqModel}",
-                "删除确认", System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Warning)
+                $"确认删除该领退记录？（暂存，提交后生效）\n領料單据號: {reqNo}  机种: {reqModel}", LanguageService.Get("Cap_DeleteConfirm"), System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Warning)
                 != System.Windows.MessageBoxResult.Yes)
             {
                 return;
@@ -1111,8 +1110,7 @@ namespace ORT一键报告.Plans.ViewModels
             string jobNo = plan.JobNo ?? "-";
             string planModel = plan.ModelName ?? "-";
             if (System.Windows.MessageBox.Show(
-                $"确认删除该计划记录？（暂存，提交后生效）\n工作編號: {jobNo}  机种: {planModel}",
-                "删除确认", System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Warning)
+                $"确认删除该计划记录？（暂存，提交后生效）\n工作編號: {jobNo}  机种: {planModel}", LanguageService.Get("Cap_DeleteConfirm"), System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Warning)
                 != System.Windows.MessageBoxResult.Yes)
             {
                 return;
@@ -1140,8 +1138,8 @@ namespace ORT一键报告.Plans.ViewModels
             string path = _db.ResolveAttachmentPath(req.SnFilePath);
             if (!File.Exists(path))
             {
-                StatusMessage = $"SN文件不存在: {path}";
-                _ = System.Windows.MessageBox.Show($"SN文件不存在:\n{path}", "提示");
+                StatusMessage = string.Format(LanguageService.Get("Plans_SNFileNotExist"), path);
+                _ = System.Windows.MessageBox.Show(string.Format(LanguageService.Get("Plans_SNFileNotExistMsg"), path), LanguageService.Get("Cap_Info"));
                 return;
             }
             try
@@ -1197,8 +1195,7 @@ namespace ORT一键报告.Plans.ViewModels
         /// </summary>
         private void DiscardChanges()
         {
-            if (System.Windows.MessageBox.Show("确认丢弃所有未提交的修改？",
-                "丢弃确认", System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Question)
+            if (System.Windows.MessageBox.Show(LocalizationHelper.Get("Msg_ConfirmDiscard"), LanguageService.Get("Cap_DiscardConfirm"), System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Question)
                 != System.Windows.MessageBoxResult.Yes)
             {
                 return;
@@ -1285,7 +1282,7 @@ namespace ORT一键报告.Plans.ViewModels
             {
                 _logger.Error(ex, "提交保存失败");
                 StatusMessage = $"保存失败: {ex.Message}";
-                _ = System.Windows.MessageBox.Show($"保存失败:\n{ex.Message}", "错误");
+                _ = System.Windows.MessageBox.Show($"保存失败:\n{ex.Message}", LanguageService.Get("Cap_Error"));
             }
         }
 
@@ -1337,7 +1334,7 @@ namespace ORT一键报告.Plans.ViewModels
             catch (Exception ex)
             {
                 _logger.Error(ex, "导出领退表失败");
-                _ = System.Windows.MessageBox.Show($"导出领退表失败:\n{ex.Message}", "错误");
+                _ = System.Windows.MessageBox.Show($"导出领退表失败:\n{ex.Message}", LanguageService.Get("Cap_Error"));
             }
         }
 
@@ -1361,7 +1358,7 @@ namespace ORT一键报告.Plans.ViewModels
             catch (Exception ex)
             {
                 _logger.Error(ex, "导出计划表失败");
-                _ = System.Windows.MessageBox.Show($"导出计划表失败:\n{ex.Message}", "错误");
+                _ = System.Windows.MessageBox.Show($"导出计划表失败:\n{ex.Message}", LanguageService.Get("Cap_Error"));
             }
         }
 
@@ -1377,8 +1374,7 @@ namespace ORT一键报告.Plans.ViewModels
                 StatusMessage = "没有可清空的数据";
                 return;
             }
-            if (System.Windows.MessageBox.Show($"确认清空全部计划数据（计划表{Plans.Count}条/领退表{Requisitions.Count}条）？此操作不可恢复！",
-                "清空确认", System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Warning)
+            if (System.Windows.MessageBox.Show($"确认清空全部计划数据（计划表{Plans.Count}条/领退表{Requisitions.Count}条）？此操作不可恢复！", LanguageService.Get("Cap_ClearConfirm"), System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Warning)
                 != System.Windows.MessageBoxResult.Yes)
             {
                 return;

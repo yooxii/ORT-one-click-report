@@ -12,8 +12,8 @@
 
     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="15">
         <StackPanel Margin="0,10,0,0">
-            <TextBlock Text="{Binding Label}" FontSize="16" FontWeight="Bold" Margin="0,0,0,5" Foreground="#007ACC"/>
-            <Border BorderBrush="#EEEEEE" BorderThickness="1" Padding="10,5" CornerRadius="4">
+            <TextBlock Text="{Binding Label}" FontSize="16" FontWeight="Bold" Margin="0,0,0,5" Foreground="{DynamicResource PrimaryBrush}"/>
+            <Border BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="1" Padding="10,5" CornerRadius="4">
                 <StackPanel x:Name="contentControl">
                     <ItemsControl ItemsSource="{Binding}">
                         <ItemsControl.ItemTemplateSelector>

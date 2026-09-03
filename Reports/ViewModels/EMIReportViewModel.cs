@@ -438,7 +438,7 @@ namespace ORT一键报告.Reports.ViewModels
 
         private async void ConvertToPdfAsync(string sourcePath)
         {
-            PopupWindow popup = new() { Title = "处理中", Message = "请耐心等待..." };
+            PopupWindow popup = new() { Title = LanguageService.Get("Title_Processing"), Message = "请耐心等待..." };
             popup.Show();
             await Task.Run(() =>
             {
@@ -473,7 +473,7 @@ namespace ORT一键报告.Reports.ViewModels
 
             string savePath = _emiService.SavePathDialog("选择保存路径", "2.1 Conducted EMI Measurement", "EMI报告|*.xlsx", _reportService.RootPath) ?? Directory.GetCurrentDirectory() + "2.1 Conducted EMI Measurement.xlsx";
             package.SaveAs(savePath);
-            MessageBox.Show($"报告已保存到{savePath}", "保存成功", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show($"报告已保存到{savePath}", LanguageService.Get("Cap_SaveSuccess"), MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         /* ###############################  EMIReportPage Command  ################################ */
@@ -483,7 +483,7 @@ namespace ORT一键报告.Reports.ViewModels
 
         private void FileSelect()
         {
-            TemplatePath = _emiService.OpenPathDialog("请选择EMI模板");
+            TemplatePath = _emiService.OpenPathDialog(LanguageService.Get("Dlg_SelectEMITemplate"));
         }
 
         private RelayCommand dirSelectCommand;
@@ -491,7 +491,7 @@ namespace ORT一键报告.Reports.ViewModels
 
         private void DirSelect()
         {
-            DataPath = _emiService.OpenPathDialog("请选择EMI数据", filter: "EMI数据文件|*.pdf;*.docx|所有文件|*.*", initPath: _appSettings.EmiDataDir, isDir: true);
+            DataPath = _emiService.OpenPathDialog(LanguageService.Get("Dlg_SelectEMIData"), filter: "EMI数据文件|*.pdf;*.docx|所有文件|*.*", initPath: _appSettings.EmiDataDir, isDir: true);
             ReadPath(DataPath);
         }
 
