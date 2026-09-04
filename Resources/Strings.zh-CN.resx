@@ -1290,4 +1290,16 @@
   <data name="Settings_ImportThemeHint" xml:space="preserve">
     <value>选择一个 XAML 主题文件导入并应用（无需重新编译）</value>
   </data>
+  <data name="Settings_ToastPosition" xml:space="preserve">
+    <value>通知位置</value>
+  </data>
+  <data name="Settings_ToastPositionHint" xml:space="preserve">
+    <value>控制 Toast 提示出现的位置</value>
+  </data>
+  <data name="Toast_Pos_TopRight" xml:space="preserve"><value>右上角</value></data>
+  <data name="Toast_Pos_TopLeft" xml:space="preserve"><value>左上角</value></data>
+  <data name="Toast_Pos_BottomRight" xml:space="preserve"><value>右下角</value></data>
+  <data name="Toast_Pos_BottomLeft" xml:space="preserve"><value>左下角</value></data>
+  <data name="Toast_ValueChanged" xml:space="preserve"><value>已修改 {0}：{1} → {2}</value></data>
+  <data name="Toast_ReportPathEmpty" xml:space="preserve"><value>报告路径未设置，请在 设置→路径 中配置</value></data>
 </root>

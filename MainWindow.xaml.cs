@@ -175,6 +175,7 @@ namespace ORT一键报告
                 _ = MessageBox.Show(LocalizationHelper.Get("Msg_ReportNeedLogin"), LanguageService.Get("Cap_NoPermission"));
                 return;
             }
+            ToastService.WarnIfReportPathEmpty();
             WindowMainReport windowMainReport = new();
             windowMainReport.Show();
         }

@@ -1290,4 +1290,16 @@
   <data name="Settings_ImportThemeHint" xml:space="preserve">
     <value>Select a XAML theme file to import and apply (no recompile needed)</value>
   </data>
+  <data name="Settings_ToastPosition" xml:space="preserve">
+    <value>Toast Position</value>
+  </data>
+  <data name="Settings_ToastPositionHint" xml:space="preserve">
+    <value>Where toast notifications appear</value>
+  </data>
+  <data name="Toast_Pos_TopRight" xml:space="preserve"><value>Top Right</value></data>
+  <data name="Toast_Pos_TopLeft" xml:space="preserve"><value>Top Left</value></data>
+  <data name="Toast_Pos_BottomRight" xml:space="preserve"><value>Bottom Right</value></data>
+  <data name="Toast_Pos_BottomLeft" xml:space="preserve"><value>Bottom Left</value></data>
+  <data name="Toast_ValueChanged" xml:space="preserve"><value>Modified {0}: {1} → {2}</value></data>
+  <data name="Toast_ReportPathEmpty" xml:space="preserve"><value>Report path not set. Configure it in Settings → Paths.</value></data>
 </root>

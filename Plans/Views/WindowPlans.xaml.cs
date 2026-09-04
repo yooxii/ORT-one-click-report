@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using NLog;
+using ORT一键报告.Main.Views;
 using ORT一键报告.Models;
 using ORT一键报告.Plans.ViewModels;
 using ORT一键报告.Reports.Models;
@@ -52,6 +53,27 @@ namespace ORT一键报告.Plans.Views
         /// </summary>
         private DataGridRow _lastReqHighlightRow;
         private DataGridRow _lastPlanHighlightRow;
+
+        /// <summary>计划表下拉列（浏览时只显示文本，双击编辑才出现下拉框）</summary>
+        private static readonly System.Collections.Generic.HashSet<string> PlanComboColumns =
+            new() { "Product", "Customer", "Stage", "TestItem", "Status" };
+
+        /// <summary>下拉编辑开始时的快照（行、属性、原值），用于结束时判断是否修改并提示</summary>
+        private (Plan item, string prop, string original)? _planComboEditSnapshot;
+
+        private static string GetPropString(object obj, string prop)
+            => obj?.GetType().GetProperty(prop)?.GetValue(obj)?.ToString();
+
+        /// <summary>
+        /// 下拉列进入编辑时记录原值，供 CellEditEnding 比较是否修改
+        /// </summary>
+        private void Dg_Plans_BeginningEdit(object sender, DataGridBeginningEditEventArgs e)
+        {
+            string prop = e.Column.SortMemberPath;
+            _planComboEditSnapshot = e.Row.Item is Plan plan && prop != null && PlanComboColumns.Contains(prop)
+                ? (plan, prop, GetPropString(plan, prop))
+                : null;
+        }
 
         private void Dg_Requisitions_CurrentCellChanged(object sender, EventArgs e)
             => UpdateCurrentRowHighlight(dg_requisitions, ref _lastReqHighlightRow);
@@ -144,6 +166,21 @@ namespace ORT一键报告.Plans.Views
             {
                 _vm.AutoFillByModel(plan);
             }
+
+            // 下拉列：选择与原值不同时弹出修改提示（Toast）
+            if (PlanComboColumns.Contains(column)
+                && _planComboEditSnapshot is { } snap
+                && snap.item == plan && snap.prop == column)
+            {
+                string newVal = GetPropString(plan, column);
+                if (!string.Equals(snap.original, newVal, StringComparison.Ordinal))
+                {
+                    ToastService.Show(string.Format(LanguageService.Get("Toast_ValueChanged"),
+                        column, snap.original ?? "", newVal ?? ""), ToastType.Info);
+                }
+            }
+            _planComboEditSnapshot = null;
+
             _vm.NotifyPendingChanged();
             _vm.StatusMessage = _vm.PendingText;
         }
@@ -226,6 +263,7 @@ namespace ORT一键报告.Plans.Views
 
         private void Menu_OpenReportFolder_Click(object sender, RoutedEventArgs e)
         {
+            ToastService.WarnIfReportPathEmpty();
             Plan plan = CurrentPlan;
             ReportLink link = plan == null ? null : _vm.FindReportLink(plan.JobNo);
             if (link == null || !System.IO.Directory.Exists(link.ReportDir))
@@ -245,6 +283,7 @@ namespace ORT一键报告.Plans.Views
 
         private void Menu_OpenReportOverview_Click(object sender, RoutedEventArgs e)
         {
+            ToastService.WarnIfReportPathEmpty();
             Plan plan = CurrentPlan;
             ReportLink link = plan == null ? null : _vm.FindReportLink(plan.JobNo);
             if (link == null || !System.IO.File.Exists(link.OverviewFile))
@@ -321,6 +360,7 @@ namespace ORT一键报告.Plans.Views
                 };
                 reportService.PrefilledReportModel = prefilled;
 
+                ToastService.WarnIfReportPathEmpty();
                 WindowMainReport window = new();
                 window.Show();
             }

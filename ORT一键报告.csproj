@@ -138,9 +138,13 @@
     <Compile Include="Services\LanguageService.cs" />
     <Compile Include="Services\ThemeService.cs" />
     <Compile Include="Services\WindowThemeHelper.cs" />
+    <Compile Include="Services\ToastService.cs" />
     <Compile Include="Services\OrtLocalizationProvider.cs" />
     <Compile Include="Main\Views\WindowAppSettings.xaml.cs">
       <DependentUpon>WindowAppSettings.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Main\Views\WindowToast.xaml.cs">
+      <DependentUpon>WindowToast.xaml</DependentUpon>
     </Compile>
     <Compile Include="Main\Views\WindowLogin.xaml.cs">
       <DependentUpon>WindowLogin.xaml</DependentUpon>
@@ -362,6 +366,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Main\Views\WindowAppSettings.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Main\Views\WindowToast.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

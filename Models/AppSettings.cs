@@ -92,6 +92,11 @@ namespace ORT一键报告.Models
         /// 全局字体大小（像素）
         /// </summary>
         public double FontSize { get; set; } = 14;
+
+        /// <summary>
+        /// Toast 提示出现位置（TopRight/TopLeft/BottomRight/BottomLeft），默认右上角
+        /// </summary>
+        public string ToastPosition { get; set; } = "TopRight";
     }
 
     /// <summary>

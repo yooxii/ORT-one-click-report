@@ -157,11 +157,31 @@ namespace ORT一键报告.Main.Views
             _loading = false;
         }
 
+        /// <summary>
+        /// 填充 Toast 位置选项（默认右上角）
+        /// </summary>
+        private void LoadToastPositions()
+        {
+            var list = new List<ThemeOption>
+            {
+                new ThemeOption("TopRight", LanguageService.Get("Toast_Pos_TopRight"), null),
+                new ThemeOption("TopLeft", LanguageService.Get("Toast_Pos_TopLeft"), null),
+                new ThemeOption("BottomRight", LanguageService.Get("Toast_Pos_BottomRight"), null),
+                new ThemeOption("BottomLeft", LanguageService.Get("Toast_Pos_BottomLeft"), null),
+            };
+            _loading = true;
+            cb_toastPos.ItemsSource = list;
+            cb_toastPos.SelectedValuePath = "Code";
+            cb_toastPos.SelectedValue = _settings.Settings.UI.ToastPosition ?? "TopRight";
+            _loading = false;
+        }
+
         private void LoadValues()
         {
             Models.AppSettings settings = _settings.Settings;
             cb_fontFamily.SelectedItem = settings.UI.FontFamily;
             cb_fontSize.Text = settings.UI.FontSize.ToString();
+            LoadToastPositions();
 
             _initialDbPath = _settings.GetDatabasePath();
             txt_dbpath.Text = _initialDbPath;
@@ -195,6 +215,10 @@ namespace ORT一键报告.Main.Views
             {
                 _ = MessageBox.Show(LocalizationHelper.Get("Msg_InvalidFontSize"), LanguageService.Get("Cap_Info"));
                 return false;
+            }
+            if (cb_toastPos.SelectedValue is string toastPos && !string.IsNullOrEmpty(toastPos))
+            {
+                settings.UI.ToastPosition = toastPos;
             }
 
             settings.Paths.SchedulePath = TrimOrNull(txt_schedule.Text);

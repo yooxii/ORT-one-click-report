@@ -264,6 +264,7 @@
                           SelectionMode="Extended" SelectionUnit="CellOrRowHeader"
                           ClipboardCopyMode="None"
                           LoadingRow="Dg_Plans_LoadingRow"
+                          BeginningEdit="Dg_Plans_BeginningEdit"
                           CellEditEnding="Dg_Plans_CellEditEnding"
                           CurrentCellChanged="Dg_Plans_CurrentCellChanged"
                           PreviewMouseRightButtonDown="Dg_Plans_PreviewMouseRightButtonDown"
@@ -329,43 +330,63 @@
                         <DataGridTemplateColumn Header="{lex:Loc Plans_ProductType}" Width="80" SortMemberPath="Product">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <ComboBox ItemsSource="{Binding DataContext.CatalogProducts, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                              SelectedValue="{Binding Product, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
-                                              VerticalContentAlignment="Center" BorderThickness="0"
-                                              ToolTip="{lex:Loc Plans_ProductTypeHint}"/>
+                                    <TextBlock Text="{Binding Product}" Style="{StaticResource CenterText}"/>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
+                            <DataGridTemplateColumn.CellEditingTemplate>
+                                <DataTemplate>
+                                    <ComboBox ItemsSource="{Binding DataContext.CatalogProducts, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                              SelectedValue="{Binding Product, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                                              VerticalContentAlignment="Center"
+                                              ToolTip="{lex:Loc Plans_ProductTypeHint}"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellEditingTemplate>
                         </DataGridTemplateColumn>
                         <DataGridTemplateColumn Header="{lex:Loc PlanEdit_Customer}" Width="95" SortMemberPath="Customer">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <ComboBox ItemsSource="{Binding DataContext.CatalogCustomers, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                              SelectedValue="{Binding Customer, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
-                                              VerticalContentAlignment="Center" BorderThickness="0"
-                                              ToolTip="{lex:Loc Plans_CustomerHint}"/>
+                                    <TextBlock Text="{Binding Customer}" Style="{StaticResource CenterText}"/>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
+                            <DataGridTemplateColumn.CellEditingTemplate>
+                                <DataTemplate>
+                                    <ComboBox ItemsSource="{Binding DataContext.CatalogCustomers, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                              SelectedValue="{Binding Customer, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                                              VerticalContentAlignment="Center"
+                                              ToolTip="{lex:Loc Plans_CustomerHint}"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellEditingTemplate>
                         </DataGridTemplateColumn>
                         <DataGridTextColumn Header="{lex:Loc Plans_ModelName}" Binding="{Binding ModelName, UpdateSourceTrigger=PropertyChanged}" Width="130" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
                         <DataGridTemplateColumn Header="{lex:Loc Plans_Stage}" Width="65" SortMemberPath="Stage">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <ComboBox ItemsSource="{Binding DataContext.CatalogStages, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                              SelectedValue="{Binding Stage, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
-                                              VerticalContentAlignment="Center" BorderThickness="0"
-                                              ToolTip="{lex:Loc Plans_StageHint}"/>
+                                    <TextBlock Text="{Binding Stage}" Style="{StaticResource CenterText}"/>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
+                            <DataGridTemplateColumn.CellEditingTemplate>
+                                <DataTemplate>
+                                    <ComboBox ItemsSource="{Binding DataContext.CatalogStages, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                              SelectedValue="{Binding Stage, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                                              VerticalContentAlignment="Center"
+                                              ToolTip="{lex:Loc Plans_StageHint}"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellEditingTemplate>
                         </DataGridTemplateColumn>
                         <DataGridTemplateColumn Header="{lex:Loc Plans_TestItem}" Width="150" SortMemberPath="TestItem">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <ComboBox ItemsSource="{Binding DataContext.CatalogTestItems, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                              SelectedValue="{Binding TestItem, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
-                                              IsEditable="False" VerticalContentAlignment="Center" BorderThickness="0"
-                                              ToolTip="{lex:Loc Plans_TestItemHint}"/>
+                                    <TextBlock Text="{Binding TestItem}" Style="{StaticResource CenterText}"/>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
+                            <DataGridTemplateColumn.CellEditingTemplate>
+                                <DataTemplate>
+                                    <ComboBox ItemsSource="{Binding DataContext.CatalogTestItems, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                              SelectedValue="{Binding TestItem, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                                              IsEditable="False" VerticalContentAlignment="Center"
+                                              ToolTip="{lex:Loc Plans_TestItemHint}"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellEditingTemplate>
                         </DataGridTemplateColumn>
                         <DataGridTextColumn Header="{lex:Loc PlanEdit_SampleQty}" Binding="{Binding SampleSize, UpdateSourceTrigger=PropertyChanged}" Width="55" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
                         <DataGridTextColumn Header="{lex:Loc Admin_TestTime}" Binding="{Binding TestPeriod, UpdateSourceTrigger=PropertyChanged}" Width="65" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
@@ -397,12 +418,17 @@
                         <DataGridTemplateColumn Header="{lex:Loc Plans_Status}" Width="75" SortMemberPath="Status">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <ComboBox ItemsSource="{Binding DataContext.CatalogStatuses, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                              SelectedValue="{Binding Status, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
-                                              VerticalContentAlignment="Center" BorderThickness="0"
-                                              ToolTip="{lex:Loc Plans_StatusHint}"/>
+                                    <TextBlock Text="{Binding Status}" Style="{StaticResource CenterText}"/>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
+                            <DataGridTemplateColumn.CellEditingTemplate>
+                                <DataTemplate>
+                                    <ComboBox ItemsSource="{Binding DataContext.CatalogStatuses, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                              SelectedValue="{Binding Status, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                                              VerticalContentAlignment="Center"
+                                              ToolTip="{lex:Loc Plans_StatusHint}"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellEditingTemplate>
                         </DataGridTemplateColumn>
                         <DataGridTextColumn Header="{lex:Loc Admin_Remark}" Binding="{Binding Remark, UpdateSourceTrigger=PropertyChanged}" Width="150" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
                     </DataGrid.Columns>
