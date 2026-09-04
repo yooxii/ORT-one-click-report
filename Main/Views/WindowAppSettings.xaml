@@ -65,6 +65,8 @@
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="80"/>
                                 <ColumnDefinition Width="240"/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="auto"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="{lex:Loc Settings_Theme}" VerticalAlignment="Center"/>
                             <ComboBox x:Name="cb_theme" Grid.Column="1" VerticalContentAlignment="Center" SelectedValuePath="Code" SelectionChanged="Cb_Theme_SelectionChanged">
@@ -74,6 +76,7 @@
                                                                 </DataTemplate>
                                                             </ComboBox.ItemTemplate>
                                                         </ComboBox>
+                            <Button x:Name="btn_importTheme" Grid.Column="3" Content="{lex:Loc Settings_ImportTheme}" Click="Btn_ImportTheme_Click" ToolTip="{lex:Loc Settings_ImportThemeHint}"/>
                         </Grid>
                     </StackPanel>
                 </Border>

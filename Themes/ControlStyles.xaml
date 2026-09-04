@@ -398,14 +398,15 @@
     <Style TargetType="DataGridRow">
         <Setter Property="Background" Value="Transparent"/>
         <Style.Triggers>
+            <!-- 触发器优先级：后声明者生效，故隔行色放最前，选中色放最后保证选中可见 -->
+            <Trigger Property="AlternationIndex" Value="1">
+                <Setter Property="Background" Value="{DynamicResource AlternateRowBrush}"/>
+            </Trigger>
             <Trigger Property="IsMouseOver" Value="True">
                 <Setter Property="Background" Value="{DynamicResource TableRowHoverBrush}"/>
             </Trigger>
             <Trigger Property="IsSelected" Value="True">
                 <Setter Property="Background" Value="{DynamicResource TableRowSelectedBrush}"/>
-            </Trigger>
-            <Trigger Property="AlternationIndex" Value="1">
-                <Setter Property="Background" Value="{DynamicResource AlternateRowBrush}"/>
             </Trigger>
         </Style.Triggers>
     </Style>
@@ -470,6 +471,142 @@
     <Style TargetType="Expander">
         <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource BorderSubtleBrush}"/>
+    </Style>
+
+    <!-- ==================== ToolBar / ToolBarTray ==================== -->
+    <!-- 简化 ToolBar 模板：去除系统浅色渐变背景与拖拽 grip，改为主题背景 -->
+    <Style TargetType="ToolBar">
+        <Setter Property="Background" Value="{DynamicResource HeaderBackgroundBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+        <Setter Property="Padding" Value="4,3"/>
+        <!-- 关键：ToolBar 默认用 ToolBarPanel（横向）是在系统主题样式里通过 Setter 设置的，
+             自定义样式会丢失该 Setter 而回退到 ItemsControl 默认的垂直 StackPanel，
+             故此处显式指定横向面板，保证按钮横向排列 -->
+        <Setter Property="ItemsPanel">
+            <Setter.Value>
+                <ItemsPanelTemplate>
+                    <StackPanel Orientation="Horizontal"/>
+                </ItemsPanelTemplate>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToolBar">
+                    <Border Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
+                        <ItemsPresenter/>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style TargetType="ToolBarTray">
+        <Setter Property="Background" Value="{DynamicResource WindowBackgroundBrush}"/>
+    </Style>
+
+    <!-- ToolBar 内分隔符（使用专用样式键） -->
+    <Style x:Key="{x:Static ToolBar.SeparatorStyleKey}" TargetType="Separator">
+        <Setter Property="Background" Value="{DynamicResource BorderSubtleBrush}"/>
+        <Setter Property="Margin" Value="4,2"/>
+        <Setter Property="Width" Value="1"/>
+    </Style>
+
+    <!-- ToolBar 内的按钮/切换按钮使用专用样式键，会绕过隐式 Button 样式；
+         基于隐式 Button 样式派生，保证工具栏按钮也使用主题前景色（深色主题下浅色文字） -->
+    <Style x:Key="{x:Static ToolBar.ButtonStyleKey}" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}"/>
+    <Style x:Key="{x:Static ToolBar.CheckBoxStyleKey}" TargetType="CheckBox" BasedOn="{StaticResource {x:Type CheckBox}}"/>
+    <Style x:Key="{x:Static ToolBar.RadioButtonStyleKey}" TargetType="RadioButton" BasedOn="{StaticResource {x:Type RadioButton}}"/>
+
+    <!-- ==================== ScrollBar ==================== -->
+    <!-- 翻页区域透明按钮（点击轨道翻页） -->
+    <Style x:Key="ScrollBarPageButtonStyle" TargetType="RepeatButton">
+        <Setter Property="IsTabStop" Value="False"/>
+        <Setter Property="Focusable" Value="False"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RepeatButton">
+                    <Border Background="Transparent"/>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- 滑块：圆角、悬停/拖拽高亮 -->
+    <Style x:Key="ScrollBarThumbStyle" TargetType="Thumb">
+        <Setter Property="IsTabStop" Value="False"/>
+        <Setter Property="Focusable" Value="False"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Thumb">
+                    <Border x:Name="bd"
+                            Background="{DynamicResource ScrollBarThumbBrush}"
+                            CornerRadius="4" Margin="2"/>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource ScrollBarThumbHoverBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsDragging" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource ScrollBarThumbHoverBrush}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style TargetType="ScrollBar">
+        <Setter Property="Background" Value="{DynamicResource ScrollBarTrackBrush}"/>
+        <Setter Property="Width" Value="12"/>
+        <Setter Property="MinWidth" Value="12"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <!-- 纵向滚动条 -->
+                <ControlTemplate TargetType="ScrollBar">
+                    <Grid Background="{TemplateBinding Background}">
+                        <Track x:Name="PART_Track" IsDirectionReversed="True" IsEnabled="True">
+                            <Track.DecreaseRepeatButton>
+                                <RepeatButton Style="{StaticResource ScrollBarPageButtonStyle}" Command="ScrollBar.PageUpCommand"/>
+                            </Track.DecreaseRepeatButton>
+                            <Track.IncreaseRepeatButton>
+                                <RepeatButton Style="{StaticResource ScrollBarPageButtonStyle}" Command="ScrollBar.PageDownCommand"/>
+                            </Track.IncreaseRepeatButton>
+                            <Track.Thumb>
+                                <Thumb Style="{StaticResource ScrollBarThumbStyle}"/>
+                            </Track.Thumb>
+                        </Track>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <!-- 横向滚动条 -->
+            <Trigger Property="Orientation" Value="Horizontal">
+                <Setter Property="Width" Value="Auto"/>
+                <Setter Property="MinWidth" Value="0"/>
+                <Setter Property="Height" Value="12"/>
+                <Setter Property="MinHeight" Value="12"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ScrollBar">
+                            <Grid Background="{TemplateBinding Background}">
+                                <Track x:Name="PART_Track" IsEnabled="True">
+                                    <Track.DecreaseRepeatButton>
+                                        <RepeatButton Style="{StaticResource ScrollBarPageButtonStyle}" Command="ScrollBar.PageLeftCommand"/>
+                                    </Track.DecreaseRepeatButton>
+                                    <Track.IncreaseRepeatButton>
+                                        <RepeatButton Style="{StaticResource ScrollBarPageButtonStyle}" Command="ScrollBar.PageRightCommand"/>
+                                    </Track.IncreaseRepeatButton>
+                                    <Track.Thumb>
+                                        <Thumb Style="{StaticResource ScrollBarThumbStyle}"/>
+                                    </Track.Thumb>
+                                </Track>
+                            </Grid>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Trigger>
+        </Style.Triggers>
     </Style>
 
 </ResourceDictionary>

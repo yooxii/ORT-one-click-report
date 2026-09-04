@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Windows;
+using System.Windows.Markup;
 
 namespace ORT一键报告.Services
 {
@@ -13,10 +15,33 @@ namespace ORT一键报告.Services
     public static class ThemeService
     {
         private const string ThemeConfigPath = "current_theme.txt";
+        private const string CustomThemePathConfig = "current_theme_path.txt";
+        public const string CustomCode = "Custom";
         private static readonly NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
 
         /// <summary>当前已加载的主题字典（用于切换时移除）</summary>
         private static ResourceDictionary _currentThemeDict;
+
+        /// <summary>
+        /// 一套完整 UI 方案必须包含的语义化资源键（自定义主题需全部提供，否则校验失败）。
+        /// 控件模板（ControlStyles.xaml）通过 DynamicResource 引用这些键实现换肤。
+        /// </summary>
+        public static readonly string[] RequiredKeys =
+        {
+            "WindowBackgroundBrush","CardBackgroundBrush","AlternateRowBrush","SidebarBackgroundBrush",
+            "HeaderBackgroundBrush","TableHeaderForegroundBrush",
+            "PrimaryBrush","PrimaryHoverBrush","PrimaryForegroundBrush",
+            "ButtonBackgroundBrush","ButtonHoverBrush","ButtonPressedBrush","ButtonBorderBrush","ButtonForegroundBrush",
+            "TextPrimaryBrush","TextSecondaryBrush","BorderSubtleBrush",
+            "InputBackgroundBrush","InputForegroundBrush","InputBorderBrush","InputFocusBorderBrush",
+            "TableRowHoverBrush","TableRowSelectedBrush","TableCellSelectedBrush",
+            "ItemHoverBrush","ItemSelectedBrush",
+            "StatusOkBrush","StatusOkBgBrush","StatusWarnBrush","StatusWarnBgBrush","StatusErrorBrush","StatusErrorBgBrush",
+            "MenuBackgroundBrush","MenuForegroundBrush",
+            "ScrollBarTrackBrush","ScrollBarThumbBrush","ScrollBarThumbHoverBrush",
+            "FontFamilyUI","FontFamilyData",
+            "CornerRadiusSmall","CornerRadiusButton","CornerRadiusCard","CornerRadiusLarge","DisabledOpacity",
+        };
 
         /// <summary>
         /// 语言/主题变更事件（供 ViewModel 订阅刷新）
@@ -39,13 +64,30 @@ namespace ORT一键报告.Services
         public static string CurrentTheme { get; private set; } = "Fluent";
 
         /// <summary>
-        /// 初始化主题：优先读取用户上次保存的方案，否则使用默认 Fluent
+        /// 当前自定义主题文件路径（持久化）
+        /// </summary>
+        public static string CustomThemePath { get; private set; } =
+            File.Exists(CustomThemePathConfig) ? File.ReadAllText(CustomThemePathConfig).Trim() : null;
+
+        /// <summary>
+        /// 初始化主题：优先读取用户上次保存的方案（含自定义），否则使用默认 Fluent
         /// </summary>
         public static void Initialize()
         {
             string saved = File.Exists(ThemeConfigPath)
                 ? File.ReadAllText(ThemeConfigPath).Trim()
                 : "Fluent";
+
+            if (saved == CustomCode)
+            {
+                if (!string.IsNullOrEmpty(CustomThemePath) && File.Exists(CustomThemePath)
+                    && TryLoadThemeDictionary(CustomThemePath, out ResourceDictionary dict, out _))
+                {
+                    ApplyDictionary(dict, CustomCode);
+                    return;
+                }
+                logger.Warn("自定义主题文件缺失或无效，回退到 Fluent");
+            }
 
             bool found = false;
             foreach (ThemeOption opt in SupportedThemes)
@@ -104,6 +146,74 @@ namespace ORT一键报告.Services
             {
                 logger.Error(ex, "应用主题 {0} 失败", code);
             }
+        }
+
+        /// <summary>
+        /// 从外部 XAML 文件加载主题字典并校验必需键（不应用，仅加载）。
+        /// 供“导入自定义主题”使用。
+        /// </summary>
+        public static bool TryLoadThemeDictionary(string xamlPath, out ResourceDictionary dict, out string error)
+        {
+            dict = null;
+            error = null;
+            try
+            {
+                ResourceDictionary loaded;
+                using (FileStream fs = File.OpenRead(xamlPath))
+                {
+                    loaded = (ResourceDictionary)XamlReader.Load(fs);
+                }
+
+                // out 参数不能在 lambda 中捕获，先用局部变量 loaded 校验
+                var missing = RequiredKeys.Where(k => !loaded.Contains(k)).ToList();
+                if (missing.Count > 0)
+                {
+                    error = "缺少必需资源键：" + string.Join("、", missing);
+                    return false;
+                }
+                dict = loaded;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                error = "XAML 解析失败：" + ex.Message;
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 导入并应用自定义主题文件，成功后持久化为 Custom。
+        /// 返回是否成功，失败时 error 为原因。
+        /// </summary>
+        public static bool ApplyCustomTheme(string xamlPath, out string error)
+        {
+            error = null;
+            if (!TryLoadThemeDictionary(xamlPath, out ResourceDictionary dict, out error))
+            {
+                return false;
+            }
+
+            ApplyDictionary(dict, CustomCode);
+            CustomThemePath = xamlPath;
+            File.WriteAllText(CustomThemePathConfig, xamlPath);
+            logger.Info("已导入自定义主题: {0}", xamlPath);
+            return true;
+        }
+
+        /// <summary>
+        /// 应用一个主题字典并持久化代码（内置/自定义共用）
+        /// </summary>
+        private static void ApplyDictionary(ResourceDictionary dict, string code)
+        {
+            if (_currentThemeDict != null)
+            {
+                Application.Current.Resources.MergedDictionaries.Remove(_currentThemeDict);
+            }
+            Application.Current.Resources.MergedDictionaries.Add(dict);
+            _currentThemeDict = dict;
+            CurrentTheme = code;
+            File.WriteAllText(ThemeConfigPath, code);
+            ThemeChanged?.Invoke();
         }
     }
 

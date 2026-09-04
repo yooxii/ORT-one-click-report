@@ -1284,4 +1284,10 @@
   <data name="Settings_ThemeHint" xml:space="preserve">
     <value>Switch interface theme. Takes effect immediately and is saved.</value>
   </data>
+  <data name="Settings_ImportTheme" xml:space="preserve">
+    <value>Import Custom Theme…</value>
+  </data>
+  <data name="Settings_ImportThemeHint" xml:space="preserve">
+    <value>Select a XAML theme file to import and apply (no recompile needed)</value>
+  </data>
 </root>

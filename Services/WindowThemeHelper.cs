@@ -54,8 +54,9 @@ namespace ORT一键报告.Services
                     return;
                 }
 
-                // 仅深色主题启用深色标题栏，其余主题还原浅色
-                int useDark = ThemeService.CurrentTheme == "DarkLab" ? 1 : 0;
+                // 仅深色主题启用深色标题栏，其余主题还原浅色。
+                // 按主题窗口背景亮度自动判断深浅，使任意深色主题（含自定义）都自动用深色标题栏
+                int useDark = IsDarkTheme() ? 1 : 0;
 
                 // 先尝试新属性值(20)，失败再尝试旧值(19)，兼容不同 Win10 版本
                 if (DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, ref useDark, sizeof(int)) != 0)
@@ -81,6 +82,21 @@ namespace ORT一键报告.Services
             {
                 // 不支持 DWM 深色模式的系统（Win10 2004 以下）静默跳过
             }
+        }
+
+        /// <summary>
+        /// 判断当前主题是否为深色：读取 WindowBackgroundBrush 亮度，低于阈值视为深色。
+        /// 使自定义深色主题也能自动启用深色标题栏。
+        /// </summary>
+        private static bool IsDarkTheme()
+        {
+            if (Application.Current.Resources["WindowBackgroundBrush"] is System.Windows.Media.SolidColorBrush brush)
+            {
+                var c = brush.Color;
+                double luminance = (0.299 * c.R + 0.587 * c.G + 0.114 * c.B) / 255.0;
+                return luminance < 0.5;
+            }
+            return ThemeService.CurrentTheme == "DarkLab";
         }
 
         /// <summary>

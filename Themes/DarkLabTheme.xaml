@@ -68,4 +68,9 @@
     <SolidColorBrush x:Key="MenuBackgroundBrush" Color="#FF12122A"/>
     <SolidColorBrush x:Key="MenuForegroundBrush" Color="#FFCCCCDD"/>
 
+    <!-- 滚动条 -->
+    <SolidColorBrush x:Key="ScrollBarTrackBrush" Color="#FF0E0E24"/>
+    <SolidColorBrush x:Key="ScrollBarThumbBrush" Color="#FF3A3A5A"/>
+    <SolidColorBrush x:Key="ScrollBarThumbHoverBrush" Color="#FF00D4FF"/>
+
 </ResourceDictionary>

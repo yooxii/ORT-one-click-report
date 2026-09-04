@@ -1,0 +1,99 @@
+<!--
+  ============================================================
+  ORT 一键报告 · 自定义 UI 主题模板
+  ============================================================
+  使用方法：
+    1. 复制本文件，另存为任意名称（如 MyTheme.xaml）。
+    2. 修改下面每个资源的 Color / 值，调出你想要的配色。
+    3. 在程序「设置 → UI → 导入自定义主题…」中选择该文件即可生效，
+       无需重新编译程序；导入后会记住，下次启动自动应用。
+
+  规则（必须遵守）：
+    · 下面列出的每一个 x:Key 都是【必需键】，缺一不可，
+      否则导入时会提示“缺少必需资源键”。
+    · 键名不能改，只能改值。
+    · 颜色用 SolidColorBrush（Color 为 #AARRGGBB 或 #RRGGBB）。
+    · 圆角用 CornerRadius，字体用 FontFamily，透明度用 sys:Double。
+    · 控件外观（按钮/表格/滚动条等形状）由程序内置的 ControlStyles.xaml
+      统一提供，本文件只负责【颜色 / 圆角 / 字体】，保证所有窗口风格统一。
+
+  调色建议：
+    · 先定 WindowBackgroundBrush（窗口底色）与 CardBackgroundBrush（卡片/表格底色）。
+    · PrimaryBrush 是品牌强调色（主按钮/选中/链接）。
+    · 深色主题记得把 TextPrimaryBrush 调成浅色、深色背景，反之亦然，
+      保证文字对比度足够（建议 ≥ 4.5:1）。
+  ============================================================
+-->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <!-- 字体 -->
+    <FontFamily x:Key="FontFamilyUI">Segoe UI, Microsoft YaHei UI, Microsoft YaHei</FontFamily>
+    <FontFamily x:Key="FontFamilyData">Consolas, Segoe UI, Microsoft YaHei UI</FontFamily>
+
+    <!-- 圆角 -->
+    <CornerRadius x:Key="CornerRadiusSmall">4</CornerRadius>
+    <CornerRadius x:Key="CornerRadiusButton">4</CornerRadius>
+    <CornerRadius x:Key="CornerRadiusCard">8</CornerRadius>
+    <CornerRadius x:Key="CornerRadiusLarge">12</CornerRadius>
+    <sys:Double x:Key="DisabledOpacity">0.45</sys:Double>
+
+    <!-- ===== 背景层级 ===== -->
+    <SolidColorBrush x:Key="WindowBackgroundBrush" Color="#FFF3F3F3"/>   <!-- 窗口底色 -->
+    <SolidColorBrush x:Key="CardBackgroundBrush"   Color="#FFFBFBFB"/>   <!-- 卡片/表格/弹层底色 -->
+    <SolidColorBrush x:Key="AlternateRowBrush"     Color="#FFF7F7F7"/>   <!-- 表格隔行底色 -->
+    <SolidColorBrush x:Key="SidebarBackgroundBrush" Color="#FFF9F9F9"/>   <!-- 侧边栏底色 -->
+    <SolidColorBrush x:Key="HeaderBackgroundBrush"  Color="#FFFAFAFA"/>   <!-- 表头/工具栏底色 -->
+    <SolidColorBrush x:Key="TableHeaderForegroundBrush" Color="#FF555555"/> <!-- 表头文字 -->
+
+    <!-- ===== 品牌强调色 ===== -->
+    <SolidColorBrush x:Key="PrimaryBrush"          Color="#FF0078D4"/>   <!-- 主色 -->
+    <SolidColorBrush x:Key="PrimaryHoverBrush"     Color="#FF106EBE"/>   <!-- 主色悬停 -->
+    <SolidColorBrush x:Key="PrimaryForegroundBrush" Color="#FFFFFFFF"/>  <!-- 主色上的文字 -->
+
+    <!-- ===== 按钮 ===== -->
+    <SolidColorBrush x:Key="ButtonBackgroundBrush" Color="#FFFBFBFB"/>
+    <SolidColorBrush x:Key="ButtonHoverBrush"      Color="#FFF0F0F0"/>
+    <SolidColorBrush x:Key="ButtonPressedBrush"    Color="#FFE5E5E5"/>
+    <SolidColorBrush x:Key="ButtonBorderBrush"     Color="#FFE0E0E0"/>
+    <SolidColorBrush x:Key="ButtonForegroundBrush" Color="#FF1A1A1A"/>
+
+    <!-- ===== 文字 ===== -->
+    <SolidColorBrush x:Key="TextPrimaryBrush"   Color="#FF1A1A1A"/>   <!-- 主文字 -->
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="#FF6E6E6E"/>   <!-- 次要文字 -->
+    <SolidColorBrush x:Key="BorderSubtleBrush"  Color="#FFE8E8E8"/>   <!-- 细分隔线/边框 -->
+
+    <!-- ===== 输入框 ===== -->
+    <SolidColorBrush x:Key="InputBackgroundBrush"  Color="#FFFFFFFF"/>
+    <SolidColorBrush x:Key="InputForegroundBrush"  Color="#FF1A1A1A"/>
+    <SolidColorBrush x:Key="InputBorderBrush"      Color="#FFD0D0D0"/>
+    <SolidColorBrush x:Key="InputFocusBorderBrush" Color="#FF0078D4"/>
+
+    <!-- ===== 表格选中/悬停 ===== -->
+    <SolidColorBrush x:Key="TableRowHoverBrush"    Color="#FFF2F2F2"/>
+    <SolidColorBrush x:Key="TableRowSelectedBrush" Color="#FFE8F0FA"/>
+    <SolidColorBrush x:Key="TableCellSelectedBrush" Color="#FFE0E0E0"/>
+
+    <!-- ===== 下拉项 ===== -->
+    <SolidColorBrush x:Key="ItemHoverBrush"    Color="#FFF0F0F0"/>
+    <SolidColorBrush x:Key="ItemSelectedBrush" Color="#FFE5F1FB"/>
+
+    <!-- ===== 状态色 ===== -->
+    <SolidColorBrush x:Key="StatusOkBrush"    Color="#FF2E7D32"/>
+    <SolidColorBrush x:Key="StatusOkBgBrush"  Color="#FFE8F5E9"/>
+    <SolidColorBrush x:Key="StatusWarnBrush"  Color="#FFE65100"/>
+    <SolidColorBrush x:Key="StatusWarnBgBrush" Color="#FFFFF3E0"/>
+    <SolidColorBrush x:Key="StatusErrorBrush" Color="#FFC62828"/>
+    <SolidColorBrush x:Key="StatusErrorBgBrush" Color="#FFFFEBEE"/>
+
+    <!-- ===== 菜单 ===== -->
+    <SolidColorBrush x:Key="MenuBackgroundBrush" Color="#FFFAFAFA"/>
+    <SolidColorBrush x:Key="MenuForegroundBrush" Color="#FF1A1A1A"/>
+
+    <!-- ===== 滚动条 ===== -->
+    <SolidColorBrush x:Key="ScrollBarTrackBrush"      Color="#00FFFFFF"/>  <!-- 透明轨道 -->
+    <SolidColorBrush x:Key="ScrollBarThumbBrush"      Color="#FFC8C8C8"/>
+    <SolidColorBrush x:Key="ScrollBarThumbHoverBrush" Color="#FFA0A0A0"/>
+
+</ResourceDictionary>

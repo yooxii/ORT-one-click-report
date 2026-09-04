@@ -145,9 +145,16 @@ namespace ORT一键报告.Main.Views
 
         private void LoadThemeOptions()
         {
-            cb_theme.ItemsSource = ThemeService.SupportedThemes;
+            var list = new List<ThemeOption>(ThemeService.SupportedThemes);
+            if (!string.IsNullOrEmpty(ThemeService.CustomThemePath))
+            {
+                list.Add(new ThemeOption(ThemeService.CustomCode, "自定义主题", null));
+            }
+            _loading = true;
+            cb_theme.ItemsSource = list;
             cb_theme.SelectedValuePath = "Code";
             cb_theme.SelectedValue = ThemeService.CurrentTheme;
+            _loading = false;
         }
 
         private void LoadValues()
@@ -238,8 +245,44 @@ namespace ORT一键报告.Main.Views
                     {
                         return;
                     }
-                    ThemeService.ApplyTheme(code);
+                    if (code == ThemeService.CustomCode)
+                    {
+                        if (!string.IsNullOrEmpty(ThemeService.CustomThemePath))
+                        {
+                            ThemeService.ApplyCustomTheme(ThemeService.CustomThemePath, out _);
+                        }
+                    }
+                    else
+                    {
+                        ThemeService.ApplyTheme(code);
+                    }
                 }
+
+        private void Btn_ImportTheme_Click(object sender, RoutedEventArgs e)
+        {
+            var dlg = new Microsoft.Win32.OpenFileDialog
+            {
+                Filter = "XAML 主题文件|*.xaml|所有文件|*.*",
+                Title = "选择自定义主题文件",
+            };
+            if (dlg.ShowDialog() != true)
+            {
+                return;
+            }
+
+            if (ThemeService.ApplyCustomTheme(dlg.FileName, out string error))
+            {
+                LoadThemeOptions();
+                cb_theme.SelectedValue = ThemeService.CustomCode;
+                MessageBox.Show("自定义主题已导入并应用，下次启动自动生效。", "提示",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            else
+            {
+                MessageBox.Show("导入失败：" + error, "错误",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
         
         private void Btn_Save_Click(object sender, RoutedEventArgs e)
         {

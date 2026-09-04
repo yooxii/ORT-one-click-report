@@ -1284,4 +1284,10 @@
   <data name="Settings_ThemeHint" xml:space="preserve">
     <value>切换界面视觉方案，立即生效并保存。</value>
   </data>
+  <data name="Settings_ImportTheme" xml:space="preserve">
+    <value>导入自定义主题…</value>
+  </data>
+  <data name="Settings_ImportThemeHint" xml:space="preserve">
+    <value>选择一个 XAML 主题文件导入并应用（无需重新编译）</value>
+  </data>
 </root>

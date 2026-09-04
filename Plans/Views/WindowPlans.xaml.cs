@@ -47,19 +47,11 @@ namespace ORT一键报告.Plans.Views
         /* ###############################  行号  ################################ */
 
         /// <summary>
-        /// 当前单元格所在行的高亮画刷（很浅灰，与选中单元格的浅灰区分）
+        /// 当前单元格所在行的高亮改用语义资源键 TableRowSelectedBrush（动态引用，随主题切换），
+        /// 不再硬编码浅灰，避免深色主题下浅色文字不可读。
         /// </summary>
-        private static readonly SolidColorBrush RowHighlightBrush = CreateFrozenBrush("#FFF2F2F2");
-
         private DataGridRow _lastReqHighlightRow;
         private DataGridRow _lastPlanHighlightRow;
-
-        private static SolidColorBrush CreateFrozenBrush(string color)
-        {
-            SolidColorBrush brush = new((Color)ColorConverter.ConvertFromString(color));
-            brush.Freeze();
-            return brush;
-        }
 
         private void Dg_Requisitions_CurrentCellChanged(object sender, EventArgs e)
             => UpdateCurrentRowHighlight(dg_requisitions, ref _lastReqHighlightRow);
@@ -80,7 +72,8 @@ namespace ORT一键报告.Plans.Views
             if (grid.CurrentCell.IsValid && grid.CurrentCell.Item != null
                 && grid.ItemContainerGenerator.ContainerFromItem(grid.CurrentCell.Item) is DataGridRow row)
             {
-                row.Background = RowHighlightBrush;
+                // 动态资源引用：跟随当前主题的 TableRowSelectedBrush，切换主题自动刷新
+                row.SetResourceReference(DataGridRow.BackgroundProperty, "TableRowSelectedBrush");
                 lastRow = row;
             }
         }
