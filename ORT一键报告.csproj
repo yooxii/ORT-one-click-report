@@ -137,6 +137,7 @@
     <Compile Include="Services\LocalizationHelper.cs" />
     <Compile Include="Services\LanguageService.cs" />
     <Compile Include="Services\ThemeService.cs" />
+    <Compile Include="Services\WindowThemeHelper.cs" />
     <Compile Include="Services\OrtLocalizationProvider.cs" />
     <Compile Include="Main\Views\WindowAppSettings.xaml.cs">
       <DependentUpon>WindowAppSettings.xaml</DependentUpon>

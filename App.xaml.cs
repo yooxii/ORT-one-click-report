@@ -38,6 +38,21 @@ namespace ORT一键报告
                 // 初始化 UI 主题（读取上次保存的方案，默认 Fluent）
                 ORT一键报告.Services.ThemeService.Initialize();
 
+                // 深色主题时统一深色标题栏/窗口边框（DWM 沉浸式深色模式）：
+                // 每个窗口 Loaded 时自动应用（附加类处理器，覆盖所有 Window，无需逐窗口接线）。
+                // Win10 活动标题栏缓存问题由 ApplyToWindow 内的 1px 宽度抖动强制重绘解决。
+                EventManager.RegisterClassHandler(typeof(Window), FrameworkElement.LoadedEvent,
+                    new RoutedEventHandler((s, args) =>
+                    {
+                        if (s is Window win)
+                        {
+                            ORT一键报告.Services.WindowThemeHelper.ApplyToWindow(win);
+                        }
+                    }));
+                // 主题运行时切换：对所有已打开窗口重新应用
+                ORT一键报告.Services.ThemeService.ThemeChanged +=
+                    ORT一键报告.Services.WindowThemeHelper.ApplyToAllWindows;
+
                 // 使用自定义本地化提供程序（直接读取 Resources.Strings 资源），
                 // 解决 WPFLocalizeExtension 内置 Provider 对含中文程序集名解析失败、UI 显示 Key:xxx 的问题。
                 WPFLocalizeExtension.Engine.LocalizeDictionary.Instance.DefaultProvider =
