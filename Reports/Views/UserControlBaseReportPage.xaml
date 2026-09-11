@@ -44,7 +44,7 @@
                 </StackPanel>
                 <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
                     <Button Content="{lex:Loc Common_Reset}" Margin="5" MinWidth="120" Cursor="Hand" Click="Info_Set_Click"/>
-                    <Button Tag="{Binding ReportType, ElementName=root}" Content="{lex:Loc Common_Complete}" Command="{Binding FinishCommand}" Margin="5,5,5,0" MinWidth="120" Cursor="Hand" Height="19" VerticalAlignment="Top" />
+                    <Button Tag="{Binding ReportType, ElementName=root}" Content="{lex:Loc Common_Complete}" Command="{Binding FinishCommand}" Margin="5,5,5,0" MinWidth="120" Cursor="Hand" VerticalAlignment="Top" />
                 </StackPanel>
             </Grid>
         </ScrollViewer>

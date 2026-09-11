@@ -23,9 +23,9 @@
 
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="20" />
+            <RowDefinition Height="30" />
             <RowDefinition />
-            <RowDefinition Height="20" />
+            <RowDefinition Height="30" />
         </Grid.RowDefinitions>
         <Menu x:Name="_Menu" Grid.Row="0">
             <MenuItem Header="{lex:Loc Report_ToolsMenu}">

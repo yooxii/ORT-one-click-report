@@ -1,4 +1,4 @@
-<!--
+﻿<!--
   ControlStyles.xaml — 全局隐式控件样式（常驻，不随主题切换）
   所有颜色/圆角/字体均通过 DynamicResource 引用语义化资源键，
   三套主题字典（Fluent/Material/DarkLab）只需提供这些键即可整体换肤。
@@ -19,7 +19,7 @@
         <Setter Property="Foreground" Value="{DynamicResource ButtonForegroundBrush}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}"/>
         <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="Padding" Value="14,7"/>
+        <Setter Property="Padding" Value="8,7"/>
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="SnapsToDevicePixels" Value="True"/>
         <Setter Property="Template">
@@ -92,9 +92,10 @@
         <Setter Property="CaretBrush" Value="{DynamicResource TextPrimaryBrush}"/>
         <Setter Property="SelectionBrush" Value="{DynamicResource PrimaryBrush}"/>
         <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="Padding" Value="8,5"/>
+        <Setter Property="Padding" Value="4,3"/>
         <Setter Property="VerticalContentAlignment" Value="Center"/>
         <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="FontWeight" Value="Medium"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="TextBox">
@@ -131,7 +132,7 @@
         <Setter Property="SelectionBrush" Value="{DynamicResource PrimaryBrush}"/>
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="Background" Value="Transparent"/>
-        <Setter Property="Padding" Value="9,5"/>
+        <Setter Property="Padding" Value="4,3"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="TextBox">
@@ -149,7 +150,7 @@
         <Setter Property="CaretBrush" Value="{DynamicResource TextPrimaryBrush}"/>
         <Setter Property="SelectionBrush" Value="{DynamicResource PrimaryBrush}"/>
         <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="Padding" Value="8,5"/>
+        <Setter Property="Padding" Value="4,3"/>
         <Setter Property="VerticalContentAlignment" Value="Center"/>
         <Setter Property="Template">
             <Setter.Value>
@@ -174,10 +175,134 @@
         </Setter>
     </Style>
 
+
+    <!-- ==================== DatePickerTextBox ==================== -->
+    <!-- 隐式全局样式：DatePicker 内部文本框自动应用（模板内无需再 StaticResource 按名引用） -->
+    <Style TargetType="DatePickerTextBox">
+        <Setter Property="Background" Value="{DynamicResource InputBackgroundBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource InputBorderBrush}"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="Padding" Value="4,2"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type DatePickerTextBox}">
+                    <Border x:Name="Border" 
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="4"
+                            SnapsToDevicePixels="True">
+                        <ScrollViewer x:Name="PART_ContentHost" 
+                                      Margin="0"
+                                      Focusable="False" 
+                                      HorizontalScrollBarVisibility="Hidden" 
+                                      VerticalScrollBarVisibility="Hidden"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Border" Property="BorderBrush" Value="#4A90D9"/>
+                        </Trigger>
+                        <Trigger Property="IsFocused" Value="True">
+                            <Setter TargetName="Border" Property="BorderBrush" Value="#2B7CD3"/>
+                            <Setter TargetName="Border" Property="Background" Value="#F8FBFF"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Border" Property="Opacity" Value="0.5"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    
+    <!-- ==================== DatePicker ==================== -->
+    <!-- 隐式全局样式：全应用 DatePicker 自动生效（编辑期无需按名 StaticResource 引用，避免找不到资源键） -->
+    <Style TargetType="{x:Type DatePicker}">
+        <Setter Property="Foreground" Value="#333333"/>
+        <Setter Property="IsTodayHighlighted" Value="True"/>
+        <Setter Property="SelectedDateFormat" Value="Short"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        <Setter Property="CalendarStyle" Value="{DynamicResource {x:Type Calendar}}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type DatePicker}">
+                    <Border x:Name="OuterBorder"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            Background="{TemplateBinding Background}"
+                            Padding="{TemplateBinding Padding}">
+                        <Grid x:Name="PART_Root" 
+                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" 
+                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- ⭐ 关键：DatePickerTextBox 隐式全局样式自动应用，无需显式引用 -->
+                            <DatePickerTextBox x:Name="PART_TextBox" 
+                                               Grid.Column="0"
+                                               Focusable="{TemplateBinding Focusable}" 
+                                               HorizontalContentAlignment="Stretch" 
+                                               VerticalContentAlignment="Stretch"/>
+
+                            <Button x:Name="PART_Button" 
+                                    Grid.Column="1"
+                                    Foreground="{TemplateBinding Foreground}" 
+                                    Focusable="False" 
+                                    HorizontalAlignment="Right" 
+                                    Margin="3,0,3,0" 
+                                    Grid.Row="0" 
+                                    VerticalAlignment="Center">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="{x:Type Button}">
+                                        <Grid>
+                                            <VisualStateManager.VisualStateGroups>
+                                                <VisualStateGroup x:Name="CommonStates">
+                                                    <VisualState x:Name="Normal"/>
+                                                    <VisualState x:Name="MouseOver">
+                                                        <Storyboard>
+                                                            <ColorAnimationUsingKeyFrames Storyboard.TargetProperty="(Shape.Fill).(SolidColorBrush.Color)" 
+                                                                                          Storyboard.TargetName="IconPath">
+                                                                <EasingColorKeyFrame KeyTime="0" Value="#2B7CD3"/>
+                                                            </ColorAnimationUsingKeyFrames>
+                                                        </Storyboard>
+                                                    </VisualState>
+                                                </VisualStateGroup>
+                                            </VisualStateManager.VisualStateGroups>
+                                            <Path x:Name="IconPath" 
+                                                  Data="M11.428571,4.2857143 L11.428571,10 2,10 2,4.2857143 z M12,0 L12,3.7142857 0.57142857,3.7142857 0.57142857,0 z M13.714286,4.8571428 L13.714286,12 13.142857,12 13.142857,11.428571 0.57142857,11.428571 0.57142857,12 0,12 0,4.8571428 z" 
+                                                  Fill="#FF666666" 
+                                                  Height="12" 
+                                                  Margin="0,0,3,0" 
+                                                  Stretch="Fill" 
+                                                  Width="14"/>
+                                        </Grid>
+                                    </ControlTemplate>
+                                </Button.Template>
+                            </Button>
+
+                            <Popup x:Name="PART_Popup" 
+                                   AllowsTransparency="True" 
+                                   Placement="Bottom" 
+                                   PlacementTarget="{Binding ElementName=PART_TextBox}" 
+                                   StaysOpen="False"/>
+                        </Grid>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- ==================== Label ==================== -->
     <Style TargetType="Label">
         <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
         <Setter Property="Padding" Value="4,2"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="FontWeight" Value="Medium"/>
     </Style>
 
     <!-- ==================== ComboBox ==================== -->
@@ -186,7 +311,7 @@
         <Setter Property="Foreground" Value="{DynamicResource InputForegroundBrush}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource InputBorderBrush}"/>
         <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="Padding" Value="10,5"/>
+        <Setter Property="Padding" Value="5,3"/>
         <Setter Property="ScrollViewer.CanContentScroll" Value="True"/>
         <Setter Property="Template">
             <Setter.Value>
@@ -272,7 +397,7 @@
 
     <Style TargetType="ComboBoxItem">
         <Setter Property="Foreground" Value="{DynamicResource InputForegroundBrush}"/>
-        <Setter Property="Padding" Value="10,6"/>
+        <Setter Property="Padding" Value="5,3"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ComboBoxItem">

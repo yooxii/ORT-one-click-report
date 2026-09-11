@@ -28,9 +28,9 @@
                     <ColumnDefinition/>
                 </Grid.ColumnDefinitions>
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="25"/>
-                    <RowDefinition Height="25"/>
-                    <RowDefinition Height="25"/>
+                    <RowDefinition Height="35"/>
+                    <RowDefinition Height="35"/>
+                    <RowDefinition Height="35"/>
                 </Grid.RowDefinitions>
                 <Label Content="TESTED BY" Grid.Row="0" Grid.Column="0"/>
                 <TextBox x:Name="textbox_testedby" Text="{Binding TESTED_BY.Data, UpdateSourceTrigger=PropertyChanged}" VerticalContentAlignment="Center" Margin="1" Grid.Row="0" Grid.Column="1"/>
@@ -53,9 +53,9 @@
                     <ColumnDefinition/>
                 </Grid.ColumnDefinitions>
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="25"/>
-                    <RowDefinition Height="25"/>
-                    <RowDefinition Height="25"/>
+                    <RowDefinition Height="35"/>
+                    <RowDefinition Height="35"/>
+                    <RowDefinition Height="35"/>
                 </Grid.RowDefinitions>
                 <Label Content="APPROVED BY" Grid.Row="0" Grid.Column="0"/>
                 <TextBox x:Name="textbox_approvedby" Text="{Binding APPROVED_BY.Data, UpdateSourceTrigger=PropertyChanged}" VerticalContentAlignment="Center" Margin="1" Grid.Row="0" Grid.Column="1"/>
