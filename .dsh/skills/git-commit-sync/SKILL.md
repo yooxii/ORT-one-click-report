@@ -44,7 +44,7 @@ whenToUse: "每当一轮对话完成全部文件变更、准备给出最终回�
 
 中文正文与多行内容在 PowerShell 里极易被引号与编码破坏，**必须走临时文件**：
 
-1. 用 write 工具把完整 message 写成临时文件（UTF-8 **无 BOM**），放在 `.git/COMMIT_MSG_TMP` 或 `$env:TEMP` 下。
+1. 用 write 工具把完整 message 写成临时文件（UTF-8 **无 BOM**），放在 `.git/COMMIT_MSG_TMP`、`$env:TEMP` 或仓库内被忽略的 `obj/` 下。
 2. `git commit -F <临时文件>`
 3. 在同一个 `git add -A` 之后删除该临时文件，确保它不会进入工作区或索引。
 
@@ -56,6 +56,8 @@ whenToUse: "每当一轮对话完成全部文件变更、准备给出最终回�
 - 必须非交互：设 `$env:GIT_TERMINAL_PROMPT='0'`，避免凭据弹窗把命令挂死。
 - 被拒（non-fast-forward）：`git fetch origin` → `git rebase origin/<分支名>` → 解决后重试推送；冲突无法安全解决就 `git rebase --abort`，保留本地提交并如实报告。
 - 网络失败（本机走 127.0.0.1:7897 代理，偶发 `SSL_ERROR_SYSCALL`）：**重试一次**；仍失败则保留本地提交，并在回复中给出用户可手动执行的命令。
+- **受限沙箱下凭据助手无法启动**（本机 Git 凭据由 Git Credential Manager 保管）：报错形如 `sh.exe: *** fatal error - couldn't create signal pipe, Win32 error 5` 加 `fatal: could not read Username for 'https://github.com'`。这**不是**凭据缺失，普通重试无用 —— 直接以 `sandbox_permissions: danger-full-access` 重跑**同一条** push 命令，justification 写「Git 凭据助手在受限沙箱下无法创建命名管道，需要其完成推送」，可一次成功。
+- 推送完成后用 `git status --porcelain` + `git log --oneline -1` 复核工作区干净、本地与远端一致。
 
 ### 6. 汇报
 
