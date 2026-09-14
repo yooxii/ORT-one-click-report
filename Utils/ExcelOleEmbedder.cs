@@ -59,18 +59,21 @@ namespace ORT一键报告.Utils
         /// <summary>是否因为没装 Excel 而整体跳过</summary>
         public bool SkippedNoExcel { get; set; }
 
+        /// <summary>是否由内置直写方式（不依赖 Excel）完成嵌入</summary>
+        public bool UsedDirectWriter { get; set; }
+
         /// <summary>给用户看的一句话结论</summary>
         public string Summary =>
-            SkippedNoExcel ? "未检测到 Excel，附件未嵌入"
+            Saved && UsedDirectWriter ? $"附件已嵌入 {Added}/{Requested} 个（Excel 不可用，已由内置方式写入）"
             : !Saved ? $"附件嵌入未确认落盘（已尝试 {Added}/{Requested} 个，详见日志）"
             : Failed > 0 ? $"附件已嵌入 {Added}/{Requested} 个，{Failed} 个失败（详见日志）"
             : $"附件已嵌入 {Added}/{Requested} 个";
     }
 
     /// <summary>
-    /// OLE 对象嵌入：NPOI 2.7.4 没有 OLE 写入能力，改用 Excel COM（Interop）实现。
-    /// 说明：批量接口只开一次 Excel 会话，避免逐条开关 Excel 造成的性能问题。
-    /// 需要目标机器安装 Excel（本程序 ATE 流程本来也依赖 Excel COM）。
+    /// OLE 对象嵌入：优先用 Excel COM（后期绑定，不依赖 Interop PIA），
+    /// 若未安装 Excel 或 Excel 没能把附件写进文件，则自动退回 Utils/ExcelOleWriter 直写包的方式，
+    /// 保证"附件嵌入"这一功能不因 Excel 环境问题而丢失（原 EPPlus 版本同样不依赖 Excel）。
     /// </summary>
     public static class ExcelOleEmbedder
     {
@@ -108,8 +111,9 @@ namespace ORT一键报告.Utils
             Type excelType = Type.GetTypeFromProgID("Excel.Application");
             if (excelType == null)
             {
-                _logger.Warn("未检测到 Excel，已跳过 OLE 附件嵌入");
+                _logger.Warn("未检测到 Excel，改用内置直写方式嵌入 OLE 附件");
                 result.SkippedNoExcel = true;
+                UseDirectWriter(xlsxPath, items, result);
                 return result;
             }
 
@@ -203,7 +207,35 @@ namespace ORT一键报告.Utils
             result.Failed = failed;
             result.Restarts = restarts;
             result.Saved = saved && index >= items.Count;
+
+            // Excel 没能把附件写进文件（未保存/会话崩溃导致中断）时，退回直写包方式兜底
+            if (!result.Saved)
+            {
+                UseDirectWriter(xlsxPath, items, result);
+            }
             return result;
+        }
+
+        /// <summary>
+        /// 直写包兜底：不依赖 Excel，直接把附件写进 xlsx
+        /// </summary>
+        private static void UseDirectWriter(string xlsxPath, IReadOnlyList<OleEmbedRequest> items, OleEmbedResult result)
+        {
+            try
+            {
+                int direct = ExcelOleWriter.Write(xlsxPath, items);
+                if (direct > 0)
+                {
+                    result.UsedDirectWriter = true;
+                    result.Added = direct;
+                    result.Failed = Math.Max(0, items.Count - direct);
+                    result.Saved = true;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, $"直写 OLE 附件失败：{xlsxPath}");
+            }
         }
 
         /// <summary>

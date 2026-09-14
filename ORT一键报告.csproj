@@ -220,6 +220,7 @@
     <Compile Include="Utils\Report.cs" />
     <Compile Include="Utils\ExcelNpoi.cs" />
     <Compile Include="Utils\ExcelOleEmbedder.cs" />
+    <Compile Include="Utils\ExcelOleWriter.cs" />
     <Compile Include="Main\Views\WindowMainSettings.xaml.cs">
       <DependentUpon>WindowMainSettings.xaml</DependentUpon>
     </Compile>
