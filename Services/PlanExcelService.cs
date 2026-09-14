@@ -39,6 +39,11 @@ namespace ORT一键报告.Services
             "開始日期/Start Date", "結束日期/End Date", "完成狀況/Status", "上傳系統/Upload e-lab", "備 考/Remark"
         ];
 
+        /// <summary>
+        /// 最近一次导出的 OLE 附件嵌入结果（导出后由界面读取，用于如实提示"附件是否真的写进去了"）
+        /// </summary>
+        public OleEmbedResult LastEmbedResult { get; private set; }
+
         public PlanExcelService(DatabaseService db, IPermissionService permission)
         {
             _db = db;
@@ -291,7 +296,7 @@ namespace ORT一键报告.Services
             {
                 wb.Close();
             }
-            ExcelOleEmbedder.Embed(savePath, oleRequests);
+            LastEmbedResult = ExcelOleEmbedder.Embed(savePath, oleRequests);
             _logger.Info($"领退表导出完成，共{plans.Count}条");
         }
 
@@ -301,6 +306,7 @@ namespace ORT一键报告.Services
         public void ExportSchedule(string savePath)
         {
             _logger.Info($"导出计划表: {savePath}");
+            LastEmbedResult = null; // 计划表不嵌附件
             List<Plan> plans = _db.FreeSql.Select<Plan>()
                 .Where(p => p.JobNo != null)
                 .OrderBy(p => p.Id)

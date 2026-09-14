@@ -37,6 +37,37 @@ namespace ORT一键报告.Utils
     }
 
     /// <summary>
+    /// OLE 嵌入结果（用于把"是否真的写进文件"如实反馈给调用方/界面）
+    /// </summary>
+    public class OleEmbedResult
+    {
+        /// <summary>请求嵌入的对象数</summary>
+        public int Requested { get; set; }
+
+        /// <summary>Excel 接受并添加成功的对象数</summary>
+        public int Added { get; set; }
+
+        /// <summary>添加失败（跳过）的对象数</summary>
+        public int Failed { get; set; }
+
+        /// <summary>Excel 会话崩溃重启次数</summary>
+        public int Restarts { get; set; }
+
+        /// <summary>是否确认已保存到文件（false 表示附件可能没写进去）</summary>
+        public bool Saved { get; set; }
+
+        /// <summary>是否因为没装 Excel 而整体跳过</summary>
+        public bool SkippedNoExcel { get; set; }
+
+        /// <summary>给用户看的一句话结论</summary>
+        public string Summary =>
+            SkippedNoExcel ? "未检测到 Excel，附件未嵌入"
+            : !Saved ? $"附件嵌入未确认落盘（已尝试 {Added}/{Requested} 个，详见日志）"
+            : Failed > 0 ? $"附件已嵌入 {Added}/{Requested} 个，{Failed} 个失败（详见日志）"
+            : $"附件已嵌入 {Added}/{Requested} 个";
+    }
+
+    /// <summary>
     /// OLE 对象嵌入：NPOI 2.7.4 没有 OLE 写入能力，改用 Excel COM（Interop）实现。
     /// 说明：批量接口只开一次 Excel 会话，避免逐条开关 Excel 造成的性能问题。
     /// 需要目标机器安装 Excel（本程序 ATE 流程本来也依赖 Excel COM）。
@@ -59,30 +90,34 @@ namespace ORT一键报告.Utils
         /// 说明：Excel 在连续嵌入大量 OLE 对象时可能自身崩溃（RPC 服务器不可用），
         /// 因此这里分批保存，并在检测到会话中断时重启 Excel 并从断点继续，避免整批失败。
         /// </summary>
-        public static void Embed(string xlsxPath, IReadOnlyList<OleEmbedRequest> requests)
+        public static OleEmbedResult Embed(string xlsxPath, IReadOnlyList<OleEmbedRequest> requests)
         {
+            OleEmbedResult result = new() { Requested = requests?.Count(r => r != null && !string.IsNullOrWhiteSpace(r.ObjectPath)) ?? 0 };
             List<OleEmbedRequest> items = requests?.Where(r => r != null && !string.IsNullOrWhiteSpace(r.ObjectPath)).ToList() ?? [];
             if (items.Count == 0)
             {
-                return;
+                result.Saved = true;
+                return result;
             }
             if (!File.Exists(xlsxPath))
             {
                 _logger.Warn($"OLE 嵌入跳过：文件不存在 {xlsxPath}");
-                return;
+                return result;
             }
             // 后期绑定调用 Excel COM：不依赖 Interop PIA / office.dll，只要求装了 Excel
             Type excelType = Type.GetTypeFromProgID("Excel.Application");
             if (excelType == null)
             {
                 _logger.Warn("未检测到 Excel，已跳过 OLE 附件嵌入");
-                return;
+                result.SkippedNoExcel = true;
+                return result;
             }
 
             string iconFile = null;
             dynamic excelApp = null;
             dynamic workbook = null;
             int index = 0, embedded = 0, failed = 0, restarts = 0, sinceSave = 0;
+            bool saved = false;
             try
             {
                 iconFile = EnsureIconFile(items[0].IconPath);
@@ -128,10 +163,7 @@ namespace ORT一键报告.Utils
                         if (TrySave(workbook, xlsxPath))
                         {
                             sinceSave = 0;
-                        }
-                        else if (workbook == null)
-                        {
-                            crashed = true;
+                            saved = true;
                         }
                     }
 
@@ -146,12 +178,16 @@ namespace ORT一键报告.Utils
 
                 if (workbook != null)
                 {
-                    if (!TrySave(workbook, xlsxPath))
+                    if (TrySave(workbook, xlsxPath))
+                    {
+                        saved = true;
+                    }
+                    else
                     {
                         _logger.Warn($"最终保存未确认落盘：{Path.GetFileName(xlsxPath)}");
                     }
                 }
-                _logger.Info($"OLE 嵌入完成：成功 {embedded}，失败 {failed}，Excel 重启 {restarts} 次，共 {items.Count} 个（{Path.GetFileName(xlsxPath)}）");
+                _logger.Info($"OLE 嵌入完成：成功 {embedded}，失败 {failed}，Excel 重启 {restarts} 次，共 {items.Count} 个，落盘={saved}（{Path.GetFileName(xlsxPath)}）");
             }
             catch (Exception ex)
             {
@@ -162,6 +198,12 @@ namespace ORT一键报告.Utils
                 CloseExcel(ref excelApp, ref workbook);
                 TryDelete(iconFile);
             }
+
+            result.Added = embedded;
+            result.Failed = failed;
+            result.Restarts = restarts;
+            result.Saved = saved && index >= items.Count;
+            return result;
         }
 
         /// <summary>

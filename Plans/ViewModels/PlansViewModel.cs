@@ -1365,7 +1365,15 @@ namespace ORT一键报告.Plans.ViewModels
             try
             {
                 _excelService.ExportRequisition(file);
+                OleEmbedResult embed = _excelService.LastEmbedResult;
                 StatusMessage = $"领退表已导出: {file}";
+                // 附件（OLE）是否真的写进文件要如实告知：Excel 环境异常时可能只是把数据导出成功
+                if (embed != null && !embed.Saved)
+                {
+                    StatusMessage += $"（{embed.Summary}）";
+                    _ = System.Windows.MessageBox.Show($"{embed.Summary}\n文件已导出：{file}\n详情见日志。",
+                        LanguageService.Get("Cap_Warning"), System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+                }
             }
             catch (Exception ex)
             {
