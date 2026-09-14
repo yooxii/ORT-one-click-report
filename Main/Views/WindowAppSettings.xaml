@@ -1,4 +1,4 @@
-﻿<Window x:Class="ORT一键报告.Main.Views.WindowAppSettings" Background="{DynamicResource WindowBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}"
+<Window x:Class="ORT一键报告.Main.Views.WindowAppSettings" Background="{DynamicResource WindowBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -16,7 +16,8 @@
 
         <Grid Grid.Row="0">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="220"/>
+            <!-- 目录列随文字自适应（字号调大时不再截断节点名） -->
+            <ColumnDefinition Width="Auto" MinWidth="180" MaxWidth="380"/>
             <ColumnDefinition Width="5"/>
             <ColumnDefinition/>
         </Grid.ColumnDefinitions>
@@ -48,9 +49,10 @@
 
         <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" Background="Transparent"/>
 
-        <!--右侧：设置项详情-->
-        <ScrollViewer x:Name="sv_right" Grid.Column="2" VerticalScrollBarVisibility="Auto" ScrollChanged="Sv_Right_ScrollChanged">
-            <StackPanel Margin="16">
+        <!--右侧：设置项详情（标签列 Auto 以随字号自适应；极端字号下允许横向滚动，保证内容可达）-->
+        <ScrollViewer x:Name="sv_right" Grid.Column="2" VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Auto" ScrollChanged="Sv_Right_ScrollChanged">
+            <StackPanel Margin="16" Grid.IsSharedSizeScope="True">
 
                 <!-- UI -->
                 <Border x:Name="sec_ui" Padding="0,4">
@@ -66,10 +68,10 @@
                         <TextBlock Text="{lex:Loc Settings_ThemeHint}" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,8"/>
                         <Grid>
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="80"/>
-                                <ColumnDefinition Width="240"/>
+                                <ColumnDefinition Width="Auto" SharedSizeGroup="SettingsLabel"/>
+                                <ColumnDefinition Width="*" MinWidth="200"/>
                                 <ColumnDefinition Width="12"/>
-                                <ColumnDefinition Width="auto"/>
+                                <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="{lex:Loc Settings_Theme}" VerticalAlignment="Center"/>
                             <ComboBox x:Name="cb_theme" Grid.Column="1" VerticalContentAlignment="Center" SelectedValuePath="Code" SelectionChanged="Cb_Theme_SelectionChanged">
@@ -92,8 +94,8 @@
                         <TextBlock Text="{lex:Loc Settings_LanguageHint}" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,8"/>
                         <Grid>
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="80"/>
-                                <ColumnDefinition Width="200"/>
+                                <ColumnDefinition Width="Auto" SharedSizeGroup="SettingsLabel"/>
+                                <ColumnDefinition Width="*" MinWidth="180"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="{lex:Loc Settings_Language}" VerticalAlignment="Center"/>
                             <ComboBox x:Name="cb_language" Grid.Column="1" VerticalContentAlignment="Center" SelectedValuePath="Code" SelectionChanged="Cb_Language_SelectionChanged">
@@ -112,24 +114,25 @@
                 <Border x:Name="sec_font" Padding="0,10">
                     <StackPanel>
                         <TextBlock Text="{lex:Loc Settings_Font}" FontSize="16" FontWeight="SemiBold"/>
-                        <TextBlock Text="{lex:Loc Settings_FontHint}" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,8"/>
+                        <TextBlock Text="{lex:Loc Settings_FontHint}" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,8" TextWrapping="Wrap"/>
                         <Grid>
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="80"/>
-                                <ColumnDefinition/>
+                                <ColumnDefinition Width="Auto" SharedSizeGroup="SettingsLabel"/>
+                                <ColumnDefinition Width="*" MinWidth="160"/>
                                 <ColumnDefinition Width="16"/>
-                                <ColumnDefinition Width="80"/>
-                                <ColumnDefinition Width="120"/>
+                                <ColumnDefinition Width="Auto" SharedSizeGroup="SettingsLabel"/>
+                                <ColumnDefinition Width="Auto" MinWidth="90"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="{lex:Loc Settings_FontFamily}" VerticalAlignment="Center"/>
                             <ComboBox x:Name="cb_fontFamily" Grid.Column="1" VerticalContentAlignment="Center"/>
                             <TextBlock Text="{lex:Loc Settings_FontSize}" Grid.Column="3" VerticalAlignment="Center"/>
-                            <ComboBox x:Name="cb_fontSize" Grid.Column="4" VerticalContentAlignment="Center" IsEditable="True"/>
+                            <ComboBox x:Name="cb_fontSize" Grid.Column="4" VerticalContentAlignment="Center" IsEditable="True"
+                                      ToolTip="{lex:Loc Settings_FontSizeHint}"/>
                         </Grid>
                         <Grid Margin="0,10,0,0">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="80"/>
-                                <ColumnDefinition Width="200"/>
+                                <ColumnDefinition Width="Auto" SharedSizeGroup="SettingsLabel"/>
+                                <ColumnDefinition Width="Auto" MinWidth="180"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="{lex:Loc Settings_FontWeight}" VerticalAlignment="Center"
                                        ToolTip="{lex:Loc Settings_FontWeightHint}"/>
@@ -143,8 +146,8 @@
                         </Grid>
                         <Grid Margin="0,10,0,0">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="80"/>
-                                <ColumnDefinition Width="200"/>
+                                <ColumnDefinition Width="Auto" SharedSizeGroup="SettingsLabel"/>
+                                <ColumnDefinition Width="Auto" MinWidth="180"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="{lex:Loc Settings_ToastPosition}" VerticalAlignment="Center" ToolTip="{lex:Loc Settings_ToastPositionHint}"/>
                             <ComboBox x:Name="cb_toastPos" Grid.Column="1" VerticalContentAlignment="Center" SelectedValuePath="Code">
@@ -176,7 +179,7 @@
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition/>
                                 <ColumnDefinition Width="8"/>
-                                <ColumnDefinition Width="70"/>
+                                <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <TextBox x:Name="txt_ate" VerticalContentAlignment="Center"/>
                             <Button Content="{lex:Loc Common_BrowseEllipsis}" Grid.Column="2" Padding="6,3" Click="Btn_Browse_Click" Tag="AteDataPath"/>
@@ -192,7 +195,7 @@
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition/>
                                 <ColumnDefinition Width="8"/>
-                                <ColumnDefinition Width="70"/>
+                                <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <TextBox x:Name="txt_emi" VerticalContentAlignment="Center"/>
                             <Button Content="{lex:Loc Common_BrowseEllipsis}" Grid.Column="2" Padding="6,3" Click="Btn_Browse_Click" Tag="EmiDataPath"/>
@@ -208,7 +211,7 @@
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition/>
                                 <ColumnDefinition Width="8"/>
-                                <ColumnDefinition Width="70"/>
+                                <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <TextBox x:Name="txt_dbpath" VerticalContentAlignment="Center"/>
                             <Button x:Name="btn_dbpathBrowse" Content="{lex:Loc Common_BrowseEllipsis}" Grid.Column="2" Padding="6,3" Click="Btn_DbPathBrowse_Click"/>
@@ -219,12 +222,12 @@
                 <Border x:Name="sec_schedule" Padding="0,10">
                     <StackPanel>
                         <TextBlock Text="{lex:Loc Settings_PlanPath}" FontSize="16" FontWeight="SemiBold"/>
-                        <TextBlock Text="{lex:Loc Settings_PlanPathHint}" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,8"/>
+                        <TextBlock Text="{lex:Loc Settings_PlanPathHint}" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,8" TextWrapping="Wrap"/>
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition/>
                                 <ColumnDefinition Width="8"/>
-                                <ColumnDefinition Width="70"/>
+                                <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <TextBox x:Name="txt_schedule" VerticalContentAlignment="Center"/>
                             <Button Content="{lex:Loc Common_BrowseEllipsis}" Grid.Column="2" Padding="6,3" Click="Btn_Browse_Click" Tag="SchedulePath"/>
@@ -235,12 +238,12 @@
                 <Border x:Name="sec_requisition" Padding="0,10">
                     <StackPanel>
                         <TextBlock Text="{lex:Loc Settings_RequisitionPath}" FontSize="16" FontWeight="SemiBold"/>
-                        <TextBlock Text="{lex:Loc Settings_ReqPathHint}" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,8"/>
+                        <TextBlock Text="{lex:Loc Settings_ReqPathHint}" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,8" TextWrapping="Wrap"/>
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition/>
                                 <ColumnDefinition Width="8"/>
-                                <ColumnDefinition Width="70"/>
+                                <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <TextBox x:Name="txt_requisition" VerticalContentAlignment="Center"/>
                             <Button Content="{lex:Loc Common_BrowseEllipsis}" Grid.Column="2" Padding="6,3" Click="Btn_Browse_Click" Tag="RequisitionPath"/>
@@ -251,12 +254,12 @@
                 <Border x:Name="sec_report" Padding="0,10">
                     <StackPanel>
                         <TextBlock Text="{lex:Loc Settings_ReportPath}" FontSize="16" FontWeight="SemiBold"/>
-                        <TextBlock Text="{lex:Loc Settings_ReportPathHint}" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,8"/>
+                        <TextBlock Text="{lex:Loc Settings_ReportPathHint}" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,8" TextWrapping="Wrap"/>
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition/>
                                 <ColumnDefinition Width="8"/>
-                                <ColumnDefinition Width="70"/>
+                                <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <TextBox x:Name="txt_report" VerticalContentAlignment="Center"/>
                             <Button Content="{lex:Loc Common_BrowseEllipsis}" Grid.Column="2" Padding="6,3" Click="Btn_Browse_Click" Tag="ReportPath"/>
@@ -264,7 +267,7 @@
                     </StackPanel>
                 </Border>
 
-                <!--邮件服务（发件账号 + 触发规则）-->
+                <!--邮件服务（发件账号 + 触发规则）；仅管理员可见-->
                 <Border x:Name="sec_mail" Padding="0,10">
                     <StackPanel>
                         <TextBlock Text="{lex:Loc Settings_Mail}" FontSize="16" FontWeight="SemiBold"/>
@@ -276,11 +279,11 @@
 
                         <Grid Margin="0,4,0,0">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="110"/>
-                                <ColumnDefinition/>
+                                <ColumnDefinition Width="Auto" SharedSizeGroup="SettingsLabel"/>
+                                <ColumnDefinition Width="*" MinWidth="140"/>
                                 <ColumnDefinition Width="16"/>
-                                <ColumnDefinition Width="80"/>
-                                <ColumnDefinition Width="110"/>
+                                <ColumnDefinition Width="Auto" SharedSizeGroup="SettingsLabel"/>
+                                <ColumnDefinition Width="Auto" MinWidth="70"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="{lex:Loc Settings_MailHost}" VerticalAlignment="Center"/>
                             <TextBox x:Name="txt_mailHost" Grid.Column="1" VerticalContentAlignment="Center"/>
@@ -290,8 +293,8 @@
 
                         <Grid Margin="0,8,0,0">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="110"/>
-                                <ColumnDefinition Width="220"/>
+                                <ColumnDefinition Width="Auto" SharedSizeGroup="SettingsLabel"/>
+                                <ColumnDefinition Width="*" MinWidth="200"/>
                                 <ColumnDefinition Width="16"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
@@ -308,11 +311,11 @@
 
                         <Grid Margin="0,8,0,0">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="110"/>
-                                <ColumnDefinition/>
+                                <ColumnDefinition Width="Auto" SharedSizeGroup="SettingsLabel"/>
+                                <ColumnDefinition Width="*" MinWidth="140"/>
                                 <ColumnDefinition Width="16"/>
-                                <ColumnDefinition Width="80"/>
-                                <ColumnDefinition Width="110"/>
+                                <ColumnDefinition Width="Auto" SharedSizeGroup="SettingsLabel"/>
+                                <ColumnDefinition Width="Auto" MinWidth="90"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="{lex:Loc Settings_MailUser}" VerticalAlignment="Center"/>
                             <TextBox x:Name="txt_mailUser" Grid.Column="1" VerticalContentAlignment="Center"/>
@@ -324,11 +327,11 @@
 
                         <Grid Margin="0,8,0,0">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="110"/>
-                                <ColumnDefinition/>
+                                <ColumnDefinition Width="Auto" SharedSizeGroup="SettingsLabel"/>
+                                <ColumnDefinition Width="*" MinWidth="140"/>
                                 <ColumnDefinition Width="16"/>
-                                <ColumnDefinition Width="80"/>
-                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto" SharedSizeGroup="SettingsLabel"/>
+                                <ColumnDefinition Width="*" MinWidth="100"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="{lex:Loc Settings_MailFrom}" VerticalAlignment="Center"/>
                             <TextBox x:Name="txt_mailFrom" Grid.Column="1" VerticalContentAlignment="Center"/>
@@ -338,11 +341,11 @@
 
                         <Grid Margin="0,8,0,0">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="110"/>
-                                <ColumnDefinition/>
+                                <ColumnDefinition Width="Auto" SharedSizeGroup="SettingsLabel"/>
+                                <ColumnDefinition Width="*" MinWidth="140"/>
                                 <ColumnDefinition Width="16"/>
-                                <ColumnDefinition Width="80"/>
-                                <ColumnDefinition Width="90"/>
+                                <ColumnDefinition Width="Auto" SharedSizeGroup="SettingsLabel"/>
+                                <ColumnDefinition Width="Auto" MinWidth="60"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="{lex:Loc Settings_MailCc}" VerticalAlignment="Center" ToolTip="{lex:Loc Settings_MailCcHint}"/>
                             <TextBox x:Name="txt_mailCc" Grid.Column="1" VerticalContentAlignment="Center"/>
@@ -352,11 +355,11 @@
 
                         <Grid Margin="0,8,0,0">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="110"/>
-                                <ColumnDefinition Width="90"/>
+                                <ColumnDefinition Width="Auto" SharedSizeGroup="SettingsLabel"/>
+                                <ColumnDefinition Width="Auto" MinWidth="60"/>
                                 <ColumnDefinition Width="16"/>
-                                <ColumnDefinition Width="110"/>
-                                <ColumnDefinition Width="90"/>
+                                <ColumnDefinition Width="Auto" SharedSizeGroup="SettingsLabel"/>
+                                <ColumnDefinition Width="Auto" MinWidth="60"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="{lex:Loc Settings_MailDaysBefore}" VerticalAlignment="Center" ToolTip="{lex:Loc Settings_MailDaysBeforeHint}"/>
@@ -375,10 +378,10 @@
 
                         <Grid Margin="0,12,0,0">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="110"/>
-                                <ColumnDefinition Width="220"/>
+                                <ColumnDefinition Width="Auto" SharedSizeGroup="SettingsLabel"/>
+                                <ColumnDefinition Width="*" MinWidth="140"/>
                                 <ColumnDefinition Width="16"/>
-                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="{lex:Loc Settings_MailTestTo}" VerticalAlignment="Center"/>
                             <TextBox x:Name="txt_mailTestTo" Grid.Column="1" VerticalContentAlignment="Center"/>
@@ -390,13 +393,13 @@
                         </Grid>
 
                         <TextBlock Text="{lex:Loc Settings_MailLogs}" Margin="0,12,0,4"/>
-                        <TextBox x:Name="txt_mailLogs" Height="90" IsReadOnly="True" AcceptsReturn="True"
+                        <TextBox x:Name="txt_mailLogs" MinHeight="90" IsReadOnly="True" AcceptsReturn="True"
                                  VerticalScrollBarVisibility="Auto" TextWrapping="NoWrap"
                                  FontFamily="{DynamicResource FontFamilyData}"/>
                     </StackPanel>
                 </Border>
 
-                <!--邮件模板-->
+                <!--邮件模板；仅管理员可见-->
                 <Border x:Name="sec_mail_template" Padding="0,10">
                     <StackPanel>
                         <TextBlock Text="{lex:Loc Settings_MailTemplates}" FontSize="16" FontWeight="SemiBold"/>

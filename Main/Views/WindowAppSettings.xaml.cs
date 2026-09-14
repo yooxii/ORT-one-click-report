@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using ORT一键报告.Models;
 using ORT一键报告.Services;
 using System;
@@ -83,19 +83,40 @@ namespace ORT一键报告.Main.Views
             LoadFontOptions();
             LoadLanguageOptions();
             LoadThemeOptions();
-            // 模板/抄送管理员控件必须先于载入设置创建，否则复选框初值取不到
-            BuildMailTemplateEditors();
+            if (_isAdmin)
+            {
+                // 模板/抄送管理员控件必须先于载入设置创建，否则复选框初值取不到
+                BuildMailTemplateEditors();
+            }
+            else
+            {
+                // 邮件服务与数据库路径仅管理员可维护：直接隐藏，普通用户既看不到也不解密邮件密码
+                HideAdminOnlySections();
+            }
             LoadValues();
 
-            // 数据库路径仅管理员可修改
-            if (!_isAdmin)
-            {
-                txt_dbpath.IsReadOnly = true;
-                btn_dbpathBrowse.IsEnabled = false;
-                txt_dbpath.ToolTip = "仅管理员可修改数据库路径";
-            }
-
             _loading = false;
+        }
+
+        /// <summary>
+        /// 隐藏仅管理员可见的设置节（邮件服务、邮件模板、数据库路径）：
+        /// 同时从左侧目录树与滚动同步列表移除，避免同步到不可见的位置
+        /// </summary>
+        private void HideAdminOnlySections()
+        {
+            foreach (string tag in new[] { "sec_mail", "sec_mail_template", "sec_dbpath" })
+            {
+                int index = _sections.FindIndex(section => section.Tag == tag);
+                if (index >= 0)
+                {
+                    _sections[index].Section.Visibility = Visibility.Collapsed;
+                    _sections.RemoveAt(index);
+                }
+                if (_treeNodes.TryGetValue(tag, out TreeViewItem node))
+                {
+                    node.Visibility = Visibility.Collapsed;
+                }
+            }
         }
 
         /* ###############################  收集  ################################ */
@@ -115,19 +136,24 @@ namespace ORT一键报告.Main.Views
             _sections.Add(("sec_mail_template", sec_mail_template));
         }
 
-        private void CollectTreeNodes(DependencyObject parent)
+        /// <summary>
+        /// 收集 设置节 Tag → 树节点 映射。
+        /// 注意：不能在构造函数里遍历可视树——TreeView 的节点容器要到布局阶段才生成，
+        /// 此处直接按 Items 递归，XAML 中内联的 TreeViewItem 在解析时即已存在。
+        /// </summary>
+        private void CollectTreeNodes(ItemsControl parent)
         {
-            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+            foreach (object entry in parent.Items)
             {
-                DependencyObject child = VisualTreeHelper.GetChild(parent, i);
-                if (child is TreeViewItem item)
+                if (entry is not TreeViewItem item)
                 {
-                    if (item.Tag is string tag)
-                    {
-                        _treeNodes[tag] = item;
-                    }
+                    continue;
                 }
-                CollectTreeNodes(child);
+                if (item.Tag is string tag)
+                {
+                    _treeNodes[tag] = item;
+                }
+                CollectTreeNodes(item);
             }
         }
 
@@ -142,7 +168,8 @@ namespace ORT一键报告.Main.Views
                 .ToList();
             cb_fontFamily.ItemsSource = families;
 
-            cb_fontSize.ItemsSource = new[] { 10, 11, 12, 13, 14, 15, 16, 18, 20, 22, 24, 28, 32 };
+            // 上限见 AppSettingsService.MaxUiFontSize：更大的字号界面无法完整显示，手输超限会被拒绝
+            cb_fontSize.ItemsSource = new[] { 10, 11, 12, 13, 14, 15, 16, 18, 20, 22, 24 };
         }
 
         private void LoadLanguageOptions()
@@ -362,7 +389,8 @@ namespace ORT一键报告.Main.Views
                 });
 
                 Grid subjectRow = new();
-                subjectRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(60) });
+                // 标签列自适应字号（与设置界面其余标签列一致），不再写死像素宽
+                subjectRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto, MinWidth = 40 });
                 subjectRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
                 TextBlock subjectLabel = new() { Text = LanguageService.Get("Settings_MailSubject"), VerticalAlignment = VerticalAlignment.Center };
                 TextBox subjectBox = new() { VerticalContentAlignment = VerticalAlignment.Center };
@@ -376,7 +404,7 @@ namespace ORT一键报告.Main.Views
                 {
                     AcceptsReturn = true,
                     TextWrapping = TextWrapping.Wrap,
-                    Height = 110,
+                    MinHeight = 110,
                     VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
                     FontFamily = (FontFamily)FindResource("FontFamilyData")
                 };
@@ -468,7 +496,10 @@ namespace ORT一键报告.Main.Views
             cb_fontSize.Text = settings.UI.FontSize.ToString();
             LoadFontWeightOptions();
             LoadToastPositions();
-            LoadMailValues();
+            if (_isAdmin)
+            {
+                LoadMailValues();
+            }
 
             _initialDbPath = _settings.GetDatabasePath();
             txt_dbpath.Text = _initialDbPath;
@@ -494,15 +525,26 @@ namespace ORT一键报告.Main.Views
             {
                 settings.UI.FontFamily = family;
             }
-            if (double.TryParse(cb_fontSize.Text, out double size) && size >= 8 && size <= 72)
-            {
-                settings.UI.FontSize = size;
-            }
-            else
+            if (!double.TryParse(cb_fontSize.Text, out double size))
             {
                 _ = MessageBox.Show(LocalizationHelper.Get("Msg_InvalidFontSize"), LanguageService.Get("Cap_Info"));
                 return false;
             }
+            if (size > AppSettingsService.MaxUiFontSize)
+            {
+                // 字号过大：警告并放弃本次修改（保留原字号，输入框回退显示当前值）
+                _ = MessageBox.Show(
+                    string.Format(LocalizationHelper.Get("Msg_FontSizeTooLargeFormat"), AppSettingsService.MaxUiFontSize),
+                    LanguageService.Get("Cap_Warning"), MessageBoxButton.OK, MessageBoxImage.Warning);
+                cb_fontSize.Text = settings.UI.FontSize.ToString();
+                return false;
+            }
+            if (size < AppSettingsService.MinUiFontSize)
+            {
+                _ = MessageBox.Show(LocalizationHelper.Get("Msg_InvalidFontSize"), LanguageService.Get("Cap_Info"));
+                return false;
+            }
+            settings.UI.FontSize = size;
             if (cb_toastPos.SelectedValue is string toastPos && !string.IsNullOrEmpty(toastPos))
             {
                 settings.UI.ToastPosition = toastPos;
@@ -515,7 +557,11 @@ namespace ORT一键报告.Main.Views
             settings.Paths.SchedulePath = TrimOrNull(txt_schedule.Text);
             settings.Paths.RequisitionPath = TrimOrNull(txt_requisition.Text);
             settings.Paths.ReportPath = TrimOrNull(txt_report.Text);
-            ApplyMailValues(settings.Mail);
+            if (_isAdmin)
+            {
+                // 非管理员界面未载入邮件设置，不得回写（避免把管理员的配置覆盖掉）
+                ApplyMailValues(settings.Mail);
+            }
             _settings.Save();
 
             // ATE/EMI 路径：保存在程序目录本地文件（与数据库路径同位置），仅修改时写入

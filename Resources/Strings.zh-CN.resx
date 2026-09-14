@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -476,6 +476,9 @@
   <data name="Settings_FontSize" xml:space="preserve">
     <value>字号</value>
   </data>
+  <data name="Settings_FontSizeHint" xml:space="preserve">
+    <value>上限 24 号（约等效 Windows 175% 缩放）。字号变大时，窗口尺寸、标签与表格列宽会一起等比放大。</value>
+  </data>
   <data name="Settings_FontFamily" xml:space="preserve">
     <value>字体族</value>
   </data>
@@ -846,7 +849,10 @@
     <value>再次确认：真的要清空全部计划数据吗？</value>
   </data>
   <data name="Msg_InvalidFontSize" xml:space="preserve">
-    <value>字号无效，请输入 8~72 之间的数字。</value>
+    <value>字号无效，请输入 8~24 之间的数字。</value>
+  </data>
+  <data name="Msg_FontSizeTooLargeFormat" xml:space="preserve">
+    <value>界面字号上限为 {0} 号，再大界面将无法完整显示，已放弃本次修改。</value>
   </data>
   <data name="Msg_DBPathSaved" xml:space="preserve">
     <value>数据库路径已保存，重启程序后生效。</value>

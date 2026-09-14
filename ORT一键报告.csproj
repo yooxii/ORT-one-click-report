@@ -138,6 +138,7 @@
     <Compile Include="Services\MailNotifier.cs" />
     <Compile Include="Services\ReportGenerationService.cs" />
     <Compile Include="Services\AppSettingsService.cs" />
+    <Compile Include="Services\UiScale.cs" />
     <Compile Include="Services\LocalizationHelper.cs" />
     <Compile Include="Services\LanguageService.cs" />
     <Compile Include="Services\ThemeService.cs" />

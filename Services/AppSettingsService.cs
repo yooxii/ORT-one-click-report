@@ -36,6 +36,17 @@ namespace ORT一键报告.Services
     /// </summary>
     public class AppSettingsService
     {
+        /// <summary>
+        /// 界面字号下限
+        /// </summary>
+        public const double MinUiFontSize = 8.0;
+
+        /// <summary>
+        /// 界面字号上限：再大即便按比例缩放，1300 像素宽的计划表也无法完整显示，
+        /// 因此设置界面会警告并放弃超过该值的修改（见 WindowAppSettings.ApplyAll）。
+        /// </summary>
+        public const double MaxUiFontSize = 24.0;
+
         private readonly Logger _logger = LogManager.GetCurrentClassLogger();
         private readonly DatabaseService _db;
 
@@ -214,7 +225,7 @@ namespace ORT一键报告.Services
                     UI = new UiSettings
                     {
                         FontFamily = values.TryGetValue("ui.fontFamily", out string ff) && !string.IsNullOrWhiteSpace(ff) ? ff : "Microsoft YaHei UI",
-                        FontSize = values.TryGetValue("ui.fontSize", out string fs) && double.TryParse(fs, out double size) ? size : 14,
+                        FontSize = ResolveFontSize(values),
                         FontWeight = values.TryGetValue("ui.fontWeight", out string fw) && !string.IsNullOrWhiteSpace(fw) ? fw : "Normal"
                     },
                     Paths = new PathSettings
@@ -460,7 +471,30 @@ namespace ORT一键报告.Services
         /* ###############################  字体与目录  ################################ */
 
         /// <summary>
-        /// 将当前字体设置应用到指定窗口
+        /// 字号钳制到可用区间（历史数据可能存有超大字号，超出后界面无法完整显示）
+        /// </summary>
+        public static double ClampFontSize(double size)
+            => size < MinUiFontSize ? MinUiFontSize : (size > MaxUiFontSize ? MaxUiFontSize : size);
+
+        /// <summary>
+        /// 读取已保存的字号并钳制到可用区间（超限时记录日志，按上限应用）
+        /// </summary>
+        private double ResolveFontSize(Dictionary<string, string> values)
+        {
+            if (!values.TryGetValue("ui.fontSize", out string raw) || !double.TryParse(raw, out double size))
+            {
+                return 14;
+            }
+            double clamped = ClampFontSize(size);
+            if (Math.Abs(clamped - size) > 0.001)
+            {
+                _logger.Warn($"界面字号 {size} 超出 {MinUiFontSize}-{MaxUiFontSize} 范围，已按 {clamped} 应用");
+            }
+            return clamped;
+        }
+
+        /// <summary>
+        /// 将当前字体设置应用到指定窗口（字号、字重、字体族，以及随字号放大的布局尺寸）
         /// </summary>
         public void ApplyFont(Window window)
         {
@@ -475,6 +509,8 @@ namespace ORT一键报告.Services
                 window.FontSize = Settings.UI.FontSize;
                 // 字重随设置逐级继承到未显式设置字重的控件（TextBox/Label 等隐式样式不再写死字重）
                 window.FontWeight = ParseFontWeight(Settings.UI.FontWeight);
+                // 布局随字号等比放大（等效 Windows 缩放）：窗口尺寸、表格列宽行高、Grid 绝对行列
+                UiScale.Apply(window, UiScale.ScaleFor(Settings.UI.FontSize, MaxUiFontSize / UiScale.BaseFontSize));
             }
             catch (Exception ex)
             {
