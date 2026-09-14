@@ -231,8 +231,9 @@ namespace ORT一键报告.Reports.Views
             }
 
             string outputFilePath = null;
-            Microsoft.Office.Interop.Excel.Application excelApp = null;
-            Microsoft.Office.Interop.Excel.Workbook workbook = null;
+            // 后期绑定调用 Excel COM：不依赖 Interop PIA / office.dll，只要求装了 Excel
+            dynamic excelApp = null;
+            dynamic workbook = null;
 
             try
             {
@@ -244,11 +245,15 @@ namespace ORT一键报告.Reports.Views
                 outputFilePath = Path.Combine(TempATEDir, Guid.NewGuid().ToString() + ".xlsx");
 
                 // 4. 启动 Excel (增加错误处理)
-                excelApp = new Microsoft.Office.Interop.Excel.Application
+                Type excelType = Type.GetTypeFromProgID("Excel.Application");
+                if (excelType == null)
                 {
-                    Visible = false,
-                    DisplayAlerts = false
-                };
+                    _logger.Error("未检测到 Excel，无法把 xls 转换为 xlsx");
+                    return null;
+                }
+                excelApp = Activator.CreateInstance(excelType);
+                excelApp.Visible = false;
+                excelApp.DisplayAlerts = false;
 
                 // 5. 打开文件 (增加重试机制以应对文件被占用)
                 int retryCount = 0;
@@ -257,8 +262,8 @@ namespace ORT一键报告.Reports.Views
                 {
                     try
                     {
-                        // 使用 ReadOnly 模式打开，减少文件锁冲突
-                        workbook = excelApp.Workbooks.Open(filePath, ReadOnly: true);
+                        // 使用 ReadOnly 模式打开，减少文件锁冲突（Open(Filename, UpdateLinks, ReadOnly)）
+                        workbook = excelApp.Workbooks.Open(filePath, Type.Missing, true);
                         opened = true;
                     }
                     catch (IOException)
@@ -274,7 +279,7 @@ namespace ORT一键报告.Reports.Views
                 }
 
                 // 6. 另存为 xlsx (FileFormat 51 = xlOpenXMLWorkbook)
-                workbook.SaveAs(outputFilePath, Microsoft.Office.Interop.Excel.XlFileFormat.xlOpenXMLWorkbook);
+                workbook.SaveAs(outputFilePath, 51);
                 workbook.Close(false); // 关闭源文件，不保存更改
 
                 return outputFilePath;
@@ -294,13 +299,13 @@ namespace ORT一键报告.Reports.Views
                 // 7. 严格的 COM 对象释放
                 if (workbook != null)
                 {
-                    System.Runtime.InteropServices.Marshal.ReleaseComObject(workbook);
+                    try { System.Runtime.InteropServices.Marshal.ReleaseComObject(workbook); } catch { }
                 }
 
                 if (excelApp != null)
                 {
-                    excelApp.Quit();
-                    System.Runtime.InteropServices.Marshal.ReleaseComObject(excelApp);
+                    try { excelApp.Quit(); } catch { }
+                    try { System.Runtime.InteropServices.Marshal.ReleaseComObject(excelApp); } catch { }
                 }
 
                 // 强制垃圾回收，帮助释放 COM 引用

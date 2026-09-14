@@ -129,7 +129,11 @@ namespace ORT一键报告.Utils
         public static ICell ExistingCell(ISheet sheet, int row1, int col1) => sheet?.GetRow(row1 - 1)?.GetCell(col1 - 1);
 
         /// <summary>
-        /// 单元格显示文本（等价 EPPlus 的 cell.Text：按单元格格式输出，日期/数字都是所见即所得）
+        /// 单元格显示文本（等价 EPPlus 的 cell.Text：日期/数字都是所见即所得）。
+        /// 两个必须特殊处理的地方：
+        /// 1) 公式单元格：NPOI 的 DataFormatter 单独使用时返回公式文本，这里改用文件里缓存的最近计算结果；
+        /// 2) 日期单元格：NPOI 的 DataFormatter 不会去掉数字格式里的转义引号（如 d"月"m"日" → 1"月"9"日"），
+        ///    统一输出 yyyy/M/d（带时间的格式补上时分），保证下游日期解析稳定。
         /// </summary>
         public static string CellText(ISheet sheet, int row1, int col1)
         {
@@ -140,12 +144,57 @@ namespace ORT一键报告.Utils
             }
             try
             {
+                if (cell.CellType == CellType.Formula)
+                {
+                    return CachedText(cell);
+                }
+                if (cell.CellType == CellType.Numeric && DateUtil.IsCellDateFormatted(cell))
+                {
+                    return DateText(cell);
+                }
                 return new DataFormatter().FormatCellValue(cell);
             }
             catch
             {
                 return cell.ToString() ?? "";
             }
+        }
+
+        /// <summary>
+        /// 公式单元格的显示文本（取缓存的计算结果）
+        /// </summary>
+        private static string CachedText(ICell cell)
+        {
+            switch (cell.CachedFormulaResultType)
+            {
+                case CellType.String:
+                    return cell.StringCellValue ?? "";
+                case CellType.Boolean:
+                    return cell.BooleanCellValue.ToString();
+                case CellType.Numeric:
+                    return DateUtil.IsCellDateFormatted(cell)
+                        ? DateText(cell)
+                        : cell.NumericCellValue.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                case CellType.Blank:
+                    return "";
+                default:
+                    return new DataFormatter().FormatCellValue(cell);
+            }
+        }
+
+        /// <summary>
+        /// 日期显示文本：yyyy/M/d（含时分时补 HH:mm）
+        /// </summary>
+        private static string DateText(ICell cell)
+        {
+            DateTime? value = cell.DateCellValue;
+            if (value == null)
+            {
+                return new DataFormatter().FormatCellValue(cell);
+            }
+            return value.Value.TimeOfDay == TimeSpan.Zero
+                ? value.Value.ToString("yyyy/M/d")
+                : value.Value.ToString("yyyy/M/d HH:mm");
         }
 
         /// <summary>

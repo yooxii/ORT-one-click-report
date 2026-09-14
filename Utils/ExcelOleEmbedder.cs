@@ -48,8 +48,16 @@ namespace ORT一键报告.Utils
         /// <summary>Excel COM 里 1 像素对应的磅值（96 DPI → 72 磅/英寸）</summary>
         private const double PointsPerPixel = 72.0 / 96.0;
 
+        /// <summary>每嵌入多少个对象保存一次（对象很多时 Excel 可能崩溃，分批保存可保住已完成的部分）</summary>
+        private const int BatchSize = 5;
+
+        /// <summary>Excel 会话崩溃后的最大重启次数</summary>
+        private const int MaxRestarts = 15;
+
         /// <summary>
-        /// 把若干对象嵌入到指定 xlsx（文件会就地保存）
+        /// 把若干对象嵌入到指定 xlsx（文件会就地保存）。
+        /// 说明：Excel 在连续嵌入大量 OLE 对象时可能自身崩溃（RPC 服务器不可用），
+        /// 因此这里分批保存，并在检测到会话中断时重启 Excel 并从断点继续，避免整批失败。
         /// </summary>
         public static void Embed(string xlsxPath, IReadOnlyList<OleEmbedRequest> requests)
         {
@@ -63,26 +71,87 @@ namespace ORT一键报告.Utils
                 _logger.Warn($"OLE 嵌入跳过：文件不存在 {xlsxPath}");
                 return;
             }
+            // 后期绑定调用 Excel COM：不依赖 Interop PIA / office.dll，只要求装了 Excel
+            Type excelType = Type.GetTypeFromProgID("Excel.Application");
+            if (excelType == null)
+            {
+                _logger.Warn("未检测到 Excel，已跳过 OLE 附件嵌入");
+                return;
+            }
 
             string iconFile = null;
-            Microsoft.Office.Interop.Excel.Application excelApp = null;
-            Microsoft.Office.Interop.Excel.Workbook workbook = null;
+            dynamic excelApp = null;
+            dynamic workbook = null;
+            int index = 0, embedded = 0, failed = 0, restarts = 0, sinceSave = 0;
             try
             {
                 iconFile = EnsureIconFile(items[0].IconPath);
-                excelApp = new Microsoft.Office.Interop.Excel.Application
+                while (index < items.Count && restarts <= MaxRestarts)
                 {
-                    Visible = false,
-                    DisplayAlerts = false,
-                    ScreenUpdating = false
-                };
-                workbook = excelApp.Workbooks.Open(xlsxPath);
-                foreach (OleEmbedRequest req in items)
-                {
-                    EmbedOne(workbook, req, iconFile);
+                    if (excelApp == null)
+                    {
+                        excelApp = Activator.CreateInstance(excelType);
+                        excelApp.Visible = false;
+                        excelApp.DisplayAlerts = false;
+                        excelApp.ScreenUpdating = false;
+                        excelApp.AskToUpdateLinks = false;
+                        workbook = OpenWorkbook(excelApp, xlsxPath);
+                        sinceSave = 0;
+                    }
+
+                    bool crashed = false;
+                    OleEmbedRequest req = items[index];
+                    try
+                    {
+                        EmbedOne(workbook, req, iconFile);
+                        embedded++;
+                        index++;
+                        sinceSave++;
+                    }
+                    catch (Exception ex)
+                    {
+                        if (IsSessionLost(ex))
+                        {
+                            crashed = true;
+                        }
+                        else
+                        {
+                            failed++;
+                            index++;
+                            sinceSave++;
+                            _logger.Warn($"嵌入 OLE 失败（跳过该条）：{Path.GetFileName(req.ObjectPath)} - {ex.Message}");
+                        }
+                    }
+
+                    if (!crashed && sinceSave >= BatchSize)
+                    {
+                        if (TrySave(workbook, xlsxPath))
+                        {
+                            sinceSave = 0;
+                        }
+                        else if (workbook == null)
+                        {
+                            crashed = true;
+                        }
+                    }
+
+                    if (crashed)
+                    {
+                        restarts++;
+                        _logger.Warn($"Excel 会话中断（第 {restarts} 次），已嵌入 {embedded}/{items.Count}，重启后继续");
+                        CloseExcel(ref excelApp, ref workbook);
+                        System.Threading.Thread.Sleep(1500);
+                    }
                 }
-                workbook.Save();
-                _logger.Info($"已嵌入 {items.Count} 个 OLE 对象到 {Path.GetFileName(xlsxPath)}");
+
+                if (workbook != null)
+                {
+                    if (!TrySave(workbook, xlsxPath))
+                    {
+                        _logger.Warn($"最终保存未确认落盘：{Path.GetFileName(xlsxPath)}");
+                    }
+                }
+                _logger.Info($"OLE 嵌入完成：成功 {embedded}，失败 {failed}，Excel 重启 {restarts} 次，共 {items.Count} 个（{Path.GetFileName(xlsxPath)}）");
             }
             catch (Exception ex)
             {
@@ -90,51 +159,187 @@ namespace ORT一键报告.Utils
             }
             finally
             {
+                CloseExcel(ref excelApp, ref workbook);
+                TryDelete(iconFile);
+            }
+        }
+
+        /// <summary>
+        /// 判断异常是否为 Excel 会话中断（进程崩溃/断开），这类错误需要重启 Excel 才能继续
+        /// </summary>
+        private static bool IsSessionLost(Exception ex)
+        {
+            int hr = ex.HResult;
+            return hr == unchecked((int)0x800706BA)   // RPC 服务器不可用
+                || hr == unchecked((int)0x800706BE)   // RPC 调用失败
+                || hr == unchecked((int)0x80010108)   // RPC_E_DISCONNECTED
+                || hr == unchecked((int)0x800401FD)   // 对象未连接到服务器
+                || hr == unchecked((int)0x80010007)   // RPC_E_SERVER_DIED
+                || (ex.Message?.Contains("RPC") ?? false)
+                || (ex.Message?.Contains("远程过程调用") ?? false);
+        }
+
+        /// <summary>
+        /// 打开工作簿并确保是可写状态：
+        /// Excel 崩溃后会残留锁文件（~$xxx.xlsx），下一个 Excel 会话会把文件当成"已被占用"而只读打开，
+        /// 此时所有 Save 都会失败（报"文档未保存"），所以先清锁文件，只读时清理后重开一次。
+        /// </summary>
+        private static dynamic OpenWorkbook(dynamic excelApp, string xlsxPath)
+        {
+            ClearLockFile(xlsxPath);
+            dynamic workbook = excelApp.Workbooks.Open(xlsxPath, 0, false);
+            if ((bool)workbook.ReadOnly)
+            {
+                _logger.Warn("Excel 以只读方式打开了文件，清理锁文件后重开");
+                try
+                {
+                    workbook.Close(false);
+                }
+                catch
+                {
+                    // 忽略
+                }
+                Release((object)workbook);
+                ClearLockFile(xlsxPath);
+                workbook = excelApp.Workbooks.Open(xlsxPath, 0, false);
+            }
+            return workbook;
+        }
+
+        /// <summary>
+        /// 清理与目标文件同名的 Excel 残留锁文件（~$ 开头）
+        /// </summary>
+        private static void ClearLockFile(string xlsxPath)
+        {
+            try
+            {
+                string dir = Path.GetDirectoryName(xlsxPath);
+                string stem = Path.GetFileNameWithoutExtension(xlsxPath);
+                if (string.IsNullOrEmpty(dir) || !Directory.Exists(dir))
+                {
+                    return;
+                }
+                foreach (string lockFile in Directory.GetFiles(dir, "~$*"))
+                {
+                    string lockStem = Path.GetFileNameWithoutExtension(lockFile);
+                    lockStem = lockStem.Length > 2 ? lockStem.Substring(2) : lockStem;
+                    // Excel 锁文件名会截断长文件名，这里双向前缀匹配
+                    if (stem.StartsWith(lockStem, StringComparison.OrdinalIgnoreCase)
+                        || lockStem.StartsWith(stem, StringComparison.OrdinalIgnoreCase))
+                    {
+                        File.Delete(lockFile);
+                        _logger.Warn($"已清理 Excel 残留锁文件：{Path.GetFileName(lockFile)}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn($"清理锁文件失败（忽略）：{ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 保存并确认真的落盘（Save 失败时退回 SaveAs；最后用文件时间戳校验）
+        /// </summary>
+        private static bool TrySave(dynamic workbook, string xlsxPath)
+        {
+            DateTime before = File.Exists(xlsxPath) ? File.GetLastWriteTimeUtc(xlsxPath) : DateTime.MinValue;
+            try
+            {
+                workbook.Save();
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn($"Excel Save 失败：{ex.Message}");
+                try
+                {
+                    workbook.SaveAs(xlsxPath, 51); // 51 = xlOpenXMLWorkbook
+                }
+                catch (Exception ex2)
+                {
+                    _logger.Warn($"Excel SaveAs 也失败：{ex2.Message}");
+                    return false;
+                }
+            }
+            System.Threading.Thread.Sleep(400);
+            DateTime after = File.Exists(xlsxPath) ? File.GetLastWriteTimeUtc(xlsxPath) : DateTime.MinValue;
+            if (after <= before)
+            {
+                _logger.Warn($"保存后文件时间戳未变化（可能未真正落盘）：{Path.GetFileName(xlsxPath)}");
+                return false;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// 关闭并释放 Excel 会话（进程可能已崩溃，失败一律忽略）
+        /// </summary>
+        private static void CloseExcel(ref dynamic excelApp, ref dynamic workbook)
+        {
+            try
+            {
                 if (workbook != null)
                 {
                     try
                     {
-                        workbook.Close(SaveChanges: false);
+                        workbook.Close(false);
                     }
-                    catch (Exception ex)
+                    catch
                     {
-                        _logger.Warn($"关闭工作簿失败（忽略）：{ex.Message}");
+                        // 会话已断，无需处理
                     }
-                    System.Runtime.InteropServices.Marshal.ReleaseComObject(workbook);
+                    Release((object)workbook);
                 }
+            }
+            catch
+            {
+                // dynamic 封送失败（会话已断）时忽略
+            }
+            workbook = null;
+
+            try
+            {
                 if (excelApp != null)
                 {
                     try
                     {
                         excelApp.Quit();
                     }
-                    catch (Exception ex)
+                    catch
                     {
-                        _logger.Warn($"退出 Excel 失败（忽略）：{ex.Message}");
+                        // 会话已断，无需处理
                     }
-                    System.Runtime.InteropServices.Marshal.ReleaseComObject(excelApp);
+                    Release((object)excelApp);
                 }
-                GC.Collect();
-                GC.WaitForPendingFinalizers();
-                TryDelete(iconFile);
             }
+            catch
+            {
+                // dynamic 封送失败（会话已断）时忽略
+            }
+            excelApp = null;
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
         }
 
         /// <summary>
-        /// 嵌入单个对象（内部实现）
+        /// 嵌入单个对象（内部实现，后期绑定）
         /// </summary>
-        private static void EmbedOne(Microsoft.Office.Interop.Excel.Workbook workbook, OleEmbedRequest req, string iconFile)
+        private static void EmbedOne(dynamic workbook, OleEmbedRequest req, string iconFile)
         {
-            Microsoft.Office.Interop.Excel.Worksheet sheet = string.IsNullOrWhiteSpace(req.SheetName)
-                ? (Microsoft.Office.Interop.Excel.Worksheet)workbook.Worksheets[1]
-                : (Microsoft.Office.Interop.Excel.Worksheet)workbook.Worksheets[req.SheetName];
-            Microsoft.Office.Interop.Excel.Range range = sheet.Range[req.TopLeftAddress];
+            dynamic sheet = string.IsNullOrWhiteSpace(req.SheetName)
+                ? workbook.Worksheets[1]
+                : workbook.Worksheets[req.SheetName];
+            dynamic range = sheet.Range[req.TopLeftAddress];
             double left = (double)range.Left + req.OffsetXPx * PointsPerPixel;
             double top = (double)range.Top + req.OffsetYPx * PointsPerPixel;
 
-            // OLEObjects() 的返回类型是 object（COM 晚期绑定），用 dynamic 才能调用 Add
             dynamic oleObjects = sheet.OLEObjects();
+            // 必须用命名参数：OLEObjects.Add 的第一个参数是 ClassType，Filename 在第二位
             dynamic ole = oleObjects.Add(
+                ClassType: Type.Missing,
                 Filename: req.ObjectPath,
                 Link: false,
                 DisplayAsIcon: true,
@@ -151,9 +356,35 @@ namespace ORT一键报告.Utils
             {
                 ole.Height = req.HeightPx * PointsPerPixel;
             }
-            System.Runtime.InteropServices.Marshal.ReleaseComObject(ole);
-            System.Runtime.InteropServices.Marshal.ReleaseComObject(range);
-            System.Runtime.InteropServices.Marshal.ReleaseComObject(sheet);
+            // 释放时对象可能已经失效（Excel 崩溃），这里必须整体兜住：dynamic 参数的封送本身也可能抛 COM 异常
+            try
+            {
+                Release((object)ole);
+                Release((object)range);
+                Release((object)sheet);
+            }
+            catch
+            {
+                // 会话已断，释放失败无需处理
+            }
+        }
+
+        /// <summary>
+        /// 释放 COM 对象（先转成 object，避免 dynamic 封送在 try 之外抛异常）
+        /// </summary>
+        private static void Release(object comObject)
+        {
+            try
+            {
+                if (comObject != null && System.Runtime.InteropServices.Marshal.IsComObject(comObject))
+                {
+                    System.Runtime.InteropServices.Marshal.ReleaseComObject(comObject);
+                }
+            }
+            catch
+            {
+                // 释放失败不影响功能
+            }
         }
 
         /// <summary>

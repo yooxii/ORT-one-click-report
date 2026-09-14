@@ -499,7 +499,10 @@ namespace ORT一键报告.Services
         }
 
         /// <summary>
-        /// 直接解析 xlsx 包，读出全部嵌入的 OLE 对象：左上角位置（1 基行列）、名称、ProgId、embeddings 字节
+        /// 直接解析 xlsx 包，读出全部嵌入的 OLE 对象：左上角位置（1 基行列）、名称、ProgId、embeddings 字节。
+        /// 兼容两种存放方式：
+        /// 1) 旧式（Excel 常见）：xl/worksheets/sheetN.xml 的 &lt;oleObjects&gt; 里，锚点在同元素的 &lt;anchor&gt; 内；
+        /// 2) 新式：xl/drawings/drawingN.xml 的 &lt;xdr:oleObject&gt; 里，锚点在祖先 twoCellAnchor 的 &lt;xdr:from&gt; 内。
         /// </summary>
         private List<(int Row, int Col, string Name, string ProgId, byte[] Bytes)> ExtractOleObjectsFromZip(string xlsxPath)
         {
@@ -507,6 +510,53 @@ namespace ORT一键报告.Services
             try
             {
                 using ZipArchive zip = ZipFile.OpenRead(xlsxPath);
+
+                // 1) 旧式：工作表内的 oleObjects
+                foreach (ZipArchiveEntry sheetEntry in zip.Entries
+                    .Where(e => e.FullName.StartsWith("xl/worksheets/") && e.FullName.EndsWith(".xml")
+                             && !e.FullName.Contains("/_rels/")))
+                {
+                    XDocument doc;
+                    using (Stream s = sheetEntry.Open())
+                    {
+                        doc = XDocument.Load(s);
+                    }
+                    XDocument rels = LoadRels(zip, sheetEntry.FullName);
+                    XNamespace ns = doc.Root.Name.Namespace;
+                    Dictionary<string, (int Row, int Col, string ProgId, byte[] Bytes)> byRelId = new(StringComparer.Ordinal);
+                    foreach (XElement oleNode in doc.Descendants(ns + "oleObject"))
+                    {
+                        string rId = RelationshipId(oleNode);
+                        if (string.IsNullOrEmpty(rId))
+                        {
+                            continue;
+                        }
+                        string progId = (string)oleNode.Attribute("progId");
+                        XElement from = oleNode.Descendants().FirstOrDefault(n => n.Name.LocalName == "from");
+                        int row = (int?)from?.Elements().FirstOrDefault(n => n.Name.LocalName == "row") ?? -1;
+                        int col = (int?)from?.Elements().FirstOrDefault(n => n.Name.LocalName == "col") ?? -1;
+                        if (byRelId.TryGetValue(rId, out (int Row, int Col, string ProgId, byte[] Bytes) exist))
+                        {
+                            // 同一对象在 mc:AlternateContent 的 Choice/Fallback 里会重复出现：保留带锚点的那份
+                            if (exist.Row >= 0 || row < 0)
+                            {
+                                continue;
+                            }
+                        }
+                        byte[] bytes = ResolveEmbeddingBytes(zip, rels, sheetEntry.FullName, rId);
+                        if (bytes == null || bytes.Length == 0)
+                        {
+                            continue;
+                        }
+                        byRelId[rId] = (row, col, progId, bytes);
+                    }
+                    foreach (KeyValuePair<string, (int Row, int Col, string ProgId, byte[] Bytes)> kv in byRelId)
+                    {
+                        result.Add((kv.Value.Row + 1, kv.Value.Col + 1, kv.Key, kv.Value.ProgId, kv.Value.Bytes));
+                    }
+                }
+
+                // 2) 新式：drawings 内的 oleObject
                 foreach (ZipArchiveEntry drawingEntry in zip.Entries
                     .Where(e => e.FullName.StartsWith("xl/drawings/") && e.FullName.EndsWith(".xml")))
                 {
@@ -516,14 +566,7 @@ namespace ORT一键报告.Services
                         doc = XDocument.Load(s);
                     }
                     XNamespace xdr = doc.Root.Name.Namespace;
-
-                    XDocument rels = null;
-                    ZipArchiveEntry relsEntry = zip.GetEntry("xl/drawings/_rels/" + Path.GetFileName(drawingEntry.FullName) + ".rels");
-                    if (relsEntry != null)
-                    {
-                        using Stream s2 = relsEntry.Open();
-                        rels = XDocument.Load(s2);
-                    }
+                    XDocument rels = LoadRels(zip, drawingEntry.FullName);
 
                     IEnumerable<XElement> anchors = doc.Descendants(xdr + "twoCellAnchor")
                         .Concat(doc.Descendants(xdr + "oneCellAnchor"));
@@ -538,12 +581,11 @@ namespace ORT一键报告.Services
                         int col = (int?)anchor.Element(xdr + "from")?.Element(xdr + "col") ?? -1;
                         string name = (string)oleNode.Attribute("name");
                         string progId = (string)oleNode.Attribute("progId");
-                        string rId = oleNode.Attributes()
-                            .FirstOrDefault(a => a.Name.LocalName == "id" && a.Name.NamespaceName.Contains("relationships"))?.Value;
-                        byte[] bytes = ResolveEmbeddingBytes(zip, rels, rId);
+                        string rId = RelationshipId(oleNode);
+                        byte[] bytes = ResolveEmbeddingBytes(zip, rels, drawingEntry.FullName, rId);
                         if (bytes != null && bytes.Length > 0)
                         {
-                            result.Add((row + 1, col + 1, name, progId, bytes));
+                            result.Add((row + 1, col + 1, name ?? rId, progId, bytes));
                         }
                     }
                 }
@@ -556,9 +598,31 @@ namespace ORT一键报告.Services
         }
 
         /// <summary>
+        /// 读取某个部件对应的 rels（如 xl/worksheets/sheet1.xml → xl/worksheets/_rels/sheet1.xml.rels）
+        /// </summary>
+        private static XDocument LoadRels(ZipArchive zip, string partPath)
+        {
+            int slash = partPath.LastIndexOf('/');
+            string relsPath = partPath.Substring(0, slash) + "/_rels/" + partPath.Substring(slash + 1) + ".rels";
+            ZipArchiveEntry entry = zip.GetEntry(relsPath);
+            if (entry == null)
+            {
+                return null;
+            }
+            using Stream s = entry.Open();
+            return XDocument.Load(s);
+        }
+
+        /// <summary>
+        /// 取元素上的关系 Id（r:id，命名空间不固定）
+        /// </summary>
+        private static string RelationshipId(XElement node)
+            => node.Attributes().FirstOrDefault(a => a.Name.LocalName == "id" && a.Name.NamespaceName.Contains("relationships"))?.Value;
+
+        /// <summary>
         /// 按关系 Id 从包内取 embeddings 的二进制内容
         /// </summary>
-        private byte[] ResolveEmbeddingBytes(ZipArchive zip, XDocument rels, string rId)
+        private byte[] ResolveEmbeddingBytes(ZipArchive zip, XDocument rels, string sourcePart, string rId)
         {
             if (rels == null || string.IsNullOrEmpty(rId))
             {
@@ -570,9 +634,7 @@ namespace ORT一键报告.Services
             {
                 return null;
             }
-            string binPath = target.StartsWith("../")
-                ? "xl/" + target.Substring(3)
-                : "xl/drawings/" + target;
+            string binPath = ResolveRelativePartPath(sourcePart, target);
             ZipArchiveEntry binEntry = zip.GetEntry(binPath);
             if (binEntry == null)
             {
@@ -582,6 +644,31 @@ namespace ORT一键报告.Services
             using MemoryStream ms = new();
             s.CopyTo(ms);
             return ms.ToArray();
+        }
+
+        /// <summary>
+        /// 把关系里的相对 Target 解析成包内绝对路径（如 xl/worksheets/sheet1.xml + ../embeddings/a.xlsx → xl/embeddings/a.xlsx）
+        /// </summary>
+        private static string ResolveRelativePartPath(string sourcePart, string target)
+        {
+            int slash = sourcePart.LastIndexOf('/');
+            string combined = (slash >= 0 ? sourcePart.Substring(0, slash) : "") + "/" + target;
+            List<string> parts = [];
+            foreach (string segment in combined.Split('/'))
+            {
+                if (segment == "..")
+                {
+                    if (parts.Count > 0)
+                    {
+                        parts.RemoveAt(parts.Count - 1);
+                    }
+                }
+                else if (segment != "." && segment.Length > 0)
+                {
+                    parts.Add(segment);
+                }
+            }
+            return string.Join("/", parts);
         }
 
         /// <summary>
@@ -639,8 +726,8 @@ namespace ORT一键报告.Services
             {
                 return null;
             }
-            // 1. 中文格式：月日（年份推断）
-            Match m = Regex.Match(text, @"(\d{1,2})\s*月\s*(\d{1,2})\s*日");
+            // 1. 中文格式：月日（年份推断）；容忍数字格式里残留的转义引号，如 1"月"9"日"
+            Match m = Regex.Match(text, "([0-9]{1,2})\\s*\"?\\s*月\\s*\"?\\s*([0-9]{1,2})\\s*\"?\\s*日");
             if (m.Success
                 && int.TryParse(m.Groups[1].Value, out int month)
                 && int.TryParse(m.Groups[2].Value, out int day))
