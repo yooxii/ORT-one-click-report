@@ -42,6 +42,11 @@ namespace ORT一键报告.Services
         }
 
         /// <summary>
+        /// 已经历过首次应用的窗口（首次打开窗口不做 1px 抖动，避免开窗时可见的重绘）
+        /// </summary>
+        private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<Window, object> AppliedWindows = new();
+
+        /// <summary>
         /// 按当前主题应用/还原窗口标题栏深色模式
         /// </summary>
         public static void ApplyToWindow(Window window)
@@ -52,6 +57,14 @@ namespace ORT一键报告.Services
                 if (hwnd == IntPtr.Zero)
                 {
                     return;
+                }
+
+                // 首次应用（窗口刚打开）不抖动：抖动本身是一次可见的宽度变化，
+                // 只有运行时切换主题、需要刷新已显示窗口的标题栏缓存时才做。
+                bool firstApply = !AppliedWindows.TryGetValue(window, out _);
+                if (firstApply)
+                {
+                    AppliedWindows.Add(window, null);
                 }
 
                 // 仅深色主题启用深色标题栏，其余主题还原浅色。
@@ -69,8 +82,8 @@ namespace ORT一键报告.Services
                     SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
 
                 // Win10 活动标题栏缓存仅靠 FRAMECHANGED 不会刷新（浅色→深色时前台窗口不生效）；
-                // 对已显示窗口做 1px 宽度抖动，强制标题栏重排重画（首开窗口走 SourceInitialized 无需抖动）
-                if (window.IsVisible && GetWindowRect(hwnd, out RECT r))
+                // 对已显示窗口做 1px 宽度抖动，强制标题栏重排重画（窗口首次打开时无需抖动）
+                if (!firstApply && window.IsVisible && GetWindowRect(hwnd, out RECT r))
                 {
                     int w = r.Right - r.Left;
                     int h = r.Bottom - r.Top;

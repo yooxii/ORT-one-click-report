@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using NLog;
 using ORT一键报告.Plans.ViewModels;
 using ORT一键报告.Reports.ViewModels;
@@ -44,14 +44,24 @@ namespace ORT一键报告
                 EventManager.RegisterClassHandler(typeof(Window), FrameworkElement.LoadedEvent,
                     new RoutedEventHandler((s, args) =>
                     {
-                        if (s is Window win)
+                        if (s is not Window win)
                         {
-                            ORT一键报告.Services.WindowThemeHelper.ApplyToWindow(win);
-                            // 字体/字号/字重设置对所有窗口生效
-                            if (ServiceProvider?.GetService(typeof(AppSettingsService)) is AppSettingsService settings)
-                            {
-                                settings.ApplyFont(win);
-                            }
+                            return;
+                        }
+                        // 开窗防闪：窗口先置为透明，等首帧渲染完成再恢复不透明。
+                        // 否则重内容窗口（设置界面：目录树 + 大量表单 + 字体下拉）会先出现一个空白/半成品窗口，
+                        // 再分几帧把内容补上，看起来就是"点开闪几次"。每个窗口只处理一次。
+                        if (!win.AllowsTransparency && win.Opacity >= 1.0 && !(bool)win.GetValue(FlashGuardProperty))
+                        {
+                            win.SetValue(FlashGuardProperty, true);
+                            win.Opacity = 0;
+                            win.ContentRendered += WindowContentRenderedOnce;
+                        }
+                        ORT一键报告.Services.WindowThemeHelper.ApplyToWindow(win);
+                        // 字体/字号/字重设置对所有窗口生效
+                        if (ServiceProvider?.GetService(typeof(AppSettingsService)) is AppSettingsService settings)
+                        {
+                            settings.ApplyFont(win);
                         }
                     }));
                 // 主题运行时切换：对所有已打开窗口重新应用
@@ -97,6 +107,25 @@ namespace ORT一键报告
                 logger.Fatal(ex, "程序启动失败");
                 throw;
             }
+        }
+
+        /// <summary>
+        /// 开窗防闪标记（附加属性）：每个窗口只做一次透明处理，重复 Loaded 不会再次置空
+        /// </summary>
+        private static readonly DependencyProperty FlashGuardProperty =
+            DependencyProperty.RegisterAttached("FlashGuard", typeof(bool), typeof(App), new PropertyMetadata(false));
+
+        /// <summary>
+        /// 首帧渲染完成后恢复不透明（配合开窗防闪处理；只订阅一次，触发后即解除）
+        /// </summary>
+        private static void WindowContentRenderedOnce(object sender, EventArgs e)
+        {
+            if (sender is not Window window)
+            {
+                return;
+            }
+            window.ContentRendered -= WindowContentRenderedOnce;
+            window.Opacity = 1;
         }
 
         protected override void OnExit(ExitEventArgs e)
