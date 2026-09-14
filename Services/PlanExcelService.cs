@@ -25,18 +25,21 @@ namespace ORT一键报告.Services
         private readonly DatabaseService _db;
         private readonly IPermissionService _permission;
 
+        // 表头文案与原表一致：单元格里的"/"实为换行显示（用 \n 写出来），
+        // 这样导入端按"去掉空白后包含关键字"匹配时仍能命中（写成字面 "/" 会导致
+        // 領用/日期 这类关键字中间夹了斜杠而匹配不到，重新导入时会丢掉日期）
         private static readonly string[] RequisitionHeaders =
         [
-            "領用/日期", "領料單据號", "機種名稱", "領出/數量", "S/N", "D/C",
-            "REV.", "Work Order", "回綫 RT 工令", "回線/數量", "線別", "回線/日期",
-            "入庫退料/單据號", "入庫/數量", "入庫日期", "备注"
+            "領用\n日期", "領料單据號", "機種名稱", "領出\n數量", "S/N", "D/C",
+            "REV.", "Work Order", "回綫 RT 工令", "回線\n數量", "線別", "回線\n日期",
+            "入庫退料\n單据號", "入庫\n數量", "入庫日期", "备注"
         ];
 
         private static readonly string[] ScheduleHeaders =
         [
-            "工作編號/Job No", "產品別/Product", "客戶別/Customer", "機種名/Part No", "階 段/Stage",
-            "測試項目/Test Item", "樣品數/Sample Size", "試驗時間/Test Period", "負責人/Owner",
-            "開始日期/Start Date", "結束日期/End Date", "完成狀況/Status", "上傳系統/Upload e-lab", "備 考/Remark"
+            "工作編號\nJob No", "產品別\nProduct", "客戶別\nCustomer", "機種名\nPart No", "階 段\nStage",
+            "測試項目\nTest Item", "樣品數\nSample Size", "試驗時間\nTest Period", "負責人\nOwner",
+            "開始日期\nStart Date", "結束日期\nEnd Date", "完成狀況\nStatus", "上傳系統\nUpload e-lab", "備 考\nRemark"
         ];
 
         /// <summary>
@@ -515,7 +518,9 @@ namespace ORT一键报告.Services
             List<(int, int, string, string, byte[])> result = [];
             try
             {
-                using ZipArchive zip = ZipFile.OpenRead(xlsxPath);
+                // 用 FileStream + ZipArchive（不用 ZipFile 静态方法）：避免对 System.IO.Compression.FileSystem 的依赖
+                using FileStream stream = new(xlsxPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                using ZipArchive zip = new(stream, ZipArchiveMode.Read);
 
                 // 1) 旧式：工作表内的 oleObjects
                 foreach (ZipArchiveEntry sheetEntry in zip.Entries
