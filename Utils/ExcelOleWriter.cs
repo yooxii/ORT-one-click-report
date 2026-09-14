@@ -233,7 +233,9 @@ namespace ORT一键报告.Utils
         private static Dictionary<string, byte[]> ReadParts(string xlsxPath)
         {
             Dictionary<string, byte[]> parts = new(StringComparer.OrdinalIgnoreCase);
-            using ZipArchive zip = ZipFile.OpenRead(xlsxPath);
+            // 用 FileStream + ZipArchive（不用 ZipFile 静态方法）：避免对 System.IO.Compression.FileSystem 的依赖
+            using FileStream fs = new(xlsxPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            using ZipArchive zip = new(fs, ZipArchiveMode.Read);
             foreach (ZipArchiveEntry entry in zip.Entries)
             {
                 if (entry.FullName.EndsWith("/"))
