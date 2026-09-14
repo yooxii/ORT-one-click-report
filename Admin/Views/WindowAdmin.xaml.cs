@@ -19,6 +19,12 @@ namespace ORT一键报告.Admin.Views
         private readonly IPathService _pathService;
         private readonly PlanExcelService _planExcelService;
         private readonly AppSettingsService _appSettings;
+        private readonly MailNotifier _mailNotifier;
+
+        /// <summary>
+        /// 语言变更处理（窗口关闭时解除订阅，避免静态事件持有已关闭窗口）
+        /// </summary>
+        private readonly Action _onLanguageChanged;
 
         public WindowAdmin()
         {
@@ -28,22 +34,53 @@ namespace ORT一键报告.Admin.Views
             _pathService = App.ServiceProvider.GetRequiredService<IPathService>();
             _planExcelService = App.ServiceProvider.GetRequiredService<PlanExcelService>();
             _appSettings = App.ServiceProvider.GetRequiredService<AppSettingsService>();
+            _mailNotifier = App.ServiceProvider.GetRequiredService<MailNotifier>();
 
             Loaded += (s, e) =>
             {
+                // 历史数据：按测试项目负责人补齐技术员身份（静默执行，仅记日志；用户列表随后刷新）
+                _ = _admin.SyncTechniciansFromTestItemOwners();
                 LoadUsers();
                 LoadCustomers();
                 LoadTestItems();
                 LoadProducts();
                 LoadStages();
             };
+
+            // 语言切换后刷新用户列表中的角色名与按钮文案（XAML 上的 lex:Loc 由本地化引擎自动刷新）
+            _onLanguageChanged = () =>
+            {
+                long? selectedId = SelectedUser?.Id;
+                LoadUsers();
+                if (selectedId != null)
+                {
+                    dg_users.SelectedItem = (dg_users.ItemsSource as IEnumerable<UserView>)
+                        ?.FirstOrDefault(u => u.Id == selectedId);
+                }
+                UpdateToggleActiveText();
+            };
+            LanguageService.LanguageChanged += _onLanguageChanged;
+        }
+
+        /// <summary>
+        /// 窗口关闭时解除语言变更订阅
+        /// </summary>
+        protected override void OnClosed(EventArgs e)
+        {
+            LanguageService.LanguageChanged -= _onLanguageChanged;
+            base.OnClosed(e);
         }
 
         /* ###############################  人员管理  ################################ */
 
-        private void LoadUsers()
+        private void LoadUsers(long? selectId = null)
         {
             dg_users.ItemsSource = _admin.GetUsers();
+            if (selectId != null)
+            {
+                dg_users.SelectedItem = (dg_users.ItemsSource as IEnumerable<UserView>)
+                    ?.FirstOrDefault(u => u.Id == selectId);
+            }
         }
 
         private UserView SelectedUser => dg_users.SelectedItem as UserView;
@@ -56,19 +93,34 @@ namespace ORT一键报告.Admin.Views
                 return;
             }
             txt_displayName.Text = user.DisplayName;
+            txt_username.Text = user.Username;
+            txt_email.Text = user.Email;
             chk_general.IsChecked = user.Roles.Contains(UserRole.GeneralUser);
             chk_tech.IsChecked = user.Roles.Contains(UserRole.Technician);
             chk_reviewer.IsChecked = user.Roles.Contains(UserRole.Reviewer);
             chk_admin.IsChecked = user.Roles.Contains(UserRole.Administrator);
-            btn_toggleActive.Content = user.IsActive ? "禁用该用户" : "启用该用户";
+            UpdateToggleActiveText();
+        }
+
+        /// <summary>
+        /// 刷新“禁用/启用该用户”按钮文案（随当前选中用户的启用状态与界面语言变化）
+        /// </summary>
+        private void UpdateToggleActiveText()
+        {
+            UserView user = SelectedUser;
+            if (user == null)
+            {
+                return;
+            }
+            btn_toggleActive.Content = LanguageService.Get(user.IsActive ? "Admin_DisableUser" : "Admin_EnableUser");
         }
 
         private void Btn_NewUser_Click(object sender, RoutedEventArgs e)
         {
-            WindowAdminInput input = new("新建用户",
-                ("用户名", "", false),
-                ("显示名称", "", false),
-                ("密码（至少6位）", "", true))
+            WindowAdminInput input = new(LanguageService.Get("Admin_NewUser"),
+                (LanguageService.Get("Admin_Username"), "", false),
+                (LanguageService.Get("Admin_DisplayNameFull"), "", false),
+                (LanguageService.Get("Admin_PasswordMin"), "", true))
             {
             };
             if (input.ShowDialog() != true)
@@ -103,14 +155,39 @@ namespace ORT一键报告.Admin.Views
                 _ = MessageBox.Show(LocalizationHelper.Get("Msg_SelectRole"), LanguageService.Get("Cap_Info"));
                 return;
             }
+            // 邮箱先校验（技术员/审核员登录时据此提示完善），不合法则不保存其它修改
+            string emailError = _admin.UpdateEmail(user.Id, txt_email.Text);
+            if (emailError != null)
+            {
+                _ = MessageBox.Show(emailError, LanguageService.Get("Cap_SaveFailed"));
+                return;
+            }
+            // 登录名（唯一）
+            string usernameError = _admin.UpdateUsername(user.Id, txt_username.Text);
+            if (usernameError != null)
+            {
+                _ = MessageBox.Show(usernameError, LanguageService.Get("Cap_SaveFailed"));
+                return;
+            }
             _admin.UpdateUserRoles(user.Id, roles);
             _admin.UpdateDisplayName(user.Id, txt_displayName.Text?.Trim());
-            LoadUsers();
-            // 若调整的是当前登录用户自身，触发权限刷新
+            LoadUsers(user.Id);
+            // 显示名可能已变更：同步刷新测试项目负责人栏的显示（负责人按 uid 锚定，显示名实时解析）
+            LoadTestItems();
+            // 若调整的是当前登录用户自身：角色变了必须重新登录（权限需重新加载），
+            // 仅改登录名/显示名/邮箱则保持登录并刷新左下角身份信息
             if (_auth.CurrentUser?.Id == user.Id)
             {
-                _auth.Logout();
-                _ = MessageBox.Show(LocalizationHelper.Get("Msg_IdentityChanged"), LanguageService.Get("Cap_Info"));
+                bool rolesChanged = !roles.OrderBy(r => r).SequenceEqual(user.Roles.OrderBy(r => r));
+                if (rolesChanged)
+                {
+                    _auth.Logout();
+                    _ = MessageBox.Show(LocalizationHelper.Get("Msg_IdentityChanged"), LanguageService.Get("Cap_Info"));
+                }
+                else
+                {
+                    _auth.ReloadCurrentUser();
+                }
             }
         }
 
@@ -122,7 +199,9 @@ namespace ORT一键报告.Admin.Views
                 _ = MessageBox.Show(LocalizationHelper.Get("Msg_SelectUserFirst"), LanguageService.Get("Cap_Info"));
                 return;
             }
-            WindowAdminInput input = new($"重置密码 - {user.Username}", ("新密码（至少6位）", "", true))
+            WindowAdminInput input = new(
+                string.Format(LanguageService.Get("Admin_ResetPasswordTitleFormat"), user.Username),
+                (LanguageService.Get("Admin_NewPasswordMin"), "", true))
             {
             };
             if (input.ShowDialog() != true)
@@ -130,7 +209,13 @@ namespace ORT一键报告.Admin.Views
                 return;
             }
             string error = _auth.ResetPassword(user.Id, input.Values[0]);
-            _ = MessageBox.Show(error ?? "密码已重置", error == null ? "成功" : "失败");
+            _ = MessageBox.Show(error ?? LanguageService.Get("Msg_PasswordReset"),
+                LanguageService.Get(error == null ? "Cap_Success" : "Cap_SaveFailed"));
+            if (error == null)
+            {
+                // 密码变更通知（通知类邮件；邮件失败不影响业务）
+                _mailNotifier.NotifyPasswordChanged(user.Username, user.DisplayName, _auth.CurrentOperatorName);
+            }
         }
 
         private void Btn_ToggleActive_Click(object sender, RoutedEventArgs e)
@@ -255,25 +340,24 @@ namespace ORT一键报告.Admin.Views
 
         private TestItemCatalog SelectedTestItem => dg_testItems.SelectedItem as TestItemCatalog;
 
+        /// <summary>
+        /// 可选负责人列表：已有技术员
+        /// </summary>
+        private List<UserView> Technicians => _admin.GetTechnicians();
+
         private void Btn_NewTestItem_Click(object sender, RoutedEventArgs e)
         {
-            WindowAdminInput input = new("新增测试项目",
-                ("试验项目", "", false),
-                ("试验时间", "", false),
-                ("负责人", "", false),
-                ("备注", "", false))
-            {
-            };
-            if (input.ShowDialog() != true)
+            WindowTestItemEdit dialog = new(LanguageService.Get("Admin_NewTestItem"), new TestItemCatalog(), Technicians);
+            if (dialog.ShowDialog() != true)
             {
                 return;
             }
             string error = _admin.SaveTestItem(new TestItemCatalog
             {
-                Name = input.Values[0],
-                Period = input.Values[1],
-                Owner = input.Values[2],
-                Remark = input.Values[3]
+                Name = dialog.ItemName,
+                Period = dialog.Period,
+                Owner = dialog.Owner,
+                Remark = dialog.Remark
             });
             if (error != null)
             {
@@ -281,6 +365,7 @@ namespace ORT一键报告.Admin.Views
                 return;
             }
             LoadTestItems();
+            SyncTechniciansFromOwnersWithMessage();
         }
 
         private void Btn_EditTestItem_Click(object sender, RoutedEventArgs e)
@@ -291,28 +376,62 @@ namespace ORT一键报告.Admin.Views
                 _ = MessageBox.Show(LocalizationHelper.Get("Msg_SelectTestItem"), LanguageService.Get("Cap_Info"));
                 return;
             }
-            WindowAdminInput input = new("编辑测试项目",
-                ("试验项目", selected.Name, false),
-                ("试验时间", selected.Period, false),
-                ("负责人", selected.Owner, false),
-                ("备注", selected.Remark, false))
-            {
-            };
-            if (input.ShowDialog() != true)
+            WindowTestItemEdit dialog = new(LanguageService.Get("Admin_EditTestItem"), selected, Technicians);
+            if (dialog.ShowDialog() != true)
             {
                 return;
             }
-            selected.Name = input.Values[0];
-            selected.Period = input.Values[1];
-            selected.Owner = input.Values[2];
-            selected.Remark = input.Values[3];
-            string error = _admin.SaveTestItem(selected);
+            string error = _admin.SaveTestItem(new TestItemCatalog
+            {
+                Id = selected.Id,
+                Name = dialog.ItemName,
+                Period = dialog.Period,
+                Owner = dialog.Owner,
+                Remark = dialog.Remark
+            });
             if (error != null)
             {
                 _ = MessageBox.Show(error, LanguageService.Get("Cap_SaveFailed"));
                 return;
             }
             LoadTestItems();
+            SyncTechniciansFromOwnersWithMessage();
+        }
+
+        /// <summary>
+        /// 按测试项目负责人同步技术员身份（负责人自动获得技术员身份，新账号初始密码 123456）；
+        /// 返回提示行（无变化时为空列表）。有变化时刷新用户列表。
+        /// </summary>
+        private List<string> SyncTechniciansFromOwners()
+        {
+            (int created, int roleAdded) = _admin.SyncTechniciansFromTestItemOwners();
+            if (created == 0 && roleAdded == 0)
+            {
+                return [];
+            }
+            LoadUsers();
+            List<string> lines = [];
+            if (created > 0)
+            {
+                lines.Add(string.Format(LanguageService.Get("Msg_TechnicianCreatedFormat"), created));
+            }
+            if (roleAdded > 0)
+            {
+                lines.Add(string.Format(LanguageService.Get("Msg_TechnicianRoleAddedFormat"), roleAdded));
+            }
+            return lines;
+        }
+
+        /// <summary>
+        /// 同步技术员身份并单独提示（测试项目保存后调用）
+        /// </summary>
+        private void SyncTechniciansFromOwnersWithMessage()
+        {
+            List<string> lines = SyncTechniciansFromOwners();
+            if (lines.Count > 0)
+            {
+                _ = MessageBox.Show(string.Join("\n", lines), LanguageService.Get("Cap_Info"));
+            }
         }
 
         private void Btn_DeleteTestItem_Click(object sender, RoutedEventArgs e)
@@ -343,7 +462,9 @@ namespace ORT一键报告.Admin.Views
             {
                 int added = _admin.SyncTestItemsFromScheduleFile(file);
                 LoadTestItems();
-                _ = MessageBox.Show($"同步完成，新增 {added} 个测试项目", LanguageService.Get("Cap_SyncResult"));
+                List<string> technicianLines = SyncTechniciansFromOwners();
+                technicianLines.Insert(0, $"同步完成，新增 {added} 个测试项目");
+                _ = MessageBox.Show(string.Join("\n", technicianLines), LanguageService.Get("Cap_SyncResult"));
             }
             catch (Exception ex)
             {
@@ -388,9 +509,14 @@ namespace ORT一键报告.Admin.Views
                 LoadCustomers();
                 LoadTestItems();
                 LoadProducts();
+                List<string> technicianLines = SyncTechniciansFromOwners();
 
                 string message = $"计划表导入完成: 新增{added}条, 更新{updated}条\n" +
                     $"字典同步: 客户+{c1}, 产品别+{p1}, 机种映射+{m1}, 测试项目+{t1}";
+                if (technicianLines.Count > 0)
+                {
+                    message += "\n" + string.Join("\n", technicianLines);
+                }
                 if (unmatched.Count > 0)
                 {
                     string list = unmatched.Count > 30

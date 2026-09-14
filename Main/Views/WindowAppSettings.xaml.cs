@@ -1,8 +1,10 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using ORT一键报告.Models;
 using ORT一键报告.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -19,6 +21,15 @@ namespace ORT一键报告.Main.Views
         private readonly AppSettingsService _settings;
         private readonly IPathService _pathService;
         private readonly IPermissionService _permission;
+        private readonly MailService _mail;
+        private readonly MailNotifier _mailNotifier;
+
+        /// <summary>邮件模板编辑器：类型代码 → 主题/正文输入框</summary>
+        private readonly Dictionary<string, TextBox> _mailSubjectBoxes = [];
+        private readonly Dictionary<string, TextBox> _mailBodyBoxes = [];
+
+        /// <summary>抄送管理员开关：类型代码 → 复选框</summary>
+        private readonly Dictionary<string, CheckBox> _mailCcAdminBoxes = [];
 
         /// <summary>
         /// 防止树选择与滚动互相触发的同步标记
@@ -62,6 +73,8 @@ namespace ORT一键报告.Main.Views
             _settings = App.ServiceProvider.GetRequiredService<AppSettingsService>();
             _pathService = App.ServiceProvider.GetRequiredService<IPathService>();
             _permission = App.ServiceProvider.GetRequiredService<IPermissionService>();
+            _mail = App.ServiceProvider.GetRequiredService<MailService>();
+            _mailNotifier = App.ServiceProvider.GetRequiredService<MailNotifier>();
             _isAdmin = _permission.Can("admin.manage");
 
             CollectSections();
@@ -70,6 +83,8 @@ namespace ORT一键报告.Main.Views
             LoadFontOptions();
             LoadLanguageOptions();
             LoadThemeOptions();
+            // 模板/抄送管理员控件必须先于载入设置创建，否则复选框初值取不到
+            BuildMailTemplateEditors();
             LoadValues();
 
             // 数据库路径仅管理员可修改
@@ -96,6 +111,8 @@ namespace ORT一键报告.Main.Views
             _sections.Add(("sec_schedule", sec_schedule));
             _sections.Add(("sec_requisition", sec_requisition));
             _sections.Add(("sec_report", sec_report));
+            _sections.Add(("sec_mail", sec_mail));
+            _sections.Add(("sec_mail_template", sec_mail_template));
         }
 
         private void CollectTreeNodes(DependencyObject parent)
@@ -176,12 +193,282 @@ namespace ORT一键报告.Main.Views
             _loading = false;
         }
 
+        /// <summary>
+        /// 填充字重选项（默认常规；中文字体多无 Medium 字面，选中等会被合成为粗体）
+        /// </summary>
+        private void LoadFontWeightOptions()
+        {
+            var list = new List<FontWeightOption>
+            {
+                new("Normal", LanguageService.Get("FontWeight_Normal")),
+                new("Medium", LanguageService.Get("FontWeight_Medium")),
+                new("SemiBold", LanguageService.Get("FontWeight_SemiBold")),
+                new("Bold", LanguageService.Get("FontWeight_Bold")),
+            };
+            _loading = true;
+            cb_fontWeight.ItemsSource = list;
+            cb_fontWeight.SelectedValuePath = "Code";
+            cb_fontWeight.SelectedValue = _settings.Settings.UI.FontWeight ?? "Normal";
+            _loading = false;
+        }
+
+        /* ###############################  邮件设置  ################################ */
+
+        /// <summary>
+        /// 载入邮件设置到界面
+        /// </summary>
+        private void LoadMailValues()
+        {
+            MailSettings mail = _settings.Settings.Mail;
+            _loading = true;
+            cb_mailSecurity.ItemsSource = new List<MailSecurityOption>
+            {
+                new("None", LanguageService.Get("Mail_Security_None")),
+                new("StartTls", LanguageService.Get("Mail_Security_StartTls")),
+                new("Ssl", LanguageService.Get("Mail_Security_Ssl")),
+            };
+            cb_mailSecurity.SelectedValuePath = "Code";
+
+            chk_mailEnabled.IsChecked = mail.Enabled;
+            chk_mailNoticeEnabled.IsChecked = mail.NoticeEnabled;
+            chk_mailWarningEnabled.IsChecked = mail.WarningEnabled;
+            txt_mailHost.Text = mail.Host;
+            txt_mailPort.Text = mail.Port.ToString();
+            cb_mailSecurity.SelectedValue = mail.Security ?? "None";
+            chk_mailIgnoreCert.IsChecked = mail.IgnoreCertErrors;
+            chk_mailDefaultCred.IsChecked = mail.UseDefaultCredentials;
+            txt_mailUser.Text = mail.Username;
+            txt_mailPassword.Password = mail.Password ?? "";
+            txt_mailFrom.Text = mail.FromAddress;
+            txt_mailFromName.Text = mail.FromName;
+            txt_mailCc.Text = mail.CcList;
+            txt_mailTimeout.Text = mail.TimeoutSeconds.ToString();
+            chk_mailHtml.IsChecked = mail.BodyIsHtml;
+            txt_mailDaysBefore.Text = mail.WarningDaysBefore.ToString();
+            txt_mailDedupe.Text = mail.DedupeDays.ToString();
+            chk_mailIncludeOverdue.IsChecked = mail.WarningIncludeOverdue;
+            foreach (MailTypeDefinition type in MailKind.All)
+            {
+                if (_mailCcAdminBoxes.TryGetValue(type.Code, out CheckBox ccBox))
+                {
+                    ccBox.IsChecked = mail.ShouldCcAdmins(type);
+                }
+            }
+            txt_mailTestTo.Text = string.IsNullOrWhiteSpace(txt_mailTestTo.Text) ? mail.FromAddress : txt_mailTestTo.Text;
+
+            // 模板：未自定义时显示内置默认模板，管理员可直接修改
+            foreach (MailTypeDefinition type in MailKind.All)
+            {
+                if (_mailSubjectBoxes.TryGetValue(type.Code, out TextBox subjectBox))
+                {
+                    subjectBox.Text = mail.GetTemplate(type, true) ?? LanguageService.Get(type.DefaultSubjectKey);
+                }
+                if (_mailBodyBoxes.TryGetValue(type.Code, out TextBox bodyBox))
+                {
+                    bodyBox.Text = mail.GetTemplate(type, false) ?? LanguageService.Get(type.DefaultBodyKey);
+                }
+            }
+            _loading = false;
+            RefreshMailLogs();
+        }
+
+        /// <summary>
+        /// 界面值写回邮件设置
+        /// </summary>
+        private void ApplyMailValues(MailSettings mail)
+        {
+            mail.Enabled = chk_mailEnabled.IsChecked == true;
+            mail.NoticeEnabled = chk_mailNoticeEnabled.IsChecked == true;
+            mail.WarningEnabled = chk_mailWarningEnabled.IsChecked == true;
+            mail.Host = TrimOrNull(txt_mailHost.Text);
+            if (int.TryParse(txt_mailPort.Text?.Trim(), out int port) && port > 0 && port <= 65535)
+            {
+                mail.Port = port;
+            }
+            mail.Security = cb_mailSecurity.SelectedValue as string ?? "None";
+            mail.IgnoreCertErrors = chk_mailIgnoreCert.IsChecked == true;
+            mail.UseDefaultCredentials = chk_mailDefaultCred.IsChecked == true;
+            mail.Username = TrimOrNull(txt_mailUser.Text);
+            mail.Password = string.IsNullOrEmpty(txt_mailPassword.Password) ? null : txt_mailPassword.Password;
+            mail.FromAddress = TrimOrNull(txt_mailFrom.Text);
+            mail.FromName = TrimOrNull(txt_mailFromName.Text);
+            mail.CcList = TrimOrNull(txt_mailCc.Text);
+            if (int.TryParse(txt_mailTimeout.Text?.Trim(), out int timeout) && timeout >= 5 && timeout <= 300)
+            {
+                mail.TimeoutSeconds = timeout;
+            }
+            mail.BodyIsHtml = chk_mailHtml.IsChecked == true;
+            if (int.TryParse(txt_mailDaysBefore.Text?.Trim(), out int days) && days >= 0 && days <= 365)
+            {
+                mail.WarningDaysBefore = days;
+            }
+            if (int.TryParse(txt_mailDedupe.Text?.Trim(), out int dedupe) && dedupe >= 0 && dedupe <= 365)
+            {
+                mail.DedupeDays = dedupe;
+            }
+            mail.WarningIncludeOverdue = chk_mailIncludeOverdue.IsChecked == true;
+            foreach (MailTypeDefinition type in MailKind.All)
+            {
+                if (_mailCcAdminBoxes.TryGetValue(type.Code, out CheckBox ccBox))
+                {
+                    mail.SetCcAdmins(type, ccBox.IsChecked == true);
+                }
+            }
+            foreach (MailTypeDefinition type in MailKind.All)
+            {
+                if (_mailSubjectBoxes.TryGetValue(type.Code, out TextBox subjectBox))
+                {
+                    mail.SetTemplate(type, true, subjectBox.Text);
+                }
+                if (_mailBodyBoxes.TryGetValue(type.Code, out TextBox bodyBox))
+                {
+                    mail.SetTemplate(type, false, bodyBox.Text);
+                }
+            }
+        }
+
+        /// <summary>
+        /// 按邮件类型动态生成模板编辑区（新增邮件类型时自动多出一组）
+        /// </summary>
+        private void BuildMailTemplateEditors()
+        {
+            panel_mailTemplates.Children.Clear();
+            _mailSubjectBoxes.Clear();
+            _mailBodyBoxes.Clear();
+            panel_mailCcAdmin.Children.Clear();
+            _mailCcAdminBoxes.Clear();
+            foreach (MailTypeDefinition type in MailKind.All)
+            {
+                // 抄送管理员开关（按邮件类型，可在设置中管理）
+                CheckBox ccBox = new()
+                {
+                    Content = LanguageService.Get(type.NameKey),
+                    Margin = new Thickness(0, 0, 16, 0)
+                };
+                _mailCcAdminBoxes[type.Code] = ccBox;
+                panel_mailCcAdmin.Children.Add(ccBox);
+                StackPanel block = new() { Margin = new Thickness(0, 10, 0, 6) };
+                block.Children.Add(new TextBlock
+                {
+                    Text = LanguageService.Get(type.NameKey),
+                    FontWeight = FontWeights.SemiBold
+                });
+                block.Children.Add(new TextBlock
+                {
+                    Text = LanguageService.Get(type.VariablesKey),
+                    Foreground = (Brush)FindResource("TextSecondaryBrush"),
+                    TextWrapping = TextWrapping.Wrap,
+                    Margin = new Thickness(0, 2, 0, 6)
+                });
+
+                Grid subjectRow = new();
+                subjectRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(60) });
+                subjectRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                TextBlock subjectLabel = new() { Text = LanguageService.Get("Settings_MailSubject"), VerticalAlignment = VerticalAlignment.Center };
+                TextBox subjectBox = new() { VerticalContentAlignment = VerticalAlignment.Center };
+                Grid.SetColumn(subjectBox, 1);
+                subjectRow.Children.Add(subjectLabel);
+                subjectRow.Children.Add(subjectBox);
+                block.Children.Add(subjectRow);
+
+                TextBlock bodyLabel = new() { Text = LanguageService.Get("Settings_MailBody"), Margin = new Thickness(0, 6, 0, 2) };
+                TextBox bodyBox = new()
+                {
+                    AcceptsReturn = true,
+                    TextWrapping = TextWrapping.Wrap,
+                    Height = 110,
+                    VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                    FontFamily = (FontFamily)FindResource("FontFamilyData")
+                };
+                block.Children.Add(bodyLabel);
+                block.Children.Add(bodyBox);
+
+                _mailSubjectBoxes[type.Code] = subjectBox;
+                _mailBodyBoxes[type.Code] = bodyBox;
+                panel_mailTemplates.Children.Add(block);
+            }
+        }
+
+        /// <summary>
+        /// 刷新最近发送记录（排查用）
+        /// </summary>
+        private void RefreshMailLogs()
+        {
+            StringBuilder sb = new();
+            foreach (MailLog log in _mail.RecentLogs(20))
+            {
+                sb.Append(log.CreatedAt.ToString("MM-dd HH:mm")).Append("  ")
+                  .Append(log.Success ? "OK" : "FAIL").Append("  ")
+                  .Append(log.Kind).Append("  ")
+                  .Append(log.Recipients).Append("  ")
+                  .Append(log.Subject);
+                if (!log.Success && !string.IsNullOrWhiteSpace(log.Error))
+                {
+                    sb.Append("  -> ").Append(log.Error);
+                }
+                sb.AppendLine();
+            }
+            txt_mailLogs.Text = sb.ToString();
+        }
+
+        /// <summary>
+        /// 发送测试邮件（先保存当前设置）
+        /// </summary>
+        private void Btn_MailTest_Click(object sender, RoutedEventArgs e)
+        {
+            if (!ApplyAll())
+            {
+                return;
+            }
+            string to = TrimOrNull(txt_mailTestTo.Text) ?? _settings.Settings.Mail.FromAddress;
+            MailSendResult result = _mail.SendTest(to);
+            if (result.Success)
+            {
+                _ = MessageBox.Show(string.Format(LanguageService.Get("Msg_MailSentFormat"), result.Recipients),
+                    LanguageService.Get("Cap_Success"));
+            }
+            else
+            {
+                _ = MessageBox.Show(result.Message ?? "", LanguageService.Get(result.Skipped ? "Cap_Info" : "Cap_Error"));
+            }
+            RefreshMailLogs();
+        }
+
+        /// <summary>
+        /// 立即检查计划结束日期并发送警告邮件
+        /// </summary>
+        private async void Btn_MailCheck_Click(object sender, RoutedEventArgs e)
+        {
+            if (!ApplyAll())
+            {
+                return;
+            }
+            btn_mailCheck.IsEnabled = false;
+            try
+            {
+                (int sent, int skipped, int failed) = await System.Threading.Tasks.Task.Run(() => _mailNotifier.CheckPlanDeadlines());
+                _ = MessageBox.Show(string.Format(LanguageService.Get("Msg_MailCheckResultFormat"), sent, skipped, failed),
+                    LanguageService.Get("Cap_Info"));
+            }
+            catch (Exception ex)
+            {
+                _ = MessageBox.Show(ex.Message, LanguageService.Get("Cap_Error"));
+            }
+            finally
+            {
+                btn_mailCheck.IsEnabled = true;
+            }
+            RefreshMailLogs();
+        }
+
         private void LoadValues()
         {
             Models.AppSettings settings = _settings.Settings;
             cb_fontFamily.SelectedItem = settings.UI.FontFamily;
             cb_fontSize.Text = settings.UI.FontSize.ToString();
+            LoadFontWeightOptions();
             LoadToastPositions();
+            LoadMailValues();
 
             _initialDbPath = _settings.GetDatabasePath();
             txt_dbpath.Text = _initialDbPath;
@@ -220,10 +507,15 @@ namespace ORT一键报告.Main.Views
             {
                 settings.UI.ToastPosition = toastPos;
             }
+            if (cb_fontWeight.SelectedValue is string fontWeight && !string.IsNullOrEmpty(fontWeight))
+            {
+                settings.UI.FontWeight = fontWeight;
+            }
 
             settings.Paths.SchedulePath = TrimOrNull(txt_schedule.Text);
             settings.Paths.RequisitionPath = TrimOrNull(txt_requisition.Text);
             settings.Paths.ReportPath = TrimOrNull(txt_report.Text);
+            ApplyMailValues(settings.Mail);
             _settings.Save();
 
             // ATE/EMI 路径：保存在程序目录本地文件（与数据库路径同位置），仅修改时写入

@@ -11,6 +11,24 @@ using System.Windows.Media;
 namespace ORT一键报告.Services
 {
     /// <summary>
+    /// 字重选项（设置界面下拉框绑定用）
+    /// </summary>
+    public class FontWeightOption
+    {
+        /// <summary>字重代码：Normal/Medium/SemiBold/Bold</summary>
+        public string Code { get; }
+
+        /// <summary>界面显示名（本地化）</summary>
+        public string DisplayName { get; }
+
+        public FontWeightOption(string code, string displayName)
+        {
+            Code = code;
+            DisplayName = displayName;
+        }
+    }
+
+    /// <summary>
     /// 应用设置服务：常规设置项以键值对保存到数据库（app_settings 表）；
     /// 数据库路径/ATE数据路径/EMI数据路径保存在程序目录本地文件（local_settings.json）：
     /// 数据库路径因避免自引用必须独立于数据库，ATE/EMI 数据路径按需求与数据库路径同位置保存。
@@ -196,14 +214,16 @@ namespace ORT一键报告.Services
                     UI = new UiSettings
                     {
                         FontFamily = values.TryGetValue("ui.fontFamily", out string ff) && !string.IsNullOrWhiteSpace(ff) ? ff : "Microsoft YaHei UI",
-                        FontSize = values.TryGetValue("ui.fontSize", out string fs) && double.TryParse(fs, out double size) ? size : 14
+                        FontSize = values.TryGetValue("ui.fontSize", out string fs) && double.TryParse(fs, out double size) ? size : 14,
+                        FontWeight = values.TryGetValue("ui.fontWeight", out string fw) && !string.IsNullOrWhiteSpace(fw) ? fw : "Normal"
                     },
                     Paths = new PathSettings
                     {
                         SchedulePath = values.TryGetValue("paths.schedule", out string v1) ? v1 : null,
                         RequisitionPath = values.TryGetValue("paths.requisition", out string v2) ? v2 : null,
                         ReportPath = values.TryGetValue("paths.report", out string v3) ? v3 : null
-                    }
+                    },
+                    Mail = LoadMailSettings(values)
                 };
             }
             catch (Exception ex)
@@ -213,11 +233,140 @@ namespace ORT一键报告.Services
             }
         }
 
+        /* ###############################  邮件设置  ################################ */
+
+        /// <summary>
+        /// 从键值对载入邮件设置（模板未自定义时回退到内置默认模板）
+        /// </summary>
+        private static MailSettings LoadMailSettings(Dictionary<string, string> values)
+        {
+            MailSettings mail = new()
+            {
+                Enabled = GetBool(values, "mail.enabled"),
+                NoticeEnabled = GetBool(values, "mail.noticeEnabled", true),
+                WarningEnabled = GetBool(values, "mail.warningEnabled", true),
+                Host = GetString(values, "mail.host"),
+                Port = GetInt(values, "mail.port", 25),
+                Security = GetString(values, "mail.security") ?? "None",
+                IgnoreCertErrors = GetBool(values, "mail.ignoreCertErrors"),
+                UseDefaultCredentials = GetBool(values, "mail.useDefaultCredentials"),
+                Username = GetString(values, "mail.username"),
+                Password = Unprotect(GetString(values, "mail.passwordEnc")),
+                FromAddress = GetString(values, "mail.fromAddress"),
+                FromName = GetString(values, "mail.fromName"),
+                CcList = GetString(values, "mail.ccList"),
+                BodyIsHtml = GetBool(values, "mail.bodyIsHtml"),
+                TimeoutSeconds = GetInt(values, "mail.timeoutSeconds", 30),
+                WarningDaysBefore = GetInt(values, "mail.warningDaysBefore", 3),
+                WarningIncludeOverdue = GetBool(values, "mail.warningIncludeOverdue", true),
+                DedupeDays = GetInt(values, "mail.dedupeDays", 1)
+            };
+            foreach (MailTypeDefinition type in MailKind.All)
+            {
+                string subject = GetString(values, type.SubjectSettingKey);
+                string body = GetString(values, type.BodySettingKey);
+                if (!string.IsNullOrWhiteSpace(subject))
+                {
+                    mail.SetTemplate(type, true, subject);
+                }
+                if (!string.IsNullOrWhiteSpace(body))
+                {
+                    mail.SetTemplate(type, false, body);
+                }
+                // 抄送管理员默认：通知类开、警告类关（可在设置中按类型调整）
+                mail.SetCcAdmins(type, GetBool(values, "mail.ccAdmin." + type.Code, type.Code == MailKind.Notice));
+            }
+            return mail;
+        }
+
+        private static string GetString(Dictionary<string, string> values, string key)
+            => values.TryGetValue(key, out string value) && !string.IsNullOrWhiteSpace(value) ? value : null;
+
+        private static bool GetBool(Dictionary<string, string> values, string key, bool fallback = false)
+            => values.TryGetValue(key, out string value) && bool.TryParse(value, out bool result) ? result : fallback;
+
+        private static int GetInt(Dictionary<string, string> values, string key, int fallback)
+            => values.TryGetValue(key, out string value) && int.TryParse(value, out int result) ? result : fallback;
+
+        /// <summary>
+        /// 邮件相关键值对（密码 DPAPI 加密后写入密码键）
+        /// </summary>
+        private static void FillMailValues(Dictionary<string, string> values, MailSettings mail)
+        {
+            values["mail.enabled"] = mail.Enabled.ToString();
+            values["mail.noticeEnabled"] = mail.NoticeEnabled.ToString();
+            values["mail.warningEnabled"] = mail.WarningEnabled.ToString();
+            values["mail.host"] = mail.Host;
+            values["mail.port"] = mail.Port.ToString();
+            values["mail.security"] = mail.Security ?? "None";
+            values["mail.ignoreCertErrors"] = mail.IgnoreCertErrors.ToString();
+            values["mail.useDefaultCredentials"] = mail.UseDefaultCredentials.ToString();
+            values["mail.username"] = mail.Username;
+            values["mail.passwordEnc"] = Protect(mail.Password);
+            values["mail.fromAddress"] = mail.FromAddress;
+            values["mail.fromName"] = mail.FromName;
+            values["mail.ccList"] = mail.CcList;
+            values["mail.bodyIsHtml"] = mail.BodyIsHtml.ToString();
+            values["mail.timeoutSeconds"] = mail.TimeoutSeconds.ToString();
+            values["mail.warningDaysBefore"] = mail.WarningDaysBefore.ToString();
+            values["mail.warningIncludeOverdue"] = mail.WarningIncludeOverdue.ToString();
+            values["mail.dedupeDays"] = mail.DedupeDays.ToString();
+            foreach (MailTypeDefinition type in MailKind.All)
+            {
+                values[type.SubjectSettingKey] = mail.GetTemplate(type, true);
+                values[type.BodySettingKey] = mail.GetTemplate(type, false);
+                values["mail.ccAdmin." + type.Code] = mail.ShouldCcAdmins(type).ToString();
+            }
+        }
+
+        /// <summary>
+        /// DPAPI 加密（当前 Windows 用户），失败返回 null（不落库明文密码）
+        /// </summary>
+        private static string Protect(string plain)
+        {
+            if (string.IsNullOrEmpty(plain))
+            {
+                return null;
+            }
+            try
+            {
+                byte[] encrypted = System.Security.Cryptography.ProtectedData.Protect(
+                    System.Text.Encoding.UTF8.GetBytes(plain), null,
+                    System.Security.Cryptography.DataProtectionScope.CurrentUser);
+                return Convert.ToBase64String(encrypted);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// DPAPI 解密（失败返回 null）
+        /// </summary>
+        private static string Unprotect(string encrypted)
+        {
+            if (string.IsNullOrEmpty(encrypted))
+            {
+                return null;
+            }
+            try
+            {
+                byte[] data = System.Security.Cryptography.ProtectedData.Unprotect(
+                    Convert.FromBase64String(encrypted), null,
+                    System.Security.Cryptography.DataProtectionScope.CurrentUser);
+                return System.Text.Encoding.UTF8.GetString(data);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
         /// <summary>
         /// 将数据库中旧版路径键迁移到本地设置文件，迁移后删除数据库键
         /// </summary>
-        private void MigrateLocalKeys(Dictionary<string, string> values, string dbKey, string localKey)
-        {
+        private void MigrateLocalKeys(Dictionary<string, string> values, string dbKey, string localKey)        {
             if (values.TryGetValue(dbKey, out string value) && !string.IsNullOrWhiteSpace(value) && GetLocal(localKey) == null)
             {
                 SetLocal(localKey, value);
@@ -248,6 +397,7 @@ namespace ORT一键报告.Services
                 }
                 values["ui.fontFamily"] = legacy.UI?.FontFamily;
                 values["ui.fontSize"] = legacy.UI?.FontSize.ToString();
+                values["ui.fontWeight"] = legacy.UI?.FontWeight;
                 values["paths.schedule"] = legacy.Paths?.SchedulePath;
                 values["paths.requisition"] = legacy.Paths?.RequisitionPath;
                 values["paths.report"] = legacy.Paths?.ReportPath;
@@ -272,10 +422,12 @@ namespace ORT一键报告.Services
                 {
                     ["ui.fontFamily"] = Settings.UI.FontFamily,
                     ["ui.fontSize"] = Settings.UI.FontSize.ToString(),
+                    ["ui.fontWeight"] = Settings.UI.FontWeight,
                     ["paths.schedule"] = Settings.Paths.SchedulePath,
                     ["paths.requisition"] = Settings.Paths.RequisitionPath,
                     ["paths.report"] = Settings.Paths.ReportPath
                 };
+                FillMailValues(values, Settings.Mail);
                 SaveToDb(values);
                 SettingsChanged?.Invoke();
             }
@@ -321,12 +473,25 @@ namespace ORT一键报告.Services
                 FontFamily family = new(Settings.UI.FontFamily);
                 window.FontFamily = family;
                 window.FontSize = Settings.UI.FontSize;
+                // 字重随设置逐级继承到未显式设置字重的控件（TextBox/Label 等隐式样式不再写死字重）
+                window.FontWeight = ParseFontWeight(Settings.UI.FontWeight);
             }
             catch (Exception ex)
             {
                 _logger.Warn($"应用字体失败: {ex.Message}");
             }
         }
+
+        /// <summary>
+        /// 字重代码 → WPF FontWeight（未知值按常规处理）
+        /// </summary>
+        public static FontWeight ParseFontWeight(string code) => code switch
+        {
+            "Medium" => FontWeights.Medium,
+            "SemiBold" => FontWeights.SemiBold,
+            "Bold" => FontWeights.Bold,
+            _ => FontWeights.Normal
+        };
 
         /// <summary>
         /// 将当前字体设置应用到所有已打开窗口

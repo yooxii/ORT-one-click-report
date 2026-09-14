@@ -40,6 +40,7 @@
                 <DataGridTextColumn Header="{lex:Loc Review_Action}" Binding="{Binding Action}" Width="55"/>
                 <DataGridTextColumn Header="{lex:Loc Review_Summary}" Binding="{Binding Summary}" Width="*"/>
                 <DataGridTextColumn Header="{lex:Loc Review_Requester}" Binding="{Binding RequesterName}" Width="80"/>
+                <DataGridTextColumn Header="{lex:Loc Review_Assignee}" Binding="{Binding AssigneeName}" Width="80"/>
                 <DataGridTextColumn Header="{lex:Loc Admin_Status}" Binding="{Binding Status}" Width="65"/>
                 <DataGridTextColumn Header="{lex:Loc Review_RequestTime}" Binding="{Binding CreatedAt, StringFormat=yyyy-MM-dd HH:mm}" Width="120"/>
                 <DataGridTextColumn Header="{lex:Loc Review_Reviewer}" Binding="{Binding ReviewerName}" Width="80"/>

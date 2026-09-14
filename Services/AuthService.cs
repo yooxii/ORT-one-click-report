@@ -57,7 +57,8 @@ namespace ORT一键报告.Services
                 User admin = new()
                 {
                     Username = "admin",
-                    DisplayName = "管理员",
+                    // 默认管理员显示名跟随界面语言（后续可在人员管理中修改）
+                    DisplayName = LanguageService.Get("Role_Administrator"),
                     Salt = salt,
                     PasswordHash = HashPassword(salt, "admin123"),
                     IsActive = true
@@ -239,6 +240,149 @@ namespace ORT一键报告.Services
         /// 当前用户是否拥有指定角色
         /// </summary>
         public bool HasRole(UserRole role) => CurrentRoles.Contains(role);
+
+        /// <summary>
+        /// 技术员/审核员是否为邮箱为空（登录时提示完善）
+        /// </summary>
+        public bool NeedsEmailCompletion => CurrentUser != null
+            && string.IsNullOrWhiteSpace(CurrentUser.Email)
+            && (HasRole(UserRole.Technician) || HasRole(UserRole.Reviewer));
+
+        /// <summary>
+        /// 邮箱格式校验（简单校验：有且仅有一个 @，域名含点，不含空白）
+        /// </summary>
+        public static bool IsValidEmail(string email)
+            => !string.IsNullOrWhiteSpace(email)
+               && System.Text.RegularExpressions.Regex.IsMatch(email.Trim(), @"^[^@\s]+@[^@\s]+\.[^@\s]+$");
+
+        /// <summary>
+        /// 保存当前登录用户的邮箱（供登录后"完善邮箱"使用）
+        /// </summary>
+        public bool SetCurrentUserEmail(string email)
+        {
+            if (CurrentUser == null || !IsValidEmail(email))
+            {
+                return false;
+            }
+            email = email.Trim();
+            _db.FreeSql.Update<User>()
+                .Set(u => u.Email, email)
+                .Where(u => u.Id == CurrentUser.Id)
+                .ExecuteAffrows();
+            CurrentUser.Email = email;
+            _logger.Info($"用户 {CurrentUser.Username} 完善邮箱: {email}");
+            return true;
+        }
+
+        /// <summary>
+        /// 按测试项目负责人姓名确保存在技术员账号：
+        /// 账号不存在则以初始密码 123456 创建，显示名为该姓名，登录名见 <see cref="BuildUsernameFromName"/>；
+        /// 账号已存在则仅补充技术员身份，不修改其密码。
+        /// </summary>
+        public (bool Created, bool RoleAdded) EnsureTechnician(string name)
+        {
+            name = name?.Trim();
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                return (false, false);
+            }
+            try
+            {
+                // 优先按登录名匹配，其次按显示名匹配，避免同一人重复建号
+                User user = _db.FreeSql.Select<User>().Where(u => u.Username == name).First()
+                    ?? _db.FreeSql.Select<User>().Where(u => u.DisplayName == name).First();
+                if (user == null)
+                {
+                    string username = BuildUsernameFromName(name);
+                    string salt = NewSalt();
+                    User created = new()
+                    {
+                        Username = username,
+                        DisplayName = name,
+                        Salt = salt,
+                        PasswordHash = HashPassword(salt, DefaultTechnicianPassword),
+                        IsActive = true
+                    };
+                    created.Id = _db.FreeSql.Insert(created).ExecuteIdentity();
+                    _db.FreeSql.Insert(new UserRoleRow { UserId = created.Id, Role = nameof(UserRole.Technician) }).ExecuteAffrows();
+                    _logger.Info($"按测试项目负责人创建技术员账号: {name}（登录名 {username}，初始密码 {DefaultTechnicianPassword}）");
+                    return (true, false);
+                }
+                bool hasTechnician = _db.FreeSql.Select<UserRoleRow>()
+                    .Where(r => r.UserId == user.Id && r.Role == nameof(UserRole.Technician)).Any();
+                if (hasTechnician)
+                {
+                    return (false, false);
+                }
+                _db.FreeSql.Insert(new UserRoleRow { UserId = user.Id, Role = nameof(UserRole.Technician) }).ExecuteAffrows();
+                _logger.Info($"已为已有账号补充技术员身份: {name}");
+                return (false, true);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, $"确保技术员账号失败: {name}");
+                return (false, false);
+            }
+        }
+
+        /// <summary>
+        /// 由负责人姓名生成登录名：
+        /// 英文数字姓名（如 ZhangSan）直接使用；含中文等非 ASCII 字符时无法离线转拼音，
+        /// 退化为递增登录名 user1、user2……（可在人员管理中改名为拼音）。
+        /// </summary>
+        public string BuildUsernameFromName(string name)
+        {
+            name = name?.Trim();
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                return NextIncrementalUsername();
+            }
+            // 仅当姓名本身只含 ASCII 字母/数字/._- 时直接作登录名
+            if (name.All(c => c < 128 && (char.IsLetterOrDigit(c) || c == '.' || c == '_' || c == '-')))
+            {
+                return name;
+            }
+            return NextIncrementalUsername();
+        }
+
+        /// <summary>
+        /// 生成递增登录名 userN（跳过已占用的编号）
+        /// </summary>
+        public string NextIncrementalUsername()
+        {
+            List<string> existing = _db.FreeSql.Select<User>().ToList(u => u.Username);
+            for (int i = 1; i < int.MaxValue; i++)
+            {
+                string candidate = "user" + i;
+                if (!existing.Any(u => string.Equals(u, candidate, StringComparison.OrdinalIgnoreCase)))
+                {
+                    return candidate;
+                }
+            }
+            return "user" + Guid.NewGuid().ToString("N").Substring(0, 8);
+        }
+
+        /// <summary>
+        /// 自动创建的技术员账号初始密码
+        /// </summary>
+        public const string DefaultTechnicianPassword = "123456";
+
+        /// <summary>
+        /// 重新从数据库载入当前登录用户（人员管理修改了自己的登录名/显示名/邮箱后调用）
+        /// </summary>
+        public void ReloadCurrentUser()
+        {
+            if (CurrentUser == null)
+            {
+                return;
+            }
+            User latest = _db.FreeSql.Select<User>().Where(u => u.Id == CurrentUser.Id).First();
+            if (latest != null)
+            {
+                CurrentUser = latest;
+                AuthChanged?.Invoke();
+            }
+        }
 
         /// <summary>
         /// 当前显示名称（未登录为"游客"）

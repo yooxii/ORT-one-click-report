@@ -16,8 +16,8 @@
         <!--字段区由代码动态生成-->
         <StackPanel x:Name="panel_fields"/>
         <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
-            <Button Content="{lex:Loc Common_OK}" Width="90" Height="28" Click="Btn_OK_Click" IsDefault="True"/>
-            <Button Content="{lex:Loc Common_Cancel}" Width="90" Height="28" Margin="10,0,0,0" Click="Btn_Cancel_Click" IsCancel="True"/>
+            <Button Content="{lex:Loc Common_OK}" Width="90" Click="Btn_OK_Click" IsDefault="True"/>
+            <Button Content="{lex:Loc Common_Cancel}" Width="90" Margin="10,0,0,0" Click="Btn_Cancel_Click" IsCancel="True"/>
         </StackPanel>
     </Grid>
 </Window>

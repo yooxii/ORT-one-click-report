@@ -47,6 +47,11 @@ namespace ORT一键报告
                         if (s is Window win)
                         {
                             ORT一键报告.Services.WindowThemeHelper.ApplyToWindow(win);
+                            // 字体/字号/字重设置对所有窗口生效
+                            if (ServiceProvider?.GetService(typeof(AppSettingsService)) is AppSettingsService settings)
+                            {
+                                settings.ApplyFont(win);
+                            }
                         }
                     }));
                 // 主题运行时切换：对所有已打开窗口重新应用
@@ -69,6 +74,8 @@ namespace ORT一键报告
                 services.AddSingleton<PlanExcelService>();
                 services.AddSingleton<AdminService>();
                 services.AddSingleton<ReviewService>();
+                services.AddSingleton<MailService>();
+                services.AddSingleton<MailNotifier>();
                 services.AddSingleton<ReportGenerationService>();
 
                 // ViewModels

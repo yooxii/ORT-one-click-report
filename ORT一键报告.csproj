@@ -120,6 +120,7 @@
     <Compile Include="Utils\RelayCommand.cs" />
     <Compile Include="Services\PathService.cs" />
     <Compile Include="Models\User.cs" />
+    <Compile Include="Models\Mail.cs" />
     <Compile Include="Services\IPathService.cs" />
     <Compile Include="Services\ReportService.cs" />
     <Compile Include="Models\Plan.cs" />
@@ -132,6 +133,9 @@
     <Compile Include="Services\AuthService.cs" />
     <Compile Include="Services\AdminService.cs" />
     <Compile Include="Services\ReviewService.cs" />
+    <Compile Include="Services\SmtpMailClient.cs" />
+    <Compile Include="Services\MailService.cs" />
+    <Compile Include="Services\MailNotifier.cs" />
     <Compile Include="Services\ReportGenerationService.cs" />
     <Compile Include="Services\AppSettingsService.cs" />
     <Compile Include="Services\LocalizationHelper.cs" />
@@ -154,6 +158,9 @@
     </Compile>
     <Compile Include="Admin\Views\WindowAdminInput.xaml.cs">
       <DependentUpon>WindowAdminInput.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Admin\Views\WindowTestItemEdit.xaml.cs">
+      <DependentUpon>WindowTestItemEdit.xaml</DependentUpon>
     </Compile>
     <Compile Include="Review\Views\WindowReview.xaml.cs">
       <DependentUpon>WindowReview.xaml</DependentUpon>
@@ -378,6 +385,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Admin\Views\WindowAdminInput.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Admin\Views\WindowTestItemEdit.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

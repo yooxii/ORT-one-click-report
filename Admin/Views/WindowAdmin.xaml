@@ -51,6 +51,7 @@
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="{lex:Loc Admin_Username}" Binding="{Binding Username}" Width="110"/>
                             <DataGridTextColumn Header="{lex:Loc Admin_DisplayName}" Binding="{Binding DisplayName}" Width="100"/>
+                            <DataGridTextColumn Header="{lex:Loc Admin_Email}" Binding="{Binding Email}" Width="150"/>
                             <DataGridTextColumn Header="{lex:Loc Admin_Role}" Binding="{Binding RolesText}" Width="*"/>
                             <DataGridTextColumn Header="{lex:Loc Admin_Status}" Binding="{Binding IsActive}" Width="55"/>
                         </DataGrid.Columns>
@@ -59,8 +60,12 @@
                 <Border Grid.Column="1" BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="1" Margin="8,0,0,0" Padding="10">
                     <StackPanel>
                         <TextBlock Text="{lex:Loc Admin_UserSettings}" FontWeight="Bold" Margin="0,0,0,8"/>
+                        <Label Content="{lex:Loc Admin_Username}"/>
+                        <TextBox x:Name="txt_username" Margin="0,0,0,8"/>
                         <Label Content="{lex:Loc Admin_DisplayNameFull}"/>
                         <TextBox x:Name="txt_displayName" Margin="0,0,0,8"/>
+                        <Label Content="{lex:Loc Admin_Email}"/>
+                        <TextBox x:Name="txt_email" Margin="0,0,0,8"/>
                         <Label Content="{lex:Loc Admin_RoleMulti}"/>
                         <CheckBox x:Name="chk_general" Content="{lex:Loc Admin_GeneralUser}" Margin="5,2"/>
                         <CheckBox x:Name="chk_tech" Content="{lex:Loc Admin_Technician}" Margin="5,2"/>
@@ -122,7 +127,7 @@
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="{lex:Loc Admin_TestExperiment}" Binding="{Binding Name}" Width="220"/>
                         <DataGridTextColumn Header="{lex:Loc Admin_TestTime}" Binding="{Binding Period}" Width="80"/>
-                        <DataGridTextColumn Header="{lex:Loc Plans_Owner}" Binding="{Binding Owner}" Width="120"/>
+                        <DataGridTextColumn Header="{lex:Loc Plans_Owner}" Binding="{Binding OwnerDisplay}" Width="120"/>
                         <DataGridTextColumn Header="{lex:Loc Admin_Remark}" Binding="{Binding Remark}" Width="*"/>
                     </DataGrid.Columns>
                 </DataGrid>

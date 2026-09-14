@@ -10,11 +10,11 @@
         WindowStartupLocation="CenterScreen">
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="20"/>
-            <RowDefinition Height="25"/>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="auto"/>
             <RowDefinition/>
-            <RowDefinition Height="30"/>
-            <RowDefinition Height="20"/>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="5"/>
         </Grid.RowDefinitions>
         <Menu VerticalContentAlignment="Center">
             <MenuItem Header="{lex:Loc Common_Open}" Click="OpenATEDatas_Click"/>
@@ -41,7 +41,7 @@
                 </DataGrid.Resources>
             </DataGrid>
         </Grid>
-        <WrapPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" ItemHeight="25" ItemWidth="90">
+        <WrapPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" ItemHeight="auto" ItemWidth="90">
             <Button x:Name="btn_reread" Content="{lex:Loc ATE_Reload}" Click="btn_reread_Click"/>
             <Separator Width="30" Background="Transparent"/>
             <Button x:Name="btn_save" Content="{lex:Loc Common_SaveAs}" Click="SaveATEDatas_Click"/>

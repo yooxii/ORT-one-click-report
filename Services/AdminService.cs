@@ -16,19 +16,21 @@ namespace ORT一键报告.Services
         public long Id { get; set; }
         public string Username { get; set; }
         public string DisplayName { get; set; }
+        public string Email { get; set; }
         public bool IsActive { get; set; }
         public DateTime CreatedAt { get; set; }
         public List<UserRole> Roles { get; set; } = [];
-        public string RolesText => string.Join("、", Roles.Select(r => RoleDisplayName(r)));
+        public string RolesText => string.Join(LanguageService.Get("Common_ListSeparator"), Roles.Select(RoleDisplayName));
 
-        public static string RoleDisplayName(UserRole role) => role switch
+        /// <summary>
+        /// 角色显示名（跟随界面语言本地化，资源缺失时回退为角色枚举名）
+        /// </summary>
+        public static string RoleDisplayName(UserRole role)
         {
-            UserRole.GeneralUser => "普通用户",
-            UserRole.Technician => "技术员",
-            UserRole.Reviewer => "审核员",
-            UserRole.Administrator => "管理员",
-            _ => role.ToString()
-        };
+            string key = "Role_" + role;
+            string text = LanguageService.Get(key);
+            return text == key ? role.ToString() : text;
+        }
     }
 
     /// <summary>
@@ -40,10 +42,12 @@ namespace ORT一键报告.Services
     {
         private readonly Logger _logger = LogManager.GetCurrentClassLogger();
         private readonly DatabaseService _db;
+        private readonly AuthService _auth;
 
-        public AdminService(DatabaseService db)
+        public AdminService(DatabaseService db, AuthService auth)
         {
             _db = db;
+            _auth = auth;
             EnsureDefaultStages();
         }
 
@@ -58,6 +62,7 @@ namespace ORT一键报告.Services
                 Id = u.Id,
                 Username = u.Username,
                 DisplayName = u.DisplayName,
+                Email = u.Email,
                 IsActive = u.IsActive,
                 CreatedAt = u.CreatedAt,
                 Roles = roles.Where(r => r.UserId == u.Id)
@@ -88,6 +93,194 @@ namespace ORT一键报告.Services
         {
             _db.FreeSql.Update<User>().Set(u => u.DisplayName, displayName).Where(u => u.Id == userId).ExecuteAffrows();
         }
+
+        /// <summary>
+        /// 更新用户登录名（唯一），返回错误信息；成功返回null
+        /// </summary>
+        public string UpdateUsername(long userId, string username)
+        {
+            username = username?.Trim();
+            if (string.IsNullOrWhiteSpace(username))
+            {
+                return LanguageService.Get("Msg_UsernameRequired");
+            }
+            if (username.Contains(' ') || username.Contains('/'))
+            {
+                return LanguageService.Get("Msg_UsernameInvalid");
+            }
+            bool exists = GetUsers().Any(u => u.Id != userId
+                && string.Equals(u.Username, username, StringComparison.OrdinalIgnoreCase));
+            if (exists)
+            {
+                return string.Format(LanguageService.Get("Msg_UsernameExists"), username);
+            }
+            _db.FreeSql.Update<User>().Set(u => u.Username, username).Where(u => u.Id == userId).ExecuteAffrows();
+            _logger.Info($"更新用户(Id={userId})登录名: {username}");
+            return null;
+        }
+
+        /// <summary>
+        /// 更新用户邮箱（技术员/审核员登录时据此判断是否需要提示完善），返回错误信息；成功返回null
+        /// </summary>
+        public string UpdateEmail(long userId, string email)
+        {
+            email = string.IsNullOrWhiteSpace(email) ? null : email.Trim();
+            if (email != null && !AuthService.IsValidEmail(email))
+            {
+                return LanguageService.Get("Msg_EmailInvalid");
+            }
+            _db.FreeSql.Update<User>().Set(u => u.Email, email).Where(u => u.Id == userId).ExecuteAffrows();
+            _logger.Info($"更新用户(Id={userId})邮箱: {email ?? "(清空)"}");
+            return null;
+        }
+
+        /// <summary>
+        /// 技术员列表（按显示名排序，供测试项目"负责人"多选使用）
+        /// </summary>
+        public List<UserView> GetTechnicians()
+            => GetUsers()
+                .Where(u => u.Roles.Contains(UserRole.Technician))
+                .OrderBy(u => string.IsNullOrWhiteSpace(u.DisplayName) ? u.Username : u.DisplayName,
+                         StringComparer.CurrentCultureIgnoreCase)
+                .ToList();
+
+        /// <summary>
+        /// 拆分测试项目负责人文本：以"/"（含全角"／"）分隔，去空白去重
+        /// </summary>
+        public static List<string> SplitOwners(string owners)
+            => string.IsNullOrWhiteSpace(owners)
+                ? []
+                : owners.Split(['/', '／'], StringSplitOptions.RemoveEmptyEntries)
+                    .Select(o => o.Trim())
+                    .Where(o => o.Length > 0)
+                    .Distinct(StringComparer.CurrentCultureIgnoreCase)
+                    .ToList();
+
+        /// <summary>
+        /// 确保指定负责人均具备技术员身份（不存在则按初始密码 123456 建号）。
+        /// 返回（新建账号数, 补充身份数）。
+        /// </summary>
+        public (int Created, int RoleAdded) EnsureTechnicianUsers(IEnumerable<string> ownerNames)
+        {
+            int created = 0, roleAdded = 0;
+            foreach (string name in ownerNames ?? [])
+            {
+                (bool isCreated, bool isRoleAdded) = _auth.EnsureTechnician(name);
+                if (isCreated)
+                {
+                    created++;
+                }
+                if (isRoleAdded)
+                {
+                    roleAdded++;
+                }
+            }
+            return (created, roleAdded);
+        }
+
+        /// <summary>
+        /// 按全部测试项目的负责人同步技术员身份（含历史数据），
+        /// 并把负责人由姓名解析为 uid 锚定（OwnerIds），同时把 Owner 文本刷成当前显示名。
+        /// 返回（新建账号数, 补充身份数）。
+        /// </summary>
+        public (int Created, int RoleAdded) SyncTechniciansFromTestItemOwners()
+        {
+            List<TestItemCatalog> items = _db.FreeSql.Select<TestItemCatalog>().ToList();
+            List<string> names = items
+                .SelectMany(t => SplitOwners(t.Owner))
+                .Distinct(StringComparer.CurrentCultureIgnoreCase)
+                .ToList();
+            (int created, int roleAdded) = EnsureTechnicianUsers(names);
+            // 解析 uid 并刷新 Owner 文本（显示名可能已修改）
+            foreach (TestItemCatalog item in items)
+            {
+                if (string.IsNullOrWhiteSpace(item.Owner) && string.IsNullOrWhiteSpace(item.OwnerIds))
+                {
+                    continue;
+                }
+                List<long> ids = ResolveOwnerIds(item.Owner);
+                string display = BuildOwnerDisplay(ids, item.Owner);
+                string idText = ids.Count > 0 ? string.Join("/", ids) : null;
+                if (idText != item.OwnerIds || display != item.Owner)
+                {
+                    _db.FreeSql.Update<TestItemCatalog>()
+                        .Set(t => t.OwnerIds, idText)
+                        .Set(t => t.Owner, display)
+                        .Where(t => t.Id == item.Id)
+                        .ExecuteAffrows();
+                }
+            }
+            if (created > 0 || roleAdded > 0)
+            {
+                _logger.Info($"按测试项目负责人同步技术员身份: 新建{created}个, 补充身份{roleAdded}个");
+            }
+            return (created, roleAdded);
+        }
+
+        /// <summary>
+        /// 负责人姓名 → 账号Id（按显示名/登录名匹配，已存在则取其 uid）
+        /// </summary>
+        public List<long> ResolveOwnerIds(string ownerNames)
+        {
+            List<User> users = _db.FreeSql.Select<User>().ToList();
+            List<long> ids = [];
+            foreach (string name in SplitOwners(ownerNames))
+            {
+                User user = users.FirstOrDefault(u => string.Equals(u.DisplayName, name, StringComparison.CurrentCultureIgnoreCase))
+                    ?? users.FirstOrDefault(u => string.Equals(u.Username, name, StringComparison.OrdinalIgnoreCase));
+                if (user != null && !ids.Contains(user.Id))
+                {
+                    ids.Add(user.Id);
+                }
+            }
+            return ids;
+        }
+
+        /// <summary>
+        /// 负责人 uid 列表 → 显示名文本（多个以"/"分隔）；uid 缺失时回退到原始姓名文本
+        /// </summary>
+        public string BuildOwnerDisplay(IEnumerable<long> ownerIds, string fallbackNames = null)
+        {
+            List<long> ids = ownerIds?.ToList() ?? [];
+            if (ids.Count == 0)
+            {
+                return string.IsNullOrWhiteSpace(fallbackNames) ? null : fallbackNames.Trim();
+            }
+            Dictionary<long, string> names = _db.FreeSql.Select<User>().ToList().ToDictionary(
+                u => u.Id,
+                u => string.IsNullOrWhiteSpace(u.DisplayName) ? u.Username : u.DisplayName);
+            List<string> display = [];
+            foreach (long id in ids)
+            {
+                if (names.TryGetValue(id, out string name) && !display.Contains(name))
+                {
+                    display.Add(name);
+                }
+            }
+            return display.Count > 0 ? string.Join("/", display) : fallbackNames;
+        }
+
+        /// <summary>
+        /// 解析负责人显示文本：优先按 OwnerIds 取当前显示名，其次回退到 Owner 文本
+        /// </summary>
+        public string ResolveOwnerDisplay(TestItemCatalog item)
+        {
+            List<long> ids = ParseOwnerIds(item.OwnerIds);
+            if (ids.Count > 0)
+            {
+                string display = BuildOwnerDisplay(ids, item.Owner);
+                if (!string.IsNullOrWhiteSpace(display))
+                {
+                    return display;
+                }
+            }
+            return item.Owner;
+        }
+
+        private static List<long> ParseOwnerIds(string ownerIds)
+            => string.IsNullOrWhiteSpace(ownerIds)
+                ? []
+                : SplitOwners(ownerIds).Select(s => long.TryParse(s, out long id) ? id : 0).Where(id => id > 0).ToList();
 
         /* ###############################  客户管理（整合产品别）  ################################ */
 
@@ -236,9 +429,51 @@ namespace ORT一键报告.Services
 
         /* ###############################  测试项目管理  ################################ */
 
+        /// <summary>
+        /// 测试项目列表（负责人按 uid 解析出当前显示名填入 OwnerDisplay 供界面展示）
+        /// </summary>
         public List<TestItemCatalog> GetTestItems()
-            => _db.FreeSql.Select<TestItemCatalog>().OrderBy(t => t.Name).ToList();
+        {
+            List<TestItemCatalog> items = _db.FreeSql.Select<TestItemCatalog>().OrderBy(t => t.Name).ToList();
+            Dictionary<long, string> userNames = _db.FreeSql.Select<User>().ToList().ToDictionary(
+                u => u.Id,
+                u => string.IsNullOrWhiteSpace(u.DisplayName) ? u.Username : u.DisplayName);
+            foreach (TestItemCatalog item in items)
+            {
+                item.OwnerDisplay = BuildOwnerDisplayFromMap(item, userNames);
+            }
+            return items;
+        }
 
+        /// <summary>
+        /// 按已加载的用户字典解析负责人显示名（优先 OwnerIds，回退 Owner 文本）
+        /// </summary>
+        private static string BuildOwnerDisplayFromMap(TestItemCatalog item, Dictionary<long, string> userNames)
+        {
+            List<long> ids = ParseOwnerIds(item.OwnerIds);
+            if (ids.Count > 0)
+            {
+                List<string> display = [];
+                foreach (long id in ids)
+                {
+                    if (userNames.TryGetValue(id, out string name) && !display.Contains(name))
+                    {
+                        display.Add(name);
+                    }
+                }
+                if (display.Count > 0)
+                {
+                    return string.Join("/", display);
+                }
+            }
+            return item.Owner;
+        }
+
+        /// <summary>
+        /// 新增或更新测试项目，返回错误信息；成功返回null。
+        /// 负责人（多个以"/"分隔）会立即解析为 uid 锚定（OwnerIds 落库），
+        /// 账号不存在时由调用方通过 <see cref="SyncTechniciansFromTestItemOwners"/> 创建。
+        /// </summary>
         public string SaveTestItem(TestItemCatalog item)
         {
             if (string.IsNullOrWhiteSpace(item.Name))
@@ -251,6 +486,11 @@ namespace ORT一键报告.Services
             {
                 return $"测试项目 [{item.Name}] 已存在";
             }
+            // 负责人姓名 → uid 锚定；同时把 Owner 文本规范为当前显示名
+            List<long> ids = ResolveOwnerIds(item.Owner);
+            item.OwnerIds = ids.Count > 0 ? string.Join("/", ids) : null;
+            item.Owner = BuildOwnerDisplay(ids, item.Owner);
+            item.OwnerDisplay = item.Owner;
             if (item.Id == 0)
             {
                 _db.FreeSql.Insert(item).ExecuteAffrows();

@@ -39,6 +39,9 @@
                         <TreeViewItem Header="{lex:Loc Settings_RequisitionPath}" Tag="sec_requisition"/>
                         <TreeViewItem Header="{lex:Loc Settings_ReportPath}" Tag="sec_report"/>
                     </TreeViewItem>
+                    <TreeViewItem Header="{lex:Loc Settings_Mail}" IsExpanded="True" Tag="sec_mail">
+                        <TreeViewItem Header="{lex:Loc Settings_MailTemplates}" Tag="sec_mail_template"/>
+                    </TreeViewItem>
                 </TreeView>
             </DockPanel>
         </Border>
@@ -116,12 +119,27 @@
                                 <ColumnDefinition/>
                                 <ColumnDefinition Width="16"/>
                                 <ColumnDefinition Width="80"/>
-                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="120"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="{lex:Loc Settings_FontFamily}" VerticalAlignment="Center"/>
                             <ComboBox x:Name="cb_fontFamily" Grid.Column="1" VerticalContentAlignment="Center"/>
                             <TextBlock Text="{lex:Loc Settings_FontSize}" Grid.Column="3" VerticalAlignment="Center"/>
                             <ComboBox x:Name="cb_fontSize" Grid.Column="4" VerticalContentAlignment="Center" IsEditable="True"/>
+                        </Grid>
+                        <Grid Margin="0,10,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="80"/>
+                                <ColumnDefinition Width="200"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{lex:Loc Settings_FontWeight}" VerticalAlignment="Center"
+                                       ToolTip="{lex:Loc Settings_FontWeightHint}"/>
+                            <ComboBox x:Name="cb_fontWeight" Grid.Column="1" VerticalContentAlignment="Center" SelectedValuePath="Code">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding DisplayName}"/>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
                         </Grid>
                         <Grid Margin="0,10,0,0">
                             <Grid.ColumnDefinitions>
@@ -246,6 +264,147 @@
                     </StackPanel>
                 </Border>
 
+                <!--邮件服务（发件账号 + 触发规则）-->
+                <Border x:Name="sec_mail" Padding="0,10">
+                    <StackPanel>
+                        <TextBlock Text="{lex:Loc Settings_Mail}" FontSize="16" FontWeight="SemiBold"/>
+                        <TextBlock Text="{lex:Loc Settings_MailHint}" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="0,2,0,8"/>
+
+                        <CheckBox x:Name="chk_mailEnabled" Content="{lex:Loc Settings_MailEnabled}" Margin="0,2,0,8"/>
+                        <CheckBox x:Name="chk_mailNoticeEnabled" Content="{lex:Loc Settings_MailNoticeEnabled}" Margin="0,2,0,8"/>
+                        <CheckBox x:Name="chk_mailWarningEnabled" Content="{lex:Loc Settings_MailWarningEnabled}" Margin="0,2,0,8"/>
+
+                        <Grid Margin="0,4,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="110"/>
+                                <ColumnDefinition/>
+                                <ColumnDefinition Width="16"/>
+                                <ColumnDefinition Width="80"/>
+                                <ColumnDefinition Width="110"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{lex:Loc Settings_MailHost}" VerticalAlignment="Center"/>
+                            <TextBox x:Name="txt_mailHost" Grid.Column="1" VerticalContentAlignment="Center"/>
+                            <TextBlock Text="{lex:Loc Settings_MailPort}" Grid.Column="3" VerticalAlignment="Center"/>
+                            <TextBox x:Name="txt_mailPort" Grid.Column="4" VerticalContentAlignment="Center"/>
+                        </Grid>
+
+                        <Grid Margin="0,8,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="110"/>
+                                <ColumnDefinition Width="220"/>
+                                <ColumnDefinition Width="16"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{lex:Loc Settings_MailSecurity}" VerticalAlignment="Center" ToolTip="{lex:Loc Settings_MailSecurityHint}"/>
+                            <ComboBox x:Name="cb_mailSecurity" Grid.Column="1" VerticalContentAlignment="Center">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding DisplayName}"/>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                            <CheckBox x:Name="chk_mailIgnoreCert" Grid.Column="3" Content="{lex:Loc Settings_MailIgnoreCert}" VerticalAlignment="Center"/>
+                        </Grid>
+
+                        <Grid Margin="0,8,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="110"/>
+                                <ColumnDefinition/>
+                                <ColumnDefinition Width="16"/>
+                                <ColumnDefinition Width="80"/>
+                                <ColumnDefinition Width="110"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{lex:Loc Settings_MailUser}" VerticalAlignment="Center"/>
+                            <TextBox x:Name="txt_mailUser" Grid.Column="1" VerticalContentAlignment="Center"/>
+                            <TextBlock Text="{lex:Loc Settings_MailPassword}" Grid.Column="3" VerticalAlignment="Center"/>
+                            <PasswordBox x:Name="txt_mailPassword" Grid.Column="4" VerticalContentAlignment="Center"/>
+                        </Grid>
+
+                        <CheckBox x:Name="chk_mailDefaultCred" Content="{lex:Loc Settings_MailDefaultCred}" Margin="0,8,0,0" ToolTip="{lex:Loc Settings_MailDefaultCredHint}"/>
+
+                        <Grid Margin="0,8,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="110"/>
+                                <ColumnDefinition/>
+                                <ColumnDefinition Width="16"/>
+                                <ColumnDefinition Width="80"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{lex:Loc Settings_MailFrom}" VerticalAlignment="Center"/>
+                            <TextBox x:Name="txt_mailFrom" Grid.Column="1" VerticalContentAlignment="Center"/>
+                            <TextBlock Text="{lex:Loc Settings_MailFromName}" Grid.Column="3" VerticalAlignment="Center"/>
+                            <TextBox x:Name="txt_mailFromName" Grid.Column="4" VerticalContentAlignment="Center"/>
+                        </Grid>
+
+                        <Grid Margin="0,8,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="110"/>
+                                <ColumnDefinition/>
+                                <ColumnDefinition Width="16"/>
+                                <ColumnDefinition Width="80"/>
+                                <ColumnDefinition Width="90"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{lex:Loc Settings_MailCc}" VerticalAlignment="Center" ToolTip="{lex:Loc Settings_MailCcHint}"/>
+                            <TextBox x:Name="txt_mailCc" Grid.Column="1" VerticalContentAlignment="Center"/>
+                            <TextBlock Text="{lex:Loc Settings_MailTimeout}" Grid.Column="3" VerticalAlignment="Center"/>
+                            <TextBox x:Name="txt_mailTimeout" Grid.Column="4" VerticalContentAlignment="Center"/>
+                        </Grid>
+
+                        <Grid Margin="0,8,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="110"/>
+                                <ColumnDefinition Width="90"/>
+                                <ColumnDefinition Width="16"/>
+                                <ColumnDefinition Width="110"/>
+                                <ColumnDefinition Width="90"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{lex:Loc Settings_MailDaysBefore}" VerticalAlignment="Center" ToolTip="{lex:Loc Settings_MailDaysBeforeHint}"/>
+                            <TextBox x:Name="txt_mailDaysBefore" Grid.Column="1" VerticalContentAlignment="Center"/>
+                            <TextBlock Text="{lex:Loc Settings_MailDedupe}" Grid.Column="3" VerticalAlignment="Center" ToolTip="{lex:Loc Settings_MailDedupeHint}"/>
+                            <TextBox x:Name="txt_mailDedupe" Grid.Column="4" VerticalContentAlignment="Center"/>
+                        </Grid>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                            <CheckBox x:Name="chk_mailIncludeOverdue" Content="{lex:Loc Settings_MailIncludeOverdue}" Margin="0,0,16,0"/>
+                            <CheckBox x:Name="chk_mailHtml" Content="{lex:Loc Settings_MailHtml}"/>
+                        </StackPanel>
+
+                        <TextBlock Text="{lex:Loc Settings_MailCcAdmin}" Margin="0,10,0,4" ToolTip="{lex:Loc Settings_MailCcAdminHint}"/>
+                        <StackPanel x:Name="panel_mailCcAdmin" Orientation="Horizontal"/>
+
+                        <Grid Margin="0,12,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="110"/>
+                                <ColumnDefinition Width="220"/>
+                                <ColumnDefinition Width="16"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{lex:Loc Settings_MailTestTo}" VerticalAlignment="Center"/>
+                            <TextBox x:Name="txt_mailTestTo" Grid.Column="1" VerticalContentAlignment="Center"/>
+                            <StackPanel Grid.Column="3" Orientation="Horizontal">
+                                <Button x:Name="btn_mailTest" Content="{lex:Loc Settings_MailSendTest}" Padding="10,3" Click="Btn_MailTest_Click"/>
+                                <Button x:Name="btn_mailCheck" Content="{lex:Loc Settings_MailRunCheck}" Padding="10,3" Margin="10,0,0,0" Click="Btn_MailCheck_Click"
+                                        ToolTip="{lex:Loc Settings_MailRunCheckHint}"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <TextBlock Text="{lex:Loc Settings_MailLogs}" Margin="0,12,0,4"/>
+                        <TextBox x:Name="txt_mailLogs" Height="90" IsReadOnly="True" AcceptsReturn="True"
+                                 VerticalScrollBarVisibility="Auto" TextWrapping="NoWrap"
+                                 FontFamily="{DynamicResource FontFamilyData}"/>
+                    </StackPanel>
+                </Border>
+
+                <!--邮件模板-->
+                <Border x:Name="sec_mail_template" Padding="0,10">
+                    <StackPanel>
+                        <TextBlock Text="{lex:Loc Settings_MailTemplates}" FontSize="16" FontWeight="SemiBold"/>
+                        <TextBlock Text="{lex:Loc Settings_MailTemplatesHint}" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="0,2,0,8"/>
+                        <StackPanel x:Name="panel_mailTemplates"/>
+                    </StackPanel>
+                </Border>
+
                 <Border Padding="0,20,0,40"/>
             </StackPanel>
         </ScrollViewer>
@@ -254,9 +413,9 @@
         <!--底部：保存/应用/取消--> 
         <Border Grid.Row="1" BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="0,1,0,0" Padding="16,10">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                <Button x:Name="btn_save" Content="{lex:Loc Common_Save}" Width="90" Height="30" Click="Btn_Save_Click" IsDefault="True"/>
-                <Button x:Name="btn_apply" Content="{lex:Loc Common_Apply}" Width="90" Height="30" Margin="10,0,0,0" Click="Btn_Apply_Click"/>
-                <Button x:Name="btn_cancel" Content="{lex:Loc Common_Cancel}" Width="90" Height="30" Margin="10,0,0,0" Click="Btn_Cancel_Click" IsCancel="True"/>
+                <Button x:Name="btn_save" Content="{lex:Loc Common_Save}" Width="90" Click="Btn_Save_Click" IsDefault="True"/>
+                <Button x:Name="btn_apply" Content="{lex:Loc Common_Apply}" Width="90" Margin="10,0,0,0" Click="Btn_Apply_Click"/>
+                <Button x:Name="btn_cancel" Content="{lex:Loc Common_Cancel}" Width="90" Margin="10,0,0,0" Click="Btn_Cancel_Click" IsCancel="True"/>
             </StackPanel>
         </Border>
     </Grid>

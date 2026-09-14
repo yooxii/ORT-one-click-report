@@ -95,7 +95,6 @@
         <Setter Property="Padding" Value="4,3"/>
         <Setter Property="VerticalContentAlignment" Value="Center"/>
         <Setter Property="SnapsToDevicePixels" Value="True"/>
-        <Setter Property="FontWeight" Value="Medium"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="TextBox">
@@ -178,131 +177,424 @@
 
     <!-- ==================== DatePickerTextBox ==================== -->
     <!-- 隐式全局样式：DatePicker 内部文本框自动应用（模板内无需再 StaticResource 按名引用） -->
+    <!-- 边框/背景由外层 DatePicker 模板统一绘制，这里保持无边框透明，避免双层边框 -->
     <Style TargetType="DatePickerTextBox">
-        <Setter Property="Background" Value="{DynamicResource InputBackgroundBrush}"/>
-        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource InputBorderBrush}"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="{DynamicResource InputForegroundBrush}"/>
+        <Setter Property="CaretBrush" Value="{DynamicResource TextPrimaryBrush}"/>
+        <Setter Property="SelectionBrush" Value="{DynamicResource PrimaryBrush}"/>
+        <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
-        <Setter Property="Padding" Value="4,2"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Padding" Value="6,3"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type DatePickerTextBox}">
-                    <Border x:Name="Border" 
+                    <Border Background="{TemplateBinding Background}"
+                            BorderThickness="0"
+                            SnapsToDevicePixels="True">
+                        <ScrollViewer x:Name="PART_ContentHost"
+                                      Margin="{TemplateBinding Padding}"
+                                      VerticalAlignment="Center"
+                                      Focusable="False"
+                                      HorizontalScrollBarVisibility="Hidden"
+                                      VerticalScrollBarVisibility="Hidden"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ==================== DatePicker ==================== -->
+    <!-- 隐式全局样式：全应用 DatePicker 自动生效（编辑期无需按名 StaticResource 引用，避免找不到资源键）。
+         布局：左列文本区（点击进入输入）、右列整块日历按钮区（整列可点，避免只点中小图标才响应）。 -->
+    <Style TargetType="{x:Type DatePicker}">
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource InputBackgroundBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource InputBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="IsTodayHighlighted" Value="True"/>
+        <Setter Property="SelectedDateFormat" Value="Short"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        <!-- DatePicker 弹层日历：显式引用主题日历样式（隐式样式无法可靠传递到弹层 Calendar） -->
+        <Setter Property="CalendarStyle" Value="{DynamicResource ThemedCalendarStyle}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type DatePicker}">
+                    <Border x:Name="OuterBorder"
                             Background="{TemplateBinding Background}"
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}"
-                            CornerRadius="4"
+                            CornerRadius="{DynamicResource CornerRadiusSmall}"
                             SnapsToDevicePixels="True">
-                        <ScrollViewer x:Name="PART_ContentHost" 
-                                      Margin="0"
-                                      Focusable="False" 
-                                      HorizontalScrollBarVisibility="Hidden" 
-                                      VerticalScrollBarVisibility="Hidden"/>
+                        <Grid x:Name="PART_Root"
+                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="28"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- ⭐ 关键：DatePickerTextBox 隐式全局样式自动应用，无需显式引用 -->
+                            <DatePickerTextBox x:Name="PART_TextBox"
+                                               Grid.Column="0"
+                                               Focusable="{TemplateBinding Focusable}"
+                                               HorizontalContentAlignment="Stretch"
+                                               VerticalContentAlignment="Stretch"/>
+
+                            <!-- 日历按钮：占满右侧整列（含整块高度），点击任一位置都能展开日历 -->
+                            <Button x:Name="PART_Button"
+                                    Grid.Column="1"
+                                    Padding="0"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    Focusable="False"
+                                    Cursor="Hand">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="{x:Type Button}">
+                                        <Border x:Name="IconBox"
+                                                Background="Transparent"
+                                                CornerRadius="{DynamicResource CornerRadiusSmall}"
+                                                Margin="2,2,2,2">
+                                            <TextBlock x:Name="IconGlyph"
+                                                       Text="&#xE787;"
+                                                       FontFamily="Segoe MDL2 Assets"
+                                                       FontSize="14"
+                                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                                       HorizontalAlignment="Center"
+                                                       VerticalAlignment="Center"
+                                                       SnapsToDevicePixels="True"/>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="IconBox" Property="Background" Value="{DynamicResource ItemHoverBrush}"/>
+                                                <Setter TargetName="IconGlyph" Property="Foreground" Value="{DynamicResource PrimaryBrush}"/>
+                                            </Trigger>
+                                            <Trigger Property="IsPressed" Value="True">
+                                                <Setter TargetName="IconBox" Property="Background" Value="{DynamicResource ItemSelectedBrush}"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Button.Template>
+                            </Button>
+
+                            <Popup x:Name="PART_Popup"
+                                   AllowsTransparency="True"
+                                   Placement="Bottom"
+                                   PlacementTarget="{Binding ElementName=PART_TextBox}"
+                                   StaysOpen="False"/>
+                        </Grid>
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Border" Property="BorderBrush" Value="#4A90D9"/>
+                            <Setter TargetName="OuterBorder" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
                         </Trigger>
-                        <Trigger Property="IsFocused" Value="True">
-                            <Setter TargetName="Border" Property="BorderBrush" Value="#2B7CD3"/>
-                            <Setter TargetName="Border" Property="Background" Value="#F8FBFF"/>
+                        <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                            <Setter TargetName="OuterBorder" Property="BorderBrush" Value="{DynamicResource InputFocusBorderBrush}"/>
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
-                            <Setter TargetName="Border" Property="Opacity" Value="0.5"/>
+                            <Setter TargetName="OuterBorder" Property="Opacity" Value="{DynamicResource DisabledOpacity}"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
     </Style>
-    
-    <!-- ==================== DatePicker ==================== -->
-    <!-- 隐式全局样式：全应用 DatePicker 自动生效（编辑期无需按名 StaticResource 引用，避免找不到资源键） -->
-    <Style TargetType="{x:Type DatePicker}">
-        <Setter Property="Foreground" Value="#333333"/>
-        <Setter Property="IsTodayHighlighted" Value="True"/>
-        <Setter Property="SelectedDateFormat" Value="Short"/>
-        <Setter Property="Padding" Value="0"/>
-        <Setter Property="BorderThickness" Value="0"/>
-        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-        <Setter Property="CalendarStyle" Value="{DynamicResource {x:Type Calendar}}"/>
+
+    <!-- ==================== Calendar（DatePicker 弹层） ==================== -->
+    <!-- 日历标题栏按钮：上/下月（Mdl2 字形） -->
+    <Style x:Key="CalendarNavButton" TargetType="{x:Type Button}">
+        <Setter Property="Width" Value="26"/>
+        <Setter Property="Height" Value="26"/>
+        <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Focusable" Value="False"/>
         <Setter Property="Template">
             <Setter.Value>
-                <ControlTemplate TargetType="{x:Type DatePicker}">
-                    <Border x:Name="OuterBorder"
+                <ControlTemplate TargetType="{x:Type Button}">
+                    <Border x:Name="bd" Background="Transparent" CornerRadius="{DynamicResource CornerRadiusSmall}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource ItemHoverBrush}"/>
+                            <Setter Property="Foreground" Value="{DynamicResource PrimaryBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource ItemSelectedBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="{DynamicResource DisabledOpacity}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- 月份/年份标题按钮（点击在月视图与年视图间切换） -->
+    <Style x:Key="CalendarHeaderButton" TargetType="{x:Type Button}">
+        <Setter Property="Height" Value="26"/>
+        <Setter Property="Padding" Value="10,0"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Focusable" Value="False"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Button}">
+                    <Border x:Name="bd" Background="Transparent" CornerRadius="{DynamicResource CornerRadiusSmall}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource ItemHoverBrush}"/>
+                            <Setter Property="Foreground" Value="{DynamicResource PrimaryBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource ItemSelectedBrush}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- 日期单元格 -->
+    <Style x:Key="ThemedCalendarDayButtonStyle" TargetType="{x:Type CalendarDayButton}">
+        <Setter Property="MinWidth" Value="30"/>
+        <Setter Property="MinHeight" Value="28"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Focusable" Value="False"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type CalendarDayButton}">
+                    <Border x:Name="bd" Background="Transparent"
+                            BorderBrush="Transparent" BorderThickness="1"
+                            CornerRadius="{DynamicResource CornerRadiusSmall}"
+                            Margin="1"
+                            SnapsToDevicePixels="True">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsInactive" Value="True">
+                            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+                            <Setter Property="Opacity" Value="0.5"/>
+                        </Trigger>
+                        <Trigger Property="IsToday" Value="True">
+                            <Setter TargetName="bd" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource ItemHoverBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource PrimaryBrush}"/>
+                            <Setter TargetName="bd" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                            <Setter Property="Foreground" Value="{DynamicResource PrimaryForegroundBrush}"/>
+                            <Setter Property="Opacity" Value="1"/>
+                        </Trigger>
+                        <Trigger Property="IsBlackedOut" Value="True">
+                            <Setter Property="Opacity" Value="0.35"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="{DynamicResource DisabledOpacity}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style TargetType="{x:Type CalendarDayButton}" BasedOn="{StaticResource ThemedCalendarDayButtonStyle}"/>
+
+    <!-- 年视图里的月份/年份单元格 -->
+    <Style x:Key="ThemedCalendarButtonStyle" TargetType="{x:Type CalendarButton}">
+        <Setter Property="MinWidth" Value="48"/>
+        <Setter Property="MinHeight" Value="42"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Focusable" Value="False"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type CalendarButton}">
+                    <Border x:Name="bd" Background="Transparent"
+                            BorderBrush="Transparent" BorderThickness="1"
+                            CornerRadius="{DynamicResource CornerRadiusSmall}"
+                            Margin="1"
+                            SnapsToDevicePixels="True">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsInactive" Value="True">
+                            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+                            <Setter Property="Opacity" Value="0.5"/>
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource ItemHoverBrush}"/>
+                        </Trigger>
+                        <Trigger Property="HasSelectedDays" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource ItemSelectedBrush}"/>
+                            <Setter TargetName="bd" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                            <Setter Property="Foreground" Value="{DynamicResource PrimaryBrush}"/>
+                            <Setter Property="Opacity" Value="1"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="{DynamicResource DisabledOpacity}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style TargetType="{x:Type CalendarButton}" BasedOn="{StaticResource ThemedCalendarButtonStyle}"/>
+
+    <!-- 日历主体（标题栏 + 月/年网格），颜色全部走主题语义键 -->
+    <Style x:Key="ThemedCalendarItemStyle" TargetType="{x:Type CalendarItem}">
+        <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
+        <Setter Property="BorderBrush" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type CalendarItem}">
+                    <ControlTemplate.Resources>
+                        <!-- 星期标题模板（CalendarItem 在模板资源中按此键查找） -->
+                        <DataTemplate x:Key="{x:Static CalendarItem.DayTitleTemplateResourceKey}">
+                            <TextBlock Text="{Binding}"
+                                       FontSize="11"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       Margin="0,4,0,4"/>
+                        </DataTemplate>
+                        <!-- 日期/月份单元格由 CalendarItem 代码创建，需从模板资源中取隐式样式 -->
+                        <Style TargetType="{x:Type CalendarDayButton}" BasedOn="{StaticResource ThemedCalendarDayButtonStyle}"/>
+                        <Style TargetType="{x:Type CalendarButton}" BasedOn="{StaticResource ThemedCalendarButtonStyle}"/>
+                    </ControlTemplate.Resources>
+                    <Grid x:Name="PART_Root">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="{DynamicResource CornerRadiusSmall}"
+                                Padding="8,6,8,8"
+                                SnapsToDevicePixels="True">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+
+                                <!--标题栏：上月 / 月份标题 / 下月-->
+                                <Grid x:Name="PART_Header" Grid.Row="0" Margin="0,0,0,4">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Button x:Name="PART_PreviousButton" Grid.Column="0"
+                                            Style="{StaticResource CalendarNavButton}"
+                                            Content="&#xE76B;"/>
+                                    <Button x:Name="PART_HeaderButton" Grid.Column="1"
+                                            Style="{StaticResource CalendarHeaderButton}"/>
+                                    <Button x:Name="PART_NextButton" Grid.Column="2"
+                                            Style="{StaticResource CalendarNavButton}"
+                                            Content="&#xE76C;"/>
+                                </Grid>
+
+                                <Grid x:Name="PART_MonthView" Grid.Row="1" Visibility="Visible">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
+                                </Grid>
+
+                                <Grid x:Name="PART_YearView" Grid.Row="1" Visibility="Hidden">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
+                                </Grid>
+                            </Grid>
+                        </Border>
+                        <Rectangle x:Name="PART_DisabledVisual"
+                                   Fill="{DynamicResource CardBackgroundBrush}"
+                                   Opacity="0"
+                                   IsHitTestVisible="False"/>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style TargetType="{x:Type CalendarItem}" BasedOn="{StaticResource ThemedCalendarItemStyle}"/>
+
+    <!-- 日历外框：圆角卡片 + 阴影，跟随主题 -->
+    <Style x:Key="ThemedCalendarStyle" TargetType="{x:Type Calendar}">
+        <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderSubtleBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+        <!-- 日期/月份单元格由日历代码创建，必须显式下发样式才会生效 -->
+        <Setter Property="CalendarDayButtonStyle" Value="{StaticResource ThemedCalendarDayButtonStyle}"/>
+        <Setter Property="CalendarButtonStyle" Value="{StaticResource ThemedCalendarButtonStyle}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Calendar}">
+                    <Border Background="{TemplateBinding Background}"
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}"
-                            Background="{TemplateBinding Background}"
-                            Padding="{TemplateBinding Padding}">
-                        <Grid x:Name="PART_Root" 
-                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" 
-                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-
-                            <!-- ⭐ 关键：DatePickerTextBox 隐式全局样式自动应用，无需显式引用 -->
-                            <DatePickerTextBox x:Name="PART_TextBox" 
-                                               Grid.Column="0"
-                                               Focusable="{TemplateBinding Focusable}" 
-                                               HorizontalContentAlignment="Stretch" 
-                                               VerticalContentAlignment="Stretch"/>
-
-                            <Button x:Name="PART_Button" 
-                                    Grid.Column="1"
-                                    Foreground="{TemplateBinding Foreground}" 
-                                    Focusable="False" 
-                                    HorizontalAlignment="Right" 
-                                    Margin="3,0,3,0" 
-                                    Grid.Row="0" 
-                                    VerticalAlignment="Center">
-                                <Button.Template>
-                                    <ControlTemplate TargetType="{x:Type Button}">
-                                        <Grid>
-                                            <VisualStateManager.VisualStateGroups>
-                                                <VisualStateGroup x:Name="CommonStates">
-                                                    <VisualState x:Name="Normal"/>
-                                                    <VisualState x:Name="MouseOver">
-                                                        <Storyboard>
-                                                            <ColorAnimationUsingKeyFrames Storyboard.TargetProperty="(Shape.Fill).(SolidColorBrush.Color)" 
-                                                                                          Storyboard.TargetName="IconPath">
-                                                                <EasingColorKeyFrame KeyTime="0" Value="#2B7CD3"/>
-                                                            </ColorAnimationUsingKeyFrames>
-                                                        </Storyboard>
-                                                    </VisualState>
-                                                </VisualStateGroup>
-                                            </VisualStateManager.VisualStateGroups>
-                                            <Path x:Name="IconPath" 
-                                                  Data="M11.428571,4.2857143 L11.428571,10 2,10 2,4.2857143 z M12,0 L12,3.7142857 0.57142857,3.7142857 0.57142857,0 z M13.714286,4.8571428 L13.714286,12 13.142857,12 13.142857,11.428571 0.57142857,11.428571 0.57142857,12 0,12 0,4.8571428 z" 
-                                                  Fill="#FF666666" 
-                                                  Height="12" 
-                                                  Margin="0,0,3,0" 
-                                                  Stretch="Fill" 
-                                                  Width="14"/>
-                                        </Grid>
-                                    </ControlTemplate>
-                                </Button.Template>
-                            </Button>
-
-                            <Popup x:Name="PART_Popup" 
-                                   AllowsTransparency="True" 
-                                   Placement="Bottom" 
-                                   PlacementTarget="{Binding ElementName=PART_TextBox}" 
-                                   StaysOpen="False"/>
-                        </Grid>
+                            CornerRadius="{DynamicResource CornerRadiusSmall}"
+                            SnapsToDevicePixels="True">
+                        <Border.Effect>
+                            <DropShadowEffect BlurRadius="12" ShadowDepth="2" Opacity="0.25"/>
+                        </Border.Effect>
+                        <CalendarItem x:Name="PART_CalendarItem"
+                                      Style="{StaticResource ThemedCalendarItemStyle}"
+                                      Background="Transparent"
+                                      BorderThickness="0"
+                                      Foreground="{TemplateBinding Foreground}"/>
                     </Border>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
     </Style>
 
+    <!-- 隐式样式：独立使用的 Calendar 也套用同一外观 -->
+    <Style TargetType="{x:Type Calendar}" BasedOn="{StaticResource ThemedCalendarStyle}"/>
+
     <!-- ==================== Label ==================== -->
     <Style TargetType="Label">
         <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
         <Setter Property="Padding" Value="4,2"/>
         <Setter Property="VerticalContentAlignment" Value="Center"/>
-        <Setter Property="FontWeight" Value="Medium"/>
     </Style>
 
     <!-- ==================== ComboBox ==================== -->
@@ -316,8 +608,15 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ComboBox">
+                    <!--分两列：左侧文本/编辑区、右侧下拉箭头区。
+                        可编辑时 PART_EditableTextBox 只占左列，避免盖住箭头导致点箭头变成编辑-->
                     <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="26"/>
+                        </Grid.ColumnDefinitions>
                         <ToggleButton x:Name="toggle"
+                                      Grid.ColumnSpan="2"
                                       Focusable="False"
                                       ClickMode="Press"
                                       IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
@@ -348,6 +647,7 @@
                             </ToggleButton.Template>
                         </ToggleButton>
                         <ContentPresenter x:Name="content"
+                                          Grid.Column="0"
                                           IsHitTestVisible="False"
                                           Content="{TemplateBinding SelectionBoxItem}"
                                           ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
@@ -355,6 +655,7 @@
                                           Margin="{TemplateBinding Padding}"
                                           VerticalAlignment="Center"/>
                         <TextBox x:Name="PART_EditableTextBox"
+                                 Grid.Column="0"
                                  Style="{StaticResource ComboBoxEditableTextBox}"
                                  Visibility="Collapsed"
                                  IsReadOnly="{TemplateBinding IsReadOnly}"

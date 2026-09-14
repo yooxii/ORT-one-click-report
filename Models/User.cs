@@ -43,6 +43,12 @@ namespace ORT一键报告.Models
         public string DisplayName { get; set; }
 
         /// <summary>
+        /// 邮箱（技术员/审核员登录时若为空会提示完善）
+        /// </summary>
+        [Column(StringLength = 128, IsNullable = true)]
+        public string Email { get; set; }
+
+        /// <summary>
         /// 密码散列 SHA256(Salt+密码)
         /// </summary>
         [Column(StringLength = 128, IsNullable = false)]

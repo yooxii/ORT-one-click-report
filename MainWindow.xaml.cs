@@ -25,6 +25,13 @@ namespace ORT一键报告
         private readonly IPermissionService _permission;
         private readonly ReviewService _reviewService;
         private readonly AppSettingsService _appSettings;
+        private readonly MailNotifier _mailNotifier;
+
+        /// <summary>计划结束日期提醒的定时检查（每 6 小时一次）</summary>
+        private readonly System.Windows.Threading.DispatcherTimer _mailTimer = new()
+        {
+            Interval = TimeSpan.FromHours(6)
+        };
 
         public MainViewModel MainVM { get; set; }
 
@@ -36,18 +43,41 @@ namespace ORT一键报告
             _permission = App.ServiceProvider.GetRequiredService<IPermissionService>();
             _reviewService = App.ServiceProvider.GetRequiredService<ReviewService>();
             _appSettings = App.ServiceProvider.GetRequiredService<AppSettingsService>();
+            _mailNotifier = App.ServiceProvider.GetRequiredService<MailNotifier>();
 
             MainVM = App.ServiceProvider.GetRequiredService<MainViewModel>();
             DataContext = MainVM;
             MainVM.SubscribeLanguageChange();
+            // 语言切换时刷新菜单文案与左下角用户身份信息
+            LanguageService.LanguageChanged += () => Dispatcher.Invoke(UpdateUIByPermission);
 
             Loaded += (s, e) => Activate();
-            // 启动时应用设置字体，并在设置变更时实时刷新
+            // 启动时应用设置字体，并在设置变更时实时刷新所有已打开窗口
             Loaded += (s, e) => _appSettings.ApplyFont(this);
-            _appSettings.SettingsChanged += () => Dispatcher.Invoke(() => _appSettings.ApplyFont(this));
+            _appSettings.SettingsChanged += () => Dispatcher.Invoke(() => _appSettings.ApplyFontToAll());
 
             _auth.AuthChanged += () => Dispatcher.Invoke(UpdateUIByPermission);
             Loaded += (s, e) => UpdateUIByPermission();
+            Loaded += (s, e) => StartMailReminder();
+            Closed += (s, e) => _mailTimer.Stop();
+        }
+
+        /// <summary>
+        /// 启动后台邮件提醒：延迟首次检查（避免拖慢启动），之后每 6 小时检查一次
+        /// </summary>
+        private async void StartMailReminder()
+        {
+            try
+            {
+                _mailTimer.Tick += (s, e) => _mailNotifier.CheckPlanDeadlinesInBackground();
+                _mailTimer.Start();
+                await System.Threading.Tasks.Task.Delay(TimeSpan.FromSeconds(10));
+                _mailNotifier.CheckPlanDeadlinesInBackground();
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn($"启动邮件提醒失败: {ex.Message}");
+            }
         }
 
         /* ###############################  功能函数  ################################ */
@@ -66,9 +96,11 @@ namespace ORT一键报告
         /// </summary>
         private void UpdateUIByPermission()
         {
+            // 菜单项只显示登录/注销动作，当前用户身份信息统一在窗口左下角展示
             menu_account.Header = _auth.CurrentUser == null
                 ? LanguageService.Get("Main_Login")
-                : string.Format(LanguageService.Get("Main_LogoutFormat"), _auth.CurrentDisplayName);
+                : LanguageService.Get("Main_Logout");
+            txt_user_identity.Text = string.Format(LanguageService.Get("Main_IdentityFormat"), _auth.CurrentDisplayName);
             btn_report.IsEnabled = _permission.Can("report.use");
             btn_admin.IsEnabled = _permission.Can("admin.manage");
             btn_review.IsEnabled = _permission.Can("review.view");
@@ -143,6 +175,46 @@ namespace ORT一键报告
             if (loginWindow.ShowDialog() == true)
             {
                 _logger.Info($"当前用户: {_auth.CurrentDisplayName}");
+                PromptCompleteEmailIfNeeded();
+            }
+        }
+
+        /// <summary>
+        /// 技术员/审核员登录后若未填写邮箱，提示完善（可跳过）
+        /// </summary>
+        private void PromptCompleteEmailIfNeeded()
+        {
+            if (!_auth.NeedsEmailCompletion)
+            {
+                return;
+            }
+            string title = LanguageService.Get("Dlg_EmailTitle");
+            string prompt = string.Format(LanguageService.Get("Msg_EmailPromptFormat"), _auth.CurrentDisplayName);
+            if (MessageBox.Show(prompt, title, MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
+            {
+                return;
+            }
+            while (true)
+            {
+                WindowAdminInput input = new(title,
+                    (LanguageService.Get("Admin_Email"), _auth.CurrentUser?.Email ?? "", false))
+                {
+                };
+                if (input.ShowDialog() != true)
+                {
+                    return;
+                }
+                string email = input.Values[0];
+                if (!AuthService.IsValidEmail(email))
+                {
+                    _ = MessageBox.Show(LanguageService.Get("Msg_EmailInvalid"), LanguageService.Get("Cap_Info"));
+                    continue;
+                }
+                if (_auth.SetCurrentUserEmail(email))
+                {
+                    _ = MessageBox.Show(LanguageService.Get("Msg_EmailSaved"), LanguageService.Get("Cap_Success"));
+                }
+                return;
             }
         }
 

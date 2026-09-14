@@ -13,6 +13,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="auto"/>
             <RowDefinition/>
+            <RowDefinition Height="auto"/>
         </Grid.RowDefinitions>
         <Menu>
             <MenuItem Header="{lex:Loc MainWindow_Menu_File}"></MenuItem>
@@ -55,6 +56,14 @@
                         ToolTip="{lex:Loc MainWindow_ToolTip_Review}"/>
             </Grid>
         </Grid>
+
+        <!--左下角：当前用户身份信息（登录后显示显示名与角色，未登录显示游客）-->
+        <Border Grid.Row="2" Background="{DynamicResource MenuBackgroundBrush}" BorderBrush="{DynamicResource BorderSubtleBrush}"
+                BorderThickness="0,1,0,0" Padding="10,4">
+            <TextBlock x:Name="txt_user_identity" HorizontalAlignment="Left" VerticalAlignment="Center"
+                       Foreground="{DynamicResource TextSecondaryBrush}" TextTrimming="CharacterEllipsis"
+                       ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
+        </Border>
     </Grid>
 
 </Window>

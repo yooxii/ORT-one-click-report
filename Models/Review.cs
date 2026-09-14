@@ -50,6 +50,12 @@ namespace ORT一键报告.Models
         public string RequesterName { get; set; }
 
         /// <summary>
+        /// 当前待审核人（提交时自动指派给待办最少的审核员；审核完成后由 ReviewerName 记录实际审核人）
+        /// </summary>
+        [Column(StringLength = 64, IsNullable = true)]
+        public string AssigneeName { get; set; }
+
+        /// <summary>
         /// 状态：待审核 / 已通过 / 已驳回
         /// </summary>
         [Column(StringLength = 16, IsNullable = false)]
@@ -122,10 +128,23 @@ namespace ORT一键报告.Models
         public string Period { get; set; }
 
         /// <summary>
-        /// 负责人
+        /// 负责人（显示用文本，多个以"/"分隔；由 OwnerIds 对应的显示名同步维护，导入时存原始文本）
         /// </summary>
         [Column(StringLength = 64, IsNullable = true)]
         public string Owner { get; set; }
+
+        /// <summary>
+        /// 负责人账号Id（多个以"/"分隔）——负责人以 uid 锚定技术员，
+        /// 显示名修改后负责人栏展示随之更新，不会因改名而失去关联
+        /// </summary>
+        [Column(StringLength = 256, IsNullable = true)]
+        public string OwnerIds { get; set; }
+
+        /// <summary>
+        /// 负责人显示名（按 OwnerIds 解析，不落库，仅供界面展示）
+        /// </summary>
+        [Column(IsIgnore = true)]
+        public string OwnerDisplay { get; set; }
 
         [Column(StringLength = 256, IsNullable = true)]
         public string Remark { get; set; }

@@ -339,7 +339,7 @@
     <value>重設密碼</value>
   </data>
   <data name="Admin_ApplyIdentity" xml:space="preserve">
-    <value>應用身份與顯示名</value>
+    <value>應用身分、顯示名與信箱</value>
   </data>
   <data name="Admin_DisplayName" xml:space="preserve">
     <value>顯示名</value>
@@ -478,6 +478,24 @@
   </data>
   <data name="Settings_FontFamily" xml:space="preserve">
     <value>字型族</value>
+  </data>
+  <data name="Settings_FontWeight" xml:space="preserve">
+    <value>字重</value>
+  </data>
+  <data name="Settings_FontWeightHint" xml:space="preserve">
+    <value>常規最清晰；中文字型多無 Medium 字面，選「中等」會被系統呈現為粗體。</value>
+  </data>
+  <data name="FontWeight_Normal" xml:space="preserve">
+    <value>常規</value>
+  </data>
+  <data name="FontWeight_Medium" xml:space="preserve">
+    <value>中等</value>
+  </data>
+  <data name="FontWeight_SemiBold" xml:space="preserve">
+    <value>半粗</value>
+  </data>
+  <data name="FontWeight_Bold" xml:space="preserve">
+    <value>粗體</value>
   </data>
   <data name="Report_Title" xml:space="preserve">
     <value>一鍵報告</value>
@@ -1190,8 +1208,305 @@
   <data name="Log_NoLogFiles" xml:space="preserve">
     <value>沒有日誌檔案</value>
   </data>
-  <data name="Main_LogoutFormat" xml:space="preserve">
-    <value>登出 [{0}]</value>
+  <data name="Main_Logout" xml:space="preserve">
+    <value>登出</value>
+  </data>
+  <data name="Main_IdentityFormat" xml:space="preserve">
+    <value>當前使用者：{0}</value>
+  </data>
+  <data name="Common_ListSeparator" xml:space="preserve">
+    <value>、</value>
+  </data>
+  <data name="Admin_Email" xml:space="preserve">
+    <value>電子信箱</value>
+  </data>
+  <data name="Admin_NewTestItem" xml:space="preserve">
+    <value>新增測試項目</value>
+  </data>
+  <data name="Admin_EditTestItem" xml:space="preserve">
+    <value>編輯測試項目</value>
+  </data>
+  <data name="Admin_TechnicianList" xml:space="preserve">
+    <value>已有技術員（勾選即加入負責人）</value>
+  </data>
+  <data name="Admin_OwnerHint" xml:space="preserve">
+    <value>負責人可多選；也可直接輸入，多個負責人以「/」分隔。儲存後負責人自動取得技術員身分（新帳號初始密碼 123456）。</value>
+  </data>
+  <data name="Dlg_EmailTitle" xml:space="preserve">
+    <value>完善信箱資訊</value>
+  </data>
+  <data name="Msg_EmailPromptFormat" xml:space="preserve">
+    <value>您目前身分為 {0}，尚未填寫電子信箱，是否現在完善？</value>
+  </data>
+  <data name="Msg_EmailInvalid" xml:space="preserve">
+    <value>信箱格式不正確，請重新輸入</value>
+  </data>
+  <data name="Msg_EmailSaved" xml:space="preserve">
+    <value>信箱已儲存</value>
+  </data>
+  <data name="Msg_TechnicianCreatedFormat" xml:space="preserve">
+    <value>已依測試項目負責人新增技術員帳號 {0} 個（初始密碼 123456）</value>
+  </data>
+  <data name="Msg_TechnicianRoleAddedFormat" xml:space="preserve">
+    <value>已為 {0} 個既有帳號補充技術員身分</value>
+  </data>
+  <data name="Msg_TestItemNameRequired" xml:space="preserve">
+    <value>試驗項目不能為空</value>
+  </data>
+  <data name="Msg_UsernameRequired" xml:space="preserve">
+    <value>使用者名稱不能為空</value>
+  </data>
+  <data name="Msg_UsernameInvalid" xml:space="preserve">
+    <value>使用者名稱不能包含空格或「/」</value>
+  </data>
+  <data name="Msg_UsernameExists" xml:space="preserve">
+    <value>使用者名稱 [{0}] 已存在</value>
+  </data>
+  <data name="Settings_Mail" xml:space="preserve">
+    <value>郵件服務</value>
+  </data>
+  <data name="Settings_MailHint" xml:space="preserve">
+    <value>由管理員維護一個寄件信箱帳號，符合觸發條件時向相關人員的信箱發送通知。範本標記語法：{{變數}} 取代變數，{{變數|格式}} 依格式輸出（如 {{EndDate|yyyy/MM/dd}}）。</value>
+  </data>
+  <data name="Settings_MailEnabled" xml:space="preserve">
+    <value>啟用郵件服務</value>
+  </data>
+  <data name="Settings_MailNoticeEnabled" xml:space="preserve">
+    <value>啟用通知類郵件（審核通知、密碼變更等）</value>
+  </data>
+  <data name="Settings_MailWarningEnabled" xml:space="preserve">
+    <value>啟用警告類郵件（臨近測試結束日期且未完成報告等）</value>
+  </data>
+  <data name="Settings_MailHost" xml:space="preserve">
+    <value>SMTP 伺服器</value>
+  </data>
+  <data name="Settings_MailPort" xml:space="preserve">
+    <value>連接埠</value>
+  </data>
+  <data name="Settings_MailSecurity" xml:space="preserve">
+    <value>安全方式</value>
+  </data>
+  <data name="Settings_MailSecurityHint" xml:space="preserve">
+    <value>明文（25）/ STARTTLS（587）/ SSL 隱式加密（465），依郵件服務商要求選擇</value>
+  </data>
+  <data name="Settings_MailIgnoreCert" xml:space="preserve">
+    <value>忽略伺服器憑證錯誤</value>
+  </data>
+  <data name="Settings_MailUser" xml:space="preserve">
+    <value>登入帳號</value>
+  </data>
+  <data name="Settings_MailPassword" xml:space="preserve">
+    <value>密碼</value>
+  </data>
+  <data name="Settings_MailDefaultCred" xml:space="preserve">
+    <value>使用 Windows 整合驗證（不發送帳號密碼）</value>
+  </data>
+  <data name="Settings_MailDefaultCredHint" xml:space="preserve">
+    <value>勾選後不使用下方帳號密碼認證，適用於允許匿名或依來源位址放行的內網郵件伺服器</value>
+  </data>
+  <data name="Settings_MailFrom" xml:space="preserve">
+    <value>寄件位址</value>
+  </data>
+  <data name="Settings_MailFromName" xml:space="preserve">
+    <value>寄件人顯示名</value>
+  </data>
+  <data name="Settings_MailCc" xml:space="preserve">
+    <value>固定副本</value>
+  </data>
+  <data name="Settings_MailCcHint" xml:space="preserve">
+    <value>可填多個信箱，以分號或逗號分隔；留空表示不副本</value>
+  </data>
+  <data name="Settings_MailTimeout" xml:space="preserve">
+    <value>逾時（秒）</value>
+  </data>
+  <data name="Settings_MailDaysBefore" xml:space="preserve">
+    <value>提前提醒（天）</value>
+  </data>
+  <data name="Settings_MailDaysBeforeHint" xml:space="preserve">
+    <value>測試結束日期在「今天 + 該天數」以內的計畫會觸發提醒</value>
+  </data>
+  <data name="Settings_MailDedupe" xml:space="preserve">
+    <value>重複間隔（天）</value>
+  </data>
+  <data name="Settings_MailDedupeHint" xml:space="preserve">
+    <value>同一物件同類郵件在該天數內只發送一次，避免重複打擾</value>
+  </data>
+  <data name="Settings_MailCcAdmin" xml:space="preserve">
+    <value>副本給管理員</value>
+  </data>
+  <data name="Settings_MailCcAdminHint" xml:space="preserve">
+    <value>勾選的郵件類型會額外副本給所有管理員（管理員需已填寫信箱）</value>
+  </data>
+  <data name="Review_Assignee" xml:space="preserve">
+    <value>待審核人</value>
+  </data>
+  <data name="Settings_MailIncludeOverdue" xml:space="preserve">
+    <value>包含已逾期未完成的計畫</value>
+  </data>
+  <data name="Settings_MailHtml" xml:space="preserve">
+    <value>內文以 HTML 發送</value>
+  </data>
+  <data name="Settings_MailTestTo" xml:space="preserve">
+    <value>測試收件人</value>
+  </data>
+  <data name="Settings_MailSendTest" xml:space="preserve">
+    <value>發送測試郵件</value>
+  </data>
+  <data name="Settings_MailRunCheck" xml:space="preserve">
+    <value>立即檢查並發送警告</value>
+  </data>
+  <data name="Settings_MailRunCheckHint" xml:space="preserve">
+    <value>依目前規則檢查計畫表，並對符合條件的計畫立即發送警告郵件（受重複間隔限制）</value>
+  </data>
+  <data name="Settings_MailLogs" xml:space="preserve">
+    <value>最近發送記錄</value>
+  </data>
+  <data name="Settings_MailTemplates" xml:space="preserve">
+    <value>郵件範本</value>
+  </data>
+  <data name="Settings_MailTemplatesHint" xml:space="preserve">
+    <value>標記語法：{{變數}} 輸出變數，{{變數|格式}} 依格式輸出（如 {{EndDate|yyyy/M/d}}）；變數不存在時輸出為空。清空內容即恢復內建預設範本。</value>
+  </data>
+  <data name="Settings_MailSubject" xml:space="preserve">
+    <value>主旨</value>
+  </data>
+  <data name="Settings_MailBody" xml:space="preserve">
+    <value>內文</value>
+  </data>
+  <data name="Mail_Kind_Notice" xml:space="preserve">
+    <value>通知類</value>
+  </data>
+  <data name="Mail_Kind_Warning" xml:space="preserve">
+    <value>警告類</value>
+  </data>
+  <data name="Mail_Security_None" xml:space="preserve">
+    <value>明文（不加密）</value>
+  </data>
+  <data name="Mail_Security_StartTls" xml:space="preserve">
+    <value>STARTTLS（顯式 TLS）</value>
+  </data>
+  <data name="Mail_Security_Ssl" xml:space="preserve">
+    <value>SSL（隱式 TLS，465）</value>
+  </data>
+  <data name="Mail_Vars_Notice" xml:space="preserve">
+    <value>可用變數：{{Title}} 標題、{{Category}} 類型、{{Content}} 內容摘要、{{RequestType}} 單據類型、{{Action}} 操作、{{Summary}} 請求摘要、{{Requester}} 請求人、{{Assignee}} 待審核人、{{Reviewer}} 審核人、{{Status}} 狀態、{{Comment}} 審核意見、{{Username}} 登入名、{{DisplayName}} 姓名、{{ChangedBy}} 操作人、{{Sender}} 寄件人、{{Recipients}} 收件人、{{Date}} 日期、{{DateTime}} 時間、{{AppName}} 系統名</value>
+  </data>
+  <data name="Mail_Vars_Warning" xml:space="preserve">
+    <value>可用變數：{{JobNo}} 工作編號、{{ModelName}} 機種、{{TestItem}} 測試項目、{{TestPeriod}} 試驗時間、{{Stage}} 階段、{{Customer}} 客戶、{{Product}} 產品別、{{Owner}} 負責人、{{StartDate}} 開始日期、{{EndDate}} 結束日期、{{DaysLeft}} 剩餘天數（負數表示已逾期）、{{Status}} 完成狀況、{{Remark}} 備註、{{Content}} 內容摘要、{{Date}} 日期、{{AppName}} 系統名</value>
+  </data>
+  <data name="Mail_Default_Notice_Subject" xml:space="preserve">
+    <value>{{Title}} - {{AppName}}</value>
+  </data>
+  <data name="Mail_Default_Notice_Body" xml:space="preserve">
+    <value>{{DisplayName}} 您好：
+
+{{Content}}
+
+類型：{{Category}}
+時間：{{DateTime|yyyy/M/d HH:mm}}
+
+（本郵件由 {{AppName}} 自動發送，請勿直接回覆）</value>
+  </data>
+  <data name="Mail_Default_Warning_Subject" xml:space="preserve">
+    <value>{{JobNo}} 測試結束日期提醒（{{EndDate|yyyy/M/d}}）</value>
+  </data>
+  <data name="Mail_Default_Warning_Body" xml:space="preserve">
+    <value>{{Owner}} 您好：
+
+以下計畫的測試結束日期臨近或已逾期，且完成狀況仍未結案，請及時處理。
+
+工作編號：{{JobNo}}
+機　　種：{{ModelName}}
+測試項目：{{TestItem}}
+階　　段：{{Stage}}
+開始日期：{{StartDate|yyyy/M/d}}
+結束日期：{{EndDate|yyyy/M/d}}
+剩餘天數：{{DaysLeft}} 天
+完成狀況：{{Status}}
+
+{{Content}}
+
+（本郵件由 {{AppName}} 自動發送，請勿直接回覆）</value>
+  </data>
+  <data name="Mail_WarningContentFormat" xml:space="preserve">
+    <value>計畫 {0}（機種 {1}）結束日期為 {2}，剩餘 {3} 天，完成狀況：{4}。</value>
+  </data>
+  <data name="Mail_ReviewSubmittedTitle" xml:space="preserve">
+    <value>有新的審核請求待處理</value>
+  </data>
+  <data name="Mail_ReviewSubmittedContentFormat" xml:space="preserve">
+    <value>{0} 提交了審核請求：{1}</value>
+  </data>
+  <data name="Mail_ReviewApprovedTitle" xml:space="preserve">
+    <value>您的審核請求已通過</value>
+  </data>
+  <data name="Mail_ReviewRejectedTitle" xml:space="preserve">
+    <value>您的審核請求被駁回</value>
+  </data>
+  <data name="Mail_ReviewDecidedContentFormat" xml:space="preserve">
+    <value>請求內容：{0}
+處理結果：{1}
+審核意見：{2}</value>
+  </data>
+  <data name="Mail_PasswordChangedTitle" xml:space="preserve">
+    <value>您的登入密碼已變更</value>
+  </data>
+  <data name="Mail_PasswordChangedStatus" xml:space="preserve">
+    <value>管理員重設</value>
+  </data>
+  <data name="Mail_PasswordChangedContentFormat" xml:space="preserve">
+    <value>帳號 [{0}] 的登入密碼已由管理員重設，請使用新密碼登入並及時修改。</value>
+  </data>
+  <data name="Mail_EmailMissingTitle" xml:space="preserve">
+    <value>請完善帳號信箱</value>
+  </data>
+  <data name="Mail_EmailMissingContentFormat" xml:space="preserve">
+    <value>{0} 您好：您的帳號尚未填寫信箱，請登入後在人員管理中完善，以便接收系統通知。</value>
+  </data>
+  <data name="Mail_TestSubject" xml:space="preserve">
+    <value>郵件服務測試</value>
+  </data>
+  <data name="Mail_TestBody" xml:space="preserve">
+    <value>這是一封測試郵件，收到即表示郵件伺服器設定正確。</value>
+  </data>
+  <data name="Msg_MailDisabled" xml:space="preserve">
+    <value>郵件服務未啟用</value>
+  </data>
+  <data name="Msg_MailNoHost" xml:space="preserve">
+    <value>未設定 SMTP 伺服器</value>
+  </data>
+  <data name="Msg_MailNoFrom" xml:space="preserve">
+    <value>未設定寄件位址</value>
+  </data>
+  <data name="Msg_MailNoRecipient" xml:space="preserve">
+    <value>沒有可用的收件人信箱</value>
+  </data>
+  <data name="Msg_MailDeduped" xml:space="preserve">
+    <value>近期已發送過同類郵件，本次略過</value>
+  </data>
+  <data name="Msg_MailSentFormat" xml:space="preserve">
+    <value>郵件已發送至：{0}</value>
+  </data>
+  <data name="Msg_MailCheckResultFormat" xml:space="preserve">
+    <value>檢查完成：發送 {0} 封，略過 {1} 封，失敗 {2} 封。</value>
+  </data>
+  <data name="Admin_DisableUser" xml:space="preserve">
+    <value>停用該使用者</value>
+  </data>
+  <data name="Admin_EnableUser" xml:space="preserve">
+    <value>啟用該使用者</value>
+  </data>
+  <data name="Admin_PasswordMin" xml:space="preserve">
+    <value>密碼（至少6位）</value>
+  </data>
+  <data name="Admin_NewPasswordMin" xml:space="preserve">
+    <value>新密碼（至少6位）</value>
+  </data>
+  <data name="Admin_ResetPasswordTitleFormat" xml:space="preserve">
+    <value>重設密碼 - {0}</value>
+  </data>
+  <data name="Msg_PasswordReset" xml:space="preserve">
+    <value>密碼已重設</value>
   </data>
   <data name="Main_ReviewCountFormat" xml:space="preserve">
     <value>審核 ({0})</value>

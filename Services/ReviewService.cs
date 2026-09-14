@@ -3,6 +3,7 @@ using NLog;
 using ORT一键报告.Models;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace ORT一键报告.Services
 {
@@ -14,15 +15,17 @@ namespace ORT一键报告.Services
     {
         private readonly Logger _logger = LogManager.GetCurrentClassLogger();
         private readonly DatabaseService _db;
+        private readonly MailNotifier _notifier;
 
         public const string TypePlan = "计划表单";
         public const string StatusPending = "待审核";
         public const string StatusApproved = "已通过";
         public const string StatusRejected = "已驳回";
 
-        public ReviewService(DatabaseService db)
+        public ReviewService(DatabaseService db, MailNotifier notifier)
         {
             _db = db;
+            _notifier = notifier;
         }
 
         /* ###############################  提交  ################################ */
@@ -47,11 +50,13 @@ namespace ORT一键报告.Services
                 Summary = summary,
                 PayloadJson = payload == null ? null : JsonConvert.SerializeObject(payload),
                 RequesterName = requester,
+                AssigneeName = PickPendingReviewer(),
                 Status = StatusPending,
                 CreatedAt = DateTime.Now
             };
             _db.FreeSql.Insert(request).ExecuteAffrows();
-            _logger.Info($"提交审核请求: {summary} (请求人: {requester})");
+            _logger.Info($"提交审核请求: {summary} (请求人: {requester}, 待审核人: {request.AssigneeName ?? "-"})");
+            _notifier?.NotifyReviewSubmitted(request);
         }
 
         /// <summary>
@@ -73,11 +78,56 @@ namespace ORT一键报告.Services
                 Summary = summary,
                 PayloadJson = payload == null ? null : JsonConvert.SerializeObject(payload),
                 RequesterName = requester,
+                AssigneeName = PickPendingReviewer(),
                 Status = StatusPending,
                 CreatedAt = DateTime.Now
             };
             _db.FreeSql.Insert(request).ExecuteAffrows();
-            _logger.Info($"提交领退审核请求: {summary} (请求人: {requester})");
+            _logger.Info($"提交领退审核请求: {summary} (请求人: {requester}, 待审核人: {request.AssigneeName ?? "-"})");
+            _notifier?.NotifyReviewSubmitted(request);
+        }
+
+        /// <summary>
+        /// 指派"当前待审核人"：在启用且有邮箱的审核员中，选当前待办最少的一位（并列取账号 Id 最小）。
+        /// 没有可用审核员时返回 null（发送时退回全部审核员）。
+        /// </summary>
+        public string PickPendingReviewer()
+        {
+            try
+            {
+                List<User> reviewers = _db.FreeSql.Select<User>().Where(u => u.IsActive).ToList();
+                List<long> reviewerIds = _db.FreeSql.Select<UserRoleRow>()
+                    .Where(r => r.Role == nameof(UserRole.Reviewer)).ToList(r => r.UserId);
+                reviewers = reviewers
+                    .Where(u => reviewerIds.Contains(u.Id) && !string.IsNullOrWhiteSpace(u.Email))
+                    .OrderBy(u => u.Id)
+                    .ToList();
+                if (reviewers.Count == 0)
+                {
+                    return null;
+                }
+                if (reviewers.Count == 1)
+                {
+                    return reviewers[0].Username;
+                }
+                // 统计各审核员当前的待审核量（按已指派人名汇总）
+                Dictionary<string, int> pending = [];
+                foreach (ReviewRequest item in _db.FreeSql.Select<ReviewRequest>().Where(r => r.Status == StatusPending).ToList())
+                {
+                    string key = item.AssigneeName ?? "";
+                    pending[key] = pending.TryGetValue(key, out int count) ? count + 1 : 1;
+                }
+                return reviewers
+                    .OrderBy(u => pending.TryGetValue(u.Username, out int count) ? count : 0)
+                    .ThenBy(u => u.Id)
+                    .First()
+                    .Username;
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn($"指派待审核人失败: {ex.Message}");
+                return null;
+            }
         }
 
         /* ###############################  查询  ################################ */
@@ -132,6 +182,7 @@ namespace ORT一键报告.Services
             request.ReviewedAt = DateTime.Now;
             _db.FreeSql.Update<ReviewRequest>().SetSource(request).Where(r => r.Id == requestId).ExecuteAffrows();
             _logger.Info($"审核通过: Id={requestId} ({request.Summary}) 审核人: {reviewerName}");
+            _notifier?.NotifyReviewDecided(request, true);
             return null;
         }
 
@@ -155,6 +206,7 @@ namespace ORT一键报告.Services
             request.ReviewedAt = DateTime.Now;
             _db.FreeSql.Update<ReviewRequest>().SetSource(request).Where(r => r.Id == requestId).ExecuteAffrows();
             _logger.Info($"审核驳回: Id={requestId} ({request.Summary}) 审核人: {reviewerName} 意见: {comment}");
+            _notifier?.NotifyReviewDecided(request, false);
             return null;
         }
 

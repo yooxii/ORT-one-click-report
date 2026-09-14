@@ -339,7 +339,7 @@
     <value>重置密码</value>
   </data>
   <data name="Admin_ApplyIdentity" xml:space="preserve">
-    <value>应用身份与显示名</value>
+    <value>应用身份、显示名与邮箱</value>
   </data>
   <data name="Admin_DisplayName" xml:space="preserve">
     <value>显示名</value>
@@ -478,6 +478,24 @@
   </data>
   <data name="Settings_FontFamily" xml:space="preserve">
     <value>字体族</value>
+  </data>
+  <data name="Settings_FontWeight" xml:space="preserve">
+    <value>字重</value>
+  </data>
+  <data name="Settings_FontWeightHint" xml:space="preserve">
+    <value>常规最清晰；中文字体多无 Medium 字面，选“中等”会被系统渲染成粗体。</value>
+  </data>
+  <data name="FontWeight_Normal" xml:space="preserve">
+    <value>常规</value>
+  </data>
+  <data name="FontWeight_Medium" xml:space="preserve">
+    <value>中等</value>
+  </data>
+  <data name="FontWeight_SemiBold" xml:space="preserve">
+    <value>半粗</value>
+  </data>
+  <data name="FontWeight_Bold" xml:space="preserve">
+    <value>粗体</value>
   </data>
   <data name="Report_Title" xml:space="preserve">
     <value>一键报告</value>
@@ -1164,16 +1182,16 @@
     <value>游客</value>
   </data>
   <data name="Role_GeneralUser" xml:space="preserve">
-    <value>GeneralUser</value>
+    <value>普通用户</value>
   </data>
   <data name="Role_Technician" xml:space="preserve">
-    <value>Technician</value>
+    <value>技术员</value>
   </data>
   <data name="Role_Reviewer" xml:space="preserve">
-    <value>Reviewer</value>
+    <value>审核员</value>
   </data>
   <data name="Role_Administrator" xml:space="preserve">
-    <value>Administrator</value>
+    <value>管理员</value>
   </data>
   <data name="Plans_NoPending" xml:space="preserve">
     <value>无未提交修改</value>
@@ -1190,8 +1208,305 @@
   <data name="Log_NoLogFiles" xml:space="preserve">
     <value>没有日志文件</value>
   </data>
-  <data name="Main_LogoutFormat" xml:space="preserve">
-    <value>注销 [{0}]</value>
+  <data name="Main_Logout" xml:space="preserve">
+    <value>注销</value>
+  </data>
+  <data name="Main_IdentityFormat" xml:space="preserve">
+    <value>当前用户：{0}</value>
+  </data>
+  <data name="Common_ListSeparator" xml:space="preserve">
+    <value>、</value>
+  </data>
+  <data name="Admin_Email" xml:space="preserve">
+    <value>邮箱</value>
+  </data>
+  <data name="Admin_NewTestItem" xml:space="preserve">
+    <value>新增测试项目</value>
+  </data>
+  <data name="Admin_EditTestItem" xml:space="preserve">
+    <value>编辑测试项目</value>
+  </data>
+  <data name="Admin_TechnicianList" xml:space="preserve">
+    <value>已有技术员（勾选即加入负责人）</value>
+  </data>
+  <data name="Admin_OwnerHint" xml:space="preserve">
+    <value>负责人可多选；也可直接输入，多个负责人用“/”分隔。保存后负责人自动获得技术员身份（新账号初始密码 123456）。</value>
+  </data>
+  <data name="Dlg_EmailTitle" xml:space="preserve">
+    <value>完善邮箱信息</value>
+  </data>
+  <data name="Msg_EmailPromptFormat" xml:space="preserve">
+    <value>您当前身份为 {0}，尚未填写邮箱，是否现在完善？</value>
+  </data>
+  <data name="Msg_EmailInvalid" xml:space="preserve">
+    <value>邮箱格式不正确，请重新输入</value>
+  </data>
+  <data name="Msg_EmailSaved" xml:space="preserve">
+    <value>邮箱已保存</value>
+  </data>
+  <data name="Msg_TechnicianCreatedFormat" xml:space="preserve">
+    <value>已按测试项目负责人新建技术员账号 {0} 个（初始密码 123456）</value>
+  </data>
+  <data name="Msg_TechnicianRoleAddedFormat" xml:space="preserve">
+    <value>已为 {0} 个已有账号补充技术员身份</value>
+  </data>
+  <data name="Msg_TestItemNameRequired" xml:space="preserve">
+    <value>试验项目不能为空</value>
+  </data>
+  <data name="Msg_UsernameRequired" xml:space="preserve">
+    <value>用户名不能为空</value>
+  </data>
+  <data name="Msg_UsernameInvalid" xml:space="preserve">
+    <value>用户名不能包含空格或“/”</value>
+  </data>
+  <data name="Msg_UsernameExists" xml:space="preserve">
+    <value>用户名 [{0}] 已存在</value>
+  </data>
+  <data name="Settings_Mail" xml:space="preserve">
+    <value>邮件服务</value>
+  </data>
+  <data name="Settings_MailHint" xml:space="preserve">
+    <value>由管理员维护一个发件邮箱账号，满足触发条件时向相关人员的邮箱发送通知。模板标记语法：{{变量}} 替换变量，{{变量|格式}} 按格式输出（如 {{EndDate|yyyy/MM/dd}}）。</value>
+  </data>
+  <data name="Settings_MailEnabled" xml:space="preserve">
+    <value>启用邮件服务</value>
+  </data>
+  <data name="Settings_MailNoticeEnabled" xml:space="preserve">
+    <value>启用通知类邮件（审核通知、密码变更等）</value>
+  </data>
+  <data name="Settings_MailWarningEnabled" xml:space="preserve">
+    <value>启用警告类邮件（临近测试结束日期且未完成报告等）</value>
+  </data>
+  <data name="Settings_MailHost" xml:space="preserve">
+    <value>SMTP 服务器</value>
+  </data>
+  <data name="Settings_MailPort" xml:space="preserve">
+    <value>端口</value>
+  </data>
+  <data name="Settings_MailSecurity" xml:space="preserve">
+    <value>安全方式</value>
+  </data>
+  <data name="Settings_MailSecurityHint" xml:space="preserve">
+    <value>明文（25）/ STARTTLS（587）/ SSL 隐式加密（465），按邮件服务商要求选择</value>
+  </data>
+  <data name="Settings_MailIgnoreCert" xml:space="preserve">
+    <value>忽略服务器证书错误</value>
+  </data>
+  <data name="Settings_MailUser" xml:space="preserve">
+    <value>登录账号</value>
+  </data>
+  <data name="Settings_MailPassword" xml:space="preserve">
+    <value>密码</value>
+  </data>
+  <data name="Settings_MailDefaultCred" xml:space="preserve">
+    <value>使用 Windows 集成验证（不发送账号密码）</value>
+  </data>
+  <data name="Settings_MailDefaultCredHint" xml:space="preserve">
+    <value>勾选后不使用下方账号密码认证，适用于允许匿名或按来源地址放行的内网邮件服务器</value>
+  </data>
+  <data name="Settings_MailFrom" xml:space="preserve">
+    <value>发件地址</value>
+  </data>
+  <data name="Settings_MailFromName" xml:space="preserve">
+    <value>发件人显示名</value>
+  </data>
+  <data name="Settings_MailCc" xml:space="preserve">
+    <value>固定抄送</value>
+  </data>
+  <data name="Settings_MailCcHint" xml:space="preserve">
+    <value>可填多个邮箱，用分号或逗号分隔；留空表示不抄送</value>
+  </data>
+  <data name="Settings_MailTimeout" xml:space="preserve">
+    <value>超时（秒）</value>
+  </data>
+  <data name="Settings_MailDaysBefore" xml:space="preserve">
+    <value>提前提醒（天）</value>
+  </data>
+  <data name="Settings_MailDaysBeforeHint" xml:space="preserve">
+    <value>测试结束日期在「今天 + 该天数」以内的计划会触发提醒</value>
+  </data>
+  <data name="Settings_MailDedupe" xml:space="preserve">
+    <value>重复间隔（天）</value>
+  </data>
+  <data name="Settings_MailDedupeHint" xml:space="preserve">
+    <value>同一对象同类邮件在该天数内只发送一次，避免重复打扰</value>
+  </data>
+  <data name="Settings_MailCcAdmin" xml:space="preserve">
+    <value>抄送管理员</value>
+  </data>
+  <data name="Settings_MailCcAdminHint" xml:space="preserve">
+    <value>勾选的邮件类型会额外抄送给所有管理员（管理员需已填写邮箱）</value>
+  </data>
+  <data name="Review_Assignee" xml:space="preserve">
+    <value>待审核人</value>
+  </data>
+  <data name="Settings_MailIncludeOverdue" xml:space="preserve">
+    <value>包含已逾期未完成的计划</value>
+  </data>
+  <data name="Settings_MailHtml" xml:space="preserve">
+    <value>正文按 HTML 发送</value>
+  </data>
+  <data name="Settings_MailTestTo" xml:space="preserve">
+    <value>测试收件人</value>
+  </data>
+  <data name="Settings_MailSendTest" xml:space="preserve">
+    <value>发送测试邮件</value>
+  </data>
+  <data name="Settings_MailRunCheck" xml:space="preserve">
+    <value>立即检查并发送警告</value>
+  </data>
+  <data name="Settings_MailRunCheckHint" xml:space="preserve">
+    <value>按当前规则检查计划表，并对满足条件的计划立即发送警告邮件（受重复间隔限制）</value>
+  </data>
+  <data name="Settings_MailLogs" xml:space="preserve">
+    <value>最近发送记录</value>
+  </data>
+  <data name="Settings_MailTemplates" xml:space="preserve">
+    <value>邮件模板</value>
+  </data>
+  <data name="Settings_MailTemplatesHint" xml:space="preserve">
+    <value>标记语法：{{变量}} 输出变量，{{变量|格式}} 按格式输出（如 {{EndDate|yyyy/M/d}}）；变量不存在时输出为空。清空内容即恢复内置默认模板。</value>
+  </data>
+  <data name="Settings_MailSubject" xml:space="preserve">
+    <value>主题</value>
+  </data>
+  <data name="Settings_MailBody" xml:space="preserve">
+    <value>正文</value>
+  </data>
+  <data name="Mail_Kind_Notice" xml:space="preserve">
+    <value>通知类</value>
+  </data>
+  <data name="Mail_Kind_Warning" xml:space="preserve">
+    <value>警告类</value>
+  </data>
+  <data name="Mail_Security_None" xml:space="preserve">
+    <value>明文（不加密）</value>
+  </data>
+  <data name="Mail_Security_StartTls" xml:space="preserve">
+    <value>STARTTLS（显式 TLS）</value>
+  </data>
+  <data name="Mail_Security_Ssl" xml:space="preserve">
+    <value>SSL（隐式 TLS，465）</value>
+  </data>
+  <data name="Mail_Vars_Notice" xml:space="preserve">
+    <value>可用变量：{{Title}} 标题、{{Category}} 类型、{{Content}} 内容摘要、{{RequestType}} 单据类型、{{Action}} 操作、{{Summary}} 请求摘要、{{Requester}} 请求人、{{Assignee}} 待审核人、{{Reviewer}} 审核人、{{Status}} 状态、{{Comment}} 审核意见、{{Username}} 登录名、{{DisplayName}} 姓名、{{ChangedBy}} 操作人、{{Sender}} 发件人、{{Recipients}} 收件人、{{Date}} 日期、{{DateTime}} 时间、{{AppName}} 系统名</value>
+  </data>
+  <data name="Mail_Vars_Warning" xml:space="preserve">
+    <value>可用变量：{{JobNo}} 工作編號、{{ModelName}} 机种、{{TestItem}} 测试项目、{{TestPeriod}} 试验时间、{{Stage}} 阶段、{{Customer}} 客户、{{Product}} 产品别、{{Owner}} 负责人、{{StartDate}} 开始日期、{{EndDate}} 结束日期、{{DaysLeft}} 剩余天数（负数表示已逾期）、{{Status}} 完成状况、{{Remark}} 备注、{{Content}} 内容摘要、{{Date}} 日期、{{AppName}} 系统名</value>
+  </data>
+  <data name="Mail_Default_Notice_Subject" xml:space="preserve">
+    <value>{{Title}} - {{AppName}}</value>
+  </data>
+  <data name="Mail_Default_Notice_Body" xml:space="preserve">
+    <value>{{DisplayName}} 您好：
+
+{{Content}}
+
+类型：{{Category}}
+时间：{{DateTime|yyyy/M/d HH:mm}}
+
+（本邮件由 {{AppName}} 自动发送，请勿直接回复）</value>
+  </data>
+  <data name="Mail_Default_Warning_Subject" xml:space="preserve">
+    <value>{{JobNo}} 测试结束日期提醒（{{EndDate|yyyy/M/d}}）</value>
+  </data>
+  <data name="Mail_Default_Warning_Body" xml:space="preserve">
+    <value>{{Owner}} 您好：
+
+以下计划的测试结束日期临近或已逾期，且完成状况仍未结案，请及时处理。
+
+工作編號：{{JobNo}}
+机　　种：{{ModelName}}
+测试项目：{{TestItem}}
+阶　　段：{{Stage}}
+开始日期：{{StartDate|yyyy/M/d}}
+结束日期：{{EndDate|yyyy/M/d}}
+剩余天数：{{DaysLeft}} 天
+完成状况：{{Status}}
+
+{{Content}}
+
+（本邮件由 {{AppName}} 自动发送，请勿直接回复）</value>
+  </data>
+  <data name="Mail_WarningContentFormat" xml:space="preserve">
+    <value>计划 {0}（机种 {1}）结束日期为 {2}，剩余 {3} 天，完成状况：{4}。</value>
+  </data>
+  <data name="Mail_ReviewSubmittedTitle" xml:space="preserve">
+    <value>有新的审核请求待处理</value>
+  </data>
+  <data name="Mail_ReviewSubmittedContentFormat" xml:space="preserve">
+    <value>{0} 提交了审核请求：{1}</value>
+  </data>
+  <data name="Mail_ReviewApprovedTitle" xml:space="preserve">
+    <value>您的审核请求已通过</value>
+  </data>
+  <data name="Mail_ReviewRejectedTitle" xml:space="preserve">
+    <value>您的审核请求被驳回</value>
+  </data>
+  <data name="Mail_ReviewDecidedContentFormat" xml:space="preserve">
+    <value>请求内容：{0}
+处理结果：{1}
+审核意见：{2}</value>
+  </data>
+  <data name="Mail_PasswordChangedTitle" xml:space="preserve">
+    <value>您的登录密码已变更</value>
+  </data>
+  <data name="Mail_PasswordChangedStatus" xml:space="preserve">
+    <value>管理员重置</value>
+  </data>
+  <data name="Mail_PasswordChangedContentFormat" xml:space="preserve">
+    <value>账号 [{0}] 的登录密码已由管理员重置，请使用新密码登录并及时修改。</value>
+  </data>
+  <data name="Mail_EmailMissingTitle" xml:space="preserve">
+    <value>请完善账号邮箱</value>
+  </data>
+  <data name="Mail_EmailMissingContentFormat" xml:space="preserve">
+    <value>{0} 您好：您的账号尚未填写邮箱，请登录后在人员管理中完善，以便接收系统通知。</value>
+  </data>
+  <data name="Mail_TestSubject" xml:space="preserve">
+    <value>邮件服务测试</value>
+  </data>
+  <data name="Mail_TestBody" xml:space="preserve">
+    <value>这是一封测试邮件，收到即表示邮件服务器设置正确。</value>
+  </data>
+  <data name="Msg_MailDisabled" xml:space="preserve">
+    <value>邮件服务未启用</value>
+  </data>
+  <data name="Msg_MailNoHost" xml:space="preserve">
+    <value>未配置 SMTP 服务器</value>
+  </data>
+  <data name="Msg_MailNoFrom" xml:space="preserve">
+    <value>未配置发件地址</value>
+  </data>
+  <data name="Msg_MailNoRecipient" xml:space="preserve">
+    <value>没有可用的收件人邮箱</value>
+  </data>
+  <data name="Msg_MailDeduped" xml:space="preserve">
+    <value>近期已发送过同类邮件，本次跳过</value>
+  </data>
+  <data name="Msg_MailSentFormat" xml:space="preserve">
+    <value>邮件已发送至：{0}</value>
+  </data>
+  <data name="Msg_MailCheckResultFormat" xml:space="preserve">
+    <value>检查完成：发送 {0} 封，跳过 {1} 封，失败 {2} 封。</value>
+  </data>
+  <data name="Admin_DisableUser" xml:space="preserve">
+    <value>禁用该用户</value>
+  </data>
+  <data name="Admin_EnableUser" xml:space="preserve">
+    <value>启用该用户</value>
+  </data>
+  <data name="Admin_PasswordMin" xml:space="preserve">
+    <value>密码（至少6位）</value>
+  </data>
+  <data name="Admin_NewPasswordMin" xml:space="preserve">
+    <value>新密码（至少6位）</value>
+  </data>
+  <data name="Admin_ResetPasswordTitleFormat" xml:space="preserve">
+    <value>重置密码 - {0}</value>
+  </data>
+  <data name="Msg_PasswordReset" xml:space="preserve">
+    <value>密码已重置</value>
   </data>
   <data name="Main_ReviewCountFormat" xml:space="preserve">
     <value>审核 ({0})</value>
