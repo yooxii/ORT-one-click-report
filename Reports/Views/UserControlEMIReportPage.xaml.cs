@@ -1,6 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using NLog;
-using OfficeOpenXml;
+using NPOI.SS.UserModel;
+using NPOI.XSSF.UserModel;
+using ExcelNpoi = ORT一键报告.Utils.ExcelNpoi;
 using ORT一键报告.Models;
 using ORT一键报告.Reports.ViewModels;
 using ORT一键报告.Services;
@@ -64,13 +66,17 @@ namespace ORT一键报告.Reports.Views
                 _logger.Warn($"未找到{ReportType}报告模板，跳过读取该报告表头");
                 return;
             }
-            FileInfo fileInfo = new(templatePath);
-            using (ExcelPackage package = new(fileInfo))
+            XSSFWorkbook wb = ExcelNpoi.OpenRead(templatePath);
+            try
             {
-                ExcelWorksheet ws = package.Workbook.Worksheets[0];
+                ISheet ws = ExcelNpoi.SheetAt(wb, 0);
 
                 ReadReportHeaderInfo(ws, ReportHeaderInfo);
                 _logger.Info($"{ReportType}表头读取完成");
+            }
+            finally
+            {
+                wb.Close();
             }
             UUTInfoFromExcel _UUTInfos = reportService.UUTInfos;
             if (_UUTInfos == null)

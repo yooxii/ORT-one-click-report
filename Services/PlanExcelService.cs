@@ -1,7 +1,8 @@
-﻿using NLog;
-using OfficeOpenXml;
-using OfficeOpenXml.Drawing.OleObject;
+using NLog;
+using NPOI.SS.UserModel;
+using NPOI.XSSF.UserModel;
 using ORT一键报告.Models;
+using ORT一键报告.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -15,8 +16,8 @@ namespace ORT一键报告.Services
     /// <summary>
     /// 计划管理 Excel 导入导出服务（领退表与计划表分表存储）：
     /// - 导入"成品領用記錄(领退表)" → requisitions 表；导入"ORT Test Schedule(计划表)" → plans 表；
-    /// - 提取领退表 S/N 列的嵌入 OLE 对象保存到 Data\OleFiles；
-    /// - 从两表分别重新导出为领退表/计划表。
+    /// - 提取领退表 S/N 列的嵌入 OLE 对象保存到 Data\OleFiles（zip 直读，不经 Excel）；
+    /// - 从两表分别重新导出为领退表/计划表（NPOI 写入；SN 附件用 Excel COM 嵌回）。
     /// </summary>
     public class PlanExcelService
     {
@@ -55,95 +56,101 @@ namespace ORT一键报告.Services
             _logger.Info($"导入领退表: {filePath}");
             int added = 0, updated = 0;
             int year = ParseYearFromFileName(filePath);
-            using FileStream fs = new(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-            using ExcelPackage package = new(fs);
-            ExcelWorksheet ws = package.Workbook.Worksheets[0];
-            (int headerRow, Dictionary<string, int> map) = FindHeaderRow(ws, "領料單据號");
-            if (headerRow == 0)
+            XSSFWorkbook wb = ExcelNpoi.OpenRead(filePath);
+            try
             {
-                throw new InvalidDataException("未找到领退表表头(領料單据號)");
-            }
-
-            // 按行收集 S/N 列的 OLE 对象（表头原文为"S/N"）
-            int snCol = map["S/N"];
-            Dictionary<int, ExcelOleObject> oleByRow = [];
-            foreach (var drawing in ws.Drawings)
-            {
-                if (drawing is ExcelOleObject ole && ole.From.Column + 1 == snCol)
+                ISheet ws = ExcelNpoi.SheetAt(wb, 0);
+                (int headerRow, Dictionary<string, int> map) = FindHeaderRow(ws, "領料單据號");
+                if (headerRow == 0)
                 {
-                    oleByRow[ole.From.Row + 1] = ole;
-                }
-            }
-
-            int endRow = ws.Dimension?.End.Row ?? 0;
-            for (int r = headerRow + 1; r <= endRow; r++)
-            {
-                string requisitionNo = Cell(ws, r, map, "領料單据號");
-                string modelName = Cell(ws, r, map, "機種名稱");
-                string workOrder = Cell(ws, r, map, "WorkOrder");
-                // 整行关键字段均为空则跳过
-                if (requisitionNo == null && modelName == null && workOrder == null)
-                {
-                    continue;
+                    throw new InvalidDataException("未找到领退表表头(領料單据號)");
                 }
 
-                // 按领料单据号匹配合并；未命中时按 WorkOrder 更新最早一条（WorkOrder 可重复）
-                Requisition existing = requisitionNo != null
-                    ? _db.FreeSql.Select<Requisition>().Where(x => x.RequisitionNo == requisitionNo).First()
-                    : null;
-                if (existing == null && workOrder != null)
+                // 按行收集 S/N 列的 OLE 对象（表头原文为"S/N"）：zip 直读，不依赖任何 Excel 库
+                int snCol = map["S/N"];
+                Dictionary<int, (string Name, string ProgId, byte[] Bytes)> oleByRow = [];
+                foreach ((int Row, int Col, string Name, string ProgId, byte[] Bytes) ole in ExtractOleObjectsFromZip(filePath))
                 {
-                    existing = _db.FreeSql.Select<Requisition>().Where(x => x.WorkOrder == workOrder).First();
-                }
-                Requisition plan = existing ?? new Requisition { CreatedBy = _permission.CurrentUser, CreatedAt = DateTime.Now };
-
-                // 已存在且该行未提供领料单据号时，用已有单据号（保持主键稳定）
-                if (requisitionNo == null && existing != null)
-                {
-                    requisitionNo = existing.RequisitionNo;
-                }
-
-                plan.RequisitionDate = ParseAnyDate(Cell(ws, r, map, "領用日期"), year);
-                plan.RequisitionNo = requisitionNo;
-                plan.ModelName = modelName;
-                plan.OutQty = Cell(ws, r, map, "領出數量");
-                plan.SN = Cell(ws, r, map, "S/N");
-                plan.DC = Cell(ws, r, map, "D/C");
-                plan.Rev = Cell(ws, r, map, "REV");
-                plan.WorkOrder = workOrder;
-                plan.ReturnRtOrder = Cell(ws, r, map, "回綫RT工令");
-                plan.ReturnQty = Cell(ws, r, map, "回線數量");
-                plan.LineNo = Cell(ws, r, map, "線別");
-                plan.ReturnDate = ParseAnyDate(Cell(ws, r, map, "回線日期"), year);
-                plan.StockInNo = Cell(ws, r, map, "入庫退料單据號");
-                plan.StockInQty = Cell(ws, r, map, "入庫數量");
-                plan.StockInDate = ParseAnyDate(Cell(ws, r, map, "入庫日期"), year);
-                plan.Remark = Cell(ws, r, map, "备注");
-
-                // 该行存在嵌入的 OLE 对象（SN清单文件）时提取保存
-                if (oleByRow.TryGetValue(r, out ExcelOleObject ole))
-                {
-                    string fileName = SaveOleObject(ole, filePath, GetShortDate(plan.RequisitionDate), requisitionNo, modelName);
-                    if (fileName != null)
+                    if (ole.Col == snCol && ole.Bytes != null && ole.Bytes.Length > 0)
                     {
-                        plan.SnFilePath = fileName;
-                        _logger.Info($"行{r}的OLE对象已提取保存: {fileName}");
+                        oleByRow[ole.Row] = (ole.Name, ole.ProgId, ole.Bytes);
                     }
                 }
 
-                plan.UpdatedBy = _permission.CurrentUser;
-                plan.UpdatedAt = DateTime.Now;
+                int endRow = ExcelNpoi.LastRow(ws);
+                for (int r = headerRow + 1; r <= endRow; r++)
+                {
+                    string requisitionNo = Cell(ws, r, map, "領料單据號");
+                    string modelName = Cell(ws, r, map, "機種名稱");
+                    string workOrder = Cell(ws, r, map, "WorkOrder");
+                    // 整行关键字段均为空则跳过
+                    if (requisitionNo == null && modelName == null && workOrder == null)
+                    {
+                        continue;
+                    }
 
-                if (existing == null)
-                {
-                    _db.FreeSql.Insert(plan).ExecuteAffrows();
-                    added++;
+                    // 按领料单据号匹配合并；未命中时按 WorkOrder 更新最早一条（WorkOrder 可重复）
+                    Requisition existing = requisitionNo != null
+                        ? _db.FreeSql.Select<Requisition>().Where(x => x.RequisitionNo == requisitionNo).First()
+                        : null;
+                    if (existing == null && workOrder != null)
+                    {
+                        existing = _db.FreeSql.Select<Requisition>().Where(x => x.WorkOrder == workOrder).First();
+                    }
+                    Requisition plan = existing ?? new Requisition { CreatedBy = _permission.CurrentUser, CreatedAt = DateTime.Now };
+
+                    // 已存在且该行未提供领料单据号时，用已有单据号（保持主键稳定）
+                    if (requisitionNo == null && existing != null)
+                    {
+                        requisitionNo = existing.RequisitionNo;
+                    }
+
+                    plan.RequisitionDate = ParseAnyDate(Cell(ws, r, map, "領用日期"), year);
+                    plan.RequisitionNo = requisitionNo;
+                    plan.ModelName = modelName;
+                    plan.OutQty = Cell(ws, r, map, "領出數量");
+                    plan.SN = Cell(ws, r, map, "S/N");
+                    plan.DC = Cell(ws, r, map, "D/C");
+                    plan.Rev = Cell(ws, r, map, "REV");
+                    plan.WorkOrder = workOrder;
+                    plan.ReturnRtOrder = Cell(ws, r, map, "回綫RT工令");
+                    plan.ReturnQty = Cell(ws, r, map, "回線數量");
+                    plan.LineNo = Cell(ws, r, map, "線別");
+                    plan.ReturnDate = ParseAnyDate(Cell(ws, r, map, "回線日期"), year);
+                    plan.StockInNo = Cell(ws, r, map, "入庫退料單据號");
+                    plan.StockInQty = Cell(ws, r, map, "入庫數量");
+                    plan.StockInDate = ParseAnyDate(Cell(ws, r, map, "入庫日期"), year);
+                    plan.Remark = Cell(ws, r, map, "备注");
+
+                    // 该行存在嵌入的 OLE 对象（SN清单文件）时提取保存
+                    if (oleByRow.TryGetValue(r, out (string Name, string ProgId, byte[] Bytes) ole))
+                    {
+                        string fileName = SaveOleObject(ole.Name, ole.ProgId, ole.Bytes, GetShortDate(plan.RequisitionDate), requisitionNo, modelName);
+                        if (fileName != null)
+                        {
+                            plan.SnFilePath = fileName;
+                            _logger.Info($"行{r}的OLE对象已提取保存: {fileName}");
+                        }
+                    }
+
+                    plan.UpdatedBy = _permission.CurrentUser;
+                    plan.UpdatedAt = DateTime.Now;
+
+                    if (existing == null)
+                    {
+                        _db.FreeSql.Insert(plan).ExecuteAffrows();
+                        added++;
+                    }
+                    else
+                    {
+                        _db.FreeSql.Update<Requisition>().SetSource(plan).Where(p => p.Id == plan.Id).ExecuteAffrows();
+                        updated++;
+                    }
                 }
-                else
-                {
-                    _db.FreeSql.Update<Requisition>().SetSource(plan).Where(p => p.Id == plan.Id).ExecuteAffrows();
-                    updated++;
-                }
+            }
+            finally
+            {
+                wb.Close();
             }
             _logger.Info($"领退表导入完成: 新增{added}条, 更新{updated}条");
             return (added, updated);
@@ -159,57 +166,61 @@ namespace ORT一键报告.Services
             int added = 0, updated = 0;
             int year = ParseYearFromFileName(filePath);
             List<string> unmatched = [];
-            using FileStream fs = new(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-            using ExcelPackage package = new(fs);
-
-            // 优先选择名为 Schedule 的工作表，否则取第一个
-            ExcelWorksheet ws = package.Workbook.Worksheets.FirstOrDefault(s => s.Name == "Schedule")
-                ?? package.Workbook.Worksheets[0];
-            (int headerRow, Dictionary<string, int> map) = FindHeaderRow(ws, "工作編號");
-            if (headerRow == 0)
+            XSSFWorkbook wb = ExcelNpoi.OpenRead(filePath);
+            try
             {
-                throw new InvalidDataException("未找到计划表表头(工作編號)");
+                // 优先选择名为 Schedule 的工作表，否则取第一个
+                ISheet ws = ExcelNpoi.SheetByName(wb, "Schedule") ?? ExcelNpoi.SheetAt(wb, 0);
+                (int headerRow, Dictionary<string, int> map) = FindHeaderRow(ws, "工作編號");
+                if (headerRow == 0)
+                {
+                    throw new InvalidDataException("未找到计划表表头(工作編號)");
+                }
+
+                int endRow = ExcelNpoi.LastRow(ws);
+                for (int r = headerRow + 1; r <= endRow; r++)
+                {
+                    string jobNo = Cell(ws, r, map, "工作編號");
+                    if (jobNo == null)
+                    {
+                        continue; // 无工作編號的行视为统计/空行，跳过
+                    }
+
+                    Plan existing = _db.FreeSql.Select<Plan>().Where(p => p.JobNo == jobNo).First();
+                    Plan plan = existing ?? new Plan { CreatedBy = _permission.CurrentUser, CreatedAt = DateTime.Now };
+
+                    plan.JobNo = jobNo;
+                    plan.Product = Cell(ws, r, map, "產品別");
+                    plan.Customer = Cell(ws, r, map, "客戶別");
+                    plan.ModelName = Cell(ws, r, map, "機種名");
+                    plan.Stage = Cell(ws, r, map, "階段");
+                    plan.TestItem = Cell(ws, r, map, "測試項目");
+                    plan.SampleSize = Cell(ws, r, map, "樣品數");
+                    plan.TestPeriod = Cell(ws, r, map, "試驗時間");
+                    plan.Owner = Cell(ws, r, map, "負責人");
+                    plan.StartDate = ParseAnyDate(Cell(ws, r, map, "開始日期"), year);
+                    plan.EndDate = ParseAnyDate(Cell(ws, r, map, "結束日期"), year);
+                    plan.Status = Cell(ws, r, map, "完成狀況");
+                    plan.UploadELab = Cell(ws, r, map, "上傳系統");
+                    plan.Remark = Cell(ws, r, map, "Remark");
+                    plan.UpdatedBy = _permission.CurrentUser;
+                    plan.UpdatedAt = DateTime.Now;
+
+                    if (existing == null)
+                    {
+                        _db.FreeSql.Insert(plan).ExecuteAffrows();
+                        added++;
+                    }
+                    else
+                    {
+                        _db.FreeSql.Update<Plan>().SetSource(plan).Where(p => p.Id == plan.Id).ExecuteAffrows();
+                        updated++;
+                    }
+                }
             }
-
-            int endRow = ws.Dimension?.End.Row ?? 0;
-            for (int r = headerRow + 1; r <= endRow; r++)
+            finally
             {
-                string jobNo = Cell(ws, r, map, "工作編號");
-                if (jobNo == null)
-                {
-                    continue; // 无工作編號的行视为统计/空行，跳过
-                }
-
-                Plan existing = _db.FreeSql.Select<Plan>().Where(p => p.JobNo == jobNo).First();
-                Plan plan = existing ?? new Plan { CreatedBy = _permission.CurrentUser, CreatedAt = DateTime.Now };
-
-                plan.JobNo = jobNo;
-                plan.Product = Cell(ws, r, map, "產品別");
-                plan.Customer = Cell(ws, r, map, "客戶別");
-                plan.ModelName = Cell(ws, r, map, "機種名");
-                plan.Stage = Cell(ws, r, map, "階段");
-                plan.TestItem = Cell(ws, r, map, "測試項目");
-                plan.SampleSize = Cell(ws, r, map, "樣品數");
-                plan.TestPeriod = Cell(ws, r, map, "試驗時間");
-                plan.Owner = Cell(ws, r, map, "負責人");
-                plan.StartDate = ParseAnyDate(Cell(ws, r, map, "開始日期"), year);
-                plan.EndDate = ParseAnyDate(Cell(ws, r, map, "結束日期"), year);
-                plan.Status = Cell(ws, r, map, "完成狀況");
-                plan.UploadELab = Cell(ws, r, map, "上傳系統");
-                plan.Remark = Cell(ws, r, map, "Remark");
-                plan.UpdatedBy = _permission.CurrentUser;
-                plan.UpdatedAt = DateTime.Now;
-
-                if (existing == null)
-                {
-                    _db.FreeSql.Insert(plan).ExecuteAffrows();
-                    added++;
-                }
-                else
-                {
-                    _db.FreeSql.Update<Plan>().SetSource(plan).Where(p => p.Id == plan.Id).ExecuteAffrows();
-                    updated++;
-                }
+                wb.Close();
             }
             _logger.Info($"计划表导入完成: 新增{added}条, 更新{updated}条");
             return (added, updated, unmatched);
@@ -228,40 +239,59 @@ namespace ORT一键报告.Services
                 .OrderBy(p => p.Id)
                 .ToList();
 
-            using ExcelPackage package = new();
-            ExcelWorksheet ws = package.Workbook.Worksheets.Add("退管理表");
-            ws.Cells[1, 2].Value = "ORT 課試驗成品領退管理表";
-            ws.Cells[3, 2].LoadFromArrays(new object[][] { RequisitionHeaders });
-
-            int r = 4;
-            foreach (Requisition plan in plans)
+            List<OleEmbedRequest> oleRequests = [];
+            XSSFWorkbook wb = ExcelNpoi.Create();
+            try
             {
-                ws.Cells[r, 2].Value = plan.RequisitionDate;
-                ws.Cells[r, 3].Value = plan.RequisitionNo;
-                ws.Cells[r, 4].Value = plan.ModelName;
-                ws.Cells[r, 5].Value = plan.OutQty;
-                ws.Cells[r, 6].Value = plan.SN;
-                ws.Cells[r, 7].Value = plan.DC;
-                ws.Cells[r, 8].Value = plan.Rev;
-                ws.Cells[r, 9].Value = plan.WorkOrder;
-                ws.Cells[r, 10].Value = plan.ReturnRtOrder;
-                ws.Cells[r, 11].Value = plan.ReturnQty;
-                ws.Cells[r, 12].Value = plan.LineNo;
-                ws.Cells[r, 13].Value = plan.ReturnDate;
-                ws.Cells[r, 14].Value = plan.StockInNo;
-                ws.Cells[r, 15].Value = plan.StockInQty;
-                ws.Cells[r, 16].Value = plan.StockInDate;
-                ws.Cells[r, 17].Value = plan.Remark;
+                ISheet ws = wb.CreateSheet("退管理表");
+                ExcelNpoi.SetCell(ws, 1, 2, "ORT 課試驗成品領退管理表");
+                WriteHeaderRow(ws, 3, 2, RequisitionHeaders);
 
-                // SN文件存在时以OLE对象形式嵌回S/N列，尽量还原原表形态
-                string snFile = _db.ResolveAttachmentPath(plan.SnFilePath);
-                if (!string.IsNullOrWhiteSpace(plan.SnFilePath) && File.Exists(snFile))
+                int r = 4;
+                foreach (Requisition plan in plans)
                 {
-                    Utils.Report.EmbedOleObjectWithEpplus(ws, snFile, $"F{r}");
+                    ExcelNpoi.SetCell(ws, r, 2, plan.RequisitionDate);
+                    ExcelNpoi.SetCell(ws, r, 3, plan.RequisitionNo);
+                    ExcelNpoi.SetCell(ws, r, 4, plan.ModelName);
+                    ExcelNpoi.SetCell(ws, r, 5, plan.OutQty);
+                    ExcelNpoi.SetCell(ws, r, 6, plan.SN);
+                    ExcelNpoi.SetCell(ws, r, 7, plan.DC);
+                    ExcelNpoi.SetCell(ws, r, 8, plan.Rev);
+                    ExcelNpoi.SetCell(ws, r, 9, plan.WorkOrder);
+                    ExcelNpoi.SetCell(ws, r, 10, plan.ReturnRtOrder);
+                    ExcelNpoi.SetCell(ws, r, 11, plan.ReturnQty);
+                    ExcelNpoi.SetCell(ws, r, 12, plan.LineNo);
+                    ExcelNpoi.SetCell(ws, r, 13, plan.ReturnDate);
+                    ExcelNpoi.SetCell(ws, r, 14, plan.StockInNo);
+                    ExcelNpoi.SetCell(ws, r, 15, plan.StockInQty);
+                    ExcelNpoi.SetCell(ws, r, 16, plan.StockInDate);
+                    ExcelNpoi.SetCell(ws, r, 17, plan.Remark);
+
+                    // SN文件存在时以OLE对象形式嵌回S/N列，尽量还原原表形态
+                    // （NPOI 只负责写数据，OLE 嵌入在保存后由 Excel COM 统一完成）
+                    string snFile = _db.ResolveAttachmentPath(plan.SnFilePath);
+                    if (!string.IsNullOrWhiteSpace(plan.SnFilePath) && File.Exists(snFile))
+                    {
+                        oleRequests.Add(new OleEmbedRequest
+                        {
+                            ObjectPath = snFile,
+                            SheetName = "退管理表",
+                            TopLeftAddress = $"F{r}",
+                            WidthPx = 100,
+                            HeightPx = 100,
+                            OffsetXPx = 10,
+                            OffsetYPx = 10
+                        });
+                    }
+                    r++;
                 }
-                r++;
+                ExcelNpoi.Save(wb, savePath);
             }
-            package.SaveAs(new FileInfo(savePath));
+            finally
+            {
+                wb.Close();
+            }
+            ExcelOleEmbedder.Embed(savePath, oleRequests);
             _logger.Info($"领退表导出完成，共{plans.Count}条");
         }
 
@@ -276,32 +306,50 @@ namespace ORT一键报告.Services
                 .OrderBy(p => p.Id)
                 .ToList();
 
-            using ExcelPackage package = new();
-            ExcelWorksheet ws = package.Workbook.Worksheets.Add("Schedule");
-            ws.Cells[1, 3].Value = "ORT Test Schedule";
-            ws.Cells[3, 2].LoadFromArrays(new object[][] { ScheduleHeaders });
-
-            int r = 4;
-            foreach (Plan plan in plans)
+            XSSFWorkbook wb = ExcelNpoi.Create();
+            try
             {
-                ws.Cells[r, 2].Value = plan.JobNo;
-                ws.Cells[r, 3].Value = plan.Product;
-                ws.Cells[r, 4].Value = plan.Customer;
-                ws.Cells[r, 5].Value = plan.ModelName;
-                ws.Cells[r, 6].Value = plan.Stage;
-                ws.Cells[r, 7].Value = plan.TestItem;
-                ws.Cells[r, 8].Value = plan.SampleSize;
-                ws.Cells[r, 9].Value = plan.TestPeriod;
-                ws.Cells[r, 10].Value = plan.Owner;
-                ws.Cells[r, 11].Value = plan.StartDate;
-                ws.Cells[r, 12].Value = plan.EndDate;
-                ws.Cells[r, 13].Value = plan.Status;
-                ws.Cells[r, 14].Value = plan.UploadELab;
-                ws.Cells[r, 15].Value = plan.Remark;
-                r++;
+                ISheet ws = wb.CreateSheet("Schedule");
+                ExcelNpoi.SetCell(ws, 1, 3, "ORT Test Schedule");
+                WriteHeaderRow(ws, 3, 2, ScheduleHeaders);
+
+                int r = 4;
+                foreach (Plan plan in plans)
+                {
+                    ExcelNpoi.SetCell(ws, r, 2, plan.JobNo);
+                    ExcelNpoi.SetCell(ws, r, 3, plan.Product);
+                    ExcelNpoi.SetCell(ws, r, 4, plan.Customer);
+                    ExcelNpoi.SetCell(ws, r, 5, plan.ModelName);
+                    ExcelNpoi.SetCell(ws, r, 6, plan.Stage);
+                    ExcelNpoi.SetCell(ws, r, 7, plan.TestItem);
+                    ExcelNpoi.SetCell(ws, r, 8, plan.SampleSize);
+                    ExcelNpoi.SetCell(ws, r, 9, plan.TestPeriod);
+                    ExcelNpoi.SetCell(ws, r, 10, plan.Owner);
+                    ExcelNpoi.SetCell(ws, r, 11, plan.StartDate);
+                    ExcelNpoi.SetCell(ws, r, 12, plan.EndDate);
+                    ExcelNpoi.SetCell(ws, r, 13, plan.Status);
+                    ExcelNpoi.SetCell(ws, r, 14, plan.UploadELab);
+                    ExcelNpoi.SetCell(ws, r, 15, plan.Remark);
+                    r++;
+                }
+                ExcelNpoi.Save(wb, savePath);
             }
-            package.SaveAs(new FileInfo(savePath));
+            finally
+            {
+                wb.Close();
+            }
             _logger.Info($"计划表导出完成，共{plans.Count}条");
+        }
+
+        /// <summary>
+        /// 写表头行（原 EPPlus 的 LoadFromArrays）
+        /// </summary>
+        private static void WriteHeaderRow(ISheet ws, int row, int startCol, string[] headers)
+        {
+            for (int i = 0; i < headers.Length; i++)
+            {
+                ExcelNpoi.SetCell(ws, row, startCol + i, headers[i]);
+            }
         }
 
         /// <summary>
@@ -347,17 +395,17 @@ namespace ORT一键报告.Services
         /// <summary>
         /// 从前10行内寻找包含指定关键字的表头行，返回(表头行号, 规范化表头文本->列号)映射；未找到返回(0, null)
         /// </summary>
-        private static (int, Dictionary<string, int>) FindHeaderRow(ExcelWorksheet ws, string headerKey)
+        private static (int, Dictionary<string, int>) FindHeaderRow(ISheet ws, string headerKey)
         {
-            int endRow = Math.Min(ws.Dimension?.End.Row ?? 0, 10);
-            int endCol = ws.Dimension?.End.Column ?? 0;
+            int endRow = Math.Min(ExcelNpoi.LastRow(ws), 10);
+            int endCol = ExcelNpoi.LastColumn(ws);
             for (int r = 1; r <= endRow; r++)
             {
                 Dictionary<string, int> map = [];
                 bool hit = false;
                 for (int c = 1; c <= endCol; c++)
                 {
-                    string key = Norm(ws.Cells[r, c].Text);
+                    string key = Norm(ExcelNpoi.CellText(ws, r, c));
                     if (key == "")
                     {
                         continue;
@@ -380,14 +428,14 @@ namespace ORT一键报告.Services
         /// 按表头关键字(包含匹配, 忽略空白)读取单元格文本；空白返回null。
         /// 注：原表头中的"/"实为换行显示，规范化后不含斜杠，搜索关键字也不要带斜杠。
         /// </summary>
-        private static string Cell(ExcelWorksheet ws, int row, Dictionary<string, int> map, string headerKey)
+        private static string Cell(ISheet ws, int row, Dictionary<string, int> map, string headerKey)
         {
             string normKey = Norm(headerKey);
             foreach (KeyValuePair<string, int> kv in map)
             {
                 if (kv.Key.Contains(normKey))
                 {
-                    return NullIfEmpty(ws.Cells[row, kv.Value].Text);
+                    return NullIfEmpty(ExcelNpoi.CellText(ws, row, kv.Value));
                 }
             }
             return null;
@@ -413,33 +461,20 @@ namespace ORT一键报告.Services
         }
 
         /// <summary>
-        /// 提取 OLE 嵌入对象保存到附件目录，命名 {简短日期}_{领用单据号}_{机种名称}.ext。
-        /// 优先直接解析 xlsx 包内 embeddings 数据（稳定无异常）；失败时再用 EPPlus API 回退。
+        /// 保存已提取的 OLE 嵌入对象到附件目录，命名 {简短日期}_{领用单据号}_{机种名称}.ext。
+        /// 数据由 zip 直读得到（不经 Excel，也不依赖任何 Excel 库）。
         /// </summary>
-        private string SaveOleObject(ExcelOleObject ole, string sourceFilePath, string shortDate, string requisitionNo, string modelName)
+        private string SaveOleObject(string oleName, string progId, byte[] bytes, string shortDate, string requisitionNo, string modelName)
         {
             try
             {
-                // 优先 zip 直读：对 ProgId="工作表" 等对象 EPPlus 的 GetEmbeddedObjectBytes 会抛异常（触发调试器一级异常中断），避开之
-                byte[] bytes = ExtractOleBytesFromZip(sourceFilePath, ole.Name);
                 if (bytes == null || bytes.Length == 0)
                 {
-                    try
-                    {
-                        bytes = ole.GetEmbeddedObjectBytes();
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.Warn($"GetEmbeddedObjectBytes({ole.Name})失败: {ex.Message}");
-                    }
-                }
-                if (bytes == null || bytes.Length == 0)
-                {
-                    _logger.Warn($"OLE对象({ole.Name})无嵌入数据，跳过");
+                    _logger.Warn($"OLE对象({oleName})无嵌入数据，跳过");
                     return null;
                 }
                 // 优先按文件头判断真实类型，其次按ProgId推断
-                string ext = GetExtensionByBytes(bytes) ?? GetExtensionByProgId(ole.ProgId);
+                string ext = GetExtensionByBytes(bytes) ?? GetExtensionByProgId(progId);
                 string baseName = $"{shortDate}_{CleanFileName(requisitionNo ?? "无单据号")}_{CleanFileName(modelName ?? "无机种名")}";
                 string fileName = baseName + ext;
                 string fullPath = Path.Combine(_db.OleDir, fileName);
@@ -458,16 +493,17 @@ namespace ORT一键报告.Services
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, $"提取OLE对象({ole.Name})失败");
+                _logger.Error(ex, $"提取OLE对象({oleName})失败");
                 return null;
             }
         }
 
         /// <summary>
-        /// 回退方案：直接解析 xlsx 包，按 OLE 对象名称找到对应 drawings 关系，读取 embeddings 的 bin 字节
+        /// 直接解析 xlsx 包，读出全部嵌入的 OLE 对象：左上角位置（1 基行列）、名称、ProgId、embeddings 字节
         /// </summary>
-        private byte[] ExtractOleBytesFromZip(string xlsxPath, string oleName)
+        private List<(int Row, int Col, string Name, string ProgId, byte[] Bytes)> ExtractOleObjectsFromZip(string xlsxPath)
         {
+            List<(int, int, string, string, byte[])> result = [];
             try
             {
                 using ZipArchive zip = ZipFile.OpenRead(xlsxPath);
@@ -480,54 +516,72 @@ namespace ORT一键报告.Services
                         doc = XDocument.Load(s);
                     }
                     XNamespace xdr = doc.Root.Name.Namespace;
-                    XElement oleNode = doc.Descendants(xdr + "oleObject")
-                        .FirstOrDefault(n => (string)n.Attribute("name") == oleName);
-                    if (oleNode == null)
+
+                    XDocument rels = null;
+                    ZipArchiveEntry relsEntry = zip.GetEntry("xl/drawings/_rels/" + Path.GetFileName(drawingEntry.FullName) + ".rels");
+                    if (relsEntry != null)
                     {
-                        continue;
-                    }
-                    string rId = oleNode.Attributes()
-                        .FirstOrDefault(a => a.Name.LocalName == "id" && a.Name.NamespaceName.Contains("relationships"))?.Value;
-                    if (rId == null)
-                    {
-                        continue;
-                    }
-                    string relsPath = "xl/drawings/_rels/" + Path.GetFileName(drawingEntry.FullName) + ".rels";
-                    ZipArchiveEntry relsEntry = zip.GetEntry(relsPath);
-                    if (relsEntry == null)
-                    {
-                        continue;
-                    }
-                    XDocument rels;
-                    using (Stream s2 = relsEntry.Open())
-                    {
+                        using Stream s2 = relsEntry.Open();
                         rels = XDocument.Load(s2);
                     }
-                    XElement rel = rels.Descendants().FirstOrDefault(n => (string)n.Attribute("Id") == rId);
-                    string target = (string)rel?.Attribute("Target");
-                    if (string.IsNullOrEmpty(target))
+
+                    IEnumerable<XElement> anchors = doc.Descendants(xdr + "twoCellAnchor")
+                        .Concat(doc.Descendants(xdr + "oneCellAnchor"));
+                    foreach (XElement anchor in anchors)
                     {
-                        continue;
+                        XElement oleNode = anchor.Descendants(xdr + "oleObject").FirstOrDefault();
+                        if (oleNode == null)
+                        {
+                            continue;
+                        }
+                        int row = (int?)anchor.Element(xdr + "from")?.Element(xdr + "row") ?? -1;
+                        int col = (int?)anchor.Element(xdr + "from")?.Element(xdr + "col") ?? -1;
+                        string name = (string)oleNode.Attribute("name");
+                        string progId = (string)oleNode.Attribute("progId");
+                        string rId = oleNode.Attributes()
+                            .FirstOrDefault(a => a.Name.LocalName == "id" && a.Name.NamespaceName.Contains("relationships"))?.Value;
+                        byte[] bytes = ResolveEmbeddingBytes(zip, rels, rId);
+                        if (bytes != null && bytes.Length > 0)
+                        {
+                            result.Add((row + 1, col + 1, name, progId, bytes));
+                        }
                     }
-                    string binPath = target.StartsWith("../")
-                        ? "xl/" + target.Substring(3)
-                        : "xl/drawings/" + target;
-                    ZipArchiveEntry binEntry = zip.GetEntry(binPath);
-                    if (binEntry == null)
-                    {
-                        continue;
-                    }
-                    using Stream s3 = binEntry.Open();
-                    using MemoryStream ms = new();
-                    s3.CopyTo(ms);
-                    return ms.ToArray();
                 }
             }
             catch (Exception ex)
             {
-                _logger.Warn($"zip回退提取OLE({oleName})失败: {ex.Message}");
+                _logger.Warn($"解析 OLE 对象失败: {ex.Message}");
             }
-            return null;
+            return result;
+        }
+
+        /// <summary>
+        /// 按关系 Id 从包内取 embeddings 的二进制内容
+        /// </summary>
+        private byte[] ResolveEmbeddingBytes(ZipArchive zip, XDocument rels, string rId)
+        {
+            if (rels == null || string.IsNullOrEmpty(rId))
+            {
+                return null;
+            }
+            XElement rel = rels.Descendants().FirstOrDefault(n => (string)n.Attribute("Id") == rId);
+            string target = (string)rel?.Attribute("Target");
+            if (string.IsNullOrEmpty(target))
+            {
+                return null;
+            }
+            string binPath = target.StartsWith("../")
+                ? "xl/" + target.Substring(3)
+                : "xl/drawings/" + target;
+            ZipArchiveEntry binEntry = zip.GetEntry(binPath);
+            if (binEntry == null)
+            {
+                return null;
+            }
+            using Stream s = binEntry.Open();
+            using MemoryStream ms = new();
+            s.CopyTo(ms);
+            return ms.ToArray();
         }
 
         /// <summary>

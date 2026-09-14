@@ -1,8 +1,10 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Win32;
 using NLog;
-using OfficeOpenXml;
+using NPOI.SS.UserModel;
+using NPOI.XSSF.UserModel;
+using ORT一键报告.Utils;
 using ORT一键报告.Models;
 using ORT一键报告.Reports.Models;
 using ORT一键报告.Reports.Views;
@@ -75,78 +77,107 @@ namespace ORT一键报告.Reports.ViewModels
                     Filter = "Excel文件|*.xlsx;*.xls",
                     InitialDirectory = initDir
                 };
-                ExcelPackage package = new(reportFI);
-                ExcelWorkbook wb = package.Workbook;
-                ExcelWorksheet ws = wb.Worksheets[0];
-                ExcelWorksheet ws_setup = wb.Worksheets[1];
+                XSSFWorkbook wb = ExcelNpoi.OpenRead(reportFI.FullName);
+                string mainSheetName;
+                string ateAddr;
+                try
+                {
+                    ISheet ws = ExcelNpoi.SheetAt(wb, 0);
+                    ISheet ws_setup = ExcelNpoi.SheetAt(wb, 1);
+                    mainSheetName = ws.SheetName;
 
 
-                // 1.表头信息
-                _logger.Info("处理表头");
-                for (int r = 1; r <= 8; r++)
-                {
-                    ws.Cells[ws_setup.Cells[r, 1].Text].Value = reportHeaderInfo.HeaderInfoList[r - 1];
-                }
-
-                // 2.单体数据
-                _logger.Info("处理单体数据");
-                List<object> detailInfoList =
-                [
-                    DetailsList.Select(r => r.BIroom).ToList(),
-                    DetailsList.Select(r => r.BIarea).ToList(),
-                    DetailsList.Select(r => r.BIplace).ToList(),
-                    DetailsList.Select(r => r.SN).ToList(),
-                    DetailsList.Select(r => r.WorkOrder).ToList(),
-                    DetailsList.Select(r => r.Version).ToList(),
-                    DetailsList.Select(r => r.DC).ToList(),
-                    DetailsList.Select(r => r.InspectionPrev).ToList(),
-                    DetailsList.Select(r => r.InspectionAfter).ToList(),
-                    DetailsList.Select(r => r.FunPrev).ToList(),
-                    DetailsList.Select(r => r.FunAfter).ToList(),
-                    DetailsList.Select(r => r.HiPot).ToList(),
-                ];
-                if (!ReportType.ToLower().Contains("burn"))
-                {
-                    detailInfoList.RemoveRange(0, 3);
-                }
-                /* 根据模板setup表的定义来保存结果。
-                 */
-                int _detail_start_row = 13; //setup表detail的起始行
-                for (int r = _detail_start_row; r < ws_setup.Dimension.End.Row; r++)
-                {
-                    ExcelAddress address = new(ws_setup.Cells[r, 1].Text);
-                    int Rp_row = address.Start.Row;
-                    int Rp_col = address.Start.Column;
-                    if (detailInfoList[r - _detail_start_row] is List<string> detailInfo)
+                    // 1.表头信息
+                    _logger.Info("处理表头");
+                    for (int r = 1; r <= 8; r++)
                     {
-                        for (int i = 0; i < detailInfo.Count; i++)
+                        string addr = ExcelNpoi.CellText(ws_setup, r, 1);
+                        ExcelNpoi.SetCell(ws, ExcelNpoi.RowOf(addr), ExcelNpoi.ColumnOf(addr), reportHeaderInfo.HeaderInfoList[r - 1]);
+                    }
+
+                    // 2.单体数据
+                    _logger.Info("处理单体数据");
+                    List<object> detailInfoList =
+                    [
+                        DetailsList.Select(r => r.BIroom).ToList(),
+                        DetailsList.Select(r => r.BIarea).ToList(),
+                        DetailsList.Select(r => r.BIplace).ToList(),
+                        DetailsList.Select(r => r.SN).ToList(),
+                        DetailsList.Select(r => r.WorkOrder).ToList(),
+                        DetailsList.Select(r => r.Version).ToList(),
+                        DetailsList.Select(r => r.DC).ToList(),
+                        DetailsList.Select(r => r.InspectionPrev).ToList(),
+                        DetailsList.Select(r => r.InspectionAfter).ToList(),
+                        DetailsList.Select(r => r.FunPrev).ToList(),
+                        DetailsList.Select(r => r.FunAfter).ToList(),
+                        DetailsList.Select(r => r.HiPot).ToList(),
+                    ];
+                    if (!ReportType.ToLower().Contains("burn"))
+                    {
+                        detailInfoList.RemoveRange(0, 3);
+                    }
+                    /* 根据模板setup表的定义来保存结果。
+                     */
+                    int _detail_start_row = 13; //setup表detail的起始行
+                    for (int r = _detail_start_row; r < ExcelNpoi.LastRow(ws_setup); r++)
+                    {
+                        string addr = ExcelNpoi.CellText(ws_setup, r, 1);
+                        int Rp_row = ExcelNpoi.RowOf(addr);
+                        int Rp_col = ExcelNpoi.ColumnOf(addr);
+                        if (detailInfoList[r - _detail_start_row] is List<string> detailInfo)
                         {
-                            ws.Cells[Rp_row + i, Rp_col].Value = detailInfo[i];
+                            for (int i = 0; i < detailInfo.Count; i++)
+                            {
+                                ExcelNpoi.SetCell(ws, Rp_row + i, Rp_col, detailInfo[i]);
+                            }
+                        }
+                        else if (detailInfoList[r - _detail_start_row] is List<ReportStatus> detailStatus)
+                        {
+                            for (int i = 0; i < detailStatus.Count; i++)
+                            {
+                                ExcelNpoi.SetCell(ws, Rp_row + i, Rp_col, detailStatus[i].ToString());
+                            }
                         }
                     }
-                    else if (detailInfoList[r - _detail_start_row] is List<ReportStatus> detailStatus)
+
+                    // 3.图片和OLE对象
+                    _logger.Info("处理图片和OLE对象");
+                    ExcelAddPicture(ws, "Issue_Photos", reportHeaderInfo.Issue_Photos_Pics, ExcelNpoi.CellText(ws_setup, 11, 1), ReportType, _reportService.TempPath);
+                    ExcelAddPicture(ws, "Test_Setup", reportHeaderInfo.Test_Setup_Pics, ExcelNpoi.CellText(ws_setup, 12, 1), ReportType, _reportService.TempPath);
+
+                    ateAddr = ExcelNpoi.CellText(ws_setup, 9, 1);
+                    int setupIndex = wb.GetSheetIndex(ws_setup);
+                    if (setupIndex >= 0)
                     {
-                        for (int i = 0; i < detailStatus.Count; i++)
-                        {
-                            ws.Cells[Rp_row + i, Rp_col].Value = detailStatus[i].ToString();
-                        }
+                        wb.RemoveSheetAt(setupIndex); // 删除设置表
                     }
+
+                    saveReportPath = saveFileDialog.ShowDialog() == true
+                        ? saveFileDialog.FileName
+                        : Path.Combine(Directory.GetCurrentDirectory(), reportFI.Name);
+                    saveReportPath = Path.GetFullPath(saveReportPath);
+                    ExcelNpoi.Save(wb, saveReportPath);
+                }
+                finally
+                {
+                    wb.Close();
                 }
 
-                // 3.图片和OLE对象
-                _logger.Info("处理图片和OLE对象");
-                ExcelAddPicture(ws, "Issue_Photos", reportHeaderInfo.Issue_Photos_Pics, ws_setup.Cells["A11"].Text, ReportType, _reportService.TempPath);
-                ExcelAddPicture(ws, "Test_Setup", reportHeaderInfo.Test_Setup_Pics, ws_setup.Cells["A12"].Text, ReportType, _reportService.TempPath);
-
-                string ate_Addr = ws_setup.Cells["A9"].Text;
-                EmbedOleObjectWithEpplus(ws, ATEPath, ate_Addr);
-                wb.Worksheets.Delete(ws_setup); // 删除设置表
-
-                saveReportPath = saveFileDialog.ShowDialog() == true
-                    ? saveFileDialog.FileName
-                    : Path.Combine(Directory.GetCurrentDirectory(), reportFI.Name);
-                saveReportPath = Path.GetFullPath(saveReportPath);
-                package.SaveAs(saveReportPath);
+                // OLE 附件在文件保存后用 Excel COM 嵌入（NPOI 2.7.4 无 OLE 写入能力）
+                if (!string.IsNullOrWhiteSpace(ATEPath) && File.Exists(ATEPath) && !string.IsNullOrWhiteSpace(ateAddr))
+                {
+                    ExcelOleEmbedder.Embed(saveReportPath,
+                    [
+                        new OleEmbedRequest
+                        {
+                            ObjectPath = ATEPath,
+                            SheetName = mainSheetName,
+                            TopLeftAddress = ateAddr,
+                            WidthPx = 100,
+                            HeightPx = 100
+                        }
+                    ]);
+                }
             }
             catch (Exception ex)
             {

@@ -1,7 +1,5 @@
 using NLog;
-using OfficeOpenXml;
-using OfficeOpenXml.Drawing;
-using OfficeOpenXml.Drawing.OleObject;
+using NPOI.SS.UserModel;
 using ORT一键报告.Models;
 using ORT一键报告.Reports.ViewModels;
 using ORT一键报告.Reports.Views;
@@ -19,23 +17,23 @@ namespace ORT一键报告.Utils
         private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
 
-        #region EPPlus
+        #region Excel（NPOI）
 
         public static string GetCellAddress(int row, int column)
         {
-            return ExcelCellBase.GetAddress(row, column);
+            return ExcelNpoi.AddressOf(row, column);
         }
         public static string GetCellColumn(int column)
         {
-            return ExcelCellBase.GetAddress(1, column).Replace("1", "");
+            return ExcelNpoi.AddressOf(1, column).Replace("1", "");
         }
 
-        public static DataCell FindCellByValue(ExcelWorksheet ws, string value, string excludeValue = "", bool ignoreCase = true, DataCell start = null, DataCell end = null)
+        public static DataCell FindCellByValue(ISheet ws, string value, string excludeValue = "", bool ignoreCase = true, DataCell start = null, DataCell end = null)
         {
             int snRowStart = 1;
             int snColumnStart = 1;
-            int snColumnEnd = ws.Dimension.End.Column;
-            int snRowEnd = ws.Dimension.End.Row;
+            int snColumnEnd = ExcelNpoi.LastColumn(ws);
+            int snRowEnd = ExcelNpoi.LastRow(ws);
             DataCell result;
 
             if (start != null)
@@ -65,7 +63,7 @@ namespace ORT一键报告.Utils
             {
                 for (int col = snColumnStart; col <= snColumnEnd; col++)
                 {
-                    var _value = ws.Cells[row, col].Text;
+                    var _value = ExcelNpoi.CellText(ws, row, col);
                     if (ignoreCase)
                         _value = _value.ToLower();
                     if (_value.Contains(value))
@@ -82,117 +80,11 @@ namespace ORT一键报告.Utils
             return null;
         }
 
-        public static void EmbedOleObjectWithInterop(string targetExcelPath, string objectToEmbedPath, string TopLeftAddress = "A1")
-        {
-            _logger.Info($"插入OLE对象到{targetExcelPath}...");
-            if (objectToEmbedPath is null or "")
-            {
-                _logger.Warn($"OLE对象路径({objectToEmbedPath})为空");
-                return;
-            }
-            Microsoft.Office.Interop.Excel.Application excelApp = null;
-            Microsoft.Office.Interop.Excel.Workbook workbook = null;
-            try
-            {
-                // 1. 启动 Excel 应用
-                excelApp = new Microsoft.Office.Interop.Excel.Application
-                {
-                    Visible = true,
-                    DisplayAlerts = false
-                };
+        /* OLE 对象嵌入已迁移：NPOI 2.7.4 无 OLE 写入能力，改由 Utils/ExcelOleEmbedder.cs
+           用 Excel COM 批量实现（流程变为：NPOI 写完并保存 → 调用 ExcelOleEmbedder.Embed）。 */
 
-                // 2. 打开目标文件
-                workbook = excelApp.Workbooks.Open(targetExcelPath);
-                Microsoft.Office.Interop.Excel.Worksheet worksheet = (Microsoft.Office.Interop.Excel.Worksheet)workbook.Worksheets[1];
 
-                // 3. 定义嵌入位置 (例如 A1 单元格)
-                Microsoft.Office.Interop.Excel.Range range = worksheet.Range[TopLeftAddress];
-                double left = (double)range.Left;
-                double top = (double)range.Top;
-
-                // 4. 执行嵌入操作
-                dynamic oleObjects = worksheet.OLEObjects(); // 提前获取 OLE 对象集合
-                oleObjects.Add(
-                    Filename: objectToEmbedPath,
-                    Link: false,
-                    DisplayAsIcon: true,
-                    IconFileName: Type.Missing,
-                    IconIndex: Type.Missing,
-                    IconLabel: "点击查看详细数据",
-                    Left: left,
-                    Top: top
-                );
-
-                // 5. 保存并关闭
-                workbook.Save();
-                workbook.Close();
-                _logger.Info("OLE对象插入成功");
-            }
-            catch (Exception ex)
-            {
-                _logger.Error(ex, "OLE对象插入失败");
-            }
-            finally
-            {
-                // 6. 清理 COM 对象 (非常重要，防止内存泄漏)
-                if (workbook != null)
-                {
-                    System.Runtime.InteropServices.Marshal.ReleaseComObject(workbook);
-                }
-
-                if (excelApp != null)
-                {
-                    excelApp.Quit();
-                    System.Runtime.InteropServices.Marshal.ReleaseComObject(excelApp);
-                }
-                GC.Collect();
-                GC.WaitForPendingFinalizers();
-            }
-        }
-
-        public static void EmbedOleObjectWithEpplus(ExcelWorksheet ws, string objectToEmbedPath, string TopLeftAddress = "A1", string IconPath = "", int IconX = 10, int IcnoY = 10, int IconW = 100, int IconH = 100)
-        {
-            _logger.Info($"插入OLE对象到{ws.Name}...");
-            if (objectToEmbedPath is null or "")
-            {
-                _logger.Warn($"OLE对象路径({objectToEmbedPath})为空");
-                return;
-            }
-
-            using MemoryStream iconStream = new(Resources.image_xlsx_emf);
-            iconStream.Position = 0; // 必须重置流指针到开头
-            try
-            {
-                DataCell tmp = new()
-                {
-                    TopLeftAddress = TopLeftAddress
-                };
-                ExcelOleObjectParameters oleSets = new()
-                {
-                    LinkToFile = false,
-                    DisplayAsIcon = true
-                };
-
-                if (string.IsNullOrWhiteSpace(IconPath))
-                {
-                    oleSets.Icon = new ExcelImage(iconStream, ePictureType.Png);
-                }
-                else
-                {
-                    oleSets.Icon = new ExcelImage(IconPath);
-                }
-                ExcelOleObject oleObject = ws.Drawings.AddOleObject(Path.GetFileNameWithoutExtension(objectToEmbedPath), objectToEmbedPath, oleSets);
-                oleObject.SetPosition(tmp.Row, IconX, tmp.Column, IcnoY);
-                oleObject.SetSize(IconW, IconH);
-                _logger.Info($"插入OLE对象到{ws.Name}完成");
-            }
-            catch (Exception ex)
-            {
-                _logger.Error(ex, "OLE对象插入失败");
-            }
-        }
-
-        public static void ReadReportHeaderInfo(ExcelWorksheet ws, ReportHeaderViewModel reportHeaderInfo)
+        public static void ReadReportHeaderInfo(ISheet ws, ReportHeaderViewModel reportHeaderInfo)
         {
             // 辅助函数: 找到issue和setup图片所在的标题行
             DataCell issueTitle = FindCellByValue(ws, "Issue Photos");
@@ -208,9 +100,9 @@ namespace ORT一键报告.Utils
             reportHeaderInfo.Test_Setup_Pics = setupTitle is null ? null : GetPicturesInRange(ws, setupTitle.Row, 1, setupTitle.Row + 10);
         }
 
-        public static DataCell GetPicturesInRange(ExcelWorksheet ws, int startRow = 1, int startCol = 1, int endRow = -1, int endCol = -1)
+        public static DataCell GetPicturesInRange(ISheet ws, int startRow = 1, int startCol = 1, int endRow = -1, int endCol = -1)
         {
-            if (ws == null || ws.Drawings.Count == 0)
+            if (ws == null || ws.DrawingPatriarch == null)
             {
                 return null;
             }
@@ -220,13 +112,14 @@ namespace ORT一键报告.Utils
                 Images = []
             };
 
+            List<(int Row, int Column, string Name, byte[] Bytes)> pictures = ExcelNpoi.Pictures(ws);
             if (endRow == -1)
             {
-                endRow = ws.Dimension.End.Row;
+                endRow = ExcelNpoi.LastRow(ws);
             }
             if (endCol == -1)
             {
-                endCol = ws.Dimension.End.Column;
+                endCol = ExcelNpoi.LastColumn(ws);
             }
 
             // 规范化范围 (防止用户传反了行列)
@@ -235,44 +128,40 @@ namespace ORT一键报告.Utils
             int minCol = Math.Min(startCol, endCol);
             int maxCol = Math.Max(startCol, endCol);
 
-            foreach (var drawing in ws.Drawings)
+            foreach ((int Row, int Column, string Name, byte[] Bytes) picture in pictures)
             {
-                if (drawing is ExcelPicture picture)
-                {
-                    // 获取图片左上角锚定的单元格坐标
-                    int picRow = picture.From.Row + 1; // EPPlus Row 索引从 0 开始，Excel 从 1 开始
-                    int picCol = picture.From.Column + 1;
+                // 图片左上角锚定的单元格坐标（1 基）
+                int picRow = picture.Row;
+                int picCol = picture.Column;
 
-                    // 判断逻辑：只要图片的左上角在指定范围内，就视为在该范围内
-                    if (picRow >= minRow && picRow <= maxRow &&
-                        picCol >= minCol && picCol <= maxCol)
+                // 判断逻辑：只要图片的左上角在指定范围内，就视为在该范围内
+                if (picRow >= minRow && picRow <= maxRow &&
+                    picCol >= minCol && picCol <= maxCol)
+                {
+                    result.Images.Add(new ExcelPictureInfo()
                     {
-                        result.Images.Add(new ExcelPictureInfo()
-                        {
-                            Picture = picture,
-                            ImageSrc = Image.ConvertToWpfImage(picture.Image.ImageBytes),
-                            ImageBytes = picture.Image.ImageBytes,
-                            Name = picture.Name,
-                        });
-                        result.Data = "Images";
-                        result.Row = picRow;
-                        result.Column = picCol;
-                    }
+                        ImageSrc = Image.ConvertToWpfImage(picture.Bytes),
+                        ImageBytes = picture.Bytes,
+                        Name = picture.Name,
+                    });
+                    result.Data = "Images";
+                    result.Row = picRow;
+                    result.Column = picCol;
                 }
             }
             result.Images.Reverse();
             return result;
         }
 
-        public static DataCell FindInfoByText(ExcelWorksheet ws, string toFind)
+        public static DataCell FindInfoByText(ISheet ws, string toFind)
         {
             DataCell headerInfo = new();
             DataCell cell = FindCellByValue(ws, toFind);
             if (cell != null)
             {
-                for (int c = cell.Column + 1; c <= ws.Dimension.End.Column; c++)
+                for (int c = cell.Column + 1; c <= ExcelNpoi.LastColumn(ws); c++)
                 {
-                    string value = ws.Cells[cell.Row, c].Text;
+                    string value = ExcelNpoi.CellText(ws, cell.Row, c);
                     if (value != "")
                     {
                         headerInfo.Data = value;
@@ -285,35 +174,40 @@ namespace ORT一键报告.Utils
             return headerInfo;
         }
 
-        public static void ExcelAddPicture(ExcelWorksheet ws, string picName, DataCell pics, string TopLeft, string rpType, string tempPath)
+        public static void ExcelAddPicture(ISheet ws, string picName, DataCell pics, string TopLeft, string rpType, string tempPath)
         {
-            if (pics.Images.Count <= 0)
+            if (pics?.Images == null || pics.Images.Count <= 0)
             {
                 return;
             }
-            ExcelCellAddress start = new ExcelAddress(TopLeft).Start;
-            int startRow = start.Row;
-            int startCol = start.Column;
+            int startRow = ExcelNpoi.RowOf(TopLeft);
+            int startCol = ExcelNpoi.ColumnOf(TopLeft);
+            if (startRow <= 0 || startCol <= 0)
+            {
+                _logger.Warn($"插入图片失败：单元格地址无效 {TopLeft}");
+                return;
+            }
+
             for (int i = 0; i < pics.Images.Count; i++)
             {
-                string picPath = Path.Combine(tempPath, picName + "_" + i + ".png");
-                if (File.Exists(picPath))
+                ExcelPictureInfo info = pics.Images[i];
+                byte[] bytes = info.ImageBytes;
+                if (bytes == null || bytes.Length == 0)
                 {
-                    string[] temp = picPath.Split('.');
-                    picPath = temp[0] + "_" + i + "." + temp[1];
+                    // 只有界面用 ImageSource 时，先落成临时 PNG 再读字节
+                    string picPath = Path.Combine(tempPath, picName + "_" + i + ".png");
+                    Image.SaveImageSourceToFile(info.ImageSrc, picPath, "png");
+                    bytes = File.Exists(picPath) ? File.ReadAllBytes(picPath) : null;
                 }
-
-                Image.SaveImageSourceToFile(pics.Images[i].ImageSrc, picPath, "png");
-                ExcelPicture test_desc_pic_excel = ws.Drawings.AddPicture(picName + "_" + i, picPath);
-                test_desc_pic_excel.SetSize(300, 220);
-                if (rpType.ToLower() == "burn")
+                if (bytes == null || bytes.Length == 0)
                 {
-                    test_desc_pic_excel.SetPosition(startRow, 0, startCol + (i * 4), -18 + (i * 72));
+                    _logger.Warn($"插入图片跳过：{picName}_{i} 无图片数据");
+                    continue;
                 }
-                else
-                {
-                    test_desc_pic_excel.SetPosition(startRow, 10, startCol + (i * 4), -24 + (i * 44));
-                }
+                // 与原 EPPlus 版一致：300x220 像素，按序号横向每 4 列排一张
+                int offsetY = rpType.ToLower() == "burn" ? -18 + (i * 72) : -24 + (i * 44);
+                ExcelNpoi.AddPicture(ws.Workbook, ws, bytes, PictureType.PNG,
+                    startRow, startCol + (i * 4), 300, 220, 0, Math.Max(0, offsetY));
             }
         }
 

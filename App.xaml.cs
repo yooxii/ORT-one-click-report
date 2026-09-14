@@ -29,8 +29,8 @@ namespace ORT一键报告
             {
                 base.OnStartup(e);
 
-                // EPPlus 非商业许可统一在程序入口设置（各服务不再重复设置）
-                OfficeOpenXml.ExcelPackage.License.SetNonCommercialPersonal("Lucas");
+                // Excel 读写统一使用 NPOI（Apache-2.0，无需任何许可调用/无写入署名）；
+                // OLE 附件嵌入由 Utils/ExcelOleEmbedder 走 Excel COM 完成。
 
                 // 初始化语言服务（读取上次保存的语言或使用系统语言）
                 ORT一键报告.Services.LanguageService.Initialize();

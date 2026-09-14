@@ -218,6 +218,8 @@
     </Compile>
     <Compile Include="Utils\Image.cs" />
     <Compile Include="Utils\Report.cs" />
+    <Compile Include="Utils\ExcelNpoi.cs" />
+    <Compile Include="Utils\ExcelOleEmbedder.cs" />
     <Compile Include="Main\Views\WindowMainSettings.xaml.cs">
       <DependentUpon>WindowMainSettings.xaml</DependentUpon>
     </Compile>
@@ -494,8 +496,8 @@
     <PackageReference Include="DocumentFormat.OpenXml">
       <Version>3.5.1</Version>
     </PackageReference>
-    <PackageReference Include="EPPlus">
-      <Version>8.6.3</Version>
+    <PackageReference Include="NPOI">
+      <Version>2.7.4</Version>
     </PackageReference>
     <PackageReference Include="FreeSql.Provider.Sqlite">
       <Version>3.5.310</Version>

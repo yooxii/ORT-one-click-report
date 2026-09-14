@@ -1,5 +1,7 @@
-﻿using OfficeOpenXml;
+using NPOI.SS.UserModel;
+using NPOI.XSSF.UserModel;
 using ORT一键报告.Services;
+using ORT一键报告.Utils;
 using ORT一键报告.ViewModels;
 using System;
 using System.Collections.Generic;
@@ -33,28 +35,40 @@ namespace ORT一键报告.Reports.ViewModels
 
         private string ReadJsonFromExcel(string filePath)
         {
-            FileInfo fileInfo = new(filePath);
-            using ExcelPackage package = new(fileInfo);
-            ExcelWorksheet worksheet = package.Workbook.Worksheets["Setup"]; // 获取名为"setup"的工作表
-
-            if (worksheet != null)
+            if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
             {
-                string cellValue = worksheet.Cells[1, 1].Value?.ToString(); // 第一行第一列
-                return cellValue;
+                return null;
             }
-
-            return null;
+            XSSFWorkbook wb = ExcelNpoi.OpenRead(filePath);
+            try
+            {
+                ISheet worksheet = ExcelNpoi.SheetByName(wb, "Setup"); // 获取名为"setup"的工作表
+                return worksheet == null ? null : ExcelNpoi.CellValue(worksheet, 1, 1); // 第一行第一列
+            }
+            finally
+            {
+                wb.Close();
+            }
         }
 
         private string SaveJsonToExcel(string updatedJson)
         {
             string filePath = _emiService.OpenPathDialog(LanguageService.Get("Dlg_SaveSettingsTo"), initPath: Path.GetDirectoryName(TemplatePath));
-            FileInfo fileInfo = new(filePath);
-            using ExcelPackage package = new(fileInfo);
-            ExcelWorksheet worksheet = package.Workbook.Worksheets["Setup"]; // 获取名为"setup"的工作表
-
-            worksheet?.Cells[1, 1].Value = updatedJson;
-            package.Save();
+            if (string.IsNullOrWhiteSpace(filePath))
+            {
+                return filePath;
+            }
+            XSSFWorkbook wb = File.Exists(filePath) ? ExcelNpoi.OpenRead(filePath) : ExcelNpoi.Create();
+            try
+            {
+                ISheet worksheet = ExcelNpoi.SheetByName(wb, "Setup") ?? wb.CreateSheet("Setup"); // 获取名为"setup"的工作表
+                ExcelNpoi.SetCell(worksheet, 1, 1, updatedJson);
+                ExcelNpoi.Save(wb, filePath);
+            }
+            finally
+            {
+                wb.Close();
+            }
             return filePath;
         }
 

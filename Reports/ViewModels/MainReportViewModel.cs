@@ -1,6 +1,8 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using NLog;
-using OfficeOpenXml;
+using NPOI.SS.UserModel;
+using NPOI.XSSF.UserModel;
+using ExcelNpoi = ORT一键报告.Utils.ExcelNpoi;
 using ORT一键报告.Models;
 using ORT一键报告.Services;
 using System;
@@ -148,9 +150,15 @@ namespace ORT一键报告.Reports.ViewModels
             {
                 _reportService.UUTInfos = await Task.Run(() =>
                 {
-                    ExcelPackage package = new(new FileInfo(ReportName));
-                    ExcelWorkbook wb = package.Workbook;
-                    return ReadInfosFromReport(wb, ReportName);
+                    XSSFWorkbook wb = ExcelNpoi.OpenRead(ReportName);
+                    try
+                    {
+                        return ReadInfosFromReport(wb, ReportName);
+                    }
+                    finally
+                    {
+                        wb.Close();
+                    }
                 });
             }
             catch (Exception ex)
@@ -179,10 +187,10 @@ namespace ORT一键报告.Reports.ViewModels
                 }
             }
 
-            UUTInfoFromExcel ReadInfosFromReport(ExcelWorkbook wb, string _ReportName)
+            UUTInfoFromExcel ReadInfosFromReport(XSSFWorkbook wb, string _ReportName)
             {
-                var ws_cover = wb.Worksheets[0];
-                var ws_waterfall = wb.Worksheets[2];
+                var ws_cover = ExcelNpoi.SheetAt(wb, 0);
+                var ws_waterfall = ExcelNpoi.SheetAt(wb, 2);
                 UUTInfoFromExcel uutInfos = new()
                 {
                     DC = GetSubstringAfter(_ReportName, "WK", 4)
@@ -194,11 +202,11 @@ namespace ORT一键报告.Reports.ViewModels
                     MessageBox.Show(LocalizationHelper.Get("Msg_RevColNotFound"), LanguageService.Get("Cap_Error"));
                     return null;
                 }
-                for (int c = rev.Column + 1; c < ws_cover.Dimension.End.Column; c++)
+                for (int c = rev.Column + 1; c < ExcelNpoi.LastColumn(ws_cover); c++)
                 {
-                    if (ws_cover.Cells[rev.Row, c].Text != "")
+                    if (ExcelNpoi.CellText(ws_cover, rev.Row, c) != "")
                     {
-                        uutInfos.Revision = ws_cover.Cells[rev.Row, c].Text;
+                        uutInfos.Revision = ExcelNpoi.CellText(ws_cover, rev.Row, c);
                     }
                 }
 
@@ -223,7 +231,7 @@ namespace ORT一键报告.Reports.ViewModels
                         SNs.Add(cell.Data);
                     }
                     uutInfos.SNs = SNs;
-                    uutInfos.WorkOrder = ws_waterfall.Cells[snCells.Last().Row + 1, snCells.Last().Column].Text;
+                    uutInfos.WorkOrder = ExcelNpoi.CellText(ws_waterfall, snCells.Last().Row + 1, snCells.Last().Column);
                 }
                 List<TestItemInfo> TestItems = FindTestItems(ws_waterfall, snTitleCell.Row, snCells.First().Row, snCells.First().Column);
                 uutInfos.TestItems = TestItems;
@@ -231,15 +239,15 @@ namespace ORT一键报告.Reports.ViewModels
                 return uutInfos;
             }
 
-            List<TestItemInfo> FindTestItems(ExcelWorksheet ws, int rDate, int rSN, int cSN)
+            List<TestItemInfo> FindTestItems(ISheet ws, int rDate, int rSN, int cSN)
             {
                 List<TestItemInfo> testItems = [];
                 int c = cSN + 1;
-                for (; c <= ws.Dimension.End.Column; c++)
+                for (; c <= ExcelNpoi.LastColumn(ws); c++)
                 {
-                    if (ws.Cells[rSN, c].Text is string testitem && testitem != "")
+                    if (ExcelNpoi.CellText(ws, rSN, c) is string testitem && testitem != "")
                     {
-                        string date = ws.Cells[rDate, c].Text;
+                        string date = ExcelNpoi.CellText(ws, rDate, c);
                         testItems.Add(new TestItemInfo
                         {
                             TestItemName = testitem,
@@ -250,7 +258,7 @@ namespace ORT一键报告.Reports.ViewModels
                 return testItems;
             }
 
-            List<DataCell> FindSNs(ExcelWorksheet ws, DataCell snTitleCell)
+            List<DataCell> FindSNs(ISheet ws, DataCell snTitleCell)
             {
                 /// <summary>
                 /// 在指定范围内寻找单元格值为"S/N"的单元格，找到后继续向下寻找非空且右边也非空的单元格，直到遇到空单元格为止，将这些非空单元格的信息（值、行号、列号）存储在SNCell对象中，并返回一个包含所有SNCell对象的列表。
@@ -258,11 +266,11 @@ namespace ORT一键报告.Reports.ViewModels
                 List<DataCell> snCells = [];
                 int rSN = snTitleCell.Row + 1;
                 int cSN = snTitleCell.Column;
-                for (; rSN <= ws.Dimension.End.Row; rSN++)
+                for (; rSN <= ExcelNpoi.LastRow(ws); rSN++)
                 {
-                    if (ws.Cells[rSN, cSN].Text is string sn && sn != "")
+                    if (ExcelNpoi.CellText(ws, rSN, cSN) is string sn && sn != "")
                     {
-                        if (ws.Cells[rSN, cSN + 1].Text is "")
+                        if (ExcelNpoi.CellText(ws, rSN, cSN + 1) is "")
                         {
                             continue;
                         }

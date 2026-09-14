@@ -1,6 +1,8 @@
-﻿using Microsoft.Win32;
+using Microsoft.Win32;
 using NLog;
-using OfficeOpenXml;
+using NPOI.SS.UserModel;
+using NPOI.XSSF.UserModel;
+using ORT一键报告.Utils;
 using ORT一键报告.Models;
 using ORT一键报告.Services;
 using System;
@@ -338,12 +340,12 @@ namespace ORT一键报告.Reports.Views
             return (c1 == bC && c2 == aC) || (c1 == aC && c2 == bC);
         }
 
-        private List<string> FindSNs(ExcelWorksheet ws, DataCell startCell, DataCell maxSpecCell)
+        private List<string> FindSNs(ISheet ws, DataCell startCell, DataCell maxSpecCell)
         {
             List<string> SNs = new();
             for (int r = startCell.Row + 1; r < maxSpecCell.Row; r++)
             {
-                SNs.Add(ws.Cells[r, 1].Text);
+                SNs.Add(ExcelNpoi.CellText(ws, r, 1));
             }
             return SNs;
         }
@@ -357,45 +359,52 @@ namespace ORT一键报告.Reports.Views
                 {
                     throw new FileNotFoundException($"ATE数据文件在{fileName}未找到");
                 }
-                ExcelPackage atePackage = new ExcelPackage(ateFile);
-                ExcelWorkbook wb = atePackage.Workbook;
-                ExcelWorksheet ws = wb.Worksheets[0];
-
-                DataCell startCell = FindCellByValue(ws, "s/n");
-                DataCell maxSpecCell = FindCellByValue(ws, "MAX_SPEC");
-
-                if (startCell.Row >= maxSpecCell.Row)
+                XSSFWorkbook wb = ExcelNpoi.OpenRead(ateFile.FullName);
+                try
                 {
-                    _logger.Warn("无ATE数据");
-                    _ = MessageBox.Show(LocalizationHelper.Get("Msg_NoATEData"));
-                    return;
-                }
+                    ISheet ws = ExcelNpoi.SheetAt(wb, 0);
 
-                List<string> SNs = FindSNs(ws, startCell, maxSpecCell);
-                int flag = IsPair(SNs[0], SNs[1]) ? 1 : IsPair(SNs[0], SNs[SNs.Count / 2]) ? 2 : 3;
-                if (ATEitems.Count != 0)
-                {
-                    ATEitems.Clear();
-                }
-                for (int r = startCell.Row + 1; r < maxSpecCell.Row; r++)
-                {
-                    for (int c = startCell.Column + 1; c <= ws.Dimension.End.Column; c++)
+                    DataCell startCell = FindCellByValue(ws, "s/n");
+                    DataCell maxSpecCell = FindCellByValue(ws, "MAX_SPEC");
+
+                    if (startCell.Row >= maxSpecCell.Row)
                     {
-                        if (ws.Cells[startCell.Row, c].Text == "")
-                        {
-                            break;
-                        }
-                        bool isBefore = flag == 1 ? (r - startCell.Row) % 2 == 1 : flag != 2 || (r - startCell.Row) / (SNs.Count / 2) == 0;
-                        ATEitems.Add(new ATEItem()
-                        {
-                            SN = ws.Cells[r, startCell.Column].Text,
-                            Value = ws.Cells[r, c].Text,
-                            MaxSpec = ws.Cells[maxSpecCell.Row, c].Text,
-                            MinSpec = ws.Cells[maxSpecCell.Row + 1, c].Text,
-                            ItemName = ws.Cells[startCell.Row - 1, c].Text,
-                            OutputType = ws.Cells[startCell.Row, c].Text
-                        }, isBefore);
+                        _logger.Warn("无ATE数据");
+                        _ = MessageBox.Show(LocalizationHelper.Get("Msg_NoATEData"));
+                        return;
                     }
+
+                    List<string> SNs = FindSNs(ws, startCell, maxSpecCell);
+                    int flag = IsPair(SNs[0], SNs[1]) ? 1 : IsPair(SNs[0], SNs[SNs.Count / 2]) ? 2 : 3;
+                    if (ATEitems.Count != 0)
+                    {
+                        ATEitems.Clear();
+                    }
+                    int lastCol = ExcelNpoi.LastColumn(ws);
+                    for (int r = startCell.Row + 1; r < maxSpecCell.Row; r++)
+                    {
+                        for (int c = startCell.Column + 1; c <= lastCol; c++)
+                        {
+                            if (ExcelNpoi.CellText(ws, startCell.Row, c) == "")
+                            {
+                                break;
+                            }
+                            bool isBefore = flag == 1 ? (r - startCell.Row) % 2 == 1 : flag != 2 || (r - startCell.Row) / (SNs.Count / 2) == 0;
+                            ATEitems.Add(new ATEItem()
+                            {
+                                SN = ExcelNpoi.CellText(ws, r, startCell.Column),
+                                Value = ExcelNpoi.CellText(ws, r, c),
+                                MaxSpec = ExcelNpoi.CellText(ws, maxSpecCell.Row, c),
+                                MinSpec = ExcelNpoi.CellText(ws, maxSpecCell.Row + 1, c),
+                                ItemName = ExcelNpoi.CellText(ws, startCell.Row - 1, c),
+                                OutputType = ExcelNpoi.CellText(ws, startCell.Row, c)
+                            }, isBefore);
+                        }
+                    }
+                }
+                finally
+                {
+                    wb.Close();
                 }
             }
             catch (Exception ex)
@@ -414,44 +423,42 @@ namespace ORT一键报告.Reports.Views
             _logger.Info("ATE报告生成中...");
             try
             {
-                ExcelPackage package = new ExcelPackage(ATEtemp);
-                ExcelWorkbook wb = package.Workbook;
-                ExcelWorksheet ws = wb.Worksheets[0];
+                XSSFWorkbook wb = ExcelNpoi.OpenRead(ATEtemp.FullName);
+                try
+                {
+                    ISheet ws = ExcelNpoi.SheetAt(wb, 0);
+                    int lastRow = ExcelNpoi.LastRow(ws);
 
-                // 1. 写入标题和Spec
-                var sourceRange = ws.Cells[1, 4, ws.Dimension.End.Row, 4];
-                for (int c = 0; c < ATEitems.ItemNames.Count; c++)
-                {
-                    ws.Cells[3, c + 4].Value = ATEitems.ItemNames[c];
-                    ws.Cells[4, c + 4].Value = ATEitems.OutputTypes[c];
-                    ws.Cells[11, c + 4].Value = ATEitems.MaxSpecs[c];
-                    ws.Cells[12, c + 4].Value = ATEitems.MinSpecs[c];
-                    if (c > 0)
+                    // 1. 写入标题和Spec
+                    for (int c = 0; c < ATEitems.ItemNames.Count; c++)
                     {
-                        // 2. 复制样式和公式
-                        sourceRange.CopyStyles(ws.Cells[1, c + 4, ws.Dimension.End.Row, c + 4]);
-                        sourceRange.CopyFormulas(ws.Cells[1, c + 4, ws.Dimension.End.Row, c + 4]);
-                    }
-                }
-                // 3. 编辑行数量
-                Make_EditRowCounts(ws);
-                // 4. 写入数据
-                for (int r = 0; r < ATETable.Rows.Count; r++)
-                {
-                    List<object> dataArray = ATETable.Rows[r].ItemArray.ToList();
-                    for (int c = 0; c < dataArray.Count; c++)
-                    {
-                        try
+                        ExcelNpoi.SetCell(ws, 3, c + 4, ATEitems.ItemNames[c]);
+                        ExcelNpoi.SetCell(ws, 4, c + 4, ATEitems.OutputTypes[c]);
+                        ExcelNpoi.SetCell(ws, 11, c + 4, ATEitems.MaxSpecs[c]);
+                        ExcelNpoi.SetCell(ws, 12, c + 4, ATEitems.MinSpecs[c]);
+                        if (c > 0)
                         {
-                            ws.Cells[r + 5, c + 3].Value = double.Parse(dataArray[c].ToString());
-                        }
-                        catch
-                        {
-                            ws.Cells[r + 5, c + 3].Value = dataArray[c].ToString();
+                            // 2. 复制样式和公式（原 EPPlus 的 CopyStyles + CopyFormulas）
+                            ExcelNpoi.CopyColumnStylesAndFormulas(ws, 4, c + 4, 1, lastRow);
                         }
                     }
+                    // 3. 编辑行数量
+                    Make_EditRowCounts(ws);
+                    // 4. 写入数据
+                    for (int r = 0; r < ATETable.Rows.Count; r++)
+                    {
+                        List<object> dataArray = ATETable.Rows[r].ItemArray.ToList();
+                        for (int c = 0; c < dataArray.Count; c++)
+                        {
+                            ExcelNpoi.SetCell(ws, r + 5, c + 3, dataArray[c]);
+                        }
+                    }
+                    Make_SaveAsExcel(wb);
                 }
-                Make_SaveAsExcel(package);
+                finally
+                {
+                    wb.Close();
+                }
             }
             catch (Exception ex)
             {
@@ -460,43 +467,52 @@ namespace ORT一键报告.Reports.Views
             }
         }
 
-        private void Make_EditRowCounts(ExcelWorksheet ws)
+        private void Make_EditRowCounts(ISheet ws)
         {
             int addRowCount = 0;
+            int lastCol = ExcelNpoi.LastColumn(ws);
             // 试验前
             if (ATEitems.BeforeDatas.Count > 3)
             {
-                addRowCount += ATEitems.BeforeDatas.Count - 3;
-                ws.InsertRow(6, addRowCount);
-                ws.Cells[5, 1, 5, ws.Dimension.End.Column].CopyStyles(ws.Cells[6, 1, 6 + addRowCount, ws.Dimension.End.Column]);
-                ws.Rows[6, 6 + addRowCount].Height = ws.Row(5).Height;
+                int n = ATEitems.BeforeDatas.Count - 3;
+                addRowCount += n;
+                ExcelNpoi.InsertRows(ws, 6, n);
+                for (int i = 0; i < n; i++)
+                {
+                    ExcelNpoi.CopyRowStyle(ws, 5, 6 + i, lastCol);
+                }
             }
             else if (ATEitems.BeforeDatas.Count < 3)
             {
-                ws.DeleteRow(5 + addRowCount, 3 - ATEitems.BeforeDatas.Count);
-                addRowCount -= 3 - ATEitems.BeforeDatas.Count;
+                int n = 3 - ATEitems.BeforeDatas.Count;
+                ExcelNpoi.DeleteRows(ws, 5 + addRowCount, n);
+                addRowCount -= n;
             }
             // 试验后
             if (ATEitems.AfterDatas.Count > 3)
             {
-                ws.InsertRow(9 + addRowCount, ATEitems.AfterDatas.Count - 3);
-                ws.Cells[8 + addRowCount, 1, 8 + addRowCount, ws.Dimension.End.Column].CopyStyles(ws.Cells[8 + addRowCount, 1, 8 + addRowCount + ATEitems.AfterDatas.Count - 3, ws.Dimension.End.Column]);
-                ws.Rows[8 + addRowCount, 8 + addRowCount + ATEitems.AfterDatas.Count - 3].Height = ws.Row(5).Height;
-                addRowCount += ATEitems.AfterDatas.Count - 3;
+                int n = ATEitems.AfterDatas.Count - 3;
+                ExcelNpoi.InsertRows(ws, 9 + addRowCount, n);
+                for (int i = 0; i < n; i++)
+                {
+                    ExcelNpoi.CopyRowStyle(ws, 8 + addRowCount, 8 + addRowCount + i, lastCol);
+                }
+                addRowCount += n;
             }
             else if (ATEitems.AfterDatas.Count < 3)
             {
-                ws.DeleteRow(8 + addRowCount, 3 - ATEitems.AfterDatas.Count);
-                addRowCount -= 3 - ATEitems.AfterDatas.Count;
+                int n = 3 - ATEitems.AfterDatas.Count;
+                ExcelNpoi.DeleteRows(ws, 8 + addRowCount, n);
+                addRowCount -= n;
                 // 如果没有试验后数据，删除试验后的部分
                 if (ATEitems.AfterDatas.Count == 0)
                 {
-                    ws.DeleteRow(17 + addRowCount, 4);
+                    ExcelNpoi.DeleteRows(ws, 17 + addRowCount, 4);
                 }
             }
         }
 
-        private void Make_SaveAsExcel(ExcelPackage package)
+        private void Make_SaveAsExcel(XSSFWorkbook wb)
         {
             SaveFileDialog saveFileDialog = new SaveFileDialog
             {
@@ -507,7 +523,7 @@ namespace ORT一键报告.Reports.Views
             SaveATEPath = saveFileDialog.ShowDialog() == true
                 ? saveFileDialog.FileName
                 : Path.Combine(Directory.GetCurrentDirectory(), Path.GetFileName(ATEFilePath));
-            package.SaveAs(SaveATEPath);
+            ExcelNpoi.Save(wb, SaveATEPath);
             _logger.Info($"ATE报告已保存，路径：{SaveATEPath}");
             _ = MessageBox.Show($"ATE报告已保存，路径：{SaveATEPath}");
         }

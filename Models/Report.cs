@@ -1,10 +1,10 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
-using OfficeOpenXml;
-using OfficeOpenXml.Drawing;
+using CommunityToolkit.Mvvm.ComponentModel;
+using NPOI.SS.Util;
 using ORT一键报告.Reports.Models;
 using ORT一键报告.Reports.Views;
 using System.Collections.Generic;
 using System.Windows.Media;
+using ORT一键报告.Utils;
 
 namespace ORT一键报告.Models
 {
@@ -34,16 +34,16 @@ namespace ORT一键报告.Models
         public List<ExcelPictureInfo> Images { get; set; } = null;
         public string TopLeftAddress
         {
-            get => ExcelCellBase.GetAddress(Row, Column);
+            get => ExcelNpoi.AddressOf(Row, Column);
             set
             {
                 int bRow = Row;
                 int bColumn = Column;
                 try
                 {
-                    ExcelAddress Addr = new(value);
-                    Row = Addr.Start.Row;
-                    Column = Addr.Start.Column;
+                    CellReference addr = new(value);
+                    Row = addr.Row + 1;
+                    Column = addr.Col + 1;
                 }
                 catch
                 {
@@ -108,8 +108,7 @@ namespace ORT一键报告.Models
     /// </summary>
     public class ExcelPictureInfo
     {
-        public ExcelPicture Picture { get; set; } // 原始对象
-        public ImageSource ImageSrc { get; set; }    // System.Drawing.Image 对象
+        public ImageSource ImageSrc { get; set; }    // 图片源（界面显示用）
         public byte[] ImageBytes { get; set; }    // 字节数组
         public string Name { get; set; }          // 图片名称
     }

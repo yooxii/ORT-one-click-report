@@ -1,6 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using NLog;
-using OfficeOpenXml;
+using NPOI.SS.UserModel;
+using NPOI.XSSF.UserModel;
+using ExcelNpoi = ORT一键报告.Utils.ExcelNpoi;
 using ORT一键报告.Models;
 using ORT一键报告.Reports.Models;
 using ORT一键报告.Reports.ViewModels;
@@ -124,13 +126,17 @@ namespace ORT一键报告.Reports.Views
                 _logger.Warn($"未找到{ReportType}报告模板，跳过读取该报告表头（请检查{reportService.RootPath}下的Report文件夹）");
                 return;
             }
-            FileInfo thermalFileInfo = new(templatePath);
-            using (ExcelPackage package = new(thermalFileInfo))
+            XSSFWorkbook wb = ExcelNpoi.OpenRead(templatePath);
+            try
             {
-                ExcelWorksheet ws = package.Workbook.Worksheets[0];
+                ISheet ws = ExcelNpoi.SheetAt(wb, 0);
 
                 ReadReportHeaderInfo(ws, ReportHeaderInfo);
                 _logger.Info($"{ReportType}表头读取完成");
+            }
+            finally
+            {
+                wb.Close();
             }
             SetInfoToWindow();
         }

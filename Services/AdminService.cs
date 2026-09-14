@@ -1,5 +1,7 @@
-﻿using NLog;
-using OfficeOpenXml;
+using NLog;
+using NPOI.SS.UserModel;
+using NPOI.XSSF.UserModel;
+using ORT一键报告.Utils;
 using ORT一键报告.Models;
 using System;
 using System.Collections.Generic;
@@ -648,57 +650,63 @@ namespace ORT一键报告.Services
         /// </summary>
         public int SyncTestItemsFromScheduleFile(string filePath)
         {
-            using FileStream fs = new(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-            using ExcelPackage package = new(fs);
-            ExcelWorksheet ws = package.Workbook.Worksheets.FirstOrDefault(s => s.Name == "Test Items")
-                ?? throw new InvalidDataException("未找到 Test Items 工作表");
-
-            int headerRow = 0;
-            int colName = 0, colPeriod = 0, colOwner = 0, colRemark = 0;
-            int endCol = ws.Dimension?.End.Column ?? 0;
-            for (int r = 1; r <= Math.Min(ws.Dimension?.End.Row ?? 0, 10); r++)
+            XSSFWorkbook wb = ExcelNpoi.OpenRead(filePath);
+            try
             {
-                for (int c = 1; c <= endCol; c++)
-                {
-                    string text = Norm(ws.Cells[r, c].Text);
-                    if (text.Contains("試驗項目")) { headerRow = r; colName = c; }
-                    else if (text.Contains("試驗時間")) colPeriod = c;
-                    else if (text.Contains("負責人")) colOwner = c;
-                    else if (text.Contains("備考")) colRemark = c;
-                }
-                if (headerRow > 0) break;
-            }
-            if (headerRow == 0) throw new InvalidDataException("未找到 Test Items 表头");
+                ISheet ws = ExcelNpoi.SheetByName(wb, "Test Items")
+                    ?? throw new InvalidDataException("未找到 Test Items 工作表");
 
-            int added = 0, updated = 0;
-            int endRow = ws.Dimension?.End.Row ?? 0;
-            for (int r = headerRow + 1; r <= endRow; r++)
-            {
-                string name = NullIfEmpty(ws.Cells[r, colName].Text);
-                if (name == null) continue;
-                TestItemCatalog existing = _db.FreeSql.Select<TestItemCatalog>().Where(t => t.Name == name).First();
-                if (existing == null)
+                int headerRow = 0;
+                int colName = 0, colPeriod = 0, colOwner = 0, colRemark = 0;
+                int endCol = ExcelNpoi.LastColumn(ws);
+                for (int r = 1; r <= Math.Min(ExcelNpoi.LastRow(ws), 10); r++)
                 {
-                    _db.FreeSql.Insert(new TestItemCatalog
+                    for (int c = 1; c <= endCol; c++)
                     {
-                        Name = name,
-                        Period = colPeriod > 0 ? NullIfEmpty(ws.Cells[r, colPeriod].Text) : null,
-                        Owner = colOwner > 0 ? NullIfEmpty(ws.Cells[r, colOwner].Text) : null,
-                        Remark = colRemark > 0 ? NullIfEmpty(ws.Cells[r, colRemark].Text) : null
-                    }).ExecuteAffrows();
-                    added++;
+                        string text = Norm(ExcelNpoi.CellText(ws, r, c));
+                        if (text.Contains("試驗項目")) { headerRow = r; colName = c; }
+                        else if (text.Contains("試驗時間")) colPeriod = c;
+                        else if (text.Contains("負責人")) colOwner = c;
+                        else if (text.Contains("備考")) colRemark = c;
+                    }
+                    if (headerRow > 0) break;
                 }
-                else
+                if (headerRow == 0) throw new InvalidDataException("未找到 Test Items 表头");
+
+                int added = 0, updated = 0;
+                int endRow = ExcelNpoi.LastRow(ws);
+                for (int r = headerRow + 1; r <= endRow; r++)
                 {
-                    existing.Period = colPeriod > 0 ? NullIfEmpty(ws.Cells[r, colPeriod].Text) : existing.Period;
-                    existing.Owner = colOwner > 0 ? NullIfEmpty(ws.Cells[r, colOwner].Text) : existing.Owner;
-                    existing.Remark = colRemark > 0 ? NullIfEmpty(ws.Cells[r, colRemark].Text) : existing.Remark;
-                    _db.FreeSql.Update<TestItemCatalog>().SetSource(existing).Where(t => t.Id == existing.Id).ExecuteAffrows();
-                    updated++;
+                    string name = NullIfEmpty(ExcelNpoi.CellText(ws, r, colName));
+                    if (name == null) continue;
+                    TestItemCatalog existing = _db.FreeSql.Select<TestItemCatalog>().Where(t => t.Name == name).First();
+                    if (existing == null)
+                    {
+                        _db.FreeSql.Insert(new TestItemCatalog
+                        {
+                            Name = name,
+                            Period = colPeriod > 0 ? NullIfEmpty(ExcelNpoi.CellText(ws, r, colPeriod)) : null,
+                            Owner = colOwner > 0 ? NullIfEmpty(ExcelNpoi.CellText(ws, r, colOwner)) : null,
+                            Remark = colRemark > 0 ? NullIfEmpty(ExcelNpoi.CellText(ws, r, colRemark)) : null
+                        }).ExecuteAffrows();
+                        added++;
+                    }
+                    else
+                    {
+                        existing.Period = colPeriod > 0 ? NullIfEmpty(ExcelNpoi.CellText(ws, r, colPeriod)) : existing.Period;
+                        existing.Owner = colOwner > 0 ? NullIfEmpty(ExcelNpoi.CellText(ws, r, colOwner)) : existing.Owner;
+                        existing.Remark = colRemark > 0 ? NullIfEmpty(ExcelNpoi.CellText(ws, r, colRemark)) : existing.Remark;
+                        _db.FreeSql.Update<TestItemCatalog>().SetSource(existing).Where(t => t.Id == existing.Id).ExecuteAffrows();
+                        updated++;
+                    }
                 }
+                _logger.Info($"从计划表文件同步测试项目: 新增{added}个, 更新{updated}个");
+                return added;
             }
-            _logger.Info($"从计划表文件同步测试项目: 新增{added}个, 更新{updated}个");
-            return added;
+            finally
+            {
+                wb.Close();
+            }
         }
 
         /// <summary>
@@ -707,23 +715,24 @@ namespace ORT一键报告.Services
         /// </summary>
         public (int customers, int products, int mappings) SyncCatalogsFromScheduleFile(string filePath)
         {
-            using FileStream fs = new(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-            using ExcelPackage package = new(fs);
+            XSSFWorkbook wb = ExcelNpoi.OpenRead(filePath);
+            try
+            {
             int cAdded = 0, pAdded = 0, mAdded = 0;
 
             // 1. Cust. Code 工作表：B、C 列 → 客户；G、H 列 → 产品别
-            ExcelWorksheet wsCode = package.Workbook.Worksheets.FirstOrDefault(s => s.Name == "Cust. Code");
+            ISheet wsCode = ExcelNpoi.SheetByName(wb, "Cust. Code");
             if (wsCode != null)
             {
-                int endRow = wsCode.Dimension?.End.Row ?? 0;
-                int endCol = wsCode.Dimension?.End.Column ?? 0;
+                int endRow = ExcelNpoi.LastRow(wsCode);
+                int endCol = ExcelNpoi.LastColumn(wsCode);
                 // 定位表头行（含 ENDCUSTOMER 或 ProductType）
                 int headerRow = 0;
                 for (int r = 1; r <= Math.Min(endRow, 10); r++)
                 {
                     for (int c = 1; c <= endCol; c++)
                     {
-                        string header = Norm(wsCode.Cells[r, c].Text);
+                        string header = Norm(ExcelNpoi.CellText(wsCode, r, c));
                         if (header.Contains("ENDCUSTOMER") || header.Contains("Cust.Code"))
                         {
                             headerRow = r;
@@ -737,8 +746,8 @@ namespace ORT一键报告.Services
                     // 客户：B 列=Cust. Code，C 列=ENDCUSTOMER
                     for (int rr = headerRow + 1; rr <= endRow; rr++)
                     {
-                        string code = NormalizeCode(wsCode.Cells[rr, 2].Text);
-                        string customer = NullIfEmpty(wsCode.Cells[rr, 3].Text);
+                        string code = NormalizeCode(ExcelNpoi.CellText(wsCode, rr, 2));
+                        string customer = NullIfEmpty(ExcelNpoi.CellText(wsCode, rr, 3));
                         if (customer != null)
                         {
                             if (!_db.FreeSql.Select<Customer>().Where(c => c.Name == customer).Any())
@@ -749,8 +758,8 @@ namespace ORT一键报告.Services
                             UpsertCodeMapping("C", code, customer);
                         }
                         // 产品别：G 列=Code，H 列=Product Type
-                        string productCode = NormalizeCode(wsCode.Cells[rr, 7].Text);
-                        string product = NullIfEmpty(wsCode.Cells[rr, 8].Text);
+                        string productCode = NormalizeCode(ExcelNpoi.CellText(wsCode, rr, 7));
+                        string product = NullIfEmpty(ExcelNpoi.CellText(wsCode, rr, 8));
                         if (product != null)
                         {
                             if (!_db.FreeSql.Select<Product>().Where(p => p.Name == product).Any())
@@ -765,20 +774,19 @@ namespace ORT一键报告.Services
             }
 
             // 2. Schedule 工作表：机种→客户/产品别映射 + 字典补充
-            ExcelWorksheet ws = package.Workbook.Worksheets.FirstOrDefault(s => s.Name == "Schedule")
-                ?? package.Workbook.Worksheets[0];
+            ISheet ws = ExcelNpoi.SheetByName(wb, "Schedule") ?? ExcelNpoi.SheetAt(wb, 0);
             (int headerRowS, Dictionary<string, int> map) = FindScheduleHeader(ws);
             if (headerRowS > 0)
             {
                 int colModel = map.TryGetValue("機種名", out int cm) ? cm : 0;
                 int colProduct = map.TryGetValue("產品別", out int cp) ? cp : 0;
                 int colCustomer = map.TryGetValue("客戶別", out int cc) ? cc : 0;
-                int endRow = ws.Dimension?.End.Row ?? 0;
+                int endRow = ExcelNpoi.LastRow(ws);
                 for (int r = headerRowS + 1; r <= endRow; r++)
                 {
-                    string model = colModel > 0 ? NullIfEmpty(ws.Cells[r, colModel].Text) : null;
-                    string product = colProduct > 0 ? NullIfEmpty(ws.Cells[r, colProduct].Text) : null;
-                    string customer = colCustomer > 0 ? NullIfEmpty(ws.Cells[r, colCustomer].Text) : null;
+                    string model = colModel > 0 ? NullIfEmpty(ExcelNpoi.CellText(ws, r, colModel)) : null;
+                    string product = colProduct > 0 ? NullIfEmpty(ExcelNpoi.CellText(ws, r, colProduct)) : null;
+                    string customer = colCustomer > 0 ? NullIfEmpty(ExcelNpoi.CellText(ws, r, colCustomer)) : null;
                     if (model == null) continue;
                     if (customer != null && !_db.FreeSql.Select<Customer>().Where(c => c.Name == customer).Any())
                     {
@@ -803,18 +811,23 @@ namespace ORT一键报告.Services
             }
             _logger.Info($"从计划表文件同步字典: 客户+{cAdded}, 产品别+{pAdded}, 机种映射+{mAdded}");
             return (cAdded, pAdded, mAdded);
+            }
+            finally
+            {
+                wb.Close();
+            }
         }
 
-        private static (int, Dictionary<string, int>) FindScheduleHeader(ExcelWorksheet ws)
+        private static (int, Dictionary<string, int>) FindScheduleHeader(ISheet ws)
         {
-            int endRow = Math.Min(ws.Dimension?.End.Row ?? 0, 10);
-            int endCol = ws.Dimension?.End.Column ?? 0;
+            int endRow = Math.Min(ExcelNpoi.LastRow(ws), 10);
+            int endCol = ExcelNpoi.LastColumn(ws);
             for (int r = 1; r <= endRow; r++)
             {
                 Dictionary<string, int> map = [];
                 for (int c = 1; c <= endCol; c++)
                 {
-                    string key = Norm(ws.Cells[r, c].Text);
+                    string key = Norm(ExcelNpoi.CellText(ws, r, c));
                     if (key.Contains("機種名")) map["機種名"] = c;
                     else if (key.Contains("產品別")) map["產品別"] = c;
                     else if (key.Contains("客戶別")) map["客戶別"] = c;

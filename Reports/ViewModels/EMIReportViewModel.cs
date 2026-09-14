@@ -1,7 +1,7 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using NLog;
-using OfficeOpenXml;
-using OfficeOpenXml.Style;
+using NPOI.SS.UserModel;
+using NPOI.XSSF.UserModel;
 using ORT一键报告.Models;
 using ORT一键报告.Reports.Views;
 using ORT一键报告.Services;
@@ -218,7 +218,7 @@ namespace ORT一键报告.Reports.ViewModels
             return excelFiles[0];
         }
 
-        private void WriteDatas(ExcelWorksheet ws, Dictionary<string, object> setups, List<EMIUUTData> datas, UUTInfoFromExcel uutInfos)
+        private OleEmbedRequest WriteDatas(ISheet ws, Dictionary<string, object> setups, List<EMIUUTData> datas, UUTInfoFromExcel uutInfos)
         {
             int rowStart = 44;
             int colSN = 4;
@@ -278,19 +278,19 @@ namespace ORT一键报告.Reports.ViewModels
                 _logger.Error($"{ex.Message}, 从Setup工作表解析行列信息失败，使用默认行列设置");
             }
 
-            ws.Cells[addressTESTED_BY].Value = ReportHeaderVM?.TESTED_BY.Data ?? null;
-            ws.Cells[addressAPPROVED_BY].Value = ReportHeaderVM?.APPROVED_BY.Data ?? null;
-            ws.Cells[addressPROJECT_NAME].Value = ReportHeaderVM?.PROJECT_NAME.Data ?? null;
-            ws.Cells[addressTEST_STAGE].Value = ReportHeaderVM?.TEST_STAGE.Data ?? null;
-            ws.Cells[addressTEST_PERIOD].Value = ReportHeaderVM?.TestStart ?? null;
-            ws.Cells[addressTEST_CONCLUSION].Value = ReportHeaderVM?.TestPass is true ? "Pass" : "Fail";
-            ws.Cells[rowStart, colWorkOrder].Value = uutInfos?.WorkOrder ?? null;
-            ws.Cells[rowStart, colVersion].Value = uutInfos?.Revision ?? null;
-            ws.Cells[rowStart, colDC].Value = uutInfos?.DC ?? null;
+            ExcelNpoi.SetCell(ws, ExcelNpoi.RowOf(addressTESTED_BY), ExcelNpoi.ColumnOf(addressTESTED_BY), ReportHeaderVM?.TESTED_BY.Data);
+            ExcelNpoi.SetCell(ws, ExcelNpoi.RowOf(addressAPPROVED_BY), ExcelNpoi.ColumnOf(addressAPPROVED_BY), ReportHeaderVM?.APPROVED_BY.Data);
+            ExcelNpoi.SetCell(ws, ExcelNpoi.RowOf(addressPROJECT_NAME), ExcelNpoi.ColumnOf(addressPROJECT_NAME), ReportHeaderVM?.PROJECT_NAME.Data);
+            ExcelNpoi.SetCell(ws, ExcelNpoi.RowOf(addressTEST_STAGE), ExcelNpoi.ColumnOf(addressTEST_STAGE), ReportHeaderVM?.TEST_STAGE.Data);
+            ExcelNpoi.SetCell(ws, ExcelNpoi.RowOf(addressTEST_PERIOD), ExcelNpoi.ColumnOf(addressTEST_PERIOD), ReportHeaderVM?.TestStart);
+            ExcelNpoi.SetCell(ws, ExcelNpoi.RowOf(addressTEST_CONCLUSION), ExcelNpoi.ColumnOf(addressTEST_CONCLUSION), ReportHeaderVM?.TestPass is true ? "Pass" : "Fail");
+            ExcelNpoi.SetCell(ws, rowStart, colWorkOrder, uutInfos?.WorkOrder);
+            ExcelNpoi.SetCell(ws, rowStart, colVersion, uutInfos?.Revision);
+            ExcelNpoi.SetCell(ws, rowStart, colDC, uutInfos?.DC);
 
             int sn_rows = 0;
             List<DataCell> SN_cells = [];
-            ws.Cells[rowStart, colSN].Value = emiUUTdatasInfo.SN[0];
+            ExcelNpoi.SetCell(ws, rowStart, colSN, emiUUTdatasInfo.SN[0]);
             SN_cells.Add(new DataCell(rowStart, colSN) { Data = emiUUTdatasInfo.SN[0] });
 
             int sn_written_count = 1;
@@ -300,10 +300,10 @@ namespace ORT一键报告.Reports.ViewModels
                 {
                     break;
                 }
-                if (ws.GetMergeCellId(_sn_row, colSN) != ws.GetMergeCellId(_sn_row + 1, colSN))
+                if (ExcelNpoi.MergeRegionId(ws, _sn_row, colSN) != ExcelNpoi.MergeRegionId(ws, _sn_row + 1, colSN))
                 {
                     SN_cells.Add(new DataCell(_sn_row, colSN) { Data = emiUUTdatasInfo.SN[sn_written_count] });
-                    ws.Cells[_sn_row + 1, colSN].Value = emiUUTdatasInfo.SN[sn_written_count++];
+                    ExcelNpoi.SetCell(ws, _sn_row + 1, colSN, emiUUTdatasInfo.SN[sn_written_count++]);
                     if (sn_rows == 0) sn_rows = _sn_row - rowStart + 1;
                 }
             }
@@ -324,107 +324,129 @@ namespace ORT一键报告.Reports.ViewModels
             foreach (var sn in _datas)
             {
                 int row_snStart = row_cursor;
-                ws.Cells[row_snStart, colSN].Value = sn.Key;
-                ws.Cells[row_snStart, colSN - 2].Value = uutNo;
-                ws.Cells[row_snStart, colDC + 1].Value = uutNo++;
+                ExcelNpoi.SetCell(ws, row_snStart, colSN, sn.Key);
+                ExcelNpoi.SetCell(ws, row_snStart, colSN - 2, uutNo);
+                ExcelNpoi.SetCell(ws, row_snStart, colDC + 1, uutNo++);
                 if (row_snStart != rowStart)
                 {
-                    ws.Cells[row_snStart, colWorkOrder].Formula = $"={GetCellColumn(colWorkOrder)}{rowStart}";
-                    ws.Cells[row_snStart, colVersion].Formula = $"={GetCellColumn(colVersion)}{rowStart}";
-                    ws.Cells[row_snStart, colDC].Formula = $"={GetCellColumn(colDC)}{rowStart}";
+                    ExcelNpoi.SetFormula(ws, row_snStart, colWorkOrder, $"={GetCellColumn(colWorkOrder)}{rowStart}");
+                    ExcelNpoi.SetFormula(ws, row_snStart, colVersion, $"={GetCellColumn(colVersion)}{rowStart}");
+                    ExcelNpoi.SetFormula(ws, row_snStart, colDC, $"={GetCellColumn(colDC)}{rowStart}");
                 }
                 foreach (var vol in sn.Value)
                 {
                     int row_voltageStart = row_cursor;
-                    ws.Cells[row_voltageStart, colVoltage].Value = vol.Key;
-                    ws.Cells[row_voltageStart, colVoltage + 1].Value = vol.Key.Contains("110") ? "60Hz" : "50Hz";
+                    ExcelNpoi.SetCell(ws, row_voltageStart, colVoltage, vol.Key);
+                    ExcelNpoi.SetCell(ws, row_voltageStart, colVoltage + 1, vol.Key.Contains("110") ? "60Hz" : "50Hz");
                     foreach (var load in vol.Value)
                     {
                         int row_loadStart = row_cursor;
-                        ws.Cells[row_loadStart, colLoad].Value = load.Key;
+                        ExcelNpoi.SetCell(ws, row_loadStart, colLoad, load.Key);
                         foreach (var lisn in load.Value)
                         {
-                            ws.Cells[row_cursor, colLisn].Value = lisn.LISN == "L" ? "Line" : "Neutral";
-                            ws.Cells[row_cursor, colNo].Value = lisn.MinDatas[0];
-                            ws.Cells[row_cursor, colFreq].Value = lisn.MinDatas[1];
-                            ws.Cells[row_cursor, colQP_Limit].Value = lisn.MinDatas[3];
-                            ws.Cells[row_cursor, colAVG_Limit].Value = lisn.MinDatas[6];
-                            ws.Cells[row_cursor, colQP_Max].Value = lisn.MinDatas[2];
-                            ws.Cells[row_cursor, colAVG].Value = lisn.MinDatas[5];
+                            ExcelNpoi.SetCell(ws, row_cursor, colLisn, lisn.LISN == "L" ? "Line" : "Neutral");
+                            ExcelNpoi.SetCell(ws, row_cursor, colNo, lisn.MinDatas[0]);
+                            ExcelNpoi.SetCell(ws, row_cursor, colFreq, lisn.MinDatas[1]);
+                            ExcelNpoi.SetCell(ws, row_cursor, colQP_Limit, lisn.MinDatas[3]);
+                            ExcelNpoi.SetCell(ws, row_cursor, colAVG_Limit, lisn.MinDatas[6]);
+                            ExcelNpoi.SetCell(ws, row_cursor, colQP_Max, lisn.MinDatas[2]);
+                            ExcelNpoi.SetCell(ws, row_cursor, colAVG, lisn.MinDatas[5]);
 
-                            ws.Cells[row_cursor, colAVG + 2].Formula = $"T{row_cursor}-Q{row_cursor}";
-                            ws.Cells[row_cursor, colAVG + 3].Formula = $"U{row_cursor}-R{row_cursor}";
+                            ExcelNpoi.SetFormula(ws, row_cursor, colAVG + 2, $"T{row_cursor}-Q{row_cursor}");
+                            ExcelNpoi.SetFormula(ws, row_cursor, colAVG + 3, $"U{row_cursor}-R{row_cursor}");
 
-                            ws.Row(row_cursor).Height = 21.75;
+                            ExcelNpoi.SetRowHeight(ws, row_cursor, 21.75);
                             row_cursor++;
                         }
-                        ws.Cells[row_loadStart, colLoad, row_cursor - 1, colLoad].Merge = true; // 合并负载列
+                        ExcelNpoi.Merge(ws, row_loadStart, colLoad, row_cursor - 1, colLoad); // 合并负载列
                     }
-                    ws.Cells[row_voltageStart, colVoltage, row_cursor - 1, colVoltage].Merge = true; // 合并电压列
-                    ws.Cells[row_voltageStart, colVoltage + 1, row_cursor - 1, colVoltage + 1].Merge = true; // 合并频率列
-                    ws.Cells[row_voltageStart, colComments - 1, row_cursor - 1, colComments - 1].Merge = true; // 合并Appendix列
-                    ws.Cells[row_voltageStart, colComments, row_cursor - 1, colComments].Merge = true; // 合并Comments列
+                    ExcelNpoi.Merge(ws, row_voltageStart, colVoltage, row_cursor - 1, colVoltage); // 合并电压列
+                    ExcelNpoi.Merge(ws, row_voltageStart, colVoltage + 1, row_cursor - 1, colVoltage + 1); // 合并频率列
+                    ExcelNpoi.Merge(ws, row_voltageStart, colComments - 1, row_cursor - 1, colComments - 1); // 合并Appendix列
+                    ExcelNpoi.Merge(ws, row_voltageStart, colComments, row_cursor - 1, colComments); // 合并Comments列
                 }
-                ws.Cells[row_snStart, colSN - 2, row_cursor - 1, colSN - 1].Merge = true; // 合并No列
-                ws.Cells[row_snStart, colSN, row_cursor - 1, colSN + 1].Merge = true; // 合并SN列
-                ws.Cells[row_snStart, colWorkOrder, row_cursor - 1, colWorkOrder + 1].Merge = true; // 合并WorlerNo列
-                ws.Cells[row_snStart, colVersion, row_cursor - 1, colVersion].Merge = true; // 合并Rev列
-                ws.Cells[row_snStart, colDC, row_cursor - 1, colDC].Merge = true; // 合并DC列
-                ws.Cells[row_snStart, colDC + 1, row_cursor - 1, colDC + 1].Merge = true; // 合并No.列
+                ExcelNpoi.Merge(ws, row_snStart, colSN - 2, row_cursor - 1, colSN - 1); // 合并No列
+                ExcelNpoi.Merge(ws, row_snStart, colSN, row_cursor - 1, colSN + 1); // 合并SN列
+                ExcelNpoi.Merge(ws, row_snStart, colWorkOrder, row_cursor - 1, colWorkOrder + 1); // 合并WorlerNo列
+                ExcelNpoi.Merge(ws, row_snStart, colVersion, row_cursor - 1, colVersion); // 合并Rev列
+                ExcelNpoi.Merge(ws, row_snStart, colDC, row_cursor - 1, colDC); // 合并DC列
+                ExcelNpoi.Merge(ws, row_snStart, colDC + 1, row_cursor - 1, colDC + 1); // 合并No.列
             }
 
             int rowEnd = row_cursor - 1;
 
-            ws.Cells[rowStart, colAVG_Limit + 1, rowEnd, colAVG_Limit + 1].Value = "-"; //设置Peak Max列的值为"-"
-            ws.Cells[rowStart, colAVG + 1, rowEnd, colAVG + 1].Value = "-"; //设置Margin Peak列的值为"-"
+            ExcelNpoi.FillRange(ws, rowStart, colAVG_Limit + 1, rowEnd, colAVG_Limit + 1, "-"); //设置Peak Max列的值为"-"
+            ExcelNpoi.FillRange(ws, rowStart, colAVG + 1, rowEnd, colAVG + 1, "-"); //设置Margin Peak列的值为"-"
 
             const string FMT_3_DECIMALS = "0.000";
             const string FMT_2_DECIMALS = "0.00";
 
-            // 设置数字格式
-            ws.Cells[rowStart, colFreq, rowEnd, colFreq].Style.Numberformat.Format = FMT_3_DECIMALS;
-            ws.Cells[rowStart, colQP_Limit, rowEnd, colQP_Limit].Style.Numberformat.Format = FMT_2_DECIMALS;
-            ws.Cells[rowStart, colAVG_Limit, rowEnd, colAVG_Limit].Style.Numberformat.Format = FMT_2_DECIMALS;
-            ws.Cells[rowStart, colQP_Max, rowEnd, colQP_Max].Style.Numberformat.Format = FMT_2_DECIMALS;
-            ws.Cells[rowStart, colAVG, rowEnd, colAVG].Style.Numberformat.Format = FMT_2_DECIMALS;
-            ws.Cells[rowStart, colAVG + 2, rowEnd, colAVG + 2].Style.Numberformat.Format = FMT_2_DECIMALS;
-            ws.Cells[rowStart, colAVG + 3, rowEnd, colAVG + 3].Style.Numberformat.Format = FMT_2_DECIMALS;
-
-            // 设置边框和样式
-            ws.Cells[rowStart, colSN - 2, rowEnd, colComments].Style.Border.Top.Style = ExcelBorderStyle.Thin;
-            ws.Cells[rowStart, colSN - 2, rowEnd, colComments].Style.Border.Bottom.Style = ExcelBorderStyle.Thin;
-            ws.Cells[rowStart, colSN - 2, rowEnd, colComments].Style.Border.Left.Style = ExcelBorderStyle.Thin;
-            ws.Cells[rowStart, colSN - 2, rowEnd, colComments].Style.Border.Right.Style = ExcelBorderStyle.Thin;
-            ws.Cells[rowStart - 2, colSN - 2, rowEnd, colComments].Style.Border.BorderAround(ExcelBorderStyle.Medium);
-            ws.Cells[rowStart - 2, colSN - 2, rowEnd, colComments].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
-            ws.Cells[rowStart - 2, colSN - 2, rowEnd, colComments].Style.VerticalAlignment = ExcelVerticalAlignment.Center;
-            ws.Cells[rowStart - 2, colSN - 2, rowEnd, colComments].Style.WrapText = true;
-            ws.Cells[rowStart - 2, colSN - 2, rowEnd, colComments].Style.Font.Size = 10;
-            ws.Cells[rowStart, 1, rowEnd + 1, colComments + 1].Style.Fill.PatternType = ExcelFillStyle.Solid;
-            ws.Cells[rowStart, 1, rowEnd + 1, colComments + 1].Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.White);
-
-            // 设置一些列为灰色背景
-            var grayBgColumns = new[] { colLisn, colQP_Limit, colAVG_Limit, colAVG + 1, colAVG + 2, colAVG + 3 };
-            foreach (var col in grayBgColumns)
-            {
-                ws.Cells[rowStart, col, rowEnd, col].Style.Fill.PatternType = ExcelFillStyle.Solid;
-                ws.Cells[rowStart, col, rowEnd, col].Style.Fill.BackgroundColor.SetColor(255, 242, 242, 242);
-            }
-
-            // 写入注脚
+            // 写注脚（先写值，样式在下面统一按「每个单元格一次成型」的方式套用：
+            // NPOI 一个单元格只有一个样式，不能像 EPPlus 那样分多次叠加，所以这里合并成一份 spec）
             var remarkLines = Remark.Split('\n');
             foreach (var line in remarkLines)
             {
-                ws.Cells[row_cursor, colSN - 2].Value = line;
-                ws.Cells[row_cursor, colSN - 2].Style.HorizontalAlignment = ExcelHorizontalAlignment.Left;
-                ws.Cells[row_cursor, colSN - 2].Style.Font.Size = 11;
+                ExcelNpoi.SetCell(ws, row_cursor, colSN - 2, line);
                 row_cursor++;
             }
-            // 设置注脚区域的边框和背景
-            ws.Cells[rowEnd + 1, 1, row_cursor, colComments + 1].Style.Fill.PatternType = ExcelFillStyle.Solid;
-            ws.Cells[rowEnd + 1, 1, row_cursor, colComments + 1].Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.White);
+            int remarkEnd = row_cursor - 1;
 
-            // 插入数据的压缩包
+            int[] grayBgColumns = [colLisn, colQP_Limit, colAVG_Limit, colAVG + 1, colAVG + 2, colAVG + 3];
+            for (int r = rowStart - 2; r <= Math.Max(rowEnd + 1, remarkEnd); r++)
+            {
+                for (int c = 1; c <= colComments + 1; c++)
+                {
+                    ExcelNpoi.CellStyleSpec spec = new();
+                    bool inBlock = r >= rowStart && r <= rowEnd;
+                    bool inStyled = r >= rowStart - 2 && r <= rowEnd && c >= colSN - 2 && c <= colComments;
+                    bool inRemark = r >= rowEnd + 1 && r <= remarkEnd && c == colSN - 2;
+                    bool inRemarkBlock = r >= rowEnd + 1 && r <= remarkEnd && c >= 1 && c <= colComments + 1;
+
+                    if (inBlock)
+                    {
+                        if (c == colFreq)
+                        {
+                            spec.NumberFormat = FMT_3_DECIMALS;
+                        }
+                        else if (c == colQP_Limit || c == colAVG_Limit || c == colQP_Max || c == colAVG || c == colAVG + 2 || c == colAVG + 3)
+                        {
+                            spec.NumberFormat = FMT_2_DECIMALS;
+                        }
+                    }
+                    if (inStyled)
+                    {
+                        spec.Border = BorderStyle.Thin;
+                        spec.Horizontal = NPOI.SS.UserModel.HorizontalAlignment.Center;
+                        spec.Vertical = NPOI.SS.UserModel.VerticalAlignment.Center;
+                        spec.WrapText = true;
+                        spec.FontSize = 10;
+                        if (r == rowStart - 2 || r == rowEnd || c == colSN - 2 || c == colComments)
+                        {
+                            spec.OuterBorder = BorderStyle.Medium;
+                        }
+                    }
+                    if (inRemark)
+                    {
+                        spec.Horizontal = NPOI.SS.UserModel.HorizontalAlignment.Left;
+                        spec.FontSize = 11;
+                    }
+                    if (inBlock || inRemarkBlock)
+                    {
+                        spec.FillRgb = [255, 255, 255]; // 白底
+                    }
+                    if (inBlock && grayBgColumns.Contains(c))
+                    {
+                        spec.FillRgb = [242, 242, 242]; // 灰底
+                    }
+                    if (spec.NumberFormat != null || spec.Border.HasValue || spec.OuterBorder.HasValue || spec.Horizontal.HasValue
+                        || spec.Vertical.HasValue || spec.WrapText || spec.FontSize.HasValue || spec.FillRgb != null)
+                    {
+                        ExcelNpoi.ApplyStyle(ws, r, c, r, c, spec);
+                    }
+                }
+            }
+
+            // 插入数据的压缩包（OLE 由调用方在保存后用 Excel COM 嵌入）
             string zipPath = System.IO.Path.Combine(DataPath, $"{datas[0].Model}.zip");
             FileService.CreateFilteredZip(DataPath, zipPath, @"\.pdf$");
             string iconDir = System.IO.Path.Combine(_reportService.TemplateDir, "ZipEMF");
@@ -433,7 +455,16 @@ namespace ORT一键报告.Reports.ViewModels
             string iconPath = System.IO.Path.Combine(iconDir, $"{datas[0].Model}.zip.emf");
             if (!File.Exists(iconPath))
                 Image.GenerateCenteredEmf(iconPath, Resources._7z_Icon, $"{datas[0].Model}.zip");
-            EmbedOleObjectWithEpplus(ws, zipPath, new DataCell(rowStart, colComments - 2).TopLeftAddress, iconPath, 0, 0, 120, 60);
+            return new OleEmbedRequest
+            {
+                ObjectPath = zipPath,
+                TopLeftAddress = new DataCell(rowStart, colComments - 2).TopLeftAddress,
+                IconPath = iconPath,
+                WidthPx = 120,
+                HeightPx = 60,
+                OffsetXPx = 0,
+                OffsetYPx = 0
+            };
         }
 
         private async void ConvertToPdfAsync(string sourcePath)
@@ -461,18 +492,36 @@ namespace ORT一键报告.Reports.ViewModels
                 _logger.Error("EMI报告模板不存在");
                 return;
             }
-            using ExcelPackage package = new(new FileInfo(TemplatePath));
-            ExcelWorkbook wb = package.Workbook;
-            ExcelWorksheet ws = wb.Worksheets["Conducted EMI"];
+            XSSFWorkbook wb = ExcelNpoi.OpenRead(TemplatePath);
+            OleEmbedRequest oleRequest;
+            string savePath;
+            try
+            {
+                ISheet ws = ExcelNpoi.SheetByName(wb, "Conducted EMI");
+                ISheet ws_setup = ExcelNpoi.SheetByName(wb, "Setup");
+                var setups = SettingsViewModel.ParseJson(ExcelNpoi.CellText(ws_setup, 1, 1));
+                int setupIndex = wb.GetSheetIndex(ws_setup);
+                if (setupIndex >= 0)
+                {
+                    wb.RemoveSheetAt(setupIndex);
+                }
 
-            ExcelWorksheet ws_setup = wb.Worksheets["Setup"];
-            var setups = SettingsViewModel.ParseJson(ws_setup.Cells["A1"].Text);
-            wb.Worksheets.Delete(ws_setup);
+                oleRequest = await Task.Run(() => WriteDatas(ws, setups, emiDatas, _reportService.UUTInfos));
 
-            await Task.Run(() => WriteDatas(ws, setups, emiDatas, _reportService.UUTInfos));
+                savePath = _emiService.SavePathDialog("选择保存路径", "2.1 Conducted EMI Measurement", "EMI报告|*.xlsx", _reportService.RootPath) ?? Directory.GetCurrentDirectory() + "2.1 Conducted EMI Measurement.xlsx";
+                ExcelNpoi.Save(wb, savePath);
+            }
+            finally
+            {
+                wb.Close();
+            }
 
-            string savePath = _emiService.SavePathDialog("选择保存路径", "2.1 Conducted EMI Measurement", "EMI报告|*.xlsx", _reportService.RootPath) ?? Directory.GetCurrentDirectory() + "2.1 Conducted EMI Measurement.xlsx";
-            package.SaveAs(savePath);
+            // OLE 附件（数据压缩包）在文件保存后用 Excel COM 嵌入
+            if (oleRequest != null && File.Exists(oleRequest.ObjectPath))
+            {
+                oleRequest.SheetName = "Conducted EMI";
+                ExcelOleEmbedder.Embed(savePath, [oleRequest]);
+            }
             MessageBox.Show($"报告已保存到{savePath}", LanguageService.Get("Cap_SaveSuccess"), MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
