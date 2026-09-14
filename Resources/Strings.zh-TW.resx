@@ -125,6 +125,42 @@
   <data name="Sort_Default" xml:space="preserve">
     <value>預設順序</value>
   </data>
+  <data name="Menu_Actions" xml:space="preserve">
+    <value>操作</value>
+  </data>
+  <data name="Menu_Export" xml:space="preserve">
+    <value>匯出</value>
+  </data>
+  <data name="Menu_Toolbar" xml:space="preserve">
+    <value>工具列</value>
+  </data>
+  <data name="Menu_Columns" xml:space="preserve">
+    <value>欄</value>
+  </data>
+  <data name="Menu_FilterAll" xml:space="preserve">
+    <value>全部</value>
+  </data>
+  <data name="Menu_FilterMoreFormat" xml:space="preserve">
+    <value>僅列出前 {0} 項</value>
+  </data>
+  <data name="Menu_ClearColumnFilter" xml:space="preserve">
+    <value>清除本欄篩選</value>
+  </data>
+  <data name="Menu_ClearAllFilters" xml:space="preserve">
+    <value>清除全部篩選</value>
+  </data>
+  <data name="Plans_SN" xml:space="preserve">
+    <value>S/N</value>
+  </data>
+  <data name="Plans_DC" xml:space="preserve">
+    <value>D/C</value>
+  </data>
+  <data name="Plans_REV" xml:space="preserve">
+    <value>REV</value>
+  </data>
+  <data name="Plans_WorkOrder" xml:space="preserve">
+    <value>工令</value>
+  </data>
   <data name="Plans_Title" xml:space="preserve">
     <value>領退和計劃</value>
   </data>

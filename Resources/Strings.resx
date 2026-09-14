@@ -125,6 +125,42 @@
   <data name="Sort_Default" xml:space="preserve">
     <value>默认顺序</value>
   </data>
+  <data name="Menu_Actions" xml:space="preserve">
+    <value>操作</value>
+  </data>
+  <data name="Menu_Export" xml:space="preserve">
+    <value>导出</value>
+  </data>
+  <data name="Menu_Toolbar" xml:space="preserve">
+    <value>工具栏</value>
+  </data>
+  <data name="Menu_Columns" xml:space="preserve">
+    <value>列</value>
+  </data>
+  <data name="Menu_FilterAll" xml:space="preserve">
+    <value>全部</value>
+  </data>
+  <data name="Menu_FilterMoreFormat" xml:space="preserve">
+    <value>仅列出前 {0} 项</value>
+  </data>
+  <data name="Menu_ClearColumnFilter" xml:space="preserve">
+    <value>清除本列筛选</value>
+  </data>
+  <data name="Menu_ClearAllFilters" xml:space="preserve">
+    <value>清除全部筛选</value>
+  </data>
+  <data name="Plans_SN" xml:space="preserve">
+    <value>S/N</value>
+  </data>
+  <data name="Plans_DC" xml:space="preserve">
+    <value>D/C</value>
+  </data>
+  <data name="Plans_REV" xml:space="preserve">
+    <value>REV</value>
+  </data>
+  <data name="Plans_WorkOrder" xml:space="preserve">
+    <value>工令</value>
+  </data>
   <data name="Plans_Title" xml:space="preserve">
     <value>领退和计划</value>
   </data>
@@ -246,10 +282,10 @@
     <value>机种名称</value>
   </data>
   <data name="Plans_ModelNameTC" xml:space="preserve">
-    <value>機種名稱</value>
+    <value>机种名称</value>
   </data>
   <data name="Plans_WorkNumber" xml:space="preserve">
-    <value>工作編號</value>
+    <value>工作编号</value>
   </data>
   <data name="Plans_TestItem" xml:space="preserve">
     <value>测试项目</value>
@@ -288,10 +324,10 @@
     <value>领用日期</value>
   </data>
   <data name="Plans_RequisitionDocNo" xml:space="preserve">
-    <value>領料單据號</value>
+    <value>领料单据号</value>
   </data>
   <data name="Plans_IssueQty" xml:space="preserve">
-    <value>領出數量</value>
+    <value>领出数量</value>
   </data>
   <data name="Plans_StockInNo" xml:space="preserve">
     <value>入库单号</value>
@@ -834,7 +870,7 @@
     <value>阶段*</value>
   </data>
   <data name="Plans_RequisitionDateTC" xml:space="preserve">
-    <value>領用日期</value>
+    <value>领用日期</value>
   </data>
   <data name="Msg_UserCreated" xml:space="preserve">
     <value>用户已创建（默认角色：普通用户），可在右侧调整其身份。</value>

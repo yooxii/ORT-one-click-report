@@ -47,29 +47,6 @@
             </Style.Triggers>
         </Style>
         <!--筛选条件标签：领退表与计划表共用（删除命令会自行判断条件属于哪张表）-->
-        <DataTemplate x:Key="FilterChipTemplate">
-            <Border BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="1" CornerRadius="3"
-                    Margin="0,0,8,3" Padding="5,2" Background="{DynamicResource HeaderBackgroundBrush}">
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="{Binding Field}" VerticalAlignment="Center"
-                               FontWeight="Bold" Margin="0,0,5,0"/>
-                    <local:FilterDropDown
-                        Options="{Binding Options}"
-                        SelectedValues="{Binding SelectedValues}"
-                        Visibility="{Binding IsValueField, Converter={StaticResource BoolToVis}}"/>
-                    <StackPanel Orientation="Horizontal"
-                                Visibility="{Binding IsDateField, Converter={StaticResource BoolToVis}}">
-                        <DatePicker Width="112" SelectedDate="{Binding DateFrom, Mode=TwoWay}" ToolTip="{lex:Loc Plans_FromDate}"/>
-                        <TextBlock Text="~" VerticalAlignment="Center" Margin="3,0"/>
-                        <DatePicker Width="112" SelectedDate="{Binding DateTo, Mode=TwoWay}" ToolTip="{lex:Loc Plans_EndDate}"/>
-                    </StackPanel>
-                    <Button Content="✕" Margin="5,0,0,0" Padding="3,0" BorderThickness="0"
-                            Background="Transparent" Foreground="{DynamicResource TextSecondaryBrush}" ToolTip="{lex:Loc Plans_DeleteFilter}"
-                            Command="{Binding DataContext.RemoveFilterCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                            CommandParameter="{Binding}"/>
-                </StackPanel>
-            </Border>
-        </DataTemplate>
     </Window.Resources>
 
     <Grid Margin="5">
@@ -81,14 +58,35 @@
             <RowDefinition Height="auto"/>
         </Grid.RowDefinitions>
 
-        <!--窗口菜单：排序（列头点击排序已关闭，排序统一走菜单）与视图（作用于当前 Tab 的表）-->
+        <!--菜单栏：工具栏的功能按类别集中到这里（工具栏可用 视图-工具栏 开关，默认隐藏以让出表格空间）-->
         <Menu Grid.Row="0" Background="Transparent">
+            <MenuItem Header="{lex:Loc Menu_Actions}">
+                <MenuItem Header="{lex:Loc Plans_AddRequisition}" Command="{Binding AddRequisitionCommand}"/>
+                <MenuItem Header="{lex:Loc Plans_AddPlan}" Command="{Binding AddPlanCommand}"/>
+                <MenuItem Header="{lex:Loc Common_Edit}" Command="{Binding EditRequisitionCommand}"/>
+                <Separator/>
+                <MenuItem Header="{lex:Loc Plans_SubmitSave}" Command="{Binding SaveChangesCommand}"/>
+                <MenuItem Header="{lex:Loc Plans_Discard}" Command="{Binding DiscardChangesCommand}"/>
+            </MenuItem>
+            <MenuItem Header="{lex:Loc Menu_Export}">
+                <MenuItem Header="{lex:Loc Plans_ExportRequisition}" Command="{Binding ExportRequisitionCommand}"/>
+                <MenuItem Header="{lex:Loc Plans_ExportPlan}" Command="{Binding ExportScheduleCommand}"/>
+                <Separator/>
+                <MenuItem Header="{lex:Loc Plans_ReturnTransfer}" Click="Btn_ReturnLine_Click"/>
+            </MenuItem>
             <MenuItem x:Name="menu_window_sort" Header="{lex:Loc Common_Sort}" SubmenuOpened="Menu_Sort_SubmenuOpened"/>
-            <MenuItem x:Name="menu_window_view" Header="{lex:Loc Common_View}" SubmenuOpened="Menu_View_SubmenuOpened"/>
+            <MenuItem Header="{lex:Loc Common_View}">
+                <MenuItem x:Name="menu_view_toolbar" Header="{lex:Loc Menu_Toolbar}" IsCheckable="True" Click="Menu_View_Toggle_Click"/>
+                <MenuItem x:Name="menu_view_search" Header="{lex:Loc Common_Search}" IsCheckable="True" IsChecked="True" Click="Menu_View_Toggle_Click"/>
+                <Separator/>
+                <MenuItem x:Name="menu_window_columns" Header="{lex:Loc Menu_Columns}" SubmenuOpened="Menu_View_SubmenuOpened"/>
+                <Separator/>
+                <MenuItem Header="{lex:Loc Common_Refresh}" Command="{Binding RefreshCommand}"/>
+            </MenuItem>
         </Menu>
 
-        <!--工具栏-->
-        <ToolBarTray Grid.Row="1">
+        <!--工具栏（默认隐藏；功能同样可从菜单使用）-->
+        <ToolBarTray x:Name="bar_toolbar" Grid.Row="1" Visibility="Collapsed">
             <ToolBar Band="0" BandIndex="0">
                 <Button Content="{lex:Loc Plans_AddRequisition}" Command="{Binding AddRequisitionCommand}" ToolTip="{lex:Loc Plans_AddRequisitionWithPlan}"/>
                 <Button Content="{lex:Loc Plans_AddPlan}" Command="{Binding AddPlanCommand}" ToolTip="{lex:Loc Plans_AddPlanDirect}"/>
@@ -108,8 +106,8 @@
             </ToolBar>
         </ToolBarTray>
 
-        <!--搜索（常驻显示）：一个搜索框同时过滤领退表与计划表-->
-        <StackPanel Grid.Row="2" Margin="0,5,0,0">
+        <!--搜索（可用 视图-搜索 开关）：一个搜索框同时过滤领退表与计划表；列筛选见表格表头右键菜单-->
+        <StackPanel x:Name="panel_search" Grid.Row="2" Margin="0,5,0,0">
             <DockPanel>
                 <Label Content="{lex:Loc Common_Search}" VerticalContentAlignment="Center"/>
                 <TextBlock DockPanel.Dock="Right" Text="{lex:Loc Plans_SearchHint}" VerticalAlignment="Center"
@@ -119,43 +117,6 @@
                          Text="{Binding SearchKeyword, UpdateSourceTrigger=PropertyChanged}"
                          ToolTip="{lex:Loc Plans_SearchHint}"/>
             </DockPanel>
-
-            <!--筛选（默认收起）：领退表与计划表各自独立的条件-->
-            <Expander Header="{lex:Loc Common_Filter}" IsExpanded="False" Margin="0,5,0,0">
-                <StackPanel Margin="5">
-                    <TextBlock Text="{lex:Loc Plans_RequisitionFilter}" FontWeight="SemiBold" Margin="0,2,0,4"/>
-                    <WrapPanel>
-                        <ComboBox Width="150" Margin="0,0,10,3" VerticalContentAlignment="Center"
-                                  ItemsSource="{Binding ReqAvailableFields}"
-                                  SelectedItem="{Binding AddReqFilterField, Mode=TwoWay}"
-                                  ToolTip="{lex:Loc Plans_FilterRequisition}"/>
-                        <ItemsControl ItemsSource="{Binding ReqActiveFilters}" VerticalAlignment="Center"
-                                      ItemTemplate="{StaticResource FilterChipTemplate}">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <WrapPanel/>
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                        </ItemsControl>
-                    </WrapPanel>
-
-                    <TextBlock Text="{lex:Loc Plans_PlanFilter}" FontWeight="SemiBold" Margin="0,10,0,4"/>
-                    <WrapPanel>
-                        <ComboBox Width="150" Margin="0,0,10,3" VerticalContentAlignment="Center"
-                                  ItemsSource="{Binding AvailableFields}"
-                                  SelectedItem="{Binding AddFilterField, Mode=TwoWay}"
-                                  ToolTip="{lex:Loc Plans_FilterPlan}"/>
-                        <ItemsControl ItemsSource="{Binding ActiveFilters}" VerticalAlignment="Center"
-                                      ItemTemplate="{StaticResource FilterChipTemplate}">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <WrapPanel/>
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                        </ItemsControl>
-                    </WrapPanel>
-                </StackPanel>
-            </Expander>
         </StackPanel>
 
         <!--两 Tab：领退表 / 计划表-->
@@ -222,7 +183,7 @@
                         <DataGridTextColumn Header="{lex:Loc Plans_RequisitionDocNo}" Binding="{Binding RequisitionNo, UpdateSourceTrigger=PropertyChanged}" Width="110" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
                         <DataGridTextColumn Header="{lex:Loc Plans_ModelNameTC}" Binding="{Binding ModelName, UpdateSourceTrigger=PropertyChanged}" Width="130" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
                         <DataGridTextColumn Header="{lex:Loc Plans_IssueQty}" Binding="{Binding OutQty, UpdateSourceTrigger=PropertyChanged}" Width="70" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
-                        <DataGridTemplateColumn Header="S/N" Width="170" SortMemberPath="SN">
+                        <DataGridTemplateColumn Header="{lex:Loc Plans_SN}" Width="170" SortMemberPath="SN">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <Grid>
@@ -245,9 +206,9 @@
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTextColumn Header="D/C" Binding="{Binding DC, UpdateSourceTrigger=PropertyChanged}" Width="50" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
-                        <DataGridTextColumn Header="REV" Binding="{Binding Rev, UpdateSourceTrigger=PropertyChanged}" Width="50" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
-                        <DataGridTextColumn Header="Work Order" Binding="{Binding WorkOrder, UpdateSourceTrigger=PropertyChanged}" Width="150" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
+                        <DataGridTextColumn Header="{lex:Loc Plans_DC}" Binding="{Binding DC, UpdateSourceTrigger=PropertyChanged}" Width="50" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
+                        <DataGridTextColumn Header="{lex:Loc Plans_REV}" Binding="{Binding Rev, UpdateSourceTrigger=PropertyChanged}" Width="50" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
+                        <DataGridTextColumn Header="{lex:Loc Plans_WorkOrder}" Binding="{Binding WorkOrder, UpdateSourceTrigger=PropertyChanged}" Width="150" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
                         <DataGridTextColumn Header="{lex:Loc Plans_ReturnRTOrder}" Binding="{Binding ReturnRtOrder, UpdateSourceTrigger=PropertyChanged}" Width="100" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
                         <DataGridTextColumn Header="{lex:Loc Plans_ReturnQty}" Binding="{Binding ReturnQty, UpdateSourceTrigger=PropertyChanged}" Width="65" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
                         <DataGridTextColumn Header="{lex:Loc Plans_Line}" Binding="{Binding LineNo, UpdateSourceTrigger=PropertyChanged}" Width="50" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>

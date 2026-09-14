@@ -18,63 +18,30 @@ using System.Windows.Threading;
 namespace ORT一键报告.Plans.ViewModels
 {
     /// <summary>
-    /// 单个筛选条件：字段 + 选中值集合（值字段）或日期范围（日期字段）。
+    /// 单列筛选条件：列属性名 + 列标题 + 该列全部可选值 + 已选值。
+    /// 已选值为空表示"全部"（不过滤）；值统一按表格显示文本存储，日期为 yyyy/M/d。
     /// </summary>
-    public class FilterCondition : ObservableObject
+    public class ColumnFilter
     {
-        private readonly Action _onChanged;
+        /// <summary>列绑定的属性名（如 ModelName）</summary>
+        public string Property { get; }
 
-        /// <summary>
-        /// 字段名
-        /// </summary>
-        public string Field { get; }
+        /// <summary>列标题（筛选菜单显示用，已本地化）</summary>
+        public string Label { get; set; }
 
-        /// <summary>
-        /// 是否为日期字段
-        /// </summary>
-        public bool IsDateField { get; }
+        /// <summary>该列全部可选值（去重并排序）</summary>
+        public List<string> Options { get; } = [];
 
-        /// <summary>
-        /// 非日期字段取反，便于XAML绑定Visibility
-        /// </summary>
-        public bool IsValueField => !IsDateField;
+        /// <summary>已选中的值（空集合表示不过滤）</summary>
+        public HashSet<string> Selected { get; } = new(StringComparer.Ordinal);
 
-        private List<string> _options = [];
-        /// <summary>
-        /// 值字段的候选项（随数据动态更新）
-        /// </summary>
-        public List<string> Options { get => _options; set => SetProperty(ref _options, value); }
+        /// <summary>该列是否有生效的筛选</summary>
+        public bool IsActive => Selected.Count > 0;
 
-        /// <summary>
-        /// 值字段的选中集合（空集合表示"全部"）
-        /// </summary>
-        public ObservableCollection<string> SelectedValues { get; } = [];
-
-        private DateTime? _dateFrom;
-        /// <summary>
-        /// 日期范围起
-        /// </summary>
-        public DateTime? DateFrom
+        public ColumnFilter(string property, string label)
         {
-            get => _dateFrom;
-            set { if (SetProperty(ref _dateFrom, value)) _onChanged?.Invoke(); }
-        }
-
-        private DateTime? _dateTo;
-        /// <summary>
-        /// 日期范围止
-        /// </summary>
-        public DateTime? DateTo
-        {
-            get => _dateTo;
-            set { if (SetProperty(ref _dateTo, value)) _onChanged?.Invoke(); }
-        }
-
-        public FilterCondition(string field, bool isDateField, Action onChanged)
-        {
-            Field = field;
-            IsDateField = isDateField;
-            _onChanged = onChanged;
+            Property = property;
+            Label = label;
         }
     }
 
@@ -99,24 +66,19 @@ namespace ORT一键报告.Plans.ViewModels
         private readonly Dictionary<string, ReportLink> _reportLinks = [];
 
         /// <summary>
-        /// 计划表可筛选的字段定义：(字段名, 是否日期字段)
+        /// 计划表列筛选：列属性名 → 筛选条件（每列最多一个条件，互相独立）
         /// </summary>
-        private static readonly (string Name, bool IsDate)[] PlanFilterFields =
-        [
-            ("机种", false), ("测试项目", false), ("产品别", false),
-            ("客户别", false), ("负责人", false), ("阶段", false), ("状况", false),
-            ("开始日期", true)
-        ];
+        private readonly Dictionary<string, ColumnFilter> _planFilters = new(StringComparer.Ordinal);
 
         /// <summary>
-        /// 领退表可筛选的字段定义（与计划表各自独立，互不影响）
+        /// 领退表列筛选：列属性名 → 筛选条件（与计划表互不影响）
         /// </summary>
-        private static readonly (string Name, bool IsDate)[] ReqFilterFields =
-        [
-            ("机种", false), ("领料单号", false), ("Work Order", false), ("回线RT单", false),
-            ("S/N", false), ("入库单号", false), ("线别", false),
-            ("领用日期", true), ("回线日期", true), ("入库日期", true)
-        ];
+        private readonly Dictionary<string, ColumnFilter> _reqFilters = new(StringComparer.Ordinal);
+
+        /// <summary>
+        /// 属性取值缓存：(类型, 属性名) → PropertyInfo
+        /// </summary>
+        private static readonly Dictionary<(Type, string), System.Reflection.PropertyInfo> PropertyCache = [];
 
         /* ###############################  领退表集合  ################################ */
 
@@ -155,14 +117,14 @@ namespace ORT一键报告.Plans.ViewModels
         public Plan SelectedPlan { get => _selectedPlan; set => SetProperty(ref _selectedPlan, value); }
 
         /// <summary>
-        /// 计划表当前激活的筛选条件
+        /// 计划表当前生效的列筛选（供界面显示筛选状态）
         /// </summary>
-        public ObservableCollection<FilterCondition> ActiveFilters { get; } = [];
+        public IReadOnlyDictionary<string, ColumnFilter> PlanFilters => _planFilters;
 
         /// <summary>
-        /// 领退表当前激活的筛选条件（与计划表各自独立）
+        /// 领退表当前生效的列筛选
         /// </summary>
-        public ObservableCollection<FilterCondition> ReqActiveFilters { get; } = [];
+        public IReadOnlyDictionary<string, ColumnFilter> ReqFilters => _reqFilters;
 
         private string _statusMessage = "就绪";
         /// <summary>
@@ -263,53 +225,159 @@ namespace ORT一键报告.Plans.ViewModels
             }
         }
 
-        private string _addFilterField;
-        /// <summary>
-        /// 计划表"添加筛选条件"下拉的选择项；选中后创建对应条件并复位
-        /// </summary>
-        public string AddFilterField
-        {
-            get => _addFilterField;
-            set
-            {
-                _addFilterField = null;
-                OnPropertyChanged(nameof(AddFilterField));
-                if (value != null)
-                {
-                    AddFilter(value, true);
-                }
-            }
-        }
+        /* ###############################  列筛选（表头右键菜单）  ################################ */
 
-        private string _addReqFilterField;
         /// <summary>
-        /// 领退表"添加筛选条件"下拉的选择项；选中后创建对应条件并复位
+        /// 取某列的筛选条件（没有则返回 null）
         /// </summary>
-        public string AddReqFilterField
+        public ColumnFilter GetColumnFilter(bool planTable, string property)
+            => property != null && (planTable ? _planFilters : _reqFilters).TryGetValue(property, out ColumnFilter filter) ? filter : null;
+
+        /// <summary>
+        /// 该列是否有生效的筛选
+        /// </summary>
+        public bool IsColumnFiltered(bool planTable, string property) => GetColumnFilter(planTable, property)?.IsActive == true;
+
+        /// <summary>
+        /// 该表是否有任何生效的筛选
+        /// </summary>
+        public bool HasFilters(bool planTable) => (planTable ? _planFilters : _reqFilters).Values.Any(f => f.IsActive);
+
+        /// <summary>
+        /// 某列的去重取值（按表格显示文本，日期为 yyyy/M/d；数字/日期按数值排序）
+        /// </summary>
+        public List<string> GetColumnValues(bool planTable, string property)
         {
-            get => _addReqFilterField;
-            set
-            {
-                _addReqFilterField = null;
-                OnPropertyChanged(nameof(AddReqFilterField));
-                if (value != null)
-                {
-                    AddFilter(value, false);
-                }
-            }
+            IEnumerable<object> rows = planTable ? Plans.Cast<object>() : Requisitions.Cast<object>();
+            List<string> values = rows.Select(r => FormatValue(r, property))
+                .Where(v => !string.IsNullOrWhiteSpace(v))
+                .Distinct(StringComparer.Ordinal)
+                .ToList();
+            values.Sort(CompareValues);
+            return values;
         }
 
         /// <summary>
-        /// 计划表尚未添加的可选筛选字段
+        /// 设置某列的筛选值（selected 为空或覆盖全部可选值时视为不过滤）
         /// </summary>
-        public List<string> AvailableFields
-            => PlanFilterFields.Select(f => f.Name).Where(n => ActiveFilters.All(c => c.Field != n)).ToList();
+        public void SetColumnFilter(bool planTable, string property, string label, IReadOnlyList<string> options, IEnumerable<string> selected)
+        {
+            Dictionary<string, ColumnFilter> filters = planTable ? _planFilters : _reqFilters;
+            HashSet<string> picked = new(selected ?? [], StringComparer.Ordinal);
+            if (options != null && picked.Count >= options.Count)
+            {
+                // 全选 = 不筛选
+                picked.Clear();
+            }
+            if (picked.Count == 0)
+            {
+                filters.Remove(property);
+            }
+            else
+            {
+                if (!filters.TryGetValue(property, out ColumnFilter filter))
+                {
+                    filter = new ColumnFilter(property, label);
+                    filters[property] = filter;
+                }
+                filter.Label = label ?? filter.Label;
+                filter.Options.Clear();
+                if (options != null)
+                {
+                    filter.Options.AddRange(options);
+                }
+                filter.Selected.Clear();
+                foreach (string value in picked)
+                {
+                    filter.Selected.Add(value);
+                }
+            }
+            RefreshTable(planTable);
+        }
 
         /// <summary>
-        /// 领退表尚未添加的可选筛选字段
+        /// 清除某列筛选
         /// </summary>
-        public List<string> ReqAvailableFields
-            => ReqFilterFields.Select(f => f.Name).Where(n => ReqActiveFilters.All(c => c.Field != n)).ToList();
+        public void ClearColumnFilter(bool planTable, string property)
+        {
+            if ((planTable ? _planFilters : _reqFilters).Remove(property))
+            {
+                RefreshTable(planTable);
+            }
+        }
+
+        /// <summary>
+        /// 清除该表全部筛选
+        /// </summary>
+        public void ClearAllFilters(bool planTable)
+        {
+            Dictionary<string, ColumnFilter> filters = planTable ? _planFilters : _reqFilters;
+            if (filters.Count == 0)
+            {
+                return;
+            }
+            filters.Clear();
+            RefreshTable(planTable);
+        }
+
+        private void RefreshTable(bool planTable)
+        {
+            if (planTable)
+            {
+                PlansView.Refresh();
+            }
+            else
+            {
+                RequisitionsView.Refresh();
+            }
+        }
+
+        /// <summary>
+        /// 行对象按列取值并格式化为表格显示文本
+        /// </summary>
+        private static string FormatValue(object row, string property)
+        {
+            if (row == null || string.IsNullOrWhiteSpace(property))
+            {
+                return "";
+            }
+            try
+            {
+                (Type, string) key = (row.GetType(), property);
+                if (!PropertyCache.TryGetValue(key, out System.Reflection.PropertyInfo info))
+                {
+                    info = row.GetType().GetProperty(property);
+                    PropertyCache[key] = info;
+                }
+                object value = info?.GetValue(row);
+                return value switch
+                {
+                    null => "",
+                    DateTime date => date.ToString("yyyy/M/d"),
+                    _ => value.ToString()
+                };
+            }
+            catch
+            {
+                return "";
+            }
+        }
+
+        /// <summary>
+        /// 取值排序：两边都能当数字按数值、都能当日期按日期，否则按当前区域字符串比较
+        /// </summary>
+        private static int CompareValues(string a, string b)
+        {
+            if (double.TryParse(a, out double na) && double.TryParse(b, out double nb))
+            {
+                return na.CompareTo(nb);
+            }
+            if (DateTime.TryParse(a, out DateTime da) && DateTime.TryParse(b, out DateTime db))
+            {
+                return da.CompareTo(db);
+            }
+            return string.Compare(a, b, StringComparison.CurrentCulture);
+        }
 
         public PlansViewModel(DatabaseService db, PlanExcelService excelService, IPathService pathService,
             IPermissionService permission, ReviewService reviewService, AdminService adminService, AppSettingsService appSettings)
@@ -444,12 +512,6 @@ namespace ORT一键报告.Plans.ViewModels
         public CommunityToolkit.Mvvm.Input.RelayCommand<object> OpenSnFileCommand
             => _openSnFileCommand ??= new CommunityToolkit.Mvvm.Input.RelayCommand<object>(OpenSnFile);
 
-        private CommunityToolkit.Mvvm.Input.RelayCommand<object> _removeFilterCommand;
-        /// <summary>
-        /// 删除指定筛选条件（参数为 FilterCondition）
-        /// </summary>
-        public ICommand RemoveFilterCommand => _removeFilterCommand ??= new CommunityToolkit.Mvvm.Input.RelayCommand<object>(RemoveFilter);
-
         /* ###############################  功能函数  ################################ */
 
         /// <summary>
@@ -480,14 +542,6 @@ namespace ORT一键报告.Plans.ViewModels
                     _reqOriginals[req.Id] = CloneReq(req);
                 }
 
-                foreach (FilterCondition cond in ActiveFilters.Where(c => !c.IsDateField))
-                {
-                    RefreshConditionOptions(cond, true);
-                }
-                foreach (FilterCondition cond in ReqActiveFilters.Where(c => !c.IsDateField))
-                {
-                    RefreshConditionOptions(cond, false);
-                }
                 LoadCatalogs();
                 // 打开窗口仅从数据库加载报告夹扫描结果（不重新遍历文件系统，提速）
                 LoadReportLinksFromDb();
@@ -730,170 +784,29 @@ namespace ORT一键报告.Plans.ViewModels
             => JsonConvert.DeserializeObject<Requisition>(JsonConvert.SerializeObject(source));
 
         /// <summary>
-        /// 添加筛选条件（planTable 指定加到计划表还是领退表；两张表的筛选互相独立）
+        /// 列筛选是否通过（值以表格显示文本比较；Selected 为空表示该列不过滤）
         /// </summary>
-        private void AddFilter(string fieldName, bool planTable)
+        private static bool PassesColumnFilters(IEnumerable<ColumnFilter> filters, object row)
         {
-            (string Name, bool IsDate) field = (planTable ? PlanFilterFields : ReqFilterFields)
-                .FirstOrDefault(f => f.Name == fieldName);
-            if (field.Name == null)
+            foreach (ColumnFilter filter in filters)
             {
-                return;
-            }
-            Action refresh = planTable ? PlansView.Refresh : RequisitionsView.Refresh;
-            FilterCondition cond = new(field.Name, field.IsDate, refresh);
-            if (!field.IsDate)
-            {
-                RefreshConditionOptions(cond, planTable);
-                cond.SelectedValues.CollectionChanged += (s, e) => refresh();
-            }
-            if (planTable)
-            {
-                ActiveFilters.Add(cond);
-                OnPropertyChanged(nameof(AvailableFields));
-            }
-            else
-            {
-                ReqActiveFilters.Add(cond);
-                OnPropertyChanged(nameof(ReqAvailableFields));
-            }
-            refresh();
-        }
-
-        /// <summary>
-        /// 删除筛选条件：两张表共用一个命令，条件属于哪张表就从哪张表移除
-        /// </summary>
-        private void RemoveFilter(object parameter)
-        {
-            if (parameter is not FilterCondition cond)
-            {
-                return;
-            }
-            if (ActiveFilters.Remove(cond))
-            {
-                OnPropertyChanged(nameof(AvailableFields));
-                PlansView.Refresh();
-            }
-            if (ReqActiveFilters.Remove(cond))
-            {
-                OnPropertyChanged(nameof(ReqAvailableFields));
-                RequisitionsView.Refresh();
-            }
-        }
-
-        private void RefreshConditionOptions(FilterCondition cond, bool planTable)
-        {
-            List<string> options = planTable
-                ? DistinctOptions(Plans.Select(PlanFieldValue(cond.Field)))
-                : DistinctOptions(Requisitions.Select(ReqFieldValue(cond.Field)));
-            cond.Options = options;
-            for (int i = cond.SelectedValues.Count - 1; i >= 0; i--)
-            {
-                if (!options.Contains(cond.SelectedValues[i]))
+                if (filter.IsActive && !filter.Selected.Contains(FormatValue(row, filter.Property)))
                 {
-                    cond.SelectedValues.RemoveAt(i);
+                    return false;
                 }
             }
-        }
-
-        private static List<string> DistinctOptions(IEnumerable<string> values)
-        {
-            List<string> options = [];
-            options.AddRange(values.Where(v => !string.IsNullOrWhiteSpace(v)).Distinct().OrderBy(v => v));
-            return options;
+            return true;
         }
 
         /// <summary>
-        /// 计划表字段名 → 取值函数
-        /// </summary>
-        private static Func<Plan, string> PlanFieldValue(string field) => field switch
-        {
-            "机种" => p => p.ModelName,
-            "测试项目" => p => p.TestItem,
-            "产品别" => p => p.Product,
-            "客户别" => p => p.Customer,
-            "负责人" => p => p.Owner,
-            "阶段" => p => p.Stage,
-            "状况" => p => p.Status,
-            _ => p => null
-        };
-
-        /// <summary>
-        /// 领退表字段名 → 取值函数
-        /// </summary>
-        private static Func<Requisition, string> ReqFieldValue(string field) => field switch
-        {
-            "机种" => r => r.ModelName,
-            "领料单号" => r => r.RequisitionNo,
-            "Work Order" => r => r.WorkOrder,
-            "回线RT单" => r => r.ReturnRtOrder,
-            "S/N" => r => r.SN,
-            "入库单号" => r => r.StockInNo,
-            "线别" => r => r.LineNo,
-            _ => r => null
-        };
-
-        /// <summary>
-        /// 计划表日期字段 → 取值
-        /// </summary>
-        private static DateTime? PlanDateValue(Plan plan, string field) => field switch
-        {
-            "开始日期" => plan.StartDate,
-            _ => null
-        };
-
-        /// <summary>
-        /// 领退表日期字段 → 取值
-        /// </summary>
-        private static DateTime? ReqDateValue(Requisition req, string field) => field switch
-        {
-            "领用日期" => req.RequisitionDate,
-            "回线日期" => req.ReturnDate,
-            "入库日期" => req.StockInDate,
-            _ => null
-        };
-
-        /// <summary>
-        /// 日期是否落在筛选条件的范围内
-        /// </summary>
-        private static bool InDateRange(DateTime value, FilterCondition cond)
-        {
-            if (cond.DateFrom != null && value.Date < cond.DateFrom.Value.Date)
-            {
-                return false;
-            }
-            return cond.DateTo == null || value.Date <= cond.DateTo.Value.Date;
-        }
-
-        /// <summary>
-        /// 计划表筛选：本表筛选条件（值多选/日期范围）+ 公共搜索关键字
+        /// 计划表筛选：本表列筛选 + 公共搜索关键字
         /// </summary>
         private bool PlanFilter(object obj)
         {
-            if (obj is not Plan plan)
+            if (obj is not Plan plan || !PassesColumnFilters(_planFilters.Values, plan))
             {
                 return false;
             }
-            foreach (FilterCondition cond in ActiveFilters)
-            {
-                if (cond.IsDateField)
-                {
-                    DateTime? d = PlanDateValue(plan, cond.Field);
-                    if (d == null || !InDateRange(d.Value, cond))
-                    {
-                        return false;
-                    }
-                }
-                else if (cond.SelectedValues.Count > 0)
-                {
-                    string value = PlanFieldValue(cond.Field)(plan);
-                    if (!cond.SelectedValues.Contains(value ?? ""))
-                    {
-                        return false;
-                    }
-                }
-            }
-
             if (string.IsNullOrWhiteSpace(SearchKeyword))
             {
                 return true;
@@ -905,34 +818,14 @@ namespace ORT一键报告.Plans.ViewModels
         }
 
         /// <summary>
-        /// 领退表筛选：本表筛选条件（值多选/日期范围，与计划表独立）+ 公共搜索关键字
+        /// 领退表筛选：本表列筛选（与计划表独立）+ 公共搜索关键字
         /// </summary>
         private bool RequisitionFilter(object obj)
         {
-            if (obj is not Requisition req)
+            if (obj is not Requisition req || !PassesColumnFilters(_reqFilters.Values, req))
             {
                 return false;
             }
-            foreach (FilterCondition cond in ReqActiveFilters)
-            {
-                if (cond.IsDateField)
-                {
-                    DateTime? d = ReqDateValue(req, cond.Field);
-                    if (d == null || !InDateRange(d.Value, cond))
-                    {
-                        return false;
-                    }
-                }
-                else if (cond.SelectedValues.Count > 0)
-                {
-                    string value = ReqFieldValue(cond.Field)(req);
-                    if (!cond.SelectedValues.Contains(value ?? ""))
-                    {
-                        return false;
-                    }
-                }
-            }
-
             if (string.IsNullOrWhiteSpace(SearchKeyword))
             {
                 return true;

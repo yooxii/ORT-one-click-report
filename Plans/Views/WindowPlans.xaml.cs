@@ -15,6 +15,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -38,6 +39,7 @@ namespace ORT一键报告.Plans.Views
             InitializeComponent();
             _vm = App.ServiceProvider.GetRequiredService<PlansViewModel>();
             DataContext = _vm;
+            SetupHeaderMenus();
             Loaded += (s, e) =>
             {
                 RestoreColumnState();
@@ -45,13 +47,14 @@ namespace ORT一键报告.Plans.Views
                 // 菜单子项必须在菜单展开之前就存在：WPF 对没有子项的 MenuItem 不会展开，
                 // 也就不会触发 SubmenuOpened（否则「排序/显示隐藏列」点开是空的）
                 BuildSortMenu(menu_window_sort, ActiveGrid());
-                BuildColumnMenu(menu_window_view, ActiveGrid());
+                BuildColumnMenu(menu_window_columns, ActiveGrid());
+                RefreshHeaderStyles();
             };
             tabs.SelectionChanged += (s, e) =>
             {
                 // 窗口菜单作用于当前 Tab，切换后同步为对应表格的字段/列
                 BuildSortMenu(menu_window_sort, ActiveGrid());
-                BuildColumnMenu(menu_window_view, ActiveGrid());
+                BuildColumnMenu(menu_window_columns, ActiveGrid());
             };
             // 右键菜单同理：在打开前构建子项
             dg_requisitions.ContextMenuOpening += (s, e) =>
@@ -65,6 +68,191 @@ namespace ORT一键报告.Plans.Views
                 BuildColumnMenu(menu_plan_columns, dg_plans);
             };
             Closing += (s, e) => SaveColumnState();
+        }
+
+        /* ###############################  视图菜单开关  ################################ */
+
+        /// <summary>
+        /// 视图菜单里的显示开关（工具栏/搜索）：勾选状态即显示状态
+        /// </summary>
+        private void Menu_View_Toggle_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not MenuItem item)
+            {
+                return;
+            }
+            if (ReferenceEquals(item, menu_view_toolbar))
+            {
+                bar_toolbar.Visibility = item.IsChecked ? Visibility.Visible : Visibility.Collapsed;
+            }
+            else if (ReferenceEquals(item, menu_view_search))
+            {
+                panel_search.Visibility = item.IsChecked ? Visibility.Visible : Visibility.Collapsed;
+            }
+        }
+
+        /* ###############################  表头右键：排序 + 本列筛选  ################################ */
+
+        /// <summary>筛选菜单里最多列出的可选值个数（超出只提示，避免菜单过长）</summary>
+        private const int MaxHeaderFilterValues = 200;
+
+        /// <summary>已筛选列的列头样式（加粗+主题色，作为 Excel 漏斗的替代提示）</summary>
+        private readonly Dictionary<DataGrid, Style> _filteredHeaderStyles = [];
+
+        /// <summary>
+        /// 准备「已筛选列头」样式（加粗 + 主题色，替代 Excel 的漏斗标记）
+        /// </summary>
+        private void SetupHeaderMenus()
+        {
+            Style baseStyle = TryFindResource(typeof(DataGridColumnHeader)) as Style;
+            Style filtered = baseStyle != null
+                ? new Style(typeof(DataGridColumnHeader), baseStyle)
+                : new Style(typeof(DataGridColumnHeader));
+            filtered.Setters.Add(new Setter(Control.FontWeightProperty, FontWeights.Bold));
+            if (TryFindResource("PrimaryBrush") is Brush primary)
+            {
+                filtered.Setters.Add(new Setter(Control.ForegroundProperty, primary));
+                filtered.Setters.Add(new Setter(Control.BorderBrushProperty, primary));
+            }
+            _filteredHeaderStyles[dg_requisitions] = filtered;
+            _filteredHeaderStyles[dg_plans] = filtered;
+        }
+
+        /// <summary>
+        /// 构建表头右键菜单：该列的升/降序、该列的筛选（值多选，类似资源管理器/Excel）、清除筛选
+        /// </summary>
+        private void BuildHeaderMenu(ContextMenu menu, DataGrid grid, DataGridColumn column)
+        {
+            bool isPlan = ReferenceEquals(grid, dg_plans);
+            string property = column.SortMemberPath;
+            string label = column.Header?.ToString() ?? "?";
+
+            menu.Items.Clear();
+            menu.Items.Add(new MenuItem { Header = label, IsEnabled = false, FontWeight = FontWeights.Bold });
+            menu.Items.Add(new Separator());
+
+            MenuItem ascending = new() { Header = LanguageService.Get("Common_Ascending") };
+            ascending.Click += (s, args) => ApplySort(grid, property, ListSortDirection.Ascending);
+            menu.Items.Add(ascending);
+            MenuItem descending = new() { Header = LanguageService.Get("Common_Descending") };
+            descending.Click += (s, args) => ApplySort(grid, property, ListSortDirection.Descending);
+            menu.Items.Add(descending);
+
+            if (string.IsNullOrWhiteSpace(property))
+            {
+                return;
+            }
+
+            ColumnFilter filter = _vm.GetColumnFilter(isPlan, property);
+            List<string> values = _vm.GetColumnValues(isPlan, property);
+            menu.Items.Add(new Separator());
+
+            MenuItem filterRoot = new() { Header = LanguageService.Get("Common_Filter") };
+            MenuItem all = new()
+            {
+                Header = LanguageService.Get("Menu_FilterAll"),
+                IsCheckable = true,
+                IsChecked = filter == null || !filter.IsActive
+            };
+            all.Click += (s, args) => ApplyColumnFilter(isPlan, property, label, values, null);
+            filterRoot.Items.Add(all);
+
+            if (values.Count > 0)
+            {
+                // 未筛选时所有值都是勾选状态（"全部包含"，与资源管理器/Excel 一致），
+                // 取消勾选某个值即为"排除它"
+                bool allIncluded = filter == null || !filter.IsActive;
+                filterRoot.Items.Add(new Separator());
+                int shown = 0;
+                foreach (string value in values)
+                {
+                    if (shown++ >= MaxHeaderFilterValues)
+                    {
+                        filterRoot.Items.Add(new MenuItem
+                        {
+                            Header = string.Format(LanguageService.Get("Menu_FilterMoreFormat"), MaxHeaderFilterValues),
+                            IsEnabled = false
+                        });
+                        break;
+                    }
+                    MenuItem valueItem = new()
+                    {
+                        Header = value,
+                        IsCheckable = true,
+                        IsChecked = allIncluded || filter.Selected.Contains(value)
+                    };
+                    string captured = value;
+                    valueItem.Click += (s, args) =>
+                    {
+                        List<string> selected = allIncluded ? [.. values] : [.. filter.Selected];
+                        if (valueItem.IsChecked)
+                        {
+                            if (!selected.Contains(captured))
+                            {
+                                selected.Add(captured);
+                            }
+                        }
+                        else
+                        {
+                            selected.Remove(captured);
+                        }
+                        ApplyColumnFilter(isPlan, property, label, values, selected);
+                    };
+                    filterRoot.Items.Add(valueItem);
+                }
+            }
+            menu.Items.Add(filterRoot);
+
+            menu.Items.Add(new Separator());
+            MenuItem clearColumn = new()
+            {
+                Header = LanguageService.Get("Menu_ClearColumnFilter"),
+                IsEnabled = filter?.IsActive == true
+            };
+            clearColumn.Click += (s, args) => ApplyColumnFilter(isPlan, property, label, values, null);
+            menu.Items.Add(clearColumn);
+
+            MenuItem clearAll = new()
+            {
+                Header = LanguageService.Get("Menu_ClearAllFilters"),
+                IsEnabled = _vm.HasFilters(isPlan)
+            };
+            clearAll.Click += (s, args) =>
+            {
+                _vm.ClearAllFilters(isPlan);
+                RefreshHeaderStyles();
+            };
+            menu.Items.Add(clearAll);
+        }
+
+        /// <summary>
+        /// 应用某列筛选并刷新表头样式（selected 为空表示该列恢复"全部"）
+        /// </summary>
+        private void ApplyColumnFilter(bool isPlan, string property, string label, IReadOnlyList<string> values, IReadOnlyList<string> selected)
+        {
+            _vm.SetColumnFilter(isPlan, property, label, values, selected ?? []);
+            RefreshHeaderStyles();
+        }
+
+        /// <summary>
+        /// 按当前筛选状态刷新两个表格的列头样式（已筛选的列头加粗并用主题色）
+        /// </summary>
+        private void RefreshHeaderStyles()
+        {
+            ApplyHeaderStyles(dg_requisitions, false);
+            ApplyHeaderStyles(dg_plans, true);
+        }
+
+        private void ApplyHeaderStyles(DataGrid grid, bool isPlan)
+        {
+            if (!_filteredHeaderStyles.TryGetValue(grid, out Style filtered))
+            {
+                return;
+            }
+            foreach (DataGridColumn column in grid.Columns)
+            {
+                column.HeaderStyle = _vm.IsColumnFiltered(isPlan, column.SortMemberPath) ? filtered : null;
+            }
         }
 
         /* ###############################  行号  ################################ */
@@ -211,12 +399,58 @@ namespace ORT一键报告.Plans.Views
 
         private void Dg_Requisitions_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
         {
+            if (ShowHeaderMenuIfOnHeader(dg_requisitions, e))
+            {
+                return;
+            }
             SelectCellUnderMouse(sender as DataGrid, e);
         }
 
         private void Dg_Plans_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
         {
+            if (ShowHeaderMenuIfOnHeader(dg_plans, e))
+            {
+                return;
+            }
             SelectCellUnderMouse(sender as DataGrid, e);
+        }
+
+        /// <summary>
+        /// 右键落在表头上时改为弹出「该列」的排序/筛选菜单（表格自身的行菜单只用于单元格）。
+        /// 说明：不通过列头样式挂 ContextMenu——那样会被 DataGrid 级右键菜单截走。
+        /// </summary>
+        private bool ShowHeaderMenuIfOnHeader(DataGrid grid, MouseButtonEventArgs e)
+        {
+            if (e.OriginalSource is not DependencyObject source)
+            {
+                return false;
+            }
+            DataGridColumnHeader header = FindAncestor<DataGridColumnHeader>(source);
+            if (header?.Column == null)
+            {
+                return false;
+            }
+            ContextMenu menu = new() { PlacementTarget = header, Placement = PlacementMode.Bottom };
+            BuildHeaderMenu(menu, grid, header.Column);
+            menu.IsOpen = true;
+            e.Handled = true;
+            return true;
+        }
+
+        /// <summary>
+        /// 沿可视树向上查找指定类型的祖先
+        /// </summary>
+        private static T FindAncestor<T>(DependencyObject node) where T : DependencyObject
+        {
+            while (node != null)
+            {
+                if (node is T match)
+                {
+                    return match;
+                }
+                node = node is Visual ? VisualTreeHelper.GetParent(node) : LogicalTreeHelper.GetParent(node);
+            }
+            return null;
         }
 
         /// <summary>
