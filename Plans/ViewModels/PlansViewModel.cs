@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using Newtonsoft.Json;
 using NLog;
 using ORT一键报告.Models;
@@ -101,11 +101,21 @@ namespace ORT一键报告.Plans.ViewModels
         /// <summary>
         /// 计划表可筛选的字段定义：(字段名, 是否日期字段)
         /// </summary>
-        private static readonly (string Name, bool IsDate)[] FilterFields =
+        private static readonly (string Name, bool IsDate)[] PlanFilterFields =
         [
             ("机种", false), ("测试项目", false), ("产品别", false),
             ("客户别", false), ("负责人", false), ("阶段", false), ("状况", false),
             ("开始日期", true)
+        ];
+
+        /// <summary>
+        /// 领退表可筛选的字段定义（与计划表各自独立，互不影响）
+        /// </summary>
+        private static readonly (string Name, bool IsDate)[] ReqFilterFields =
+        [
+            ("机种", false), ("领料单号", false), ("Work Order", false), ("回线RT单", false),
+            ("S/N", false), ("入库单号", false), ("线别", false),
+            ("领用日期", true), ("回线日期", true), ("入库日期", true)
         ];
 
         /* ###############################  领退表集合  ################################ */
@@ -145,9 +155,14 @@ namespace ORT一键报告.Plans.ViewModels
         public Plan SelectedPlan { get => _selectedPlan; set => SetProperty(ref _selectedPlan, value); }
 
         /// <summary>
-        /// 当前激活的筛选条件（计划表）
+        /// 计划表当前激活的筛选条件
         /// </summary>
         public ObservableCollection<FilterCondition> ActiveFilters { get; } = [];
+
+        /// <summary>
+        /// 领退表当前激活的筛选条件（与计划表各自独立）
+        /// </summary>
+        public ObservableCollection<FilterCondition> ReqActiveFilters { get; } = [];
 
         private string _statusMessage = "就绪";
         /// <summary>
@@ -231,16 +246,16 @@ namespace ORT一键报告.Plans.ViewModels
         public List<string> CatalogStatuses { get; } = [.. PlanValidation.ValidStatuses];
 
         private readonly DispatcherTimer _searchTimer;
-        private string _keyword;
+        private string _searchKeyword;
         /// <summary>
-        /// 计划表搜索关键字（防抖）
+        /// 搜索关键字（防抖）：一个搜索框同时过滤领退表与计划表
         /// </summary>
-        public string Keyword
+        public string SearchKeyword
         {
-            get => _keyword;
+            get => _searchKeyword;
             set
             {
-                if (SetProperty(ref _keyword, value))
+                if (SetProperty(ref _searchKeyword, value))
                 {
                     _searchTimer.Stop();
                     _searchTimer.Start();
@@ -248,25 +263,9 @@ namespace ORT一键报告.Plans.ViewModels
             }
         }
 
-        private string _reqKeyword;
-        /// <summary>
-        /// 领退表搜索关键字
-        /// </summary>
-        public string ReqKeyword
-        {
-            get => _reqKeyword;
-            set
-            {
-                if (SetProperty(ref _reqKeyword, value))
-                {
-                    RequisitionsView.Refresh();
-                }
-            }
-        }
-
         private string _addFilterField;
         /// <summary>
-        /// "添加筛选条件"下拉的选择项；选中后创建对应条件并复位
+        /// 计划表"添加筛选条件"下拉的选择项；选中后创建对应条件并复位
         /// </summary>
         public string AddFilterField
         {
@@ -277,16 +276,40 @@ namespace ORT一键报告.Plans.ViewModels
                 OnPropertyChanged(nameof(AddFilterField));
                 if (value != null)
                 {
-                    AddFilter(value);
+                    AddFilter(value, true);
+                }
+            }
+        }
+
+        private string _addReqFilterField;
+        /// <summary>
+        /// 领退表"添加筛选条件"下拉的选择项；选中后创建对应条件并复位
+        /// </summary>
+        public string AddReqFilterField
+        {
+            get => _addReqFilterField;
+            set
+            {
+                _addReqFilterField = null;
+                OnPropertyChanged(nameof(AddReqFilterField));
+                if (value != null)
+                {
+                    AddFilter(value, false);
                 }
             }
         }
 
         /// <summary>
-        /// 尚未添加的可选筛选字段
+        /// 计划表尚未添加的可选筛选字段
         /// </summary>
         public List<string> AvailableFields
-            => FilterFields.Select(f => f.Name).Where(n => ActiveFilters.All(c => c.Field != n)).ToList();
+            => PlanFilterFields.Select(f => f.Name).Where(n => ActiveFilters.All(c => c.Field != n)).ToList();
+
+        /// <summary>
+        /// 领退表尚未添加的可选筛选字段
+        /// </summary>
+        public List<string> ReqAvailableFields
+            => ReqFilterFields.Select(f => f.Name).Where(n => ReqActiveFilters.All(c => c.Field != n)).ToList();
 
         public PlansViewModel(DatabaseService db, PlanExcelService excelService, IPathService pathService,
             IPermissionService permission, ReviewService reviewService, AdminService adminService, AppSettingsService appSettings)
@@ -310,10 +333,40 @@ namespace ORT一键报告.Plans.ViewModels
             _searchTimer.Tick += (s, e) =>
             {
                 _searchTimer.Stop();
+                // 同一个搜索框：领退表与计划表一起刷新
                 PlansView.Refresh();
+                RequisitionsView.Refresh();
             };
 
             Refresh();
+        }
+
+        /* ###############################  排序（菜单驱动）  ################################ */
+
+        /// <summary>
+        /// 计划表排序。列头点击排序已关闭，排序统一由右键菜单/窗口菜单触发；
+        /// propertyName 为空表示恢复默认顺序（按 Id 倒序，最新在前）。
+        /// </summary>
+        public void SortPlans(string propertyName, ListSortDirection direction)
+        {
+            ApplySort(PlansView, nameof(Plan.Id), propertyName, direction);
+        }
+
+        /// <summary>
+        /// 领退表排序（说明同 <see cref="SortPlans"/>）
+        /// </summary>
+        public void SortRequisitions(string propertyName, ListSortDirection direction)
+        {
+            ApplySort(RequisitionsView, nameof(Requisition.Id), propertyName, direction);
+        }
+
+        private static void ApplySort(ICollectionView view, string defaultProperty, string propertyName, ListSortDirection direction)
+        {
+            view.SortDescriptions.Clear();
+            view.SortDescriptions.Add(string.IsNullOrWhiteSpace(propertyName)
+                ? new SortDescription(defaultProperty, ListSortDirection.Descending)
+                : new SortDescription(propertyName, direction));
+            view.Refresh();
         }
 
         /* ###############################  命令  ################################ */
@@ -429,7 +482,11 @@ namespace ORT一键报告.Plans.ViewModels
 
                 foreach (FilterCondition cond in ActiveFilters.Where(c => !c.IsDateField))
                 {
-                    RefreshConditionOptions(cond);
+                    RefreshConditionOptions(cond, true);
+                }
+                foreach (FilterCondition cond in ReqActiveFilters.Where(c => !c.IsDateField))
+                {
+                    RefreshConditionOptions(cond, false);
                 }
                 LoadCatalogs();
                 // 打开窗口仅从数据库加载报告夹扫描结果（不重新遍历文件系统，提速）
@@ -672,36 +729,63 @@ namespace ORT一键报告.Plans.ViewModels
         private static Requisition CloneReq(Requisition source)
             => JsonConvert.DeserializeObject<Requisition>(JsonConvert.SerializeObject(source));
 
-        private void AddFilter(string fieldName)
+        /// <summary>
+        /// 添加筛选条件（planTable 指定加到计划表还是领退表；两张表的筛选互相独立）
+        /// </summary>
+        private void AddFilter(string fieldName, bool planTable)
         {
-            (string Name, bool IsDate) field = FilterFields.FirstOrDefault(f => f.Name == fieldName);
+            (string Name, bool IsDate) field = (planTable ? PlanFilterFields : ReqFilterFields)
+                .FirstOrDefault(f => f.Name == fieldName);
             if (field.Name == null)
             {
                 return;
             }
-            FilterCondition cond = new(field.Name, field.IsDate, () => PlansView.Refresh());
+            Action refresh = planTable ? PlansView.Refresh : RequisitionsView.Refresh;
+            FilterCondition cond = new(field.Name, field.IsDate, refresh);
             if (!field.IsDate)
             {
-                RefreshConditionOptions(cond);
-                cond.SelectedValues.CollectionChanged += (s, e) => PlansView.Refresh();
+                RefreshConditionOptions(cond, planTable);
+                cond.SelectedValues.CollectionChanged += (s, e) => refresh();
             }
-            ActiveFilters.Add(cond);
-            OnPropertyChanged(nameof(AvailableFields));
-            PlansView.Refresh();
+            if (planTable)
+            {
+                ActiveFilters.Add(cond);
+                OnPropertyChanged(nameof(AvailableFields));
+            }
+            else
+            {
+                ReqActiveFilters.Add(cond);
+                OnPropertyChanged(nameof(ReqAvailableFields));
+            }
+            refresh();
         }
 
+        /// <summary>
+        /// 删除筛选条件：两张表共用一个命令，条件属于哪张表就从哪张表移除
+        /// </summary>
         private void RemoveFilter(object parameter)
         {
-            if (parameter is FilterCondition cond && ActiveFilters.Remove(cond))
+            if (parameter is not FilterCondition cond)
+            {
+                return;
+            }
+            if (ActiveFilters.Remove(cond))
             {
                 OnPropertyChanged(nameof(AvailableFields));
                 PlansView.Refresh();
             }
+            if (ReqActiveFilters.Remove(cond))
+            {
+                OnPropertyChanged(nameof(ReqAvailableFields));
+                RequisitionsView.Refresh();
+            }
         }
 
-        private void RefreshConditionOptions(FilterCondition cond)
+        private void RefreshConditionOptions(FilterCondition cond, bool planTable)
         {
-            List<string> options = DistinctOptions(Plans.Select(GetFieldValue(cond.Field)));
+            List<string> options = planTable
+                ? DistinctOptions(Plans.Select(PlanFieldValue(cond.Field)))
+                : DistinctOptions(Requisitions.Select(ReqFieldValue(cond.Field)));
             cond.Options = options;
             for (int i = cond.SelectedValues.Count - 1; i >= 0; i--)
             {
@@ -720,9 +804,9 @@ namespace ORT一键报告.Plans.ViewModels
         }
 
         /// <summary>
-        /// 字段名 -> 计划表取值函数
+        /// 计划表字段名 → 取值函数
         /// </summary>
-        private static Func<Plan, string> GetFieldValue(string field) => field switch
+        private static Func<Plan, string> PlanFieldValue(string field) => field switch
         {
             "机种" => p => p.ModelName,
             "测试项目" => p => p.TestItem,
@@ -735,7 +819,54 @@ namespace ORT一键报告.Plans.ViewModels
         };
 
         /// <summary>
-        /// 计划表筛选：条件（值多选/日期范围）+ 关键字
+        /// 领退表字段名 → 取值函数
+        /// </summary>
+        private static Func<Requisition, string> ReqFieldValue(string field) => field switch
+        {
+            "机种" => r => r.ModelName,
+            "领料单号" => r => r.RequisitionNo,
+            "Work Order" => r => r.WorkOrder,
+            "回线RT单" => r => r.ReturnRtOrder,
+            "S/N" => r => r.SN,
+            "入库单号" => r => r.StockInNo,
+            "线别" => r => r.LineNo,
+            _ => r => null
+        };
+
+        /// <summary>
+        /// 计划表日期字段 → 取值
+        /// </summary>
+        private static DateTime? PlanDateValue(Plan plan, string field) => field switch
+        {
+            "开始日期" => plan.StartDate,
+            _ => null
+        };
+
+        /// <summary>
+        /// 领退表日期字段 → 取值
+        /// </summary>
+        private static DateTime? ReqDateValue(Requisition req, string field) => field switch
+        {
+            "领用日期" => req.RequisitionDate,
+            "回线日期" => req.ReturnDate,
+            "入库日期" => req.StockInDate,
+            _ => null
+        };
+
+        /// <summary>
+        /// 日期是否落在筛选条件的范围内
+        /// </summary>
+        private static bool InDateRange(DateTime value, FilterCondition cond)
+        {
+            if (cond.DateFrom != null && value.Date < cond.DateFrom.Value.Date)
+            {
+                return false;
+            }
+            return cond.DateTo == null || value.Date <= cond.DateTo.Value.Date;
+        }
+
+        /// <summary>
+        /// 计划表筛选：本表筛选条件（值多选/日期范围）+ 公共搜索关键字
         /// </summary>
         private bool PlanFilter(object obj)
         {
@@ -747,23 +878,15 @@ namespace ORT一键报告.Plans.ViewModels
             {
                 if (cond.IsDateField)
                 {
-                    DateTime? d = plan.StartDate;
-                    if (d == null)
-                    {
-                        return false;
-                    }
-                    if (cond.DateFrom != null && d.Value.Date < cond.DateFrom.Value.Date)
-                    {
-                        return false;
-                    }
-                    if (cond.DateTo != null && d.Value.Date > cond.DateTo.Value.Date)
+                    DateTime? d = PlanDateValue(plan, cond.Field);
+                    if (d == null || !InDateRange(d.Value, cond))
                     {
                         return false;
                     }
                 }
                 else if (cond.SelectedValues.Count > 0)
                 {
-                    string value = GetFieldValue(cond.Field)(plan);
+                    string value = PlanFieldValue(cond.Field)(plan);
                     if (!cond.SelectedValues.Contains(value ?? ""))
                     {
                         return false;
@@ -771,18 +894,18 @@ namespace ORT一键报告.Plans.ViewModels
                 }
             }
 
-            if (string.IsNullOrWhiteSpace(Keyword))
+            if (string.IsNullOrWhiteSpace(SearchKeyword))
             {
                 return true;
             }
-            string kw = Keyword.Trim();
+            string kw = SearchKeyword.Trim();
             return Contains(plan.ModelName, kw) || Contains(plan.JobNo, kw)
                 || Contains(plan.TestItem, kw) || Contains(plan.Owner, kw)
                 || Contains(plan.Product, kw) || Contains(plan.Customer, kw);
         }
 
         /// <summary>
-        /// 领退表筛选：关键字
+        /// 领退表筛选：本表筛选条件（值多选/日期范围，与计划表独立）+ 公共搜索关键字
         /// </summary>
         private bool RequisitionFilter(object obj)
         {
@@ -790,14 +913,34 @@ namespace ORT一键报告.Plans.ViewModels
             {
                 return false;
             }
-            if (string.IsNullOrWhiteSpace(ReqKeyword))
+            foreach (FilterCondition cond in ReqActiveFilters)
+            {
+                if (cond.IsDateField)
+                {
+                    DateTime? d = ReqDateValue(req, cond.Field);
+                    if (d == null || !InDateRange(d.Value, cond))
+                    {
+                        return false;
+                    }
+                }
+                else if (cond.SelectedValues.Count > 0)
+                {
+                    string value = ReqFieldValue(cond.Field)(req);
+                    if (!cond.SelectedValues.Contains(value ?? ""))
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            if (string.IsNullOrWhiteSpace(SearchKeyword))
             {
                 return true;
             }
-            string kw = ReqKeyword.Trim();
+            string kw = SearchKeyword.Trim();
             return Contains(req.ModelName, kw) || Contains(req.RequisitionNo, kw)
                 || Contains(req.WorkOrder, kw) || Contains(req.ReturnRtOrder, kw)
-                || Contains(req.SN, kw);
+                || Contains(req.SN, kw) || Contains(req.StockInNo, kw);
         }
 
         private static bool Contains(string source, string keyword)

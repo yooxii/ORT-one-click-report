@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using NLog;
 using ORT一键报告.Main.Views;
 using ORT一键报告.Models;
@@ -8,6 +8,7 @@ using ORT一键报告.Reports.Views;
 using ORT一键报告.Services;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -41,6 +42,27 @@ namespace ORT一键报告.Plans.Views
             {
                 RestoreColumnState();
                 _vm.Refresh();
+                // 菜单子项必须在菜单展开之前就存在：WPF 对没有子项的 MenuItem 不会展开，
+                // 也就不会触发 SubmenuOpened（否则「排序/显示隐藏列」点开是空的）
+                BuildSortMenu(menu_window_sort, ActiveGrid());
+                BuildColumnMenu(menu_window_view, ActiveGrid());
+            };
+            tabs.SelectionChanged += (s, e) =>
+            {
+                // 窗口菜单作用于当前 Tab，切换后同步为对应表格的字段/列
+                BuildSortMenu(menu_window_sort, ActiveGrid());
+                BuildColumnMenu(menu_window_view, ActiveGrid());
+            };
+            // 右键菜单同理：在打开前构建子项
+            dg_requisitions.ContextMenuOpening += (s, e) =>
+            {
+                BuildSortMenu(menu_req_sort, dg_requisitions);
+                BuildColumnMenu(menu_req_columns, dg_requisitions);
+            };
+            dg_plans.ContextMenuOpening += (s, e) =>
+            {
+                BuildSortMenu(menu_plan_sort, dg_plans);
+                BuildColumnMenu(menu_plan_columns, dg_plans);
             };
             Closing += (s, e) => SaveColumnState();
         }
@@ -642,6 +664,131 @@ namespace ORT一键报告.Plans.Views
             }
             return DateTime.TryParseExact(text, ["yyyy/M/d", "yyyy/M/d H:mm:ss", "yyyy-M-d"],
                 CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dt) ? dt : null;
+        }
+
+        /* ###############################  排序（列头点击已关闭，统一走菜单）  ################################ */
+
+        /// <summary>领退表当前排序字段与方向（为空表示默认顺序）</summary>
+        private string _reqSortField;
+        private ListSortDirection _reqSortDirection = ListSortDirection.Ascending;
+
+        /// <summary>计划表当前排序字段与方向（为空表示默认顺序）</summary>
+        private string _planSortField;
+        private ListSortDirection _planSortDirection = ListSortDirection.Ascending;
+
+        /// <summary>窗口菜单「排序」：作用于当前 Tab 对应的表</summary>
+        private void Menu_Sort_SubmenuOpened(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem item)
+            {
+                BuildSortMenu(item, ActiveGrid());
+            }
+        }
+
+        /// <summary>右键菜单「排序」：按 Tag 指明是领退表(req)还是计划表(plan)</summary>
+        private void Menu_ContextSort_SubmenuOpened(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem item)
+            {
+                BuildSortMenu(item, (item.Tag as string) == "plan" ? dg_plans : dg_requisitions);
+            }
+        }
+
+        /// <summary>窗口菜单「视图」：显示/隐藏列（作用于当前 Tab 对应的表）</summary>
+        private void Menu_View_SubmenuOpened(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem item)
+            {
+                BuildColumnMenu(item, ActiveGrid());
+            }
+        }
+
+        /// <summary>当前 Tab 对应的表格（0=领退表，1=计划表）</summary>
+        private DataGrid ActiveGrid() => tabs.SelectedIndex == 1 ? dg_plans : dg_requisitions;
+
+        /// <summary>
+        /// 构建排序菜单（类似资源管理器的"排序方式"）：默认顺序 + 各可排序字段 + 升序/降序。
+        /// 字段来自列的 SortMemberPath，菜单文字直接用已本地化的列头。
+        /// </summary>
+        private void BuildSortMenu(MenuItem parent, DataGrid grid)
+        {
+            bool isPlan = ReferenceEquals(grid, dg_plans);
+            string current = isPlan ? _planSortField : _reqSortField;
+            ListSortDirection direction = isPlan ? _planSortDirection : _reqSortDirection;
+
+            parent.Items.Clear();
+            MenuItem defaultItem = new()
+            {
+                Header = LanguageService.Get("Sort_Default"),
+                IsCheckable = true,
+                IsChecked = string.IsNullOrEmpty(current)
+            };
+            defaultItem.Click += (s, e) => ApplySort(grid, null, ListSortDirection.Descending);
+            parent.Items.Add(defaultItem);
+            parent.Items.Add(new Separator());
+
+            foreach (DataGridColumn column in grid.Columns)
+            {
+                string property = column.SortMemberPath;
+                if (string.IsNullOrWhiteSpace(property))
+                {
+                    continue;
+                }
+                bool isCurrent = property == current;
+                MenuItem item = new()
+                {
+                    Header = column.Header?.ToString(),
+                    IsCheckable = true,
+                    IsChecked = isCurrent
+                };
+                string captured = property;
+                // 再点当前字段：升序/降序互换；点其他字段：升序
+                ListSortDirection next = isCurrent && direction == ListSortDirection.Ascending
+                    ? ListSortDirection.Descending
+                    : ListSortDirection.Ascending;
+                item.Click += (s, e) => ApplySort(grid, captured, next);
+                parent.Items.Add(item);
+            }
+
+            parent.Items.Add(new Separator());
+            MenuItem ascending = new()
+            {
+                Header = LanguageService.Get("Common_Ascending"),
+                IsCheckable = true,
+                IsChecked = direction == ListSortDirection.Ascending,
+                IsEnabled = !string.IsNullOrEmpty(current)
+            };
+            ascending.Click += (s, e) => ApplySort(grid, current, ListSortDirection.Ascending);
+            parent.Items.Add(ascending);
+
+            MenuItem descending = new()
+            {
+                Header = LanguageService.Get("Common_Descending"),
+                IsCheckable = true,
+                IsChecked = direction == ListSortDirection.Descending,
+                IsEnabled = !string.IsNullOrEmpty(current)
+            };
+            descending.Click += (s, e) => ApplySort(grid, current, ListSortDirection.Descending);
+            parent.Items.Add(descending);
+        }
+
+        /// <summary>
+        /// 应用排序并记录当前字段/方向（供菜单勾选状态使用）
+        /// </summary>
+        private void ApplySort(DataGrid grid, string property, ListSortDirection direction)
+        {
+            if (ReferenceEquals(grid, dg_plans))
+            {
+                _planSortField = property;
+                _planSortDirection = direction;
+                _vm.SortPlans(property, direction);
+            }
+            else
+            {
+                _reqSortField = property;
+                _reqSortDirection = direction;
+                _vm.SortRequisitions(property, direction);
+            }
         }
 
         /* ###############################  显示/隐藏列  ################################ */

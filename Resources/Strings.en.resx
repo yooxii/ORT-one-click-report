@@ -110,6 +110,21 @@
   <data name="Common_Filter" xml:space="preserve">
     <value>Filter</value>
   </data>
+  <data name="Common_Sort" xml:space="preserve">
+    <value>Sort</value>
+  </data>
+  <data name="Common_View" xml:space="preserve">
+    <value>View</value>
+  </data>
+  <data name="Common_Ascending" xml:space="preserve">
+    <value>Ascending</value>
+  </data>
+  <data name="Common_Descending" xml:space="preserve">
+    <value>Descending</value>
+  </data>
+  <data name="Sort_Default" xml:space="preserve">
+    <value>Default order</value>
+  </data>
   <data name="Plans_Title" xml:space="preserve">
     <value>Return &amp; Plan</value>
   </data>
@@ -124,6 +139,15 @@
   </data>
   <data name="Plans_FilterPlan" xml:space="preserve">
     <value>Filter plans by model/work number/test item etc.</value>
+  </data>
+  <data name="Plans_SearchHint" xml:space="preserve">
+    <value>Searches both the return and plan tables: model, work number, doc no., S/N, etc.</value>
+  </data>
+  <data name="Plans_RequisitionFilter" xml:space="preserve">
+    <value>Return table filters</value>
+  </data>
+  <data name="Plans_PlanFilter" xml:space="preserve">
+    <value>Plan table filters</value>
   </data>
   <data name="Plans_AddRequisition" xml:space="preserve">
     <value>Add Return</value>

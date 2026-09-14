@@ -110,6 +110,21 @@
   <data name="Common_Filter" xml:space="preserve">
     <value>筛选</value>
   </data>
+  <data name="Common_Sort" xml:space="preserve">
+    <value>排序</value>
+  </data>
+  <data name="Common_View" xml:space="preserve">
+    <value>视图</value>
+  </data>
+  <data name="Common_Ascending" xml:space="preserve">
+    <value>升序</value>
+  </data>
+  <data name="Common_Descending" xml:space="preserve">
+    <value>降序</value>
+  </data>
+  <data name="Sort_Default" xml:space="preserve">
+    <value>默认顺序</value>
+  </data>
   <data name="Plans_Title" xml:space="preserve">
     <value>领退和计划</value>
   </data>
@@ -124,6 +139,15 @@
   </data>
   <data name="Plans_FilterPlan" xml:space="preserve">
     <value>按机种/工作编号/测试项目等筛选计划表</value>
+  </data>
+  <data name="Plans_SearchHint" xml:space="preserve">
+    <value>同时搜索领退表与计划表：机种、工作编号、单号、S/N 等</value>
+  </data>
+  <data name="Plans_RequisitionFilter" xml:space="preserve">
+    <value>领退表筛选</value>
+  </data>
+  <data name="Plans_PlanFilter" xml:space="preserve">
+    <value>计划表筛选</value>
   </data>
   <data name="Plans_AddRequisition" xml:space="preserve">
     <value>领退新增</value>
