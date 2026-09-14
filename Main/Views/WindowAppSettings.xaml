@@ -49,9 +49,12 @@
 
         <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" Background="Transparent"/>
 
-        <!--右侧：设置项详情（标签列 Auto 以随字号自适应；极端字号下允许横向滚动，保证内容可达）-->
+        <!--右侧：设置项详情（标签列 Auto 以随字号自适应）
+            注意：横向滚动必须保持 Disabled——带长文本的 TextBlock 即使 TextWrapping=Wrap，
+            仍按“单行完整宽度”上报期望宽度（如邮件模板的变量说明约 3300px），
+            一旦开启 Auto，整个详情面板会被这行文字撑宽并溢出-->
         <ScrollViewer x:Name="sv_right" Grid.Column="2" VerticalScrollBarVisibility="Auto"
-                      HorizontalScrollBarVisibility="Auto" ScrollChanged="Sv_Right_ScrollChanged">
+                      HorizontalScrollBarVisibility="Disabled" ScrollChanged="Sv_Right_ScrollChanged">
             <StackPanel Margin="16" Grid.IsSharedSizeScope="True">
 
                 <!-- UI -->
@@ -393,8 +396,10 @@
                         </Grid>
 
                         <TextBlock Text="{lex:Loc Settings_MailLogs}" Margin="0,12,0,4"/>
+                        <!-- 日志单行较长：横向滚动交给文本框自身，避免撑宽详情面板 -->
                         <TextBox x:Name="txt_mailLogs" MinHeight="90" IsReadOnly="True" AcceptsReturn="True"
-                                 VerticalScrollBarVisibility="Auto" TextWrapping="NoWrap"
+                                 VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                                 TextWrapping="NoWrap"
                                  FontFamily="{DynamicResource FontFamilyData}"/>
                     </StackPanel>
                 </Border>
