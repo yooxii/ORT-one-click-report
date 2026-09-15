@@ -351,10 +351,30 @@ namespace ORT一键报告.Utils
                     _logger.Warn($"插入图片跳过：{picName}_{i} 无图片数据");
                     continue;
                 }
+                // 按文件头识别格式（EPPlus 是自动识别的）；EMF/WMF/TIFF 先转 PNG，单张失败只跳过该图
+                PictureType pictureType = ExcelNpoi.DetectPictureType(bytes);
+                if (pictureType is PictureType.EMF or PictureType.WMF or PictureType.TIFF)
+                {
+                    byte[] png = ExcelNpoi.TryConvertToPng(bytes);
+                    if (png == null)
+                    {
+                        _logger.Warn($"插入图片跳过：{picName}_{i} 格式 {pictureType} 转换 PNG 失败");
+                        continue;
+                    }
+                    bytes = png;
+                    pictureType = PictureType.PNG;
+                }
                 // 与原 EPPlus 版一致：300x220 像素，按序号横向每 4 列排一张
                 int offsetY = rpType.ToLower() == "burn" ? -18 + (i * 72) : -24 + (i * 44);
-                ExcelNpoi.AddPicture(ws.Workbook, ws, bytes, PictureType.PNG,
-                    startRow, startCol + (i * 4), 300, 220, 0, Math.Max(0, offsetY));
+                try
+                {
+                    ExcelNpoi.AddPicture(ws.Workbook, ws, bytes, pictureType,
+                        startRow, startCol + (i * 4), 300, 220, 0, Math.Max(0, offsetY));
+                }
+                catch (Exception ex)
+                {
+                    _logger.Warn($"插入图片失败（跳过 {picName}_{i}，格式 {pictureType}）：{ex.Message}");
+                }
             }
         }
 

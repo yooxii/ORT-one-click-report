@@ -770,6 +770,74 @@ namespace ORT一键报告.Utils
         /* ###############################  图片  ################################ */
 
         /// <summary>
+        /// 按文件头判断图片格式。
+        /// NPOI 的 AddPicture 必须给对类型，否则写出的部件内容类型与实际字节不符
+        /// （例如把 JPEG 字节写成 image/png，Excel 可能显示破损或提示修复）；
+        /// EPPlus 的 AddPicture 是自动识别格式的，迁移后需要自己判断。
+        /// </summary>
+        public static PictureType DetectPictureType(byte[] bytes)
+        {
+            if (bytes == null || bytes.Length < 4)
+            {
+                return PictureType.PNG;
+            }
+            if (bytes[0] == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47)
+            {
+                return PictureType.PNG;
+            }
+            if (bytes[0] == 0xFF && bytes[1] == 0xD8 && bytes[2] == 0xFF)
+            {
+                return PictureType.JPEG;
+            }
+            if (bytes[0] == 0x47 && bytes[1] == 0x49 && bytes[2] == 0x46)
+            {
+                return PictureType.GIF;
+            }
+            if (bytes[0] == 0x42 && bytes[1] == 0x4D)
+            {
+                return PictureType.BMP;
+            }
+            if ((bytes[0] == 0x49 && bytes[1] == 0x49 && bytes[2] == 0x2A) || (bytes[0] == 0x4D && bytes[1] == 0x4D && bytes[2] == 0x00))
+            {
+                return PictureType.TIFF;
+            }
+            if (bytes[0] == 0x01 && bytes[1] == 0x00 && bytes[2] == 0x00 && bytes[3] == 0x00)
+            {
+                return PictureType.EMF;
+            }
+            if (bytes[0] == 0xD7 && bytes[1] == 0xCD)
+            {
+                return PictureType.WMF;
+            }
+            return PictureType.PNG;
+        }
+
+        /// <summary>
+        /// 把 NPOI 支持有限的图片（EMF/WMF/TIFF）转成 PNG；失败返回 null
+        /// </summary>
+        public static byte[] TryConvertToPng(byte[] bytes)
+        {
+            try
+            {
+                using MemoryStream input = new(bytes);
+                using System.Drawing.Image image = System.Drawing.Image.FromStream(input);
+                using System.Drawing.Bitmap bitmap = new(image.Width, image.Height);
+                using (System.Drawing.Graphics graphics = System.Drawing.Graphics.FromImage(bitmap))
+                {
+                    graphics.Clear(System.Drawing.Color.White);
+                    graphics.DrawImage(image, 0, 0, image.Width, image.Height);
+                }
+                using MemoryStream output = new();
+                bitmap.Save(output, System.Drawing.Imaging.ImageFormat.Png);
+                return output.ToArray();
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
         /// 插入图片：左上角锚在 (row1, col1)，按像素指定宽高
         /// </summary>
         public static IPicture AddPicture(IWorkbook workbook, ISheet sheet, byte[] imageBytes, PictureType type,
