@@ -70,8 +70,9 @@ namespace ORT一键报告.Reports.ViewModels
             {
                 if (SetProperty(ref _dataPath, value))
                 {
-                    toPDFCommand.RaiseCanExecuteChanged();
-                    alertTimeCommand.RaiseCanExecuteChanged();
+                    // 命令可能还没被界面访问过（懒加载），这里必须空安全，否则赋值早于绑定时会抛空引用
+                    toPDFCommand?.RaiseCanExecuteChanged();
+                    alertTimeCommand?.RaiseCanExecuteChanged();
                 }
             }
         }
@@ -291,10 +292,11 @@ namespace ORT一键报告.Reports.ViewModels
                 _logger.Error($"{ex.Message}, 从Setup工作表解析行列信息失败，使用默认行列设置");
             }
 
-            ExcelNpoi.SetCell(ws, ExcelNpoi.RowOf(addressTESTED_BY), ExcelNpoi.ColumnOf(addressTESTED_BY), ReportHeaderVM?.TESTED_BY.Data);
-            ExcelNpoi.SetCell(ws, ExcelNpoi.RowOf(addressAPPROVED_BY), ExcelNpoi.ColumnOf(addressAPPROVED_BY), ReportHeaderVM?.APPROVED_BY.Data);
-            ExcelNpoi.SetCell(ws, ExcelNpoi.RowOf(addressPROJECT_NAME), ExcelNpoi.ColumnOf(addressPROJECT_NAME), ReportHeaderVM?.PROJECT_NAME.Data);
-            ExcelNpoi.SetCell(ws, ExcelNpoi.RowOf(addressTEST_STAGE), ExcelNpoi.ColumnOf(addressTEST_STAGE), ReportHeaderVM?.TEST_STAGE.Data);
+            // 表头单元格可能读不到（报告/模板里缺对应标题），这里全部空安全，避免生成报告时崩在空引用上
+            ExcelNpoi.SetCell(ws, ExcelNpoi.RowOf(addressTESTED_BY), ExcelNpoi.ColumnOf(addressTESTED_BY), ReportHeaderVM?.TESTED_BY?.Data);
+            ExcelNpoi.SetCell(ws, ExcelNpoi.RowOf(addressAPPROVED_BY), ExcelNpoi.ColumnOf(addressAPPROVED_BY), ReportHeaderVM?.APPROVED_BY?.Data);
+            ExcelNpoi.SetCell(ws, ExcelNpoi.RowOf(addressPROJECT_NAME), ExcelNpoi.ColumnOf(addressPROJECT_NAME), ReportHeaderVM?.PROJECT_NAME?.Data);
+            ExcelNpoi.SetCell(ws, ExcelNpoi.RowOf(addressTEST_STAGE), ExcelNpoi.ColumnOf(addressTEST_STAGE), ReportHeaderVM?.TEST_STAGE?.Data);
             ExcelNpoi.SetCell(ws, ExcelNpoi.RowOf(addressTEST_PERIOD), ExcelNpoi.ColumnOf(addressTEST_PERIOD), ReportHeaderVM?.TestStart);
             ExcelNpoi.SetCell(ws, ExcelNpoi.RowOf(addressTEST_CONCLUSION), ExcelNpoi.ColumnOf(addressTEST_CONCLUSION), ReportHeaderVM?.TestPass is true ? "Pass" : "Fail");
             ExcelNpoi.SetCell(ws, rowStart, colWorkOrder, uutInfos?.WorkOrder);
@@ -531,6 +533,15 @@ namespace ORT一键报告.Reports.ViewModels
             {
                 ISheet ws = ExcelNpoi.SheetByName(wb, "Conducted EMI");
                 ISheet ws_setup = ExcelNpoi.SheetByName(wb, "Setup");
+                // 模板可能选错：缺工作表时明确报错，避免后面写单元格时空引用崩溃
+                if (ws == null || ws_setup == null)
+                {
+                    _logger.Error($"EMI 模板缺少工作表（需要 \"Conducted EMI\" 与 \"Setup\"）：{TemplatePath}");
+                    _ = MessageBox.Show(
+                        $"EMI 模板格式不符：缺少 \"Conducted EMI\" 或 \"Setup\" 工作表。\n模板：{TemplatePath}",
+                        LanguageService.Get("Cap_Error"), MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
                 var setups = SettingsViewModel.ParseJson(ExcelNpoi.CellText(ws_setup, 1, 1));
                 int setupIndex = wb.GetSheetIndex(ws_setup);
                 if (setupIndex >= 0)

@@ -105,14 +105,17 @@ namespace ORT一键报告.Utils
         }
 
         /// <summary>
-        /// 使用已创建的 Word 应用程序实例转换单个文件
+        /// 使用已创建的 Word 应用程序实例转换单个文件。
+        /// 打开文档时把参数写全并显式关掉确认转换/最近文件/可见性：
+        /// 只传文件名时 Word 可能想弹确认框或走"受保护视图"，自动化下会失败并抛
+        /// "Word 未能引发事件 (0x800A1772)"，这是该错误最常见的成因。
         /// </summary>
         private static void ConvertSingleFile(Application wordApp, string sourcePath, string targetPath)
         {
             Document wordDoc = null;
             try
             {
-                wordDoc = wordApp.Documents.Open(sourcePath);
+                wordDoc = OpenDocument(wordApp, sourcePath);
                 wordDoc.ExportAsFixedFormat(targetPath, WdExportFormat.wdExportFormatPDF);
                 _logger.Info("转换成功！PDF 已保存至: {0}", targetPath);
             }
@@ -122,6 +125,43 @@ namespace ORT一键报告.Utils
                 {
                     wordDoc.Close(WdSaveOptions.wdDoNotSaveChanges);
                     System.Runtime.InteropServices.Marshal.ReleaseComObject(wordDoc);
+                }
+            }
+        }
+
+        /// <summary>
+        /// 打开 Word 文档；若直接打开失败（受保护视图/来源受限），先复制到本地临时目录再试一次
+        /// </summary>
+        private static Document OpenDocument(Application wordApp, string sourcePath)
+        {
+            try
+            {
+                return wordApp.Documents.Open(
+                    FileName: sourcePath,
+                    ConfirmConversions: false,
+                    ReadOnly: true,
+                    AddToRecentFiles: false,
+                    Visible: false,
+                    OpenAndRepair: false);
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn($"直接打开失败({ex.Message})，复制到临时目录后重试：{sourcePath}");
+                string localCopy = Path.Combine(Path.GetTempPath(), "ort_docx_" + Guid.NewGuid().ToString("N") + Path.GetExtension(sourcePath));
+                File.Copy(sourcePath, localCopy, true);
+                try
+                {
+                    return wordApp.Documents.Open(
+                        FileName: localCopy,
+                        ConfirmConversions: false,
+                        ReadOnly: true,
+                        AddToRecentFiles: false,
+                        Visible: false,
+                        OpenAndRepair: false);
+                }
+                finally
+                {
+                    // 文档已被 Word 打开后再删除会失败，交给系统临时目录清理
                 }
             }
         }

@@ -322,10 +322,34 @@ namespace ORT一键报告.Utils
         }
 
         /// <summary>
-        /// 合并单元格
+        /// 合并单元格。
+        /// 注意：NPOI 的 AddMergedRegion 对已存在或重叠的合并区域会抛异常，而 EPPlus 的 .Merge = true
+        /// 是幂等的（模板里若已合并、或数据分组算出的区域互相重叠，都不该让生成中断），
+        /// 因此这里先规范化并跳过单格、已覆盖或与之重叠的合并。
         /// </summary>
         public static void Merge(ISheet sheet, int row1, int col1, int row2, int col2)
-            => sheet.AddMergedRegion(new CellRangeAddress(row1 - 1, row2 - 1, col1 - 1, col2 - 1));
+        {
+            if (sheet == null)
+            {
+                return;
+            }
+            int r1 = Math.Min(row1, row2), r2 = Math.Max(row1, row2);
+            int c1 = Math.Min(col1, col2), c2 = Math.Max(col1, col2);
+            if (r1 <= 0 || c1 <= 0 || (r1 == r2 && c1 == c2))
+            {
+                return; // 单格合并没有意义
+            }
+            foreach (CellRangeAddress existing in sheet.MergedRegions)
+            {
+                bool overlaps = existing.FirstRow <= r2 - 1 && existing.LastRow >= r1 - 1
+                    && existing.FirstColumn <= c2 - 1 && existing.LastColumn >= c1 - 1;
+                if (overlaps)
+                {
+                    return; // 已合并或重叠：保持现状（等价 EPPlus 的幂等语义）
+                }
+            }
+            sheet.AddMergedRegion(new CellRangeAddress(r1 - 1, r2 - 1, c1 - 1, c2 - 1));
+        }
 
         /* ###############################  地址（1 基）  ################################ */
 
