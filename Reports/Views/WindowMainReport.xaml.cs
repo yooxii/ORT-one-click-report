@@ -172,6 +172,15 @@ namespace ORT一键报告.Reports.Views
                 if (IsLoaded && _tabs.TryGetValue(reportType, out (TabItem Tab, UserControl Page) entry))
                 {
                     InitSinglePage(entry.Page);
+                    // 勾选后才创建的 Tab 同样要按报告文件夹刷新表头、并填上携带的单体数据
+                    if (ReportService.EnteredFromPlan)
+                    {
+                        ReadHeaderFromReportFolder(entry.Page);
+                    }
+                    if ((ReportService.UUTInfos?.SNs?.Count ?? 0) > 0)
+                    {
+                        FillDetailsForPage(entry.Page);
+                    }
                 }
             }
             else
@@ -193,10 +202,16 @@ namespace ORT一键报告.Reports.Views
                 {
                     InitSinglePage(page);
                 }
-                // 从计划表右键菜单携带记录打开时：预填表头 + 预填单体数据（无需等待读取报告概览）
-                if (ReportService.MatchedPlan != null || ReportService.PrefilledReportModel != null)
+                // 从计划表进入：表头与图片只以"该计划绑定的报告文件夹"里的本地报告为准，
+                // 文件夹里没有这类报告就置空。不能用计划表的文案兜底 —— 那会把计划表里的
+                // 机种/阶段/负责人/测试项目（如 "机型 + 测试项目"、"测试项目 (216hrs)"）当成
+                // 报告表头呈现出来，而它们并不是这份报告里的信息。
+                if (ReportService.EnteredFromPlan)
                 {
-                    ApplyMatchedPlanToAllTabs();
+                    foreach ((TabItem _, UserControl page) in _tabs.Values)
+                    {
+                        ReadHeaderFromReportFolder(page);
+                    }
                 }
                 if (ReportService.UUTInfos != null && (ReportService.UUTInfos.SNs?.Count ?? 0) > 0)
                 {
@@ -222,18 +237,43 @@ namespace ORT一键报告.Reports.Views
         }
 
         /// <summary>
-        /// 从预填的 UUTInfos 填充已打开的 Thermal Shock / Burn In Tab 的单体数据（DataGrid）
+        /// 把预填的单体数据（序列号/工令/版本/周期）填进已打开 Tab 的明细表
         /// </summary>
         private void FillDetailsFromPrefilledUUT()
         {
             foreach ((TabItem _, UserControl page) in _tabs.Values)
             {
-                if (page is BaseReportPage basePage)
-                {
-                    basePage.SetReportResultData();
-                }
+                FillDetailsForPage(page);
             }
             _logger.Info($"已从预填 UUTInfos 填充 {ReportService.UUTInfos.SNs?.Count ?? 0} 条单体数据");
+        }
+
+        /// <summary>
+        /// 按"该计划绑定的报告文件夹"里的本地报告文件刷新单个报告页的表头与图片；
+        /// 文件夹里没有这类报告时，页面内部会把表头与图片置空（不回退模板、不用计划表兜底）
+        /// </summary>
+        private static void ReadHeaderFromReportFolder(UserControl page)
+        {
+            switch (page)
+            {
+                case BaseReportPage basePage:
+                    basePage.ReadReportHeader();
+                    break;
+                case EMIReportPage emiPage:
+                    emiPage.ReadReportHeader();
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// 把预填的单体数据填进单个报告页的明细表（EMI 页没有明细表，跳过）
+        /// </summary>
+        private static void FillDetailsForPage(UserControl page)
+        {
+            if (page is BaseReportPage basePage)
+            {
+                basePage.SetReportResultData();
+            }
         }
 
         private async void DoReport_Click(object sender, RoutedEventArgs e)
@@ -269,7 +309,6 @@ namespace ORT一键报告.Reports.Views
                         emiPage.ReadReportHeader();
                     }
                 }
-                ApplyMatchedPlanToAllTabs();
                 _logger.Info("表头数据已呈现至窗口");
             }
             catch (FileNotFoundException ex)
@@ -296,101 +335,6 @@ namespace ORT一键报告.Reports.Views
                 Owner = this
             };
             ateWindow.Show();
-        }
-
-        /// <summary>
-        /// 对所有已打开的 BaseReportPage（Thermal Shock / Burn In）应用匹配的计划记录
-        /// </summary>
-        private void ApplyMatchedPlanToAllTabs()
-        {
-            foreach ((TabItem _, UserControl page) in _tabs.Values)
-            {
-                if (page is BaseReportPage basePage)
-                {
-                    ApplyMatchedPlanToHeader(basePage.ReportHeaderInfo);
-                }
-            }
-        }
-
-        /// <summary>
-        /// 用领退和计划匹配到的记录补充报告表头（仅填充模板中为空的字段）。
-        /// 若同时携带 PrefilledReportModel，其 Header 作为进一步兆底填充。
-        /// </summary>
-        private void ApplyMatchedPlanToHeader(ReportHeaderViewModel header)
-        {
-            Plan plan = ReportService.MatchedPlan;
-            ORT一键报告.Reports.Models.ReportHeaderData prefilledHeader =
-                ReportService.PrefilledReportModel?.Header;
-            if ((plan == null && prefilledHeader == null) || header == null)
-            {
-                return;
-            }
-            // 优先级：MatchedPlan > PrefilledReportModel.Header
-            if (string.IsNullOrWhiteSpace(header.PROJECT_NAME?.Data))
-            {
-                string value = plan?.TestItem != null ? $"{plan.ModelName} {plan.TestItem}" : (plan?.ModelName ?? prefilledHeader?.ProjectName);
-                if (value != null)
-                {
-                    header.PROJECT_NAME ??= new DataCell();
-                    header.PROJECT_NAME.Data = value;
-                }
-            }
-            if (string.IsNullOrWhiteSpace(header.TEST_STAGE?.Data))
-            {
-                string value = plan?.Stage ?? prefilledHeader?.TestStage;
-                if (value != null)
-                {
-                    header.TEST_STAGE ??= new DataCell();
-                    header.TEST_STAGE.Data = value;
-                }
-            }
-            if (string.IsNullOrWhiteSpace(header.TESTED_BY?.Data))
-            {
-                string value = plan?.Owner ?? prefilledHeader?.TestedBy;
-                if (value != null)
-                {
-                    header.TESTED_BY ??= new DataCell();
-                    header.TESTED_BY.Data = value;
-                }
-            }
-            if (string.IsNullOrWhiteSpace(header.TestDescription?.Data))
-            {
-                string value = plan?.TestPeriod != null ? $"{plan.TestItem} ({plan.TestPeriod}hrs)"
-                    : (plan?.TestItem ?? prefilledHeader?.TestDescription);
-                if (value != null)
-                {
-                    header.TestDescription ??= new DataCell();
-                    header.TestDescription.Data = value;
-                }
-            }
-            // 测试起止日期：计划/预填模型有值且表头为空时带入
-            if (header.TestStart == null)
-            {
-                header.TestStart = plan?.StartDate ?? prefilledHeader?.TestStart;
-            }
-            if (header.TestEnd == null)
-            {
-                header.TestEnd = plan?.EndDate ?? prefilledHeader?.TestEnd;
-            }
-            // 仅当表头还是默认 PASS 且预填模型明确给出结论时同步（避免覆盖用户手动选择）
-            if (prefilledHeader != null && header.TestPass)
-            {
-                header.TestPass = prefilledHeader.TestPass;
-            }
-            // 携带的领退记录：S/N 等领退数据填入仍为空的相应位置（尽力填充，不覆盖已有内容）
-            Requisition req = ReportService.MatchedRequisition;
-            if (req != null)
-            {
-                if (string.IsNullOrWhiteSpace(header.TestDescription?.Data) && !string.IsNullOrWhiteSpace(req.SN))
-                {
-                    header.TestDescription ??= new DataCell();
-                    header.TestDescription.Data = $"S/N: {req.SN}";
-                }
-            }
-            if (plan != null)
-            {
-                _logger.Info($"已用匹配计划记录(Id={plan.Id})补充报告表头信息");
-            }
         }
 
         private void MenuItem_ReportTemplate_Click(object sender, RoutedEventArgs e)

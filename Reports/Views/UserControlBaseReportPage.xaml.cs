@@ -124,11 +124,14 @@ namespace ORT一键报告.Reports.Views
             // 没有绑定的报告文件夹或文件不存在时，才回退到模板
             string reportFilePath = GetTemplatePath(reportService.MatchedReportDir, ReportType);
             bool fromReportFile = !string.IsNullOrWhiteSpace(reportFilePath) && File.Exists(reportFilePath);
-            // 从计划表进入时，报告文件夹里没有这类报告 → 表头与图片一律置空（不再回退模板，避免带出旧数据）
+            // 从计划表进入时，报告文件夹里没有这类报告 → 表头与图片一律置空（不回退模板，
+            // 也不用计划表的文案兜底，避免把机种/阶段/负责人/测试项目当成报告信息带出来）；
+            // 只保留计划表能给的"测试周期"
             if (reportService.EnteredFromPlan && !fromReportFile)
             {
                 _logger.Warn($"{ReportType}：绑定的报告文件夹里没有该类报告，测试信息与图片置空（{reportService.MatchedReportDir}）");
                 ResetReportHeaderInfo(ReportHeaderInfo);
+                ApplyFallbackTestPeriod(reportService);
                 SetInfoToWindow();
                 return;
             }
@@ -152,14 +155,24 @@ namespace ORT一键报告.Reports.Views
             {
                 wb.Close();
             }
-            // 报告文件里没有"测试周期"时，用报告概览文件夹名里的 WK#### 推算的周期（直接进入一键报告的场景）
-            if (ReportHeaderInfo.TestStart == null && reportService.UUTInfos?.TestStart != null)
-            {
-                ReportHeaderInfo.TestStart = reportService.UUTInfos.TestStart;
-                ReportHeaderInfo.TestEnd = reportService.UUTInfos.TestStart.Value.AddDays(TestTime);
-                _logger.Info($"{ReportType}测试周期取自报告概览周号 {reportService.UUTInfos.TestPeriod}：{ReportHeaderInfo.TestStart:yyyy-MM-dd}");
-            }
+            // 报告文件里没有"测试周期"时，用带入的周期（计划表起止日期 / 报告概览文件夹名里的 WK####）
+            ApplyFallbackTestPeriod(reportService);
             SetInfoToWindow();
+        }
+
+        /// <summary>
+        /// 表头"测试周期"兜底：报告文件里没写周期时，用带入的周期（计划表 StartDate 或报告概览的 WK####）。
+        /// 从计划表进入且报告文件夹里没有该报告时，表头只有这一项是"计划表能给的"，其余一律留空。
+        /// </summary>
+        private void ApplyFallbackTestPeriod(ReportService reportService)
+        {
+            if (ReportHeaderInfo.TestStart != null || reportService.UUTInfos?.TestStart == null)
+            {
+                return;
+            }
+            ReportHeaderInfo.TestStart = reportService.UUTInfos.TestStart;
+            ReportHeaderInfo.TestEnd = reportService.UUTInfos.TestStart.Value.AddDays(TestTime);
+            _logger.Info($"{ReportType}测试周期取自带入的周期{(string.IsNullOrWhiteSpace(reportService.UUTInfos.TestPeriod) ? "" : " " + reportService.UUTInfos.TestPeriod)}：{ReportHeaderInfo.TestStart:yyyy-MM-dd}");
         }
 
         private void SetInfoToWindow()

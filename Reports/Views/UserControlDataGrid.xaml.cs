@@ -1,4 +1,4 @@
-﻿using ORT一键报告.Models;
+using ORT一键报告.Models;
 using ORT一键报告.Reports.Models;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -204,10 +204,13 @@ namespace ORT一键报告.Reports.Views
                 InspectionPrev = ReportStatus.Pass,
                 HiPot = ReportStatus.Pass,
             };
-            // DataGridSource 是 DependencyProperty，绑定可能尚未求值，需要初始化
+            // DataGridSource 是依赖属性，页面刚创建时 XAML 上的绑定可能还没求值，需要初始化。
+            // 这里必须用 SetCurrentValue：直接给属性赋值会把 XAML 里的
+            // DataGridSource="{Binding DetailsList}" 绑定顶掉，导致报告页往 DetailsList 里
+            // 填的序列号/工令/版本/周期（周期列绑的是 DC）永远显示不出来。
             if (DataGridSource == null)
             {
-                DataGridSource = [];
+                SetCurrentValue(DataGridSourceProperty, new ObservableCollection<ResultDetails>());
             }
             if (index < 0 || index > DataGridSource.Count)
             {

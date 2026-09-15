@@ -59,8 +59,8 @@
                             </Grid.ColumnDefinitions>
                             <Label Content="{lex:Loc EMI_TemplatePath}" Margin="3" VerticalContentAlignment="Center" />
                             <TextBox x:Name="TemplatePath_text" Text="{Binding TemplatePath}" Grid.Column="1" VerticalContentAlignment="Center" TextWrapping="Wrap" Margin="3" />
-                            <Button Tag="TemplatePath_text" x:Name="btnTemplatePath" Content="{lex:Loc Common_Select}" Width="70" Grid.Column="2" Margin="3,3,3,0" Height="25" VerticalAlignment="Top" Command="{Binding FileSelectCommand}" />
-                            <Button Tag="TemplatePath_text" x:Name="btnEMISetup" Content="{lex:Loc Settings_Title}" Width="70" Grid.Column="3" Margin="3,3,3,0" Height="25" VerticalAlignment="Top" Click="BTNEMISetup_Click" />
+                            <Button Tag="TemplatePath_text" x:Name="btnTemplatePath" Content="{lex:Loc Common_Select}" Width="70" Grid.Column="2" Margin="3,3,3,0" VerticalAlignment="Top" Command="{Binding FileSelectCommand}" />
+                            <Button Tag="TemplatePath_text" x:Name="btnEMISetup" Content="{lex:Loc Settings_Title}" Width="70" Grid.Column="3" Margin="3,3,3,0" VerticalAlignment="Top" Click="BTNEMISetup_Click" />
                         </Grid>
                         <Grid>
                             <Grid.ColumnDefinitions>

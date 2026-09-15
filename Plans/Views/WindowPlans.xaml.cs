@@ -711,6 +711,8 @@ namespace ORT一键报告.Plans.Views
                 _logger.Info($"一键报告：报告文件夹={reportService.MatchedReportDir ?? "(未绑定)"}，缺少的报告={string.Join(",", missingTypes)}");
 
                 // 预填 UUTInfos（用户未读取报告概览时也能让 Tab 有数据）
+                // 只携带计划表+领用表能提供的信息：序列号/工令/周期/版本(DC)/测试项目，
+                // 表头文字（测试人/审核人/项目名/阶段/描述/图片）一律以绑定的报告文件夹里的报告为准
                 List<string> snList = ParseSnLines(req?.SN);
                 reportService.UUTInfos = new UUTInfoFromExcel
                 {
@@ -718,6 +720,8 @@ namespace ORT一键报告.Plans.Views
                     WorkOrder = req?.WorkOrder ?? "",
                     Revision = req?.Rev ?? "",
                     DC = req?.DC ?? "",
+                    // 测试周期：报告文件夹里没有该报告时，表头的"测试周期"用计划表的起止日期
+                    TestStart = plan.StartDate,
                     TestItems = string.IsNullOrWhiteSpace(plan.TestItem)
                         ? []
                         : [new TestItemInfo { TestItemName = plan.TestItem, Date = plan.StartDate?.ToString("yyyy/M/d") ?? "" }]

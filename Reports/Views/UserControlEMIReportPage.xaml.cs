@@ -91,11 +91,18 @@ namespace ORT一键报告.Reports.Views
             // 测试信息与测试图片以"该计划绑定的报告文件夹"里的本地报告文件为准，没有才回退模板
             string reportFilePath = GetTemplatePath(reportService.MatchedReportDir, ReportType);
             bool fromReportFile = !string.IsNullOrWhiteSpace(reportFilePath) && File.Exists(reportFilePath);
-            // 从计划表进入时，报告文件夹里没有这类报告 → 表头与图片一律置空（不再回退模板，避免带出旧数据）
+            // 从计划表进入时，报告文件夹里没有这类报告 → 表头与图片一律置空（不回退模板，
+            // 也不用计划表的文案兜底）；只保留计划表能给的"测试周期"
             if (reportService.EnteredFromPlan && !fromReportFile)
             {
                 _logger.Warn($"{ReportType}：绑定的报告文件夹里没有该类报告，测试信息与图片置空（{reportService.MatchedReportDir}）");
                 ResetReportHeaderInfo(ReportHeaderInfo);
+                if (reportService.UUTInfos?.TestStart != null)
+                {
+                    ReportHeaderInfo.TestStart = reportService.UUTInfos.TestStart;
+                    ReportHeaderInfo.TestEnd = reportService.UUTInfos.TestStart.Value.AddDays(TestTime);
+                    _logger.Info($"{ReportType}测试周期取自带入的周期：{ReportHeaderInfo.TestStart:yyyy-MM-dd}");
+                }
                 SetInfoToWindow();
                 return;
             }
