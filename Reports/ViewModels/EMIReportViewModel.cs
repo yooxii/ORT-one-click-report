@@ -401,10 +401,34 @@ namespace ORT一键报告.Reports.ViewModels
             var remarkLines = Remark.Split('\n');
             foreach (var line in remarkLines)
             {
+                // 备注行落在模板网格之上：先清掉该行原有的条件标签/占位值，避免备注右侧残留 Line/百分比/0
+                ExcelNpoi.ClearCells(ws, row_cursor, 1, colComments + 1);
                 ExcelNpoi.SetCell(ws, row_cursor, colSN - 2, line);
                 row_cursor++;
             }
             int remarkEnd = row_cursor - 1;
+
+            // 删除模板里本次没用到的多余行：备注块之下（模板预写的条件网格 + 模板自带备注页脚）整段删掉，
+            // 生成结果只保留"数据行 + 本次备注"。模板结构：标题/表头(41-43) + 条件网格(44 起，每块 16 行)
+            int gridLastRow = 0;
+            int scanLast = Math.Max(ExcelNpoi.LastRow(ws), remarkEnd);
+            int lastCol = ExcelNpoi.LastColumn(ws);
+            for (int r = remarkEnd + 1; r <= scanLast; r++)
+            {
+                for (int c = 1; c <= lastCol; c++)
+                {
+                    if (!string.IsNullOrWhiteSpace(ExcelNpoi.CellText(ws, r, c)))
+                    {
+                        gridLastRow = r;
+                        break;
+                    }
+                }
+            }
+            if (gridLastRow > remarkEnd)
+            {
+                ExcelNpoi.DeleteRows(ws, remarkEnd + 1, gridLastRow - remarkEnd);
+                _logger.Info($"已删除 EMI 模板中备注块之下的 {gridLastRow - remarkEnd} 行（本次未用到的条件网格与模板自带备注）");
+            }
 
             int[] grayBgColumns = [colLisn, colQP_Limit, colAVG_Limit, colAVG + 1, colAVG + 2, colAVG + 3];
             for (int r = rowStart - 2; r <= Math.Max(rowEnd + 1, remarkEnd); r++)

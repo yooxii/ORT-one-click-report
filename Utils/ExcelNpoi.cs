@@ -329,6 +329,25 @@ namespace ORT一键报告.Utils
         public static void SetFormula(ISheet sheet, int row1, int col1, string formula) => Cell(sheet, row1, col1).CellFormula = formula;
 
         /// <summary>
+        /// 清空某行指定列的单元格内容（保留样式）
+        /// </summary>
+        public static void ClearCells(ISheet sheet, int row1, int col1, int col2)
+        {
+            if (sheet == null)
+            {
+                return;
+            }
+            for (int c = Math.Min(col1, col2); c <= Math.Max(col1, col2); c++)
+            {
+                ICell cell = ExistingCell(sheet, row1, c);
+                if (cell != null)
+                {
+                    cell.SetCellValue((string)null);
+                }
+            }
+        }
+
+        /// <summary>
         /// 给区域内每个单元格写同一个值（等价 EPPlus 的 ws.Cells[r1,c1,r2,c2].Value = x）
         /// </summary>
         public static void FillRange(ISheet sheet, int row1, int col1, int row2, int col2, object value)
@@ -765,24 +784,62 @@ namespace ORT一键报告.Utils
         }
 
         /// <summary>
-        /// 从某行起删除若干行（1 基，等价 EPPlus 的 DeleteRow）
+        /// 从某行起删除若干行（1 基，等价 EPPlus 的 DeleteRow）。
+        /// 注意：NPOI 的 ShiftRows 不会同步合并区域，模板里常有跨行合并（如 B44:C59），
+        /// 所以这里先把与删除区相交的合并区域移除/截断、把下方区域整体上移，再删行，
+        /// 避免产出"合并区域指向已删除行"的坏文件。
         /// </summary>
         public static void DeleteRows(ISheet sheet, int row1, int count)
         {
-            if (count <= 0)
+            if (sheet == null || count <= 0)
             {
                 return;
             }
-            int start = row1 - 1;
-            int last = sheet.LastRowNum;
-            // 先上移后续行，再删掉尾部残留行（POI 推荐顺序）
-            if (start + count <= last)
+            int start0 = row1 - 1;
+            int delLast0 = start0 + count - 1;
+            int last0 = sheet.LastRowNum;
+
+            // 计算删除后的目标合并区域集合，然后整体重建合并列表（避免边删边改索引错乱）
+            List<CellRangeAddress> desired = [];
+            for (int i = 0; i < sheet.NumMergedRegions; i++)
             {
-                sheet.ShiftRows(start + count, last, -count, true, false);
+                CellRangeAddress rg = sheet.GetMergedRegion(i);
+                if (rg.LastRow < start0 || rg.FirstRow > delLast0)
+                {
+                    // 与删除区不相交：在下方则整体上移
+                    desired.Add(rg.FirstRow > delLast0
+                        ? new CellRangeAddress(rg.FirstRow - count, rg.LastRow - count, rg.FirstColumn, rg.LastColumn)
+                        : new CellRangeAddress(rg.FirstRow, rg.LastRow, rg.FirstColumn, rg.LastColumn));
+                    continue;
+                }
+                if (rg.FirstRow >= start0 && rg.LastRow <= delLast0)
+                {
+                    continue; // 完全落在删除区内 -> 丢弃
+                }
+                if (rg.FirstRow < start0)
+                {
+                    // 跨过删除区上边界 -> 截断到删除区之前
+                    desired.Add(new CellRangeAddress(rg.FirstRow, start0 - 1, rg.FirstColumn, rg.LastColumn));
+                }
+                // 顶部落在删除区内、尾部在外 -> 丢弃（无法保持矩形）
+            }
+            for (int i = sheet.NumMergedRegions - 1; i >= 0; i--)
+            {
+                sheet.RemoveMergedRegion(i);
+            }
+            foreach (CellRangeAddress rg in desired)
+            {
+                sheet.AddMergedRegion(rg);
+            }
+
+            // 先上移后续行，再删掉尾部残留行（POI 推荐顺序）
+            if (start0 + count <= last0)
+            {
+                sheet.ShiftRows(start0 + count, last0, -count, true, false);
             }
             for (int i = 0; i < count; i++)
             {
-                IRow row = sheet.GetRow(last - i);
+                IRow row = sheet.GetRow(last0 - i);
                 if (row != null)
                 {
                     sheet.RemoveRow(row);
