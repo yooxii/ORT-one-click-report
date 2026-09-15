@@ -471,14 +471,29 @@ namespace ORT一键报告.Reports.ViewModels
         {
             PopupWindow popup = new() { Title = LanguageService.Get("Title_Processing"), Message = "请耐心等待..." };
             popup.Show();
+            (int Converted, int Failed) result = (0, 0);
             await Task.Run(() =>
             {
                 if (sourcePath.ToLower().EndsWith("docx"))
-                    Docx2Pdf.ConvertToPdf(sourcePath, sourcePath.Split('.')[0] + "pdf");
+                {
+                    bool ok = Docx2Pdf.ConvertToPdf(sourcePath, Path.ChangeExtension(sourcePath, ".pdf"));
+                    result = ok ? (1, 0) : (0, 1);
+                }
                 else
-                    Docx2Pdf.ConvertToPdf(sourcePath);
+                {
+                    result = Docx2Pdf.ConvertToPdf(sourcePath);
+                }
             });
             popup.Close();
+            _logger.Info($"Word 转 PDF 完成：成功 {result.Converted} 个，失败 {result.Failed} 个");
+            // 转换失败不再静默：后面压缩进报告的数据包会缺内容，必须让用户知道
+            if (result.Failed > 0)
+            {
+                _ = MessageBox.Show(
+                    $"有 {result.Failed} 个 Word 文档未能转换为 PDF（成功 {result.Converted} 个）。\n"
+                    + "报告里嵌入的数据包会缺少这部分内容，请确认 Word 可用、文件未被占用后重试。",
+                    LanguageService.Get("Cap_Warning"), MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
         }
 
         private async void DoReport()
