@@ -626,12 +626,20 @@ namespace ORT一键报告.Reports.ViewModels
         private RelayCommand alertTimeCommand;
         public ICommand AlertTimeCommand => alertTimeCommand ??= new RelayCommand(AlertTime, CanToPDF);
 
-        private async void AlertTime()
+        /// <summary>
+        /// Alert：打开"EMI 数据处理"对话框，由用户主动填写文件时间参数，并可批量替换 Word 字符串
+        /// （原来在这里直接按随机规则改文件时间，现已改为界面操作）
+        /// </summary>
+        private void AlertTime()
         {
-            await Task.Run(() =>
+            if (string.IsNullOrWhiteSpace(DataPath) || !Directory.Exists(DataPath))
             {
-                Docx2Pdf.AlertFileTime(DataPath);
-            });
+                _ = MessageBox.Show("请先选择 EMI 测试数据文件夹。", LanguageService.Get("Cap_Warning"),
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            WindowEmiTools dialog = new(_emiService, DataPath);
+            dialog.ShowDialog();
         }
 
         private RelayCommand emiFinishCommand;

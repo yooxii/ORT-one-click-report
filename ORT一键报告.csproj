@@ -201,6 +201,7 @@
       <DependentUpon>UserControlBaseReportPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="Utils\Docx2Pdf.cs" />
+    <Compile Include="Utils\DocxTextReplacer.cs" />
     <Compile Include="Main\Views\UserControlBaseSettings.xaml.cs">
       <DependentUpon>UserControlBaseSettings.xaml</DependentUpon>
     </Compile>
@@ -289,6 +290,10 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="Reports\Views\WindowEmiTools.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="Reports\Views\UserControlBaseReportPage.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -315,6 +320,9 @@
     </Compile>
     <Compile Include="Reports\Views\WindowATE.xaml.cs">
       <DependentUpon>WindowATE.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Reports\Views\WindowEmiTools.xaml.cs">
+      <DependentUpon>WindowEmiTools.xaml</DependentUpon>
     </Compile>
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>

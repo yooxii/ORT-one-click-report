@@ -166,6 +166,51 @@ namespace ORT一键报告.Utils
             }
         }
 
+        /// <summary>
+        /// 按用户给的参数设置目录下 PDF 的文件时间（创建时间 + 修改时间）：
+        /// 基准日期 + 随机 0~randomDays 天；skipWeekend=true 时若落在周末则顺延到周一；保留各文件原有的"时分秒"。
+        /// 返回处理的文件数。
+        /// </summary>
+        public static int SetPdfFileTimes(string sourceDir, DateTime baseDate, int randomDays, bool skipWeekend)
+        {
+            if (!Directory.Exists(sourceDir))
+            {
+                _logger.Error($"{sourceDir}不存在");
+                return 0;
+            }
+            DateTime baseDay = baseDate.Date;
+            // 注意：本文件 using Microsoft.Office.Interop.Word，其中也有 List 类型，
+            // 所以这里必须写全 System.Collections.Generic.List
+            System.Collections.Generic.List<string> files = Directory.GetFiles(sourceDir, "*.pdf").OrderBy(f => f).ToList();
+            Random random = new();
+            int done = 0;
+            foreach (string file in files)
+            {
+                try
+                {
+                    DateTime original = File.GetLastWriteTime(file);
+                    DateTime day = baseDay.AddDays(randomDays > 0 ? random.Next(randomDays + 1) : 0);
+                    if (skipWeekend)
+                    {
+                        while (day.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday)
+                        {
+                            day = day.AddDays(1);
+                        }
+                    }
+                    DateTime target = new(day.Year, day.Month, day.Day, original.Hour, original.Minute, original.Second);
+                    File.SetCreationTime(file, target);
+                    File.SetLastWriteTime(file, target);
+                    done++;
+                }
+                catch (Exception ex)
+                {
+                    _logger.Warn($"设置文件时间失败（{Path.GetFileName(file)}）：{ex.Message}");
+                }
+            }
+            _logger.Info($"已按参数设置 {done}/{files.Count} 个 PDF 的文件时间（基准 {baseDay:yyyy-MM-dd}，随机 0~{randomDays} 天，周末顺延={skipWeekend}）");
+            return done;
+        }
+
         public static void AlertFileTime(string sourceDir)
         {
             try
