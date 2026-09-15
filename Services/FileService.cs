@@ -1,4 +1,5 @@
-﻿using ORT一键报告.Utils;
+using NLog;
+using ORT一键报告.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -10,15 +11,17 @@ namespace ORT一键报告.Services
 {
     public static class FileService
     {
+        private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
         /// <summary>
-        /// 压缩文件夹并支持文件过滤
+        /// 压缩文件夹并支持文件过滤。
+        /// 单个文件被占用/读不到时跳过并继续（不再让整包失败），返回成功加入压缩包的文件数。
         /// </summary>
         /// <param name="sourceDirectoryName">要压缩的源文件夹路径</param>
         /// <param name="destinationArchiveFileName">生成的 ZIP 文件路径</param>
         /// <param name="Filter">文件过滤条件</param>
         /// <param name="isInclude"> true 表示保留，false 表示排除</param>
-        public static void CreateFilteredZip(string sourceDirectoryName, string destinationArchiveFileName, string Filter = null, bool isInclude = true)
+        public static int CreateFilteredZip(string sourceDirectoryName, string destinationArchiveFileName, string Filter = null, bool isInclude = true)
         {
             // 如果目标文件已存在，先删除（避免抛出异常）
             if (File.Exists(destinationArchiveFileName))
@@ -26,6 +29,7 @@ namespace ORT一键报告.Services
                 File.Delete(destinationArchiveFileName);
             }
 
+            int added = 0;
             using var fileStream = new FileStream(destinationArchiveFileName, FileMode.Create);
             // 使用 UTF8 编码防止中文文件名乱码
             using var archive = new ZipArchive(fileStream, ZipArchiveMode.Create, false, Encoding.UTF8);
@@ -57,7 +61,15 @@ namespace ORT一键报告.Services
 
                     // 计算文件在压缩包中的相对路径
                     string relativePath = Report.GetRelativePath(sourceDirectoryName, filePath);
-                    archive.CreateEntryFromFile(filePath, relativePath, System.IO.Compression.CompressionLevel.Optimal);
+                    try
+                    {
+                        archive.CreateEntryFromFile(filePath, relativePath, System.IO.Compression.CompressionLevel.Optimal);
+                        added++;
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.Warn($"压缩时跳过文件（{Path.GetFileName(filePath)}）：{ex.Message}");
+                    }
                 }
 
                 // 将子文件夹压入栈中，实现递归
@@ -66,6 +78,8 @@ namespace ORT一键报告.Services
                     folders.Push(subFolder);
                 }
             }
+            _logger.Info($"压缩完成：{added} 个文件 -> {Path.GetFileName(destinationArchiveFileName)}");
+            return added;
         }
 
         public static void CopyFileInfo(string srcFile, string dstPath)

@@ -461,7 +461,11 @@ namespace ORT一键报告.Reports.ViewModels
 
             // 插入数据的压缩包（OLE 由调用方在保存后用 Excel COM 嵌入）
             string zipPath = System.IO.Path.Combine(DataPath, $"{datas[0].Model}.zip");
-            FileService.CreateFilteredZip(DataPath, zipPath, @"\.pdf$");
+            int zipped = FileService.CreateFilteredZip(DataPath, zipPath, @"\.pdf$");
+            if (zipped == 0)
+            {
+                _logger.Warn("EMI 数据压缩包里没有 PDF（Word 转 PDF 可能未完成），报告将缺少数据附件");
+            }
             string iconDir = System.IO.Path.Combine(_reportService.TemplateDir, "ZipEMF");
             if (!Directory.Exists(iconDir))
                 Directory.CreateDirectory(iconDir);
