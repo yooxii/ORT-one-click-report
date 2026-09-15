@@ -671,6 +671,8 @@ namespace ORT一键报告.Plans.Views
                 reportService.MatchedPlan = plan;
                 Requisition req = _vm.FindRequisitionForPlan(plan);
                 reportService.MatchedRequisition = req;
+                // 该计划绑定的报告文件夹：报告页的测试信息/测试图片改为从这里按报告类型读取
+                reportService.MatchedReportDir = _vm.FindReportLink(plan.JobNo)?.ReportDir;
 
                 // 预填 UUTInfos（用户未读取报告概览时也能让 Tab 有数据）
                 List<string> snList = ParseSnLines(req?.SN);
@@ -685,19 +687,34 @@ namespace ORT一键报告.Plans.Views
                         : [new TestItemInfo { TestItemName = plan.TestItem, Date = plan.StartDate?.ToString("yyyy/M/d") ?? "" }]
                 };
 
-                // 构建 BurnInReportModel（ORT 最常用的 Burn In 报告类型），预填表头与 UUT 来源
+                // 构建 BurnInReportModel（ORT 最常用的 Burn In 报告类型）：
+                // 表头优先取"绑定的报告文件夹"里本地 Burn-In 报告文件（TESTED BY/APPROVED BY/PROJECT NAME/
+                // TEST STAGE/TEST PERIOD/TEST CONCLUSION + Issue Photos/Test Setup 图片），
+                // 报告文件缺失时才回退到计划表里的旧取法
+                int testTimeDays = 7; // Burn In 默认 7 天
+                ReportHeaderData planHeader = new()
+                {
+                    TestedBy = plan.Owner,
+                    ProjectName = plan.TestItem != null ? $"{plan.ModelName} {plan.TestItem}" : plan.ModelName,
+                    TestStage = plan.Stage,
+                    TestDescription = plan.TestPeriod != null ? $"{plan.TestItem} ({plan.TestPeriod}hrs)" : plan.TestItem,
+                    TestStart = plan.StartDate ?? DateTime.Now,
+                    TestEnd = plan.EndDate ?? DateTime.Now.AddDays(testTimeDays),
+                    TestPass = true
+                };
+                string burnInReportFile = ORT一键报告.Utils.Report.GetTemplatePath(reportService.MatchedReportDir, "Burn In");
+                ReportHeaderData reportFolderHeader = ORT一键报告.Utils.Report.ReadHeaderData(burnInReportFile, testTimeDays, planHeader);
+                if (reportFolderHeader != null)
+                {
+                    _logger.Info($"一键报告表头取自本地报告文件：{burnInReportFile}");
+                }
+                else
+                {
+                    _logger.Info("未读到本地报告文件表头，表头沿用计划表数据");
+                }
                 BurnInReportModel prefilled = new()
                 {
-                    Header = new ReportHeaderData
-                    {
-                        TestedBy = plan.Owner,
-                        ProjectName = plan.TestItem != null ? $"{plan.ModelName} {plan.TestItem}" : plan.ModelName,
-                        TestStage = plan.Stage,
-                        TestDescription = plan.TestPeriod != null ? $"{plan.TestItem} ({plan.TestPeriod}hrs)" : plan.TestItem,
-                        TestStart = plan.StartDate ?? DateTime.Now,
-                        TestEnd = plan.EndDate ?? DateTime.Now.AddDays(7),
-                        TestPass = true
-                    },
+                    Header = reportFolderHeader ?? planHeader,
                     UUTSource = new UUTSourceData
                     {
                         SNs = snList,

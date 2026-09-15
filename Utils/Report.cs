@@ -1,6 +1,8 @@
 using NLog;
 using NPOI.SS.UserModel;
+using NPOI.XSSF.UserModel;
 using ORT一键报告.Models;
+using ORT一键报告.Reports.Models;
 using ORT一键报告.Reports.ViewModels;
 using ORT一键报告.Reports.Views;
 using System;
@@ -98,6 +100,151 @@ namespace ORT一键报告.Utils
             reportHeaderInfo.Test_Description_Pic = GetPicturesInRange(ws, 6, 1, 10);
             reportHeaderInfo.Issue_Photos_Pics = issueTitle is null ? null : GetPicturesInRange(ws, issueTitle.Row, 1, issueTitle.Row + 10);
             reportHeaderInfo.Test_Setup_Pics = setupTitle is null ? null : GetPicturesInRange(ws, setupTitle.Row, 1, setupTitle.Row + 10);
+
+            // 已完成的本地报告里还带有"测试周期/测试结论"，一并读取（模板里通常是空的，读不到就不覆盖界面既有值）
+            DateTime? period = ReadTestPeriod(ws);
+            if (period != null)
+            {
+                reportHeaderInfo.TestStart = period;
+            }
+            bool? conclusion = ReadTestConclusion(ws);
+            if (conclusion != null)
+            {
+                reportHeaderInfo.TestPass = conclusion.Value;
+            }
+        }
+
+        /// <summary>
+        /// 读取报告里的"TEST PERIOD"起始日期（找不到或解析失败返回 null）
+        /// </summary>
+        public static DateTime? ReadTestPeriod(ISheet ws)
+            => ParseReportDate(FindInfoByText(ws, "TEST PERIOD")?.Data);
+
+        /// <summary>
+        /// 读取报告里的"TEST CONCLUSION"是否为 Pass（找不到返回 null，由调用方保留默认值）
+        /// </summary>
+        public static bool? ReadTestConclusion(ISheet ws)
+        {
+            string value = FindInfoByText(ws, "TEST CONCLUSION")?.Data?.Trim();
+            if (string.IsNullOrEmpty(value))
+            {
+                return null;
+            }
+            return value.StartsWith("pass", StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// 解析报告里的日期文本：支持 2025/7/2、2025-07-02、2025.7.2、2025年7月2日 等
+        /// </summary>
+        private static DateTime? ParseReportDate(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return null;
+            }
+            Match m = Regex.Match(text, @"(\d{4})\s*[年/\-.]\s*(\d{1,2})\s*[月/\-.]\s*(\d{1,2})");
+            if (m.Success
+                && int.TryParse(m.Groups[1].Value, out int year)
+                && int.TryParse(m.Groups[2].Value, out int month)
+                && int.TryParse(m.Groups[3].Value, out int day))
+            {
+                try
+                {
+                    return new DateTime(year, month, day);
+                }
+                catch
+                {
+                    return null;
+                }
+            }
+            // 只有月/日时按当前年份
+            m = Regex.Match(text, @"(\d{1,2})\s*[月/\-.]\s*(\d{1,2})");
+            if (m.Success
+                && int.TryParse(m.Groups[1].Value, out int m2)
+                && int.TryParse(m.Groups[2].Value, out int d2))
+            {
+                try
+                {
+                    return new DateTime(DateTime.Now.Year, m2, d2);
+                }
+                catch
+                {
+                    return null;
+                }
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// 从报告文件读取表头信息并转成模型（供模型化生成使用）；
+        /// 报告里没有的字段保持调用方给的默认值。找不到文件/标签返回 null。
+        /// </summary>
+        public static ReportHeaderData ReadHeaderData(string reportFilePath, int testTimeDays, ReportHeaderData fallback = null)
+        {
+            if (string.IsNullOrWhiteSpace(reportFilePath) || !File.Exists(reportFilePath))
+            {
+                return null;
+            }
+            XSSFWorkbook wb = ExcelNpoi.OpenRead(reportFilePath);
+            try
+            {
+                ISheet ws = ExcelNpoi.SheetAt(wb, 0);
+                ReportHeaderViewModel vm = new();
+                ReadReportHeaderInfo(ws, vm);
+                if (vm.TESTED_BY?.Data == null && vm.APPROVED_BY?.Data == null && vm.PROJECT_NAME?.Data == null)
+                {
+                    return null; // 报告里没有可用表头（例如拿到的是空模板）
+                }
+                DateTime start = vm.TestStart ?? fallback?.TestStart ?? DateTime.Now;
+                ReportHeaderData header = new()
+                {
+                    TestedBy = FirstNonEmpty(vm.TESTED_BY?.Data, fallback?.TestedBy),
+                    ApprovedBy = FirstNonEmpty(vm.APPROVED_BY?.Data, fallback?.ApprovedBy),
+                    ProjectName = FirstNonEmpty(vm.PROJECT_NAME?.Data, fallback?.ProjectName),
+                    TestStage = FirstNonEmpty(vm.TEST_STAGE?.Data, fallback?.TestStage),
+                    TestDescription = FirstNonEmpty(vm.TestDescription?.Data, fallback?.TestDescription),
+                    TestStart = start,
+                    TestEnd = testTimeDays > 0 ? start.AddDays(testTimeDays) : (fallback?.TestEnd ?? start),
+                    TestPass = vm.TestPass,
+                    IssuePhotos = ToAttachments(vm.Issue_Photos_Pics),
+                    TestSetupPhotos = ToAttachments(vm.Test_Setup_Pics),
+                    TestDescriptionPhoto = ToAttachments(vm.Test_Description_Pic).FirstOrDefault()
+                };
+                return header;
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn($"读取报告表头失败（{reportFilePath}）：{ex.Message}");
+                return null;
+            }
+            finally
+            {
+                wb.Close();
+            }
+        }
+
+        private static string FirstNonEmpty(string primary, string fallback)
+            => string.IsNullOrWhiteSpace(primary) ? fallback : primary.Trim();
+
+        /// <summary>
+        /// 把图片单元格转成模型里的附件（保留字节，界面与生成共用）
+        /// </summary>
+        private static List<ImageAttachment> ToAttachments(DataCell cell)
+        {
+            List<ImageAttachment> list = [];
+            if (cell?.Images == null)
+            {
+                return list;
+            }
+            foreach (ExcelPictureInfo pic in cell.Images)
+            {
+                list.Add(new ImageAttachment
+                {
+                    Name = pic.Name,
+                    Bytes = pic.ImageBytes
+                });
+            }
+            return list;
         }
 
         public static DataCell GetPicturesInRange(ISheet ws, int startRow = 1, int startCol = 1, int endRow = -1, int endCol = -1)

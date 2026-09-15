@@ -60,7 +60,10 @@ namespace ORT一键报告.Reports.Views
         {
             _logger.Info($"读取{ReportType}报告表头...");
             ReportService reportService = App.ServiceProvider.GetRequiredService<ReportService>();
-            string templatePath = GetTemplatePath(reportService.RootPath, ReportType);
+            // 测试信息与测试图片以"该计划绑定的报告文件夹"里的本地报告文件为准，没有才回退模板
+            string reportFilePath = GetTemplatePath(reportService.MatchedReportDir, ReportType);
+            bool fromReportFile = !string.IsNullOrWhiteSpace(reportFilePath) && File.Exists(reportFilePath);
+            string templatePath = fromReportFile ? reportFilePath : GetTemplatePath(reportService.RootPath, ReportType);
             if (string.IsNullOrWhiteSpace(templatePath) || !File.Exists(templatePath))
             {
                 _logger.Warn($"未找到{ReportType}报告模板，跳过读取该报告表头");
@@ -72,12 +75,16 @@ namespace ORT一键报告.Reports.Views
                 ISheet ws = ExcelNpoi.SheetAt(wb, 0);
 
                 ReadReportHeaderInfo(ws, ReportHeaderInfo);
-                _logger.Info($"{ReportType}表头读取完成");
+                _logger.Info(fromReportFile
+                    ? $"{ReportType}表头读取自本地报告文件：{templatePath}"
+                    : $"{ReportType}表头读取自模板：{templatePath}");
             }
             finally
             {
                 wb.Close();
             }
+            // 报告文件里的"TEST PERIOD"优先于计划表里的测试项目日期
+            DateTime? periodFromReport = ReportHeaderInfo.TestStart;
             UUTInfoFromExcel _UUTInfos = reportService.UUTInfos;
             if (_UUTInfos == null)
             {
@@ -96,10 +103,19 @@ namespace ORT一键报告.Reports.Views
                         _logger.Warn($"{ReportType}报告：测试项目 {testItem.TestItemName} 的日期无效（{testItem.Date}），跳过日期填充");
                         continue;
                     }
-                    ReportHeader.datepicker_start.SelectedDate = parsedDate;
-                    ReportHeaderInfo.TestStart = parsedDate;
-                    ReportHeaderInfo.TestEnd = parsedDate.AddDays(TestTime);
+                    if (periodFromReport == null)
+                    {
+                        ReportHeader.datepicker_start.SelectedDate = parsedDate;
+                        ReportHeaderInfo.TestStart = parsedDate;
+                        ReportHeaderInfo.TestEnd = parsedDate.AddDays(TestTime);
+                    }
                 }
+            }
+            if (periodFromReport != null)
+            {
+                ReportHeader.datepicker_start.SelectedDate = periodFromReport;
+                ReportHeaderInfo.TestStart = periodFromReport;
+                ReportHeaderInfo.TestEnd = periodFromReport.Value.AddDays(TestTime);
             }
             SetInfoToWindow();
         }

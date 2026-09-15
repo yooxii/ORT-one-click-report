@@ -1,4 +1,4 @@
-﻿using ORT一键报告.Models;
+using ORT一键报告.Models;
 using ORT一键报告.Reports.Models;
 
 namespace ORT一键报告.Services
@@ -25,6 +25,13 @@ namespace ORT一键报告.Services
         /// 用于补充 S/N 等领退数据到报告相应位置
         /// </summary>
         public Requisition MatchedRequisition { get; set; }
+
+        /// <summary>
+        /// 匹配计划绑定的报告文件夹（report_links.ReportDir，从计划表右键打开时携带）。
+        /// 测试信息（TESTED BY/APPROVED BY…）与测试图片（Issue Photos/Test Setup）
+        /// 优先从该文件夹下按报告类型的本地报告文件读取，读不到才回退模板。
+        /// </summary>
+        public string MatchedReportDir { get; set; }
 
         /// <summary>
         /// 预填的一键报告输入模型实例（从计划 + 领退构建）。

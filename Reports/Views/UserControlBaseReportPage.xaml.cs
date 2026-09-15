@@ -120,7 +120,11 @@ namespace ORT一键报告.Reports.Views
         {
             _logger.Info($"读取{ReportType}报告表头...");
             ReportService reportService = App.ServiceProvider.GetRequiredService<ReportService>();
-            string templatePath = GetTemplatePath(reportService.RootPath, ReportType);
+            // 测试信息与测试图片以"该计划绑定的报告文件夹"里的本地报告文件为准（真实完成的报告），
+            // 没有绑定的报告文件夹或文件不存在时，才回退到模板
+            string reportFilePath = GetTemplatePath(reportService.MatchedReportDir, ReportType);
+            bool fromReportFile = !string.IsNullOrWhiteSpace(reportFilePath) && File.Exists(reportFilePath);
+            string templatePath = fromReportFile ? reportFilePath : GetTemplatePath(reportService.RootPath, ReportType);
             if (string.IsNullOrWhiteSpace(templatePath) || !File.Exists(templatePath))
             {
                 _logger.Warn($"未找到{ReportType}报告模板，跳过读取该报告表头（请检查{reportService.RootPath}下的Report文件夹）");
@@ -132,7 +136,9 @@ namespace ORT一键报告.Reports.Views
                 ISheet ws = ExcelNpoi.SheetAt(wb, 0);
 
                 ReadReportHeaderInfo(ws, ReportHeaderInfo);
-                _logger.Info($"{ReportType}表头读取完成");
+                _logger.Info(fromReportFile
+                    ? $"{ReportType}表头读取自本地报告文件：{templatePath}"
+                    : $"{ReportType}表头读取自模板：{templatePath}");
             }
             finally
             {
