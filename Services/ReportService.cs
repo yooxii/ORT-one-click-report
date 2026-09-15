@@ -1,5 +1,8 @@
 using ORT一键报告.Models;
 using ORT一键报告.Reports.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace ORT一键报告.Services
 {
@@ -38,5 +41,50 @@ namespace ORT一键报告.Services
         /// 只要提供该实例即可直接生成报告，与 UI 解耦。
         /// </summary>
         public ReportInputModel PrefilledReportModel { get; set; }
+
+        /// <summary>
+        /// 用领用表（+计划表）的数据覆盖报告概览里读到的 UUT 信息：
+        /// 从计划表右键进入时，序列号/工令/版本/DC 以领用表为准，"测试项目"等仍保留概览里的。
+        /// 未从计划表进入（MatchedRequisition 为空）时不改动任何内容。
+        /// </summary>
+        /// <returns>是否发生了覆盖</returns>
+        public bool ApplyMatchedSourceToUUTInfos()
+        {
+            UUTInfoFromExcel infos = UUTInfos;
+            Requisition req = MatchedRequisition;
+            if (infos == null || req == null)
+            {
+                return false;
+            }
+
+            List<string> sns = (req.SN ?? "")
+                .Split(['\n', '\r'], StringSplitOptions.RemoveEmptyEntries)
+                .Select(s => s.Trim())
+                .Where(s => s.Length > 0)
+                .ToList();
+
+            bool changed = false;
+            if (sns.Count > 0 && !sns.SequenceEqual(infos.SNs ?? []))
+            {
+                infos.SNs = sns;
+                changed = true;
+            }
+            if (!string.IsNullOrWhiteSpace(req.WorkOrder) && req.WorkOrder != infos.WorkOrder)
+            {
+                infos.WorkOrder = req.WorkOrder;
+                changed = true;
+            }
+            if (!string.IsNullOrWhiteSpace(req.Rev) && req.Rev != infos.Revision)
+            {
+                infos.Revision = req.Rev;
+                changed = true;
+            }
+            if (!string.IsNullOrWhiteSpace(req.DC) && req.DC != infos.DC)
+            {
+                infos.DC = req.DC;
+                changed = true;
+            }
+            return changed;
+        }
     }
 }

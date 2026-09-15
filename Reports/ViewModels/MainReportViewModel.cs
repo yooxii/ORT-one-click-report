@@ -160,6 +160,11 @@ namespace ORT一键报告.Reports.ViewModels
                         wb.Close();
                     }
                 });
+                // 从计划表右键进入时：SN/工令/版本/DC 以领用表为准（报告概览只用来补充测试项目等）
+                if (_reportService.ApplyMatchedSourceToUUTInfos())
+                {
+                    _logger.Info("已用领用表数据覆盖报告概览中的 SN/工令/版本/DC");
+                }
             }
             catch (Exception ex)
             {

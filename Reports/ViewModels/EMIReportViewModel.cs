@@ -33,12 +33,25 @@ namespace ORT一键报告.Reports.ViewModels
         public ReportHeaderViewModel ReportHeaderVM { get; set; }
         public EMISetupViewModel EMISetupVM { get; set; }
 
+        // Word 表格解析后的数值列下标。实测行布局为：
+        // [0]标记号 [1]频率 [2]QP实测 [3]QP限值 [4]QP余量 [5]AVG实测 [6]AVG限值 [7]AVG余量 [8]…
+        // 其中"余量"= 限值 − 实测；挑最严苛的一行就是取余量最小的那行。
+        /// <summary>标记号列</summary>
+        public int MarkNo_Col { set; get; } = 0;
+        /// <summary>频率列</summary>
+        public int Freq_Col { set; get; } = 1;
+        /// <summary>QP 实测值列</summary>
         public int PK_Col { set; get; } = 2;
+        /// <summary>QP 限值列</summary>
         public int PK_Limit_Col { set; get; } = 3;
-        public int PK_TolerableLimit_Col { set; get; } = 4;
+        /// <summary>QP 余量列（原命名 TolerableLimit，实际是"限值−实测"的余量）</summary>
+        public int PK_Margin_Col { set; get; } = 4;
+        /// <summary>AVG 实测值列</summary>
         public int AVG_Col { set; get; } = 5;
+        /// <summary>AVG 限值列</summary>
         public int AVG_Limit_Col { set; get; } = 6;
-        public int AVG_TolerableLimit_Col { set; get; } = 7;
+        /// <summary>AVG 余量列（同上）</summary>
+        public int AVG_Margin_Col { set; get; } = 7;
 
         private string _templatePath = string.Empty;
 
@@ -190,7 +203,7 @@ namespace ORT一键报告.Reports.ViewModels
                             }
                             else
                             {
-                                if (tmp[PK_TolerableLimit_Col] < emiData.MinDatas[PK_TolerableLimit_Col] || tmp[AVG_TolerableLimit_Col] < emiData.MinDatas[AVG_TolerableLimit_Col])
+                                if (tmp[PK_Margin_Col] < emiData.MinDatas[PK_Margin_Col] || tmp[AVG_Margin_Col] < emiData.MinDatas[AVG_Margin_Col])
                                 {
                                     emiData.MinDatas = tmp;
                                 }
@@ -345,12 +358,12 @@ namespace ORT一键报告.Reports.ViewModels
                         foreach (var lisn in load.Value)
                         {
                             ExcelNpoi.SetCell(ws, row_cursor, colLisn, lisn.LISN == "L" ? "Line" : "Neutral");
-                            ExcelNpoi.SetCell(ws, row_cursor, colNo, lisn.MinDatas[0]);
-                            ExcelNpoi.SetCell(ws, row_cursor, colFreq, lisn.MinDatas[1]);
-                            ExcelNpoi.SetCell(ws, row_cursor, colQP_Limit, lisn.MinDatas[3]);
-                            ExcelNpoi.SetCell(ws, row_cursor, colAVG_Limit, lisn.MinDatas[6]);
-                            ExcelNpoi.SetCell(ws, row_cursor, colQP_Max, lisn.MinDatas[2]);
-                            ExcelNpoi.SetCell(ws, row_cursor, colAVG, lisn.MinDatas[5]);
+                            ExcelNpoi.SetCell(ws, row_cursor, colNo, lisn.MinDatas[MarkNo_Col]);
+                            ExcelNpoi.SetCell(ws, row_cursor, colFreq, lisn.MinDatas[Freq_Col]);
+                            ExcelNpoi.SetCell(ws, row_cursor, colQP_Limit, lisn.MinDatas[PK_Limit_Col]);
+                            ExcelNpoi.SetCell(ws, row_cursor, colAVG_Limit, lisn.MinDatas[AVG_Limit_Col]);
+                            ExcelNpoi.SetCell(ws, row_cursor, colQP_Max, lisn.MinDatas[PK_Col]);
+                            ExcelNpoi.SetCell(ws, row_cursor, colAVG, lisn.MinDatas[AVG_Col]);
 
                             ExcelNpoi.SetFormula(ws, row_cursor, colAVG + 2, $"T{row_cursor}-Q{row_cursor}");
                             ExcelNpoi.SetFormula(ws, row_cursor, colAVG + 3, $"U{row_cursor}-R{row_cursor}");
