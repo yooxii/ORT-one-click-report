@@ -14,11 +14,13 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Windows;
+using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Threading;
 
 namespace ORT一键报告.Plans.Views
 {
@@ -96,6 +98,12 @@ namespace ORT一键报告.Plans.Views
         /// <summary>筛选菜单里最多列出的可选值个数（超出只提示，避免菜单过长）</summary>
         private const int MaxHeaderFilterValues = 200;
 
+        /// <summary>筛选项超过这个数量时，在筛选菜单里显示搜索框</summary>
+        private const int FilterSearchThreshold = 10;
+
+        /// <summary>带搜索框时最多创建的可选值项（搜索可在其中查找，避免一次性建上千个菜单项）</summary>
+        private const int MaxSearchableFilterValues = 1000;
+
         /// <summary>已筛选列的列头样式（加粗+主题色，作为 Excel 漏斗的替代提示）</summary>
         private readonly Dictionary<DataGrid, Style> _filteredHeaderStyles = [];
 
@@ -163,14 +171,20 @@ namespace ORT一键报告.Plans.Views
                 // 取消勾选某个值即为"排除它"
                 bool allIncluded = filter == null || !filter.IsActive;
                 filterRoot.Items.Add(new Separator());
-                int shown = 0;
+
+                // 值多时提供搜索框：空查询只显示前 MaxHeaderFilterValues 项（保持菜单不过长），
+                // 输入关键字后在全部候选中筛选（可搜到前 200 项之外的取值）
+                bool withSearch = values.Count > FilterSearchThreshold;
+                List<(MenuItem Item, string Value)> valueItems = [];
+                int created = 0;
+                int createLimit = withSearch ? MaxSearchableFilterValues : MaxHeaderFilterValues;
                 foreach (string value in values)
                 {
-                    if (shown++ >= MaxHeaderFilterValues)
+                    if (created++ >= createLimit)
                     {
                         filterRoot.Items.Add(new MenuItem
                         {
-                            Header = string.Format(LanguageService.Get("Menu_FilterMoreFormat"), MaxHeaderFilterValues),
+                            Header = string.Format(LanguageService.Get("Menu_FilterMoreFormat"), createLimit),
                             IsEnabled = false
                         });
                         break;
@@ -199,6 +213,12 @@ namespace ORT一键报告.Plans.Views
                         ApplyColumnFilter(isPlan, property, label, values, selected);
                     };
                     filterRoot.Items.Add(valueItem);
+                    valueItems.Add((valueItem, value));
+                }
+
+                if (withSearch)
+                {
+                    AddFilterSearchBox(filterRoot, valueItems);
                 }
             }
             menu.Items.Add(filterRoot);
@@ -223,6 +243,83 @@ namespace ORT一键报告.Plans.Views
                 RefreshHeaderStyles();
             };
             menu.Items.Add(clearAll);
+        }
+
+        /// <summary>
+        /// 在筛选菜单里插入搜索框（筛选项多时使用）：输入关键字即时过滤候选值；
+        /// 空查询时仍只显示前 MaxHeaderFilterValues 项，输入后可在全部候选（最多 MaxSearchableFilterValues 项）里查找。
+        /// 说明：TextBox 放在 MenuItem 的 Header 里，宿主要设 StaysOpenOnClick 且不可聚焦，
+        /// 并在子菜单打开时把焦点交给输入框，否则键盘输入会被菜单当成导航。
+        /// </summary>
+        private void AddFilterSearchBox(MenuItem filterRoot, List<(MenuItem Item, string Value)> valueItems)
+        {
+            TextBox search = new()
+            {
+                Width = 190,
+                Padding = new Thickness(4, 1, 4, 1)
+            };
+            // 供无障碍与自动化识别（同时也便于测试脚本精确定位这个输入框）
+            AutomationProperties.SetName(search, LanguageService.Get("Menu_FilterSearchHint"));
+            TextBlock hint = new()
+            {
+                Text = LanguageService.Get("Menu_FilterSearchHint"),
+                Margin = new Thickness(8, 0, 0, 0),
+                VerticalAlignment = VerticalAlignment.Center,
+                IsHitTestVisible = false,
+                Foreground = TryFindResource("TextSecondaryBrush") as Brush ?? Brushes.Gray
+            };
+            Grid searchPanel = new() { Width = 190, Margin = new Thickness(4, 2, 4, 2) };
+            searchPanel.Children.Add(search);
+            searchPanel.Children.Add(hint);
+
+            MenuItem searchHost = new()
+            {
+                Header = searchPanel,
+                StaysOpenOnClick = true,
+                Focusable = false
+            };
+            searchHost.PreviewMouseLeftButtonDown += (s, args) =>
+            {
+                search.Focus();
+                args.Handled = true;
+            };
+            filterRoot.SubmenuOpened += (s, args) =>
+                search.Dispatcher.BeginInvoke(new Action(() => search.Focus()), DispatcherPriority.Input);
+
+            MenuItem noMatch = new()
+            {
+                Header = LanguageService.Get("Menu_FilterNoMatch"),
+                IsEnabled = false,
+                Visibility = Visibility.Collapsed
+            };
+
+            void ApplySearch()
+            {
+                string query = search.Text?.Trim() ?? "";
+                hint.Visibility = search.Text.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
+                int visible = 0;
+                for (int i = 0; i < valueItems.Count; i++)
+                {
+                    (MenuItem item, string value) = valueItems[i];
+                    bool match = query.Length > 0
+                        ? value?.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0
+                        : i < MaxHeaderFilterValues;
+                    item.Visibility = match ? Visibility.Visible : Visibility.Collapsed;
+                    if (match)
+                    {
+                        visible++;
+                    }
+                }
+                noMatch.Visibility = visible == 0 ? Visibility.Visible : Visibility.Collapsed;
+            }
+
+            search.TextChanged += (s, args) => ApplySearch();
+
+            int insertAt = Math.Min(2, filterRoot.Items.Count);
+            filterRoot.Items.Insert(insertAt, searchHost);
+            filterRoot.Items.Insert(insertAt + 1, new Separator());
+            filterRoot.Items.Add(noMatch);
+            ApplySearch();
         }
 
         /// <summary>

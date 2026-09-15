@@ -143,6 +143,12 @@
   <data name="Menu_FilterMoreFormat" xml:space="preserve">
     <value>Only the first {0} values are listed</value>
   </data>
+  <data name="Menu_FilterSearchHint" xml:space="preserve">
+    <value>Search values…</value>
+  </data>
+  <data name="Menu_FilterNoMatch" xml:space="preserve">
+    <value>No matching value</value>
+  </data>
   <data name="Menu_ClearColumnFilter" xml:space="preserve">
     <value>Clear this column filter</value>
   </data>

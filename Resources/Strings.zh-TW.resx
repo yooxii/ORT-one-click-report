@@ -143,6 +143,12 @@
   <data name="Menu_FilterMoreFormat" xml:space="preserve">
     <value>僅列出前 {0} 項</value>
   </data>
+  <data name="Menu_FilterSearchHint" xml:space="preserve">
+    <value>搜尋篩選項…</value>
+  </data>
+  <data name="Menu_FilterNoMatch" xml:space="preserve">
+    <value>無相符項目</value>
+  </data>
   <data name="Menu_ClearColumnFilter" xml:space="preserve">
     <value>清除本欄篩選</value>
   </data>
