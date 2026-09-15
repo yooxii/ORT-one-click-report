@@ -1,3 +1,4 @@
+using NPOI.HSSF.UserModel;
 using NPOI.SS.UserModel;
 using NPOI.SS.Util;
 using NPOI.XSSF.UserModel;
@@ -37,6 +38,28 @@ namespace ORT一键报告.Utils
         /// </summary>
         public static XSSFWorkbook OpenRead(byte[] bytes)
         {
+            return new XSSFWorkbook(new MemoryStream(bytes));
+        }
+
+        /// <summary>
+        /// 按文件内容选择引擎打开工作簿：xlsx/xlsm（zip，50 4B）→ XSSF，xls（OLE 复合文档，D0 CF 11 E0）→ HSSF。
+        /// 概览/报告文件可能是旧的 .xls，直接用 XSSF 打开会抛 SharpZipLib "EOF in header"。
+        /// </summary>
+        public static IWorkbook OpenAny(string path)
+        {
+            return OpenAny(File.ReadAllBytes(path));
+        }
+
+        /// <summary>
+        /// 按字节内容选择引擎打开工作簿（见 <see cref="OpenAny(string)"/>）
+        /// </summary>
+        public static IWorkbook OpenAny(byte[] bytes)
+        {
+            if (bytes != null && bytes.Length >= 8
+                && bytes[0] == 0xD0 && bytes[1] == 0xCF && bytes[2] == 0x11 && bytes[3] == 0xE0)
+            {
+                return new HSSFWorkbook(new MemoryStream(bytes));
+            }
             return new XSSFWorkbook(new MemoryStream(bytes));
         }
 

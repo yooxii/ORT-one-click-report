@@ -185,11 +185,11 @@ namespace ORT一键报告.Utils
             {
                 return null;
             }
-            XSSFWorkbook wb = ExcelNpoi.OpenRead(reportFilePath);
+            // 报告文件也可能是 .xls，按内容选引擎
+            IWorkbook wb = ExcelNpoi.OpenAny(reportFilePath);
             try
             {
-                ISheet ws = ExcelNpoi.SheetAt(wb, 0);
-                ReportHeaderViewModel vm = new();
+                ISheet ws = ExcelNpoi.SheetAt(wb, 0);                ReportHeaderViewModel vm = new();
                 ReadReportHeaderInfo(ws, vm);
                 if (vm.TESTED_BY?.Data == null && vm.APPROVED_BY?.Data == null && vm.PROJECT_NAME?.Data == null)
                 {
@@ -470,6 +470,46 @@ namespace ORT一键报告.Utils
                 }
             }
             return "";
+        }
+
+        /// <summary>
+        /// 从文件夹/文件名里取出 WK#### 原样文本（如 "WK2525"）；取不到返回 null
+        /// </summary>
+        public static string ParseWeekTag(string pathOrName)
+        {
+            Match match = Regex.Match(pathOrName ?? "", @"WK\s*(\d{4})", RegexOptions.IgnoreCase);
+            return match.Success ? "WK" + match.Groups[1].Value : null;
+        }
+
+        /// <summary>
+        /// 从报告文件夹/文件名里的 WK#### 解析测试周期（ISO 周：WK2506 = 2025 年第 6 周），返回该周周一。
+        /// 解析失败返回 null（.NET Framework 4.8 没有 ISOWeek，这里自己算）。
+        /// </summary>
+        public static DateTime? ParseWeekPeriod(string pathOrName)
+        {
+            Match match = Regex.Match(pathOrName ?? "", @"WK\s*(\d{2})(\d{2})", RegexOptions.IgnoreCase);
+            if (!match.Success)
+            {
+                return null;
+            }
+            int year = 2000 + int.Parse(match.Groups[1].Value);
+            int week = int.Parse(match.Groups[2].Value);
+            if (week < 1 || week > 53)
+            {
+                return null;
+            }
+            try
+            {
+                // ISO 周：含 1 月 4 日的那一周是第 1 周，周一为一周开始
+                DateTime jan4 = new(year, 1, 4);
+                int offsetToMonday = ((int)jan4.DayOfWeek + 6) % 7;
+                DateTime firstMonday = jan4.AddDays(-offsetToMonday);
+                return firstMonday.AddDays((week - 1) * 7);
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         public static string GetSubstringAfter(string source, string marker, int length)

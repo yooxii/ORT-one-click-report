@@ -144,6 +144,13 @@ namespace ORT一键报告.Reports.Views
             {
                 wb.Close();
             }
+            // 报告文件里没有"测试周期"时，用报告概览文件夹名里的 WK#### 推算的周期（直接进入一键报告的场景）
+            if (ReportHeaderInfo.TestStart == null && reportService.UUTInfos?.TestStart != null)
+            {
+                ReportHeaderInfo.TestStart = reportService.UUTInfos.TestStart;
+                ReportHeaderInfo.TestEnd = reportService.UUTInfos.TestStart.Value.AddDays(TestTime);
+                _logger.Info($"{ReportType}测试周期取自报告概览周号 {reportService.UUTInfos.TestPeriod}：{ReportHeaderInfo.TestStart:yyyy-MM-dd}");
+            }
             SetInfoToWindow();
         }
 

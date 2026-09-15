@@ -83,8 +83,13 @@ namespace ORT一键报告.Reports.Views
             {
                 wb.Close();
             }
-            // 报告文件里的"TEST PERIOD"优先于计划表里的测试项目日期
+            // 报告文件里的"TEST PERIOD"优先；其次用报告概览文件夹名里的周号（WK####）；最后才用测试项目日期
             DateTime? periodFromReport = ReportHeaderInfo.TestStart;
+            if (periodFromReport == null && reportService.UUTInfos?.TestStart != null)
+            {
+                periodFromReport = reportService.UUTInfos.TestStart;
+                _logger.Info($"{ReportType}测试周期取自报告概览周号 {reportService.UUTInfos.TestPeriod}：{periodFromReport:yyyy-MM-dd}");
+            }
             UUTInfoFromExcel _UUTInfos = reportService.UUTInfos;
             if (_UUTInfos == null)
             {

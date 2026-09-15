@@ -674,6 +674,38 @@ namespace ORT一键报告.Plans.Views
                 // 该计划绑定的报告文件夹：报告页的测试信息/测试图片改为从这里按报告类型读取
                 reportService.MatchedReportDir = _vm.FindReportLink(plan.JobNo)?.ReportDir;
 
+                // 报告类型文件检查：缺失的类型提示用户；表头信息随后只用报告文件夹里读到的，
+                // 读不到就置空（只保留计划表+领用表能提供的 序列号/工令/周期/版本）
+                List<string> missingTypes = [];
+                if (string.IsNullOrWhiteSpace(reportService.MatchedReportDir))
+                {
+                    missingTypes.AddRange(["Thermal Shock", "Burn In", "EMI"]);
+                    _ = MessageBox.Show(
+                        "该计划还没有绑定的报告文件夹，表头信息（测试人/审核人/项目名/阶段/图片等）将留空。\n"
+                        + "请在设置里配置报告路径后，在计划表界面刷新以重新扫描报告文件夹。",
+                        LanguageService.Get("Cap_Warning"), MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
+                else
+                {
+                    foreach (string type in new[] { "Thermal Shock", "Burn In", "EMI" })
+                    {
+                        string typeFile = ORT一键报告.Utils.Report.GetTemplatePath(reportService.MatchedReportDir, type);
+                        if (string.IsNullOrWhiteSpace(typeFile) || !File.Exists(typeFile))
+                        {
+                            missingTypes.Add(type);
+                        }
+                    }
+                    if (missingTypes.Count > 0)
+                    {
+                        _ = MessageBox.Show(
+                            $"绑定的报告文件夹里缺少以下报告：{string.Join("、", missingTypes)}。\n"
+                            + "这些报告的表头信息（测试人/审核人/项目名/阶段/图片等）将留空，只填序列号/工令/周期/版本。\n"
+                            + $"文件夹：{reportService.MatchedReportDir}",
+                            LanguageService.Get("Cap_Warning"), MessageBoxButton.OK, MessageBoxImage.Warning);
+                    }
+                }
+                _logger.Info($"一键报告：报告文件夹={reportService.MatchedReportDir ?? "(未绑定)"}，缺少的报告={string.Join(",", missingTypes)}");
+
                 // 预填 UUTInfos（用户未读取报告概览时也能让 Tab 有数据）
                 List<string> snList = ParseSnLines(req?.SN);
                 reportService.UUTInfos = new UUTInfoFromExcel
@@ -688,29 +720,26 @@ namespace ORT一键报告.Plans.Views
                 };
 
                 // 构建 BurnInReportModel（ORT 最常用的 Burn In 报告类型）：
-                // 表头优先取"绑定的报告文件夹"里本地 Burn-In 报告文件（TESTED BY/APPROVED BY/PROJECT NAME/
-                // TEST STAGE/TEST PERIOD/TEST CONCLUSION + Issue Photos/Test Setup 图片），
-                // 报告文件缺失时才回退到计划表里的旧取法
+                // 表头只保留计划表能给的"测试周期"（StartDate/EndDate），其余（测试人/审核人/项目名/阶段/
+                // 描述/图片）一律以绑定的报告文件夹里的本地报告文件为准，读不到就置空 —— 不再用计划表文案兜底
                 int testTimeDays = 7; // Burn In 默认 7 天
+                DateTime periodStart = plan.StartDate ?? DateTime.Now;
                 ReportHeaderData planHeader = new()
                 {
-                    TestedBy = plan.Owner,
-                    ProjectName = plan.TestItem != null ? $"{plan.ModelName} {plan.TestItem}" : plan.ModelName,
-                    TestStage = plan.Stage,
-                    TestDescription = plan.TestPeriod != null ? $"{plan.TestItem} ({plan.TestPeriod}hrs)" : plan.TestItem,
-                    TestStart = plan.StartDate ?? DateTime.Now,
-                    TestEnd = plan.EndDate ?? DateTime.Now.AddDays(testTimeDays),
-                    TestPass = true
+                    TestStart = periodStart,
+                    TestEnd = plan.EndDate ?? periodStart.AddDays(testTimeDays)
                 };
                 string burnInReportFile = ORT一键报告.Utils.Report.GetTemplatePath(reportService.MatchedReportDir, "Burn In");
                 ReportHeaderData reportFolderHeader = ORT一键报告.Utils.Report.ReadHeaderData(burnInReportFile, testTimeDays, planHeader);
                 if (reportFolderHeader != null)
                 {
+                    // 报告文件里没写周期时，仍用计划表的周期
+                    reportFolderHeader.TestStart = reportFolderHeader.TestStart == default ? planHeader.TestStart : reportFolderHeader.TestStart;
                     _logger.Info($"一键报告表头取自本地报告文件：{burnInReportFile}");
                 }
                 else
                 {
-                    _logger.Info("未读到本地报告文件表头，表头沿用计划表数据");
+                    _logger.Info("未读到本地报告文件表头，表头除周期外留空");
                 }
                 BurnInReportModel prefilled = new()
                 {

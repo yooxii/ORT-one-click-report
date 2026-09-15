@@ -150,7 +150,8 @@ namespace ORT一键报告.Reports.ViewModels
             {
                 _reportService.UUTInfos = await Task.Run(() =>
                 {
-                    XSSFWorkbook wb = ExcelNpoi.OpenRead(ReportName);
+                    // 概览可能是旧的 .xls，按内容选引擎打开（原来只用 XSSF，打开 .xls 会抛 SharpZipLib "EOF in header"）
+                    IWorkbook wb = ExcelNpoi.OpenAny(ReportName);
                     try
                     {
                         return ReadInfosFromReport(wb, ReportName);
@@ -192,14 +193,24 @@ namespace ORT一键报告.Reports.ViewModels
                 }
             }
 
-            UUTInfoFromExcel ReadInfosFromReport(XSSFWorkbook wb, string _ReportName)
+            UUTInfoFromExcel ReadInfosFromReport(IWorkbook wb, string _ReportName)
             {
                 var ws_cover = ExcelNpoi.SheetAt(wb, 0);
                 var ws_waterfall = ExcelNpoi.SheetAt(wb, 2);
+                // 测试周期取自文件夹名里的 WK####（取不到再看文件名），ISO 周号 -> 当周周一；DC 不再从这个编号取
+                string folderName = Path.GetDirectoryName(_ReportName) is string dir && dir.Length > 0
+                    ? Path.GetFileName(dir)
+                    : null;
+                DateTime? weekPeriod = ParseWeekPeriod(folderName) ?? ParseWeekPeriod(_ReportName);
                 UUTInfoFromExcel uutInfos = new()
                 {
-                    DC = GetSubstringAfter(_ReportName, "WK", 4)
+                    TestPeriod = ParseWeekTag(folderName) ?? ParseWeekTag(_ReportName),
+                    TestStart = weekPeriod
                 };
+                if (weekPeriod != null)
+                {
+                    _logger.Info($"从报告文件夹名解析到测试周期：{uutInfos.TestPeriod} -> {weekPeriod.Value:yyyy-MM-dd}（当周周一）");
+                }
 
                 DataCell rev = FindCellByValue(ws_cover, "rev");
                 if (rev == null)

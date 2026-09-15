@@ -5,6 +5,7 @@ using ORT一键报告.Reports.Views;
 using System.Collections.Generic;
 using System.Windows.Media;
 using ORT一键报告.Utils;
+using System;
 
 namespace ORT一键报告.Models
 {
@@ -79,6 +80,16 @@ namespace ORT一键报告.Models
         public string Revision { get; set; }
         public string DC { get; set; }
         public List<TestItemInfo> TestItems { get; set; }
+
+        /// <summary>
+        /// 测试周期文本（来自报告文件夹/文件名里的 WK#### 周号，如 "WK2506"）
+        /// </summary>
+        public string TestPeriod { get; set; }
+
+        /// <summary>
+        /// 测试周期起始日（由 WK#### 周号推算出的当周周一），供报告表头"测试周期"使用
+        /// </summary>
+        public DateTime? TestStart { get; set; }
 
         public override string ToString()
         {
