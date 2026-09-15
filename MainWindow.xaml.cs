@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using NLog;
 using ORT一键报告.Admin.Views;
 using ORT一键报告.Main.Views;
@@ -248,6 +248,9 @@ namespace ORT一键报告
                 return;
             }
             ToastService.WarnIfReportPathEmpty();
+            // 直接进入：清掉上一次从计划表进入残留的匹配记录（ReportService 是单例，
+            // 否则概览读到的 SN/工令/版本会被上一次的领用表数据覆盖）
+            App.ServiceProvider.GetRequiredService<ReportService>().ClearMatchedSource();
             WindowMainReport windowMainReport = new();
             windowMainReport.Show();
         }

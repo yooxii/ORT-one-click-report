@@ -124,6 +124,14 @@ namespace ORT一键报告.Reports.Views
             // 没有绑定的报告文件夹或文件不存在时，才回退到模板
             string reportFilePath = GetTemplatePath(reportService.MatchedReportDir, ReportType);
             bool fromReportFile = !string.IsNullOrWhiteSpace(reportFilePath) && File.Exists(reportFilePath);
+            // 从计划表进入时，报告文件夹里没有这类报告 → 表头与图片一律置空（不再回退模板，避免带出旧数据）
+            if (reportService.EnteredFromPlan && !fromReportFile)
+            {
+                _logger.Warn($"{ReportType}：绑定的报告文件夹里没有该类报告，测试信息与图片置空（{reportService.MatchedReportDir}）");
+                ResetReportHeaderInfo(ReportHeaderInfo);
+                SetInfoToWindow();
+                return;
+            }
             string templatePath = fromReportFile ? reportFilePath : GetTemplatePath(reportService.RootPath, ReportType);
             if (string.IsNullOrWhiteSpace(templatePath) || !File.Exists(templatePath))
             {
@@ -158,9 +166,11 @@ namespace ORT一键报告.Reports.Views
         {
             static void SetPics(List<ExcelPictureInfo> _pics, List<Image> images)
             {
-                for (int i = 0; i < _pics.Count && i < 3; i++)
+                // 图片不足 3 张时也要把多余槽位清空，否则界面会残留上一份报告的图片
+                List<ExcelPictureInfo> pics = _pics ?? [];
+                for (int i = 0; i < images.Count && i < 3; i++)
                 {
-                    images[i].Source = _pics[i].ImageSrc;
+                    images[i].Source = i < pics.Count ? pics[i].ImageSrc : null;
                 }
             }
 
@@ -170,14 +180,8 @@ namespace ORT一键报告.Reports.Views
             ReportHeader.TestStage = ReportHeaderInfo.TEST_STAGE?.Data ?? "";
             ReportHeader.TextTestDescription = ReportHeaderInfo.TestDescription?.Data ?? "";
 
-            if (ReportHeaderInfo.Issue_Photos_Pics != null)
-            {
-                SetPics(ReportHeaderInfo.Issue_Photos_Pics.Images, new List<Image> { widget_pic.issue_image1, widget_pic.issue_image2, widget_pic.issue_image3 });
-            }
-            if (ReportHeaderInfo.Test_Setup_Pics != null)
-            {
-                SetPics(ReportHeaderInfo.Test_Setup_Pics.Images, new List<Image> { widget_pic.setup_image1, widget_pic.setup_image2, widget_pic.setup_image3 });
-            }
+            SetPics(ReportHeaderInfo.Issue_Photos_Pics?.Images, new List<Image> { widget_pic.issue_image1, widget_pic.issue_image2, widget_pic.issue_image3 });
+            SetPics(ReportHeaderInfo.Test_Setup_Pics?.Images, new List<Image> { widget_pic.setup_image1, widget_pic.setup_image2, widget_pic.setup_image3 });
         }
 
         /* ###############################  事件函数  ################################ */

@@ -177,6 +177,15 @@ namespace ORT一键报告.Reports.ViewModels
                 _logger.Warn("读取报告概览返回空数据，跳过测试项日期解析");
                 return;
             }
+            // 概览里没读到序列号时明确告知用户（并已在日志里记录工作表/标题定位情况），不再静默无 SN
+            if ((_reportService.UUTInfos.SNs?.Count ?? 0) == 0)
+            {
+                _logger.Warn("报告概览里没有读到序列号");
+                _ = MessageBox.Show(
+                    "没能从报告概览里读到序列号（Waterfall 表的 S/N 列）。\n"
+                    + "请确认选择的是该次测试的报告概览文件；详细原因见日志。",
+                    LanguageService.Get("Cap_Warning"), MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
             foreach (TestItemInfo testItem in _reportService.UUTInfos.TestItems ?? [])
             {
                 string name = testItem.TestItemName?.ToLower() ?? "";
@@ -195,8 +204,16 @@ namespace ORT一键报告.Reports.ViewModels
 
             UUTInfoFromExcel ReadInfosFromReport(IWorkbook wb, string _ReportName)
             {
-                var ws_cover = ExcelNpoi.SheetAt(wb, 0);
-                var ws_waterfall = ExcelNpoi.SheetAt(wb, 2);
+                // 概览的工作表顺序不固定：优先按名称找 Cover / Waterfall，找不到再退回原来的位置
+                ISheet ws_cover = FindSheetByName(wb, "cover") ?? ExcelNpoi.SheetAt(wb, 0);
+                ISheet ws_waterfall = FindSheetByName(wb, "waterfall") ?? ExcelNpoi.SheetAt(wb, 2);
+                _logger.Info("报告概览工作表：" + string.Join(" | ", Enumerable.Range(0, wb.NumberOfSheets).Select(i => wb.GetSheetName(i)))
+                    + $"；使用 Cover='{ws_cover?.SheetName}' Waterfall='{ws_waterfall?.SheetName}'");
+                if (ws_cover == null || ws_waterfall == null)
+                {
+                    _logger.Error($"报告概览缺少工作表：cover={ws_cover != null} waterfall={ws_waterfall != null}");
+                    return null;
+                }
                 // 测试周期取自文件夹名里的 WK####（取不到再看文件名），ISO 周号 -> 当周周一；DC 不再从这个编号取
                 string folderName = Path.GetDirectoryName(_ReportName) is string dir && dir.Length > 0
                     ? Path.GetFileName(dir)
@@ -215,44 +232,60 @@ namespace ORT一键报告.Reports.ViewModels
                 DataCell rev = FindCellByValue(ws_cover, "rev");
                 if (rev == null)
                 {
-                    MessageBox.Show(LocalizationHelper.Get("Msg_RevColNotFound"), LanguageService.Get("Cap_Error"));
-                    return null;
+                    // 注意：这里是后台线程，不能弹 MessageBox（会阻塞任务让上层永远等不到结果）
+                    _logger.Warn("报告概览：Cover 表里没找到 Revision 标签，版本留空");
                 }
-                for (int c = rev.Column + 1; c < ExcelNpoi.LastColumn(ws_cover); c++)
+                else
                 {
-                    if (ExcelNpoi.CellText(ws_cover, rev.Row, c) != "")
+                    for (int c = rev.Column + 1; c < ExcelNpoi.LastColumn(ws_cover); c++)
                     {
-                        uutInfos.Revision = ExcelNpoi.CellText(ws_cover, rev.Row, c);
+                        if (ExcelNpoi.CellText(ws_cover, rev.Row, c) != "")
+                        {
+                            uutInfos.Revision = ExcelNpoi.CellText(ws_cover, rev.Row, c);
+                        }
                     }
                 }
 
-                DataCell snTitleCell = FindCellByValue(ws_waterfall, "s/n", "uut");
+                // S/N 标题：先按"含 s/n 但不含 uut"，再放宽为含 s/n / serial（不同版本概览表头写法有差异）
+                DataCell snTitleCell = FindCellByValue(ws_waterfall, "s/n", "uut")
+                    ?? FindCellByValue(ws_waterfall, "s/n")
+                    ?? FindCellByValue(ws_waterfall, "serial");
                 if (snTitleCell == null)
                 {
-                    MessageBox.Show(LocalizationHelper.Get("Msg_SNColNotFound"), LanguageService.Get("Cap_Error"));
-                    return null;
+                    _logger.Warn($"报告概览：Waterfall({ws_waterfall.SheetName}) 表里没找到 S/N 标题，序列号留空");
+                    return uutInfos;
                 }
 
                 List<DataCell> snCells = FindSNs(ws_waterfall, snTitleCell);
                 if (snCells.Count == 0)
                 {
-                    MessageBox.Show(LocalizationHelper.Get("Msg_NoSN"), LanguageService.Get("Cap_Error"));
-                    return null;
+                    _logger.Warn($"报告概览：S/N 标题在 {ExcelNpoi.AddressOf(snTitleCell.Row, snTitleCell.Column)}，但其下方没有找到序列号");
+                    return uutInfos;
                 }
-                else
+                List<string> SNs = [];
+                foreach (DataCell cell in snCells)
                 {
-                    List<string> SNs = [];
-                    foreach (DataCell cell in snCells)
-                    {
-                        SNs.Add(cell.Data);
-                    }
-                    uutInfos.SNs = SNs;
-                    uutInfos.WorkOrder = ExcelNpoi.CellText(ws_waterfall, snCells.Last().Row + 1, snCells.Last().Column);
+                    SNs.Add(cell.Data);
                 }
+                uutInfos.SNs = SNs;
+                uutInfos.WorkOrder = ExcelNpoi.CellText(ws_waterfall, snCells.Last().Row + 1, snCells.Last().Column);
                 List<TestItemInfo> TestItems = FindTestItems(ws_waterfall, snTitleCell.Row, snCells.First().Row, snCells.First().Column);
                 uutInfos.TestItems = TestItems;
-
+                _logger.Info($"报告概览读取完成：SN {SNs.Count} 个、工令='{uutInfos.WorkOrder}'、版本='{uutInfos.Revision}'、周期={uutInfos.TestPeriod}");
                 return uutInfos;
+            }
+
+            static ISheet FindSheetByName(IWorkbook workbook, string keyword)
+            {
+                for (int i = 0; i < workbook.NumberOfSheets; i++)
+                {
+                    string name = workbook.GetSheetName(i);
+                    if (!string.IsNullOrWhiteSpace(name) && name.ToLowerInvariant().Contains(keyword))
+                    {
+                        return workbook.GetSheetAt(i);
+                    }
+                }
+                return null;
             }
 
             List<TestItemInfo> FindTestItems(ISheet ws, int rDate, int rSN, int cSN)

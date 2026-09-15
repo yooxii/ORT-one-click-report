@@ -673,6 +673,10 @@ namespace ORT一键报告.Plans.Views
                 reportService.MatchedRequisition = req;
                 // 该计划绑定的报告文件夹：报告页的测试信息/测试图片改为从这里按报告类型读取
                 reportService.MatchedReportDir = _vm.FindReportLink(plan.JobNo)?.ReportDir;
+                // 标记"从计划表进入"，并清掉上一次的预填结果，避免残留串味
+                reportService.EnteredFromPlan = true;
+                reportService.UUTInfos = null;
+                reportService.PrefilledReportModel = null;
 
                 // 报告类型文件检查：缺失的类型提示用户；表头信息随后只用报告文件夹里读到的，
                 // 读不到就置空（只保留计划表+领用表能提供的 序列号/工令/周期/版本）

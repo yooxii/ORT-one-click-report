@@ -115,6 +115,29 @@ namespace ORT一键报告.Utils
         }
 
         /// <summary>
+        /// 清空报告表头（用于"绑定的报告文件夹里没有这类报告"时把信息置空，避免带出模板或上一份报告的数据）
+        /// </summary>
+        public static void ResetReportHeaderInfo(ReportHeaderViewModel info)
+        {
+            if (info == null)
+            {
+                return;
+            }
+            info.TESTED_BY = null;
+            info.APPROVED_BY = null;
+            info.PROJECT_NAME = null;
+            info.TEST_STAGE = null;
+            info.TestDescription = null;
+            info.Test_Description_Pic = null;
+            info.Issue_Photos_Pics = null;
+            info.Test_Setup_Pics = null;
+            info.Test_ATE_Data = null;
+            info.TestStart = null;
+            info.TestEnd = null;
+            info.TestPass = true;
+        }
+
+        /// <summary>
         /// 读取报告里的"TEST PERIOD"起始日期（找不到或解析失败返回 null）
         /// </summary>
         public static DateTime? ReadTestPeriod(ISheet ws)

@@ -37,6 +37,27 @@ namespace ORT一键报告.Services
         public string MatchedReportDir { get; set; }
 
         /// <summary>
+        /// 本次是否"从计划表右键进入"（false = 直接进入一键报告）。
+        /// 直接进入时不得用上一次残留的匹配记录覆盖报告概览读到的 SN/工令/版本。
+        /// </summary>
+        public bool EnteredFromPlan { get; set; }
+
+        /// <summary>
+        /// 清空跨窗口残留的匹配信息。ReportService 是单例，上一次从计划表进入留下的
+        /// MatchedPlan/MatchedRequisition/MatchedReportDir/预填模型 会串到这一次，
+        /// 因此"直接进入一键报告"时必须先清掉。
+        /// </summary>
+        public void ClearMatchedSource()
+        {
+            MatchedPlan = null;
+            MatchedRequisition = null;
+            MatchedReportDir = null;
+            PrefilledReportModel = null;
+            UUTInfos = null;
+            EnteredFromPlan = false;
+        }
+
+        /// <summary>
         /// 预填的一键报告输入模型实例（从计划 + 领退构建）。
         /// 只要提供该实例即可直接生成报告，与 UI 解耦。
         /// </summary>
@@ -52,7 +73,8 @@ namespace ORT一键报告.Services
         {
             UUTInfoFromExcel infos = UUTInfos;
             Requisition req = MatchedRequisition;
-            if (infos == null || req == null)
+            // 只有"从计划表进入"时才用领用表覆盖；直接进入时报告概览才是数据来源
+            if (infos == null || req == null || !EnteredFromPlan)
             {
                 return false;
             }
