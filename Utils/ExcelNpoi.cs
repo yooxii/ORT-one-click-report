@@ -421,7 +421,15 @@ namespace ORT一键报告.Utils
         /// 用于把整张表铺成淡灰背景、表格周围刷白。颜色用 Excel 索引色（见 IndexedWhite/IndexedSilver）。
         /// </summary>
         public static int ApplyFillOverlay(IWorkbook workbook, ISheet sheet, int row1, int col1, int row2, int col2,
-            short indexedColor)
+            short indexedColor) => ApplyFillOverlay(workbook, sheet, row1, col1, row2, col2, indexedColor, false);
+
+        /// <summary>
+        /// 给区域刷底色。<paramref name="replacePlain"/>=true 时把"原来的白底/淡灰底"也刷掉
+        /// （只保留黑表头、蓝色分类行这类彩色底纹），用于整表铺底 + 表格区域刷白；
+        /// false 时只补完全没有底纹的单元格。
+        /// </summary>
+        public static int ApplyFillOverlay(IWorkbook workbook, ISheet sheet, int row1, int col1, int row2, int col2,
+            short indexedColor, bool replacePlain)
         {
             if (sheet == null)
             {
@@ -438,11 +446,11 @@ namespace ORT一键报告.Utils
                 {
                     ICell cell = Cell(sheet, r, c);
                     ICellStyle source = cell.CellStyle;
-                    if (source != null && source.FillPattern != FillPattern.NoFill)
+                    if (source != null && source.FillPattern != FillPattern.NoFill && !(replacePlain && IsPlainFill(source)))
                     {
-                        continue; // 已有底纹（黑表头/蓝色分类行/白底等）保持不动
+                        continue; // 已有彩色底纹（黑表头/蓝色分类行等）保持不动
                     }
-                    string key = string.Format("overlayfill:{0}:{1}", indexedColor, source == null ? -1 : source.Index);
+                    string key = string.Format("overlayfill:{0}:{1}:{2}", indexedColor, replacePlain ? 1 : 0, source == null ? -1 : source.Index);
                     cell.CellStyle = Style(workbook, key, style =>
                     {
                         if (source != null)
@@ -453,6 +461,91 @@ namespace ORT一键报告.Utils
                         style.FillPattern = FillPattern.SolidForeground;
                     });
                     count++;
+                }
+            }
+            return count;
+        }
+
+        /// <summary>
+        /// 是否是"背景色"（白/淡灰）——这类底纹可以被整表铺底覆盖，
+        /// 黑表头、蓝色分类行之类彩色底纹则保留
+        /// </summary>
+        private static bool IsPlainFill(ICellStyle style)
+        {
+            if (style.FillPattern == FillPattern.NoFill)
+            {
+                return true;
+            }
+            if (style.FillForegroundColor == IndexedWhite || style.FillForegroundColor == IndexedSilver)
+            {
+                return true;
+            }
+            try
+            {
+                if (style is XSSFCellStyle xssf
+                    && xssf.FillForegroundColorColor is XSSFColor color
+                    && !string.IsNullOrEmpty(color.ARGBHex))
+                {
+                    string hex = color.ARGBHex;
+                    // FFFFFF=白、C0C0C0=淡灰（历史报告的背景色）
+                    return hex.EndsWith("FFFFFF", StringComparison.OrdinalIgnoreCase)
+                        || hex.EndsWith("C0C0C0", StringComparison.OrdinalIgnoreCase);
+                }
+            }
+            catch (Exception)
+            {
+                // 取不到颜色就当作彩色，保持不动
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// 给整块区域套边框（保留单元格原有的字体/底纹/对齐）：
+        /// 区块内部用 <paramref name="inner"/>，最外一圈用 <paramref name="outer"/>。
+        /// </summary>
+        public static int ApplyBlockBorder(IWorkbook workbook, ISheet sheet, int row1, int col1, int row2, int col2,
+            BorderStyle inner, BorderStyle outer, short innerColor, short outerColor)
+        {
+            if (sheet == null)
+            {
+                return 0;
+            }
+            int r1 = Math.Min(row1, row2);
+            int r2 = Math.Max(row1, row2);
+            int c1 = Math.Min(col1, col2);
+            int c2 = Math.Max(col1, col2);
+            int count = 0;
+            for (int r = r1; r <= r2; r++)
+            {
+                for (int c = c1; c <= c2; c++)
+                {
+                    BorderStyle top = r == r1 ? outer : inner;
+                    BorderStyle bottom = r == r2 ? outer : inner;
+                    BorderStyle left = c == c1 ? outer : inner;
+                    BorderStyle right = c == c2 ? outer : inner;
+                    short topColor = r == r1 ? outerColor : innerColor;
+                    short bottomColor = r == r2 ? outerColor : innerColor;
+                    short leftColor = c == c1 ? outerColor : innerColor;
+                    short rightColor = c == c2 ? outerColor : innerColor;
+                    ICell cell = Cell(sheet, r, c);
+                    ICellStyle source = cell.CellStyle;
+                    string key = string.Format("blockborder:{0}:{1}{2}{3}{4}:{5}{6}{7}{8}",
+                        source == null ? -1 : source.Index, top, bottom, left, right, topColor, bottomColor, leftColor, rightColor);
+                    cell.CellStyle = Style(workbook, key, style =>
+                    {
+                        if (source != null)
+                        {
+                            style.CloneStyleFrom(source);
+                        }
+                        style.BorderTop = top;
+                        style.BorderBottom = bottom;
+                        style.BorderLeft = left;
+                        style.BorderRight = right;
+                        style.TopBorderColor = topColor;
+                        style.BottomBorderColor = bottomColor;
+                        style.LeftBorderColor = leftColor;
+                        style.RightBorderColor = rightColor;
+                    });                    count++;
                 }
             }
             return count;

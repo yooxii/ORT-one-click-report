@@ -191,6 +191,31 @@
                 </DataGrid>
             </Grid>
         </TabItem>
+        <!--测试种类管理-->
+        <TabItem Header="{lex:Loc Admin_TestCategoryTab}">
+            <Grid Margin="5">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="auto"/>
+                    <RowDefinition/>
+                </Grid.RowDefinitions>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                    <Button Content="{lex:Loc Common_Add}" Padding="10,3" Click="Btn_NewTestCategory_Click"/>
+                    <Button Content="{lex:Loc Common_Edit}" Padding="10,3" Margin="8,0,0,0" Click="Btn_EditTestCategory_Click"/>
+                    <Button Content="{lex:Loc Common_Delete}" Padding="10,3" Margin="8,0,0,0" Click="Btn_DeleteTestCategory_Click"/>
+                    <Button Content="{lex:Loc Common_Refresh}" Padding="10,3" Margin="20,0,0,0" Click="Btn_RefreshTestCategories_Click"/>
+                    <TextBlock Text="{lex:Loc Admin_TestCategoryTabHint}" VerticalAlignment="Center" Margin="14,0,0,0"
+                               Foreground="{DynamicResource TextSecondaryBrush}"/>
+                </StackPanel>
+                <DataGrid x:Name="dg_testCategories" Grid.Row="1" AutoGenerateColumns="False" IsReadOnly="True"
+                          CanUserAddRows="False" SelectionMode="Single" SelectionUnit="FullRow"
+                          HeadersVisibility="Column" GridLinesVisibility="Horizontal">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="{lex:Loc Admin_TestCategory}" Binding="{Binding Name}" Width="180"/>
+                        <DataGridTextColumn Header="{lex:Loc Admin_Description}" Binding="{Binding Description}" Width="*"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+        </TabItem>
     </TabControl>
     </Grid>
 </Window>

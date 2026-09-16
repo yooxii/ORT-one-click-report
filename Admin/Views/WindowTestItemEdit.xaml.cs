@@ -29,13 +29,16 @@ namespace ORT一键报告.Admin.Views
         /// <param name="title">窗口标题（新增/编辑）</param>
         /// <param name="item">待编辑的测试项目（新增时传空对象）</param>
         /// <param name="technicians">可选的技术员列表（已有技术员）</param>
-        public WindowTestItemEdit(string title, TestItemCatalog item, IEnumerable<UserView> technicians)
+        /// <param name="categories">可选的测试种类（取自"测试种类"字典；为空时用内置的三种）</param>
+        public WindowTestItemEdit(string title, TestItemCatalog item, IEnumerable<UserView> technicians,
+            IEnumerable<string> categories = null)
         {
             InitializeComponent();
             Title = title;
             txt_name.Text = item?.Name ?? "";
             txt_period.Text = item?.Period ?? "";
-            cmb_category.ItemsSource = TestCategories.Known.ToList();
+            List<string> categoryList = (categories ?? TestCategories.Known).Where(c => !string.IsNullOrWhiteSpace(c)).ToList();
+            cmb_category.ItemsSource = categoryList;
             cmb_category.Text = string.IsNullOrWhiteSpace(item?.Category)
                 ? TestCategories.Classify(item?.Name)
                 : item.Category;

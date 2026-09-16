@@ -45,6 +45,7 @@ namespace ORT一键报告.Admin.Views
                 LoadTestItems();
                 LoadProducts();
                 LoadStages();
+                LoadTestCategories();
             };
 
             // 语言切换后刷新用户列表中的角色名与按钮文案（XAML 上的 lex:Loc 由本地化引擎自动刷新）
@@ -358,7 +359,8 @@ namespace ORT一键报告.Admin.Views
 
         private void Btn_NewTestItem_Click(object sender, RoutedEventArgs e)
         {
-            WindowTestItemEdit dialog = new(LanguageService.Get("Admin_NewTestItem"), new TestItemCatalog(), Technicians);
+            WindowTestItemEdit dialog = new(LanguageService.Get("Admin_NewTestItem"), new TestItemCatalog(), Technicians,
+                _admin.GetTestCategoryNames());
             if (dialog.ShowDialog() != true)
             {
                 return;
@@ -388,7 +390,8 @@ namespace ORT一键报告.Admin.Views
                 _ = MessageBox.Show(LocalizationHelper.Get("Msg_SelectTestItem"), LanguageService.Get("Cap_Info"));
                 return;
             }
-            WindowTestItemEdit dialog = new(LanguageService.Get("Admin_EditTestItem"), selected, Technicians);
+            WindowTestItemEdit dialog = new(LanguageService.Get("Admin_EditTestItem"), selected, Technicians,
+                _admin.GetTestCategoryNames());
             if (dialog.ShowDialog() != true)
             {
                 return;
@@ -646,6 +649,91 @@ namespace ORT一键报告.Admin.Views
         }
 
         private void Btn_RefreshStages_Click(object sender, RoutedEventArgs e) => LoadStages();
+
+        /* ###############################  测试种类管理  ################################ */
+
+        private void LoadTestCategories()
+        {
+            dg_testCategories.ItemsSource = _admin.GetTestCategories();
+        }
+
+        private TestCategory SelectedTestCategory => dg_testCategories.SelectedItem as TestCategory;
+
+        private void Btn_NewTestCategory_Click(object sender, RoutedEventArgs e)
+        {
+            WindowAdminInput input = new(LanguageService.Get("Admin_NewTestCategory"),
+                (LanguageService.Get("Admin_TestCategory"), "", false),
+                (LanguageService.Get("Admin_Description"), "", false));
+            if (input.ShowDialog() != true)
+            {
+                return;
+            }
+            string error = _admin.SaveTestCategory(new TestCategory { Name = input.Values[0], Description = input.Values[1] });
+            if (error != null)
+            {
+                _ = MessageBox.Show(error, LanguageService.Get("Cap_SaveFailed"));
+                return;
+            }
+            LoadTestCategories();
+            LoadTestItems();
+        }
+
+        private void Btn_EditTestCategory_Click(object sender, RoutedEventArgs e)
+        {
+            TestCategory category = SelectedTestCategory;
+            if (category == null)
+            {
+                _ = MessageBox.Show(LocalizationHelper.Get("Msg_SelectTestCategory"), LanguageService.Get("Cap_Info"));
+                return;
+            }
+            WindowAdminInput input = new(LanguageService.Get("Admin_EditTestCategory"),
+                (LanguageService.Get("Admin_TestCategory"), category.Name, false),
+                (LanguageService.Get("Admin_Description"), category.Description, false));
+            if (input.ShowDialog() != true)
+            {
+                return;
+            }
+            string oldName = category.Name;
+            category.Name = input.Values[0];
+            category.Description = input.Values[1];
+            string error = _admin.SaveTestCategory(category);
+            if (error != null)
+            {
+                _ = MessageBox.Show(error, LanguageService.Get("Cap_SaveFailed"));
+                return;
+            }
+            // 改名时同步测试项目上的归类
+            if (!string.Equals(oldName, category.Name, StringComparison.Ordinal))
+            {
+                _admin.RenameTestCategoryOnItems(oldName, category.Name);
+            }
+            LoadTestCategories();
+            LoadTestItems();
+        }
+
+        private void Btn_DeleteTestCategory_Click(object sender, RoutedEventArgs e)
+        {
+            TestCategory category = SelectedTestCategory;
+            if (category == null)
+            {
+                _ = MessageBox.Show(LocalizationHelper.Get("Msg_SelectTestCategory"), LanguageService.Get("Cap_Info"));
+                return;
+            }
+            if (MessageBox.Show(string.Format(LanguageService.Get("Admin_DeleteTestCategoryConfirm"), category.Name),
+                LanguageService.Get("Cap_DeleteConfirm"), MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+            {
+                return;
+            }
+            _admin.DeleteTestCategory(category.Id);
+            LoadTestCategories();
+            LoadTestItems();
+        }
+
+        private void Btn_RefreshTestCategories_Click(object sender, RoutedEventArgs e)
+        {
+            LoadTestCategories();
+            LoadTestItems();
+        }
 
         /* ###############################  产品别管理  ################################ */
 

@@ -113,29 +113,43 @@
 
         <GridSplitter Grid.Row="4" HorizontalAlignment="Stretch" VerticalAlignment="Center" Background="Transparent"/>
 
-        <!--选中测试项的测试计划（抽样计划/测试条件/通过判定，来自计划模板）-->
+        <!--选中测试项的测试计划（抽样计划/测试条件/通过判定，来自计划模板，可直接编辑或换用别的模板方案）-->
         <GroupBox Grid.Row="5" Header="{lex:Loc ReportTemplate_Plan}" Padding="6">
             <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                <DockPanel Grid.Column="0" Margin="2">
-                    <TextBlock DockPanel.Dock="Top" Text="{lex:Loc ReportTemplate_SamplingPlan}" FontWeight="Bold"/>
-                    <TextBox x:Name="txt_planSampling" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap"
-                             VerticalScrollBarVisibility="Auto" Background="Transparent"/>
-                </DockPanel>
-                <DockPanel Grid.Column="1" Margin="2">
-                    <TextBlock DockPanel.Dock="Top" Text="{lex:Loc ReportTemplate_TestCondition}" FontWeight="Bold"/>
-                    <TextBox x:Name="txt_planCondition" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap"
-                             VerticalScrollBarVisibility="Auto" Background="Transparent"/>
-                </DockPanel>
-                <DockPanel Grid.Column="2" Margin="2">
-                    <TextBlock DockPanel.Dock="Top" Text="{lex:Loc ReportTemplate_PassCriterion}" FontWeight="Bold"/>
-                    <TextBox x:Name="txt_planCriterion" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap"
-                             VerticalScrollBarVisibility="Auto" Background="Transparent"/>
-                </DockPanel>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="auto"/>
+                    <RowDefinition/>
+                </Grid.RowDefinitions>
+                <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,4">
+                    <Button x:Name="btn_pickVariant" Content="{lex:Loc ReportTemplate_PickVariant}" Padding="10,3"
+                            Click="Btn_PickVariant_Click" ToolTip="{lex:Loc ReportTemplate_PickVariantHint}"/>
+                    <Button x:Name="btn_resetPlan" Content="{lex:Loc ReportTemplate_ResetPlan}" Padding="10,3" Margin="8,0,0,0"
+                            Click="Btn_ResetPlan_Click"/>
+                    <TextBlock Text="{lex:Loc ReportTemplate_PlanEditableHint}" VerticalAlignment="Center" Margin="12,0,0,0"
+                               Foreground="{DynamicResource TextSecondaryBrush}"/>
+                </StackPanel>
+                <Grid Grid.Row="1">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <DockPanel Grid.Column="0" Margin="2">
+                        <TextBlock DockPanel.Dock="Top" Text="{lex:Loc ReportTemplate_SamplingPlan}" FontWeight="Bold"/>
+                        <TextBox x:Name="txt_planSampling" Tag="SamplingPlan" AcceptsReturn="True" TextWrapping="Wrap"
+                                 VerticalScrollBarVisibility="Auto" TextChanged="PlanText_TextChanged"/>
+                    </DockPanel>
+                    <DockPanel Grid.Column="1" Margin="2">
+                        <TextBlock DockPanel.Dock="Top" Text="{lex:Loc ReportTemplate_TestCondition}" FontWeight="Bold"/>
+                        <TextBox x:Name="txt_planCondition" Tag="TestCondition" AcceptsReturn="True" TextWrapping="Wrap"
+                                 VerticalScrollBarVisibility="Auto" TextChanged="PlanText_TextChanged"/>
+                    </DockPanel>
+                    <DockPanel Grid.Column="2" Margin="2">
+                        <TextBlock DockPanel.Dock="Top" Text="{lex:Loc ReportTemplate_PassCriterion}" FontWeight="Bold"/>
+                        <TextBox x:Name="txt_planCriterion" Tag="PassCriterion" AcceptsReturn="True" TextWrapping="Wrap"
+                                 VerticalScrollBarVisibility="Auto" TextChanged="PlanText_TextChanged"/>
+                    </DockPanel>
+                </Grid>
             </Grid>
         </GroupBox>
 

@@ -149,6 +149,12 @@ namespace ORT一键报告.Services
         /// <summary>EMU/像素（Excel 锚点单位：914400 EMU = 1 英寸 = 96 像素）</summary>
         private const int EmuPerPixel = 9525;
 
+        /// <summary>测试安排区外框颜色（黑）</summary>
+        private const short IndexedBlackBorder = 8;
+
+        /// <summary>测试安排区内线颜色（50% 灰）</summary>
+        private const short IndexedGreyBorder = 23;
+
         /// <summary>测试项配图在 ORT Plan 表里的最大尺寸（像素），超出按比例缩小</summary>
         private const int PictureMaxWidth = 200;
         private const int PictureMaxHeight = 140;
@@ -747,6 +753,23 @@ namespace ORT一键报告.Services
                     }
                 }
             }
+
+            // 6. 排期用不到的末尾列：整列清干净（连模板残留的黑底/边框一起去掉）
+            ICellStyle blankStyle = ExcelNpoi.ExistingCell(sheet, weekRow - 1, firstDateCol)?.CellStyle
+                ?? ExcelNpoi.BorderStyleOf(wb, BorderStyle.None);
+            for (int c = lastDateCol + 1; c <= templateLastCol; c++)
+            {
+                for (int r = weekRow; r <= clearLastRow; r++)
+                {
+                    ExcelNpoi.ClearCells(sheet, r, c, c);
+                    ExcelNpoi.Cell(sheet, r, c).CellStyle = blankStyle;
+                }
+            }
+
+            // 7. 测试项目安排区整体加框：B7 到"最后一天 + 最后一个序列号"，
+            //    内部细灰线、最外一圈粗黑线（历史报告就是这个版式）
+            ExcelNpoi.ApplyBlockBorder(wb, sheet, firstSnRow, 2, lastSnRow, lastDateCol,
+                BorderStyle.Thin, BorderStyle.Medium, IndexedGreyBorder, IndexedBlackBorder);
         }
 
         /* ###############################  TestStatus  ################################ */
@@ -1000,18 +1023,19 @@ namespace ORT一键报告.Services
         }
 
         /// <summary>
-        /// 整表底色：全表铺淡灰，表格及表格周围一格刷白（与历史报告一致）。
-        /// 已有的彩色底纹（黑表头、蓝色分类行等）保持不动。
+        /// 整表底色：全表铺淡灰（模板的列默认样式就是这个底，NPOI 写回会把"到最后一列"的默认样式丢掉，
+        /// 所以这里显式铺出来），表格及表格周围一格刷白，已有的彩色底纹（黑表头、蓝色分类行等）保持不动。
         /// </summary>
         private static void ApplyStatusBackground(IWorkbook wb, ISheet sheet, int lastTableRow)
         {
             const int tableFirstCol = 2;
             const int tableLastCol = 12; // L 列（COMMENTS）
-            int canvasLastRow = lastTableRow + 12;
-            int canvasLastCol = tableLastCol + 6;
-            // 先刷白（表格 + 周围一格；标题区一并留白），再铺灰——铺灰会跳过已有底纹的单元格
-            ExcelNpoi.ApplyFillOverlay(wb, sheet, 1, tableFirstCol - 1, lastTableRow + 1, tableLastCol + 1, ExcelNpoi.IndexedWhite);
-            ExcelNpoi.ApplyFillOverlay(wb, sheet, 1, 1, canvasLastRow, canvasLastCol, ExcelNpoi.IndexedSilver);
+            // 铺得比表格大一圈，保证滚动到的区域都是淡灰而不是白
+            int canvasLastRow = lastTableRow + 40;
+            int canvasLastCol = tableLastCol + 28;
+            // 先整体铺灰（连模板里原有的白底一起换掉），再把"表格 + 周围一格"刷白
+            ExcelNpoi.ApplyFillOverlay(wb, sheet, 1, 1, canvasLastRow, canvasLastCol, ExcelNpoi.IndexedSilver, true);
+            ExcelNpoi.ApplyFillOverlay(wb, sheet, 1, tableFirstCol - 1, lastTableRow + 1, tableLastCol + 1, ExcelNpoi.IndexedWhite, true);
         }
 
         /// <summary>

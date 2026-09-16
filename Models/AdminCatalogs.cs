@@ -1,4 +1,4 @@
-﻿using FreeSql.DataAnnotations;
+using FreeSql.DataAnnotations;
 using System;
 
 namespace ORT一键报告.Models
@@ -52,6 +52,26 @@ namespace ORT一键报告.Models
         /// <summary>
         /// 描述
         /// </summary>
+        [Column(StringLength = 256, IsNullable = true)]
+        public string Description { get; set; }
+    }
+
+    /// <summary>
+    /// 测试种类字典（test_categories 表）：测试项目的归类（RELIABILITY TEST / EMC / 不确定…），
+    /// 报告的 ORT Plan 分类行与 TestStatus 分组行都按它来分，可在管理界面增删改。
+    /// </summary>
+    [Table(Name = "test_categories")]
+    [Index("uk_test_category_name", nameof(Name), true)]
+    public class TestCategory
+    {
+        [Column(IsPrimary = true, IsIdentity = true)]
+        public long Id { get; set; }
+
+        /// <summary>种类名（写入报告分组行）</summary>
+        [Column(StringLength = 64, IsNullable = false)]
+        public string Name { get; set; }
+
+        /// <summary>说明</summary>
         [Column(StringLength = 256, IsNullable = true)]
         public string Description { get; set; }
     }

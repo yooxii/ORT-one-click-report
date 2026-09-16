@@ -455,6 +455,57 @@
   <data name="Admin_AutoCategoryDone" xml:space="preserve">
     <value>Auto-classified {0} test items</value>
   </data>
+  <data name="Admin_TestCategoryTab" xml:space="preserve">
+    <value>Test Category</value>
+  </data>
+  <data name="Admin_TestCategoryTabHint" xml:space="preserve">
+    <value>Maintain the categories used by the ORT Plan group rows and the TestStatus sections</value>
+  </data>
+  <data name="Admin_NewTestCategory" xml:space="preserve">
+    <value>New Test Category</value>
+  </data>
+  <data name="Admin_EditTestCategory" xml:space="preserve">
+    <value>Edit Test Category</value>
+  </data>
+  <data name="Admin_DeleteTestCategoryConfirm" xml:space="preserve">
+    <value>Delete test category [{0}]? Test items in it will fall back to Uncertain.</value>
+  </data>
+  <data name="Msg_SelectTestCategory" xml:space="preserve">
+    <value>Select a test category first</value>
+  </data>
+  <data name="ReportTemplate_PickVariant" xml:space="preserve">
+    <value>Use another template variant</value>
+  </data>
+  <data name="ReportTemplate_PickVariantHint" xml:space="preserve">
+    <value>Another model/plan may write this test item differently; pick one to apply, or edit the text below</value>
+  </data>
+  <data name="ReportTemplate_PickVariantHintFormat" xml:space="preserve">
+    <value>Choose a test plan variant for [{0}]</value>
+  </data>
+  <data name="ReportTemplate_ResetPlan" xml:space="preserve">
+    <value>Reset to shared template</value>
+  </data>
+  <data name="ReportTemplate_PlanEditableHint" xml:space="preserve">
+    <value>Editable - the text is written into the generated report</value>
+  </data>
+  <data name="ReportTemplate_SharedTemplateFormat" xml:space="preserve">
+    <value>Shared template ({0})</value>
+  </data>
+  <data name="ReportTemplate_VariantOverrideFormat" xml:space="preserve">
+    <value>{0} (differs in: {1})</value>
+  </data>
+  <data name="ReportTemplate_VariantSameFormat" xml:space="preserve">
+    <value>{0} (same as shared template)</value>
+  </data>
+  <data name="ReportTemplate_Msg_VariantApplied" xml:space="preserve">
+    <value>Applied variant: {0}</value>
+  </data>
+  <data name="ReportTemplate_Msg_NoVariant" xml:space="preserve">
+    <value>No other template variant found</value>
+  </data>
+  <data name="ReportTemplate_Msg_SelectItem" xml:space="preserve">
+    <value>Select a test item in the list first</value>
+  </data>
   <data name="Admin_Technician" xml:space="preserve">
     <value>Technician</value>
   </data>

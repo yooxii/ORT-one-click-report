@@ -34,6 +34,9 @@ namespace ORT一键报告.Reports.Views
         private bool _loading;
         private string _lastFolder;
 
+        /// <summary>正在用代码回填三个计划文本框（此时不要把内容写回测试项）</summary>
+        private bool _syncingPlan;
+
         public WindowReportTemplate()
         {
             InitializeComponent();
@@ -466,9 +469,219 @@ namespace ORT一键报告.Reports.Views
         private void Dg_Items_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             ReportTemplateItem item = dg_items.SelectedItem as ReportTemplateItem;
-            txt_planSampling.Text = item?.SamplingPlan ?? "";
-            txt_planCondition.Text = item?.TestCondition ?? "";
-            txt_planCriterion.Text = item?.PassCriterion ?? "";
+            _syncingPlan = true;
+            try
+            {
+                txt_planSampling.Text = item?.SamplingPlan ?? "";
+                txt_planCondition.Text = item?.TestCondition ?? "";
+                txt_planCriterion.Text = item?.PassCriterion ?? "";
+            }
+            finally
+            {
+                _syncingPlan = false;
+            }
+        }
+
+        /// <summary>
+        /// 三个计划文本框可直接编辑，改完立即写回选中的测试项（生成报告时用的就是这里的内容）
+        /// </summary>
+        private void PlanText_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (_syncingPlan || dg_items.SelectedItem is not ReportTemplateItem item)
+            {
+                return;
+            }
+            if (sender is not TextBox box)
+            {
+                return;
+            }
+            switch (box.Tag as string)
+            {
+                case "SamplingPlan":
+                    item.SamplingPlan = box.Text;
+                    break;
+                case "TestCondition":
+                    item.TestCondition = box.Text;
+                    break;
+                case "PassCriterion":
+                    item.PassCriterion = box.Text;
+                    break;
+            }
+        }
+
+        /* ###############################  模板方案  ################################ */
+
+        /// <summary>
+        /// 可选的测试计划方案：共用模板 + 各机种计划里同名测试项（有效值 = 差异 ?? 共用模板）
+        /// </summary>
+        private sealed class TemplateVariant
+        {
+            public string Title { get; set; }
+            public string SamplingPlan { get; set; }
+            public string TestCondition { get; set; }
+            public string PassCriterion { get; set; }
+            public string Remark { get; set; }
+            public string PeriodHours { get; set; }
+
+            /// <summary>内容指纹（用于去重）</summary>
+            public string Fingerprint => $"{SamplingPlan}\u0001{TestCondition}\u0001{PassCriterion}\u0001{Remark}\u0001{PeriodHours}";
+        }
+
+        /// <summary>
+        /// 换用其他模板方案：同一测试项目在别的机种/别的计划里可能是另一套写法，选中即套用
+        /// </summary>
+        private void Btn_PickVariant_Click(object sender, RoutedEventArgs e)
+        {
+            if (dg_items.SelectedItem is not ReportTemplateItem item)
+            {
+                ToastService.Show(LanguageService.Get("ReportTemplate_Msg_SelectItem"), ToastType.Warning);
+                return;
+            }
+            List<TemplateVariant> variants = LoadVariants(item);
+            if (variants.Count == 0)
+            {
+                ToastService.Show(LanguageService.Get("ReportTemplate_Msg_NoVariant"), ToastType.Warning);
+                return;
+            }
+            List<WindowListPicker.ListItem> options = variants
+                .Select((v, index) => new WindowListPicker.ListItem
+                {
+                    Display = $"{index + 1}. {v.Title}　—　{Summarize(v)}",
+                    Value = index.ToString()
+                })
+                .ToList();
+            string picked = WindowListPicker.Pick(this, LanguageService.Get("ReportTemplate_PickVariant"),
+                string.Format(LanguageService.Get("ReportTemplate_PickVariantHintFormat"), item.TestItemName), options);
+            if (picked == null || !int.TryParse(picked, out int choice) || choice < 0 || choice >= variants.Count)
+            {
+                return;
+            }
+            ApplyVariant(item, variants[choice]);
+        }
+
+        /// <summary>把选中方案套到测试项上（抽样计划/测试条件/通过判定/备注/试验周期）</summary>
+        private void ApplyVariant(ReportTemplateItem item, TemplateVariant variant)
+        {
+            item.SamplingPlan = variant.SamplingPlan;
+            item.TestCondition = variant.TestCondition;
+            item.PassCriterion = variant.PassCriterion;
+            item.Remark = variant.Remark;
+            item.PeriodHours = variant.PeriodHours;
+            _syncingPlan = true;
+            try
+            {
+                txt_planSampling.Text = item.SamplingPlan ?? "";
+                txt_planCondition.Text = item.TestCondition ?? "";
+                txt_planCriterion.Text = item.PassCriterion ?? "";
+            }
+            finally
+            {
+                _syncingPlan = false;
+            }
+            AutoSchedule(true); // 周期可能变了，重新排期并刷新表格
+            ToastService.Show(string.Format(LanguageService.Get("ReportTemplate_Msg_VariantApplied"), variant.Title), ToastType.Info);
+        }
+
+        /// <summary>回到该测试项的共用模板文本</summary>
+        private void Btn_ResetPlan_Click(object sender, RoutedEventArgs e)
+        {
+            if (dg_items.SelectedItem is not ReportTemplateItem item)
+            {
+                ToastService.Show(LanguageService.Get("ReportTemplate_Msg_SelectItem"), ToastType.Warning);
+                return;
+            }
+            string key = PlanIndexService.NameKey(item.TestItemName);
+            PlanItemTemplate template = _planService.GetTemplates()
+                .FirstOrDefault(t => PlanIndexService.NameKey(t.TestItemName) == key);
+            if (template == null)
+            {
+                ToastService.Show(LanguageService.Get("ReportTemplate_Msg_NoVariant"), ToastType.Warning);
+                return;
+            }
+            ApplyVariant(item, new TemplateVariant
+            {
+                Title = template.TestItemName,
+                SamplingPlan = template.SamplingPlan,
+                TestCondition = template.TestCondition,
+                PassCriterion = template.PassCriterion,
+                Remark = template.Remark,
+                PeriodHours = string.IsNullOrWhiteSpace(template.Period) ? "24" : template.Period
+            });
+        }
+
+        /// <summary>收集该测试项可用的模板方案（去重、按机种名排序）</summary>
+        private List<TemplateVariant> LoadVariants(ReportTemplateItem item)
+        {
+            List<TemplateVariant> variants = [];
+            string key = PlanIndexService.NameKey(item.TestItemName);
+            if (string.IsNullOrEmpty(key))
+            {
+                return variants;
+            }
+            PlanItemTemplate template = _planService.GetTemplates()
+                .FirstOrDefault(t => PlanIndexService.NameKey(t.TestItemName) == key);
+            if (template != null)
+            {
+                variants.Add(new TemplateVariant
+                {
+                    Title = string.Format(LanguageService.Get("ReportTemplate_SharedTemplateFormat"), template.TestItemName),
+                    SamplingPlan = template.SamplingPlan,
+                    TestCondition = template.TestCondition,
+                    PassCriterion = template.PassCriterion,
+                    Remark = template.Remark,
+                    PeriodHours = string.IsNullOrWhiteSpace(template.Period) ? "24" : template.Period
+                });
+            }
+            try
+            {
+                Dictionary<long, string> planNames = _planService.GetPlans()
+                    .GroupBy(p => p.Id)
+                    .ToDictionary(g => g.Key, g => $"{g.First().ModelName}（{PlanStage.Display(g.First().Stage)}）");
+                foreach (TestPlanItem planItem in _db.FreeSql.Select<TestPlanItem>()
+                    .Where(i => i.TestItemName == item.TestItemName)
+                    .OrderBy(i => i.PlanId)
+                    .ToList())
+                {
+                    string planName = planNames.TryGetValue(planItem.PlanId, out string name) ? name : $"计划#{planItem.PlanId}";
+                    string title = planItem.HasOverride
+                        ? string.Format(LanguageService.Get("ReportTemplate_VariantOverrideFormat"), planName, planItem.OverriddenFieldsDisplay)
+                        : string.Format(LanguageService.Get("ReportTemplate_VariantSameFormat"), planName);
+                    variants.Add(new TemplateVariant
+                    {
+                        Title = title,
+                        SamplingPlan = Fallback(planItem.SamplingPlan, template?.SamplingPlan),
+                        TestCondition = Fallback(planItem.TestCondition, template?.TestCondition),
+                        PassCriterion = Fallback(planItem.PassCriterion, template?.PassCriterion),
+                        Remark = Fallback(planItem.Remark, template?.Remark),
+                        PeriodHours = Fallback(planItem.Period, template?.Period) ?? "24"
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn($"读取测试项模板方案失败: {ex.Message}");
+            }
+            // 内容相同的方案只留一条，并顺手去掉与当前内容完全一样的
+            string current = $"{item.SamplingPlan}\u0001{item.TestCondition}\u0001{item.PassCriterion}\u0001{item.Remark}\u0001{item.PeriodHours}";
+            return variants
+                .GroupBy(v => v.Fingerprint)
+                .Select(g => g.First())
+                .Where(v => v.Fingerprint != current)
+                .ToList();
+        }
+
+        private static string Fallback(string value, string fallback)
+            => string.IsNullOrWhiteSpace(value) ? fallback : value;
+
+        /// <summary>方案的摘要（列表里一行显示）</summary>
+        private static string Summarize(TemplateVariant variant)
+        {
+            string text = (variant.TestCondition ?? variant.SamplingPlan ?? "").Replace("\r", " ").Replace("\n", " ");
+            if (text.Length > 60)
+            {
+                text = text.Substring(0, 60) + "…";
+            }
+            return text;
         }
 
         /* ###############################  生成  ################################ */

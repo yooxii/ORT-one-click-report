@@ -455,6 +455,57 @@
   <data name="Admin_AutoCategoryDone" xml:space="preserve">
     <value>已自动归类 {0} 个测试项目</value>
   </data>
+  <data name="Admin_TestCategoryTab" xml:space="preserve">
+    <value>测试种类</value>
+  </data>
+  <data name="Admin_TestCategoryTabHint" xml:space="preserve">
+    <value>这里维护测试项目的归类（报告的 ORT Plan 分类行与 TestStatus 分组行按它分）</value>
+  </data>
+  <data name="Admin_NewTestCategory" xml:space="preserve">
+    <value>新增测试种类</value>
+  </data>
+  <data name="Admin_EditTestCategory" xml:space="preserve">
+    <value>编辑测试种类</value>
+  </data>
+  <data name="Admin_DeleteTestCategoryConfirm" xml:space="preserve">
+    <value>确认删除测试种类 [{0}]？已归到该种类的测试项目会退回「不确定」。</value>
+  </data>
+  <data name="Msg_SelectTestCategory" xml:space="preserve">
+    <value>请先选择一条测试种类</value>
+  </data>
+  <data name="ReportTemplate_PickVariant" xml:space="preserve">
+    <value>选择其他模板方案</value>
+  </data>
+  <data name="ReportTemplate_PickVariantHint" xml:space="preserve">
+    <value>同一测试项目在其他机种/计划里的写法，选中即套用；也可以直接在下面编辑</value>
+  </data>
+  <data name="ReportTemplate_PickVariantHintFormat" xml:space="preserve">
+    <value>给 [{0}] 选择测试计划方案</value>
+  </data>
+  <data name="ReportTemplate_ResetPlan" xml:space="preserve">
+    <value>恢复共用模板</value>
+  </data>
+  <data name="ReportTemplate_PlanEditableHint" xml:space="preserve">
+    <value>可直接编辑，内容会写进生成的报告</value>
+  </data>
+  <data name="ReportTemplate_SharedTemplateFormat" xml:space="preserve">
+    <value>共用模板（{0}）</value>
+  </data>
+  <data name="ReportTemplate_VariantOverrideFormat" xml:space="preserve">
+    <value>{0}（差异：{1}）</value>
+  </data>
+  <data name="ReportTemplate_VariantSameFormat" xml:space="preserve">
+    <value>{0}（与共用模板相同）</value>
+  </data>
+  <data name="ReportTemplate_Msg_VariantApplied" xml:space="preserve">
+    <value>已套用方案：{0}</value>
+  </data>
+  <data name="ReportTemplate_Msg_NoVariant" xml:space="preserve">
+    <value>没有找到其他模板方案</value>
+  </data>
+  <data name="ReportTemplate_Msg_SelectItem" xml:space="preserve">
+    <value>请先在列表里选择一个测试项目</value>
+  </data>
   <data name="Admin_Technician" xml:space="preserve">
     <value>技术员</value>
   </data>

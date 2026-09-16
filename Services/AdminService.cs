@@ -502,6 +502,116 @@ namespace ORT一键报告.Services
         /// </summary>
         public int EnsureTestItemCategories() => AutoAssignTestItemCategories();
 
+        /* ###############################  测试种类管理  ################################ */
+
+        /// <summary>
+        /// 测试种类列表（先保证内置的三种在库里，再把测试项目里已用到的种类补登记）
+        /// </summary>
+        public List<TestCategory> GetTestCategories()
+        {
+            EnsureTestCategoriesSeeded();
+            return _db.FreeSql.Select<TestCategory>().OrderBy(t => t.Id).ToList();
+        }
+
+        /// <summary>
+        /// 测试种类名称列表（给下拉框用）
+        /// </summary>
+        public List<string> GetTestCategoryNames()
+            => GetTestCategories().Select(t => t.Name).Where(n => !string.IsNullOrWhiteSpace(n)).Distinct().ToList();
+
+        /// <summary>
+        /// 首次使用时写入内置种类，并把测试项目里已有的种类补登记进字典
+        /// </summary>
+        public int EnsureTestCategoriesSeeded()
+        {
+            List<TestCategory> existing = _db.FreeSql.Select<TestCategory>().ToList();
+            HashSet<string> names = new(existing.Select(t => t.Name ?? ""), StringComparer.OrdinalIgnoreCase);
+            int added = 0;
+            foreach ((string name, string description) in new[]
+            {
+                (TestCategories.Reliability, "环境/可靠性类测试（报告里显示 ENVIRONMENT TESTS）"),
+                (TestCategories.Emc, "电磁兼容类测试"),
+                (TestCategories.Uncertain, "还没归类，请手工指定")
+            })
+            {
+                if (names.Add(name))
+                {
+                    _db.FreeSql.Insert(new TestCategory { Name = name, Description = description }).ExecuteAffrows();
+                    added++;
+                }
+            }
+            // 测试项目里已有但字典里没有的种类（例如索引归并出来的其他写法）也补进来
+            foreach (string name in _db.FreeSql.Select<TestItemCatalog>().ToList()
+                .Select(i => i.Category?.Trim())
+                .Where(c => !string.IsNullOrWhiteSpace(c))
+                .Distinct(StringComparer.OrdinalIgnoreCase))
+            {
+                if (names.Add(name))
+                {
+                    _db.FreeSql.Insert(new TestCategory { Name = name, Description = "由测试项目自动登记" }).ExecuteAffrows();
+                    added++;
+                }
+            }
+            return added;
+        }
+
+        /// <summary>
+        /// 新增或更新测试种类，返回错误信息；成功返回 null
+        /// </summary>
+        public string SaveTestCategory(TestCategory item)
+        {
+            if (string.IsNullOrWhiteSpace(item.Name))
+            {
+                return "测试种类名称不能为空";
+            }
+            item.Name = item.Name.Trim();
+            bool exists = _db.FreeSql.Select<TestCategory>()
+                .Where(t => t.Name == item.Name && t.Id != item.Id).Any();
+            if (exists)
+            {
+                return $"测试种类 [{item.Name}] 已存在";
+            }
+            if (item.Id == 0)
+            {
+                _db.FreeSql.Insert(item).ExecuteAffrows();
+            }
+            else
+            {
+                _db.FreeSql.Update<TestCategory>().SetSource(item).Where(t => t.Id == item.Id).ExecuteAffrows();
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// 测试种类改名后，把测试项目上引用旧名字的归类同步过来
+        /// </summary>
+        public int RenameTestCategoryOnItems(string oldName, string newName)
+        {
+            if (string.IsNullOrWhiteSpace(oldName) || string.IsNullOrWhiteSpace(newName))
+            {
+                return 0;
+            }
+            return _db.FreeSql.Update<TestItemCatalog>()
+                .Set(t => t.Category, newName.Trim())
+                .Where(t => t.Category == oldName.Trim())
+                .ExecuteAffrows();
+        }
+
+        /// <summary>删除测试种类（已被测试项目使用的会把那些项目的种类清空，退回"不确定"）</summary>
+        public void DeleteTestCategory(long id)
+        {
+            TestCategory item = _db.FreeSql.Select<TestCategory>().Where(t => t.Id == id).First();
+            if (item == null)
+            {
+                return;
+            }
+            _db.FreeSql.Delete<TestCategory>().Where(t => t.Id == id).ExecuteAffrows();
+            _db.FreeSql.Update<TestItemCatalog>()
+                .Set(t => t.Category, TestCategories.Uncertain)
+                .Where(t => t.Category == item.Name)
+                .ExecuteAffrows();
+        }
+
         /// <summary>
         /// 按已加载的用户字典解析负责人显示名（优先 OwnerIds，回退 Owner 文本）
         /// </summary>
