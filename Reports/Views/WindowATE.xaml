@@ -87,7 +87,7 @@
                           HeadersVisibility="All" RowHeaderWidth="26" RowHeaderStyle="{StaticResource AteRowHeaderStyle}"
                           SelectionUnit="Cell" SelectionMode="Extended"
                           GridLinesVisibility="All" ClipboardCopyMode="None"
-                          AllowDrop="True" DragOver="DropTarget_DragOver" Drop="Grid_Drop"
+                          AllowDrop="True" DragOver="DropTarget_DragOver" DragLeave="DropTarget_DragLeave" Drop="Grid_Drop"
                           PreviewMouseLeftButtonDown="Grid_PreviewMouseLeftButtonDown"
                           PreviewMouseMove="Grid_PreviewMouseMove"/>
             </Grid>
@@ -105,7 +105,7 @@
                           HeadersVisibility="All" RowHeaderWidth="26" RowHeaderStyle="{StaticResource AteRowHeaderStyle}"
                           SelectionUnit="Cell" SelectionMode="Extended"
                           GridLinesVisibility="All" ClipboardCopyMode="None"
-                          AllowDrop="True" DragOver="DropTarget_DragOver" Drop="Grid_Drop"
+                          AllowDrop="True" DragOver="DropTarget_DragOver" DragLeave="DropTarget_DragLeave" Drop="Grid_Drop"
                           PreviewMouseLeftButtonDown="Grid_PreviewMouseLeftButtonDown"
                           PreviewMouseMove="Grid_PreviewMouseMove"/>
             </Grid>
@@ -119,7 +119,7 @@
                 <TextBlock Text="{lex:Loc ATE_Pool}" FontWeight="Bold" Margin="2,0,0,3"/>
                 <ListBox x:Name="lb_pool" Grid.Row="1" MinHeight="60" SelectionMode="Extended" DisplayMemberPath="SN"
                          ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto"
-                         AllowDrop="True" DragOver="DropTarget_DragOver"
+                         AllowDrop="True" DragOver="DropTarget_DragOver" DragLeave="DropTarget_DragLeave"
                          PreviewMouseLeftButtonDown="Pool_PreviewMouseLeftButtonDown"
                          PreviewMouseMove="Pool_PreviewMouseMove"
                          Drop="Pool_Drop"/>

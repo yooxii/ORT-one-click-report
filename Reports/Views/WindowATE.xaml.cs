@@ -46,6 +46,19 @@ namespace ORT一键报告.Reports.Views
 
         private static readonly Brush BadForeground = new SolidColorBrush(Color.FromRgb(0xE5, 0x39, 0x35));
         private static readonly Brush BadBackground = new SolidColorBrush(Color.FromArgb(0x33, 0xE5, 0x39, 0x35));
+        private static readonly Brush DropHighlightBrush = new SolidColorBrush(Color.FromRgb(0x4A, 0x90, 0xE2));
+
+        /// <summary>三个分组区域（用于拖动时高亮"这一行会落到哪一组"）</summary>
+        private sealed class PaneInfo
+        {
+            public Control Body { get; set; }
+            public TextBlock Title { get; set; }
+            public Brush BorderBrushDefault { get; set; }
+            public Thickness BorderThicknessDefault { get; set; }
+            public Brush TitleBrushDefault { get; set; }
+        }
+
+        private readonly List<PaneInfo> _panes = [];
 
         public ATEWindow()
         {
@@ -54,6 +67,30 @@ namespace ORT一键报告.Reports.Views
             dg_pre.ItemsSource = _pre;
             dg_post.ItemsSource = _post;
             _activeControl = lb_pool;
+            _panes.Add(new PaneInfo
+            {
+                Body = dg_pre,
+                Title = txt_preTitle,
+                BorderBrushDefault = dg_pre.BorderBrush,
+                BorderThicknessDefault = dg_pre.BorderThickness,
+                TitleBrushDefault = txt_preTitle.Foreground
+            });
+            _panes.Add(new PaneInfo
+            {
+                Body = dg_post,
+                Title = txt_postTitle,
+                BorderBrushDefault = dg_post.BorderBrush,
+                BorderThicknessDefault = dg_post.BorderThickness,
+                TitleBrushDefault = txt_postTitle.Foreground
+            });
+            _panes.Add(new PaneInfo
+            {
+                Body = lb_pool,
+                Title = null,
+                BorderBrushDefault = lb_pool.BorderBrush,
+                BorderThicknessDefault = lb_pool.BorderThickness,
+                TitleBrushDefault = null
+            });
             Loaded += ATEWindow_Loaded;
             Closed += (s, e) => Utils.Report.ClearTempDir();
         }
@@ -397,12 +434,36 @@ namespace ORT一键报告.Reports.Views
             }
             _dragArmed = false;
             _ = DragDrop.DoDragDrop(source, _dragRow, DragDropEffects.Move);
+            HighlightDropTarget(null);
         }
 
         private void DropTarget_DragOver(object sender, DragEventArgs e)
         {
-            e.Effects = e.Data.GetDataPresent(typeof(RowVm)) ? DragDropEffects.Move : DragDropEffects.None;
+            bool acceptable = e.Data.GetDataPresent(typeof(RowVm));
+            e.Effects = acceptable ? DragDropEffects.Move : DragDropEffects.None;
+            // 拖到哪个分组就高亮哪个分组，避免"拖到别的组去了"却看不出来
+            HighlightDropTarget(acceptable ? sender as Control : null);
             e.Handled = true;
+        }
+
+        private void DropTarget_DragLeave(object sender, DragEventArgs e)
+        {
+            HighlightDropTarget(null);
+        }
+
+        /// <summary>高亮将要接收这一行的分组（传入 null 表示全部取消高亮）</summary>
+        private void HighlightDropTarget(Control target)
+        {
+            foreach (PaneInfo pane in _panes)
+            {
+                bool on = ReferenceEquals(pane.Body, target);
+                pane.Body.BorderBrush = on ? DropHighlightBrush : pane.BorderBrushDefault;
+                pane.Body.BorderThickness = on ? new Thickness(2) : pane.BorderThicknessDefault;
+                if (pane.Title != null)
+                {
+                    pane.Title.Foreground = on ? DropHighlightBrush : pane.TitleBrushDefault;
+                }
+            }
         }
 
         private void Grid_Drop(object sender, DragEventArgs e)
@@ -414,6 +475,7 @@ namespace ORT一键报告.Reports.Views
             DataGrid grid = (DataGrid)sender;
             ObservableCollection<RowVm> target = ReferenceEquals(grid, dg_pre) ? _pre : _post;
             _ = MoveRow(row, target, DropIndex(grid, e.GetPosition(grid)));
+            HighlightDropTarget(null);
             e.Handled = true;
         }
 
@@ -424,6 +486,7 @@ namespace ORT一键报告.Reports.Views
                 return;
             }
             _ = MoveRow(row, _pool, _pool.Count);
+            HighlightDropTarget(null);
             e.Handled = true;
         }
 

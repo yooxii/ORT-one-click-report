@@ -330,9 +330,9 @@ namespace ORT一键报告.Reports.Views
 
         private void MenuItem_ATE_Click(object sender, RoutedEventArgs e)
         {
+            // 不设置 Owner：ATE 窗口最大化后会一直压住属主窗口，导致一键报告窗口无法切到前台
             ATEWindow ateWindow = new()
             {
-                Owner = this,
                 SubmitHandler = SubmitAteData
             };
             ateWindow.Show();

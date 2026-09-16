@@ -1,4 +1,5 @@
 using NPOI.SS.UserModel;
+using NPOI.SS.Util;
 using ORT一键报告.Models;
 using System;
 using System.Collections.Generic;
@@ -218,6 +219,7 @@ namespace ORT一键报告.Utils
         private const int MinSpecRow = 12;
         private const int FirstColumn = 4;   // 第一个项目的列（D）
         private const int SnColumn = 3;      // S/N 列（C）
+        private const int LabelColumn = 2;   // 分组标签列（B：试验前 / 试验后）
         private const int PreStatsRow = 13;  // 试验前统计块（Min/Max/Average/Judgement，4 行）
         private const int PostStatsRow = 17; // 试验后统计块
 
@@ -231,6 +233,13 @@ namespace ORT一键报告.Utils
             {
                 ISheet ws = ExcelNpoi.SheetAt(wb, 0);
                 int lastRow = ExcelNpoi.LastRow(ws);
+
+                // 0. 先记下模板里"试验前 / 试验后"两个分组标签（文字与样式）：
+                //    行数变化会删掉/移动带标签的单元格，最后要按最终行数重写并重新合并
+                string preLabel = ExcelNpoi.CellText(ws, FirstDataRow, LabelColumn);
+                string postLabel = ExcelNpoi.CellText(ws, FirstDataRow + TemplateGroupRows, LabelColumn);
+                ICellStyle preLabelStyle = ExcelNpoi.ExistingCell(ws, FirstDataRow, LabelColumn)?.CellStyle;
+                ICellStyle postLabelStyle = ExcelNpoi.ExistingCell(ws, FirstDataRow + TemplateGroupRows, LabelColumn)?.CellStyle;
 
                 // 1. 表头（测试条件）、项目名、规格上下限，并复制首列样式/公式
                 for (int i = 0; i < sheet.ItemCount; i++)
@@ -274,6 +283,17 @@ namespace ORT一键报告.Utils
                 //    并直接写入算好的结果，保证不打开 Excel 也能看到正确的统计值。
                 int specMaxRow = FirstDataRow + beforeCount + afterCount;
                 WriteStats(ws, sheet, beforeRows, afterRows, specMaxRow, specMaxRow + 1);
+
+                // 6. 分组标签（试验前 / 试验后）按最终行数写回，并整表重建标签合并区域
+                if (beforeCount > 0)
+                {
+                    WriteBlockLabel(ws, FirstDataRow, beforeCount, preLabel, preLabelStyle);
+                }
+                if (afterCount > 0)
+                {
+                    WriteBlockLabel(ws, FirstDataRow + beforeCount, afterCount, postLabel, postLabelStyle);
+                }
+                RebuildMerges(ws, beforeCount, afterCount);
 
                 ExcelNpoi.Save(wb, outputPath);
             }
@@ -410,7 +430,67 @@ namespace ORT一键报告.Utils
             }
             else
             {
-                ExcelNpoi.DeleteRows(ws, firstRow, TemplateGroupRows - count);
+                // 从块尾部删：保留第一行的分组标签单元格，标签最后会按最终行数重写并重新合并
+                ExcelNpoi.DeleteRows(ws, firstRow + count, TemplateGroupRows - count);
+            }
+        }
+
+        /// <summary>
+        /// 写分组标签（试验前 / 试验后）到该块第一行的 B 列（合并区域由 RebuildMerges 统一重建）
+        /// </summary>
+        private static void WriteBlockLabel(ISheet ws, int firstRow, int count, string text, ICellStyle style)
+        {
+            if (string.IsNullOrWhiteSpace(text) || count <= 0)
+            {
+                return;
+            }
+            ICell cell = ExcelNpoi.Cell(ws, firstRow, LabelColumn);
+            if (style != null)
+            {
+                cell.CellStyle = style;
+            }
+            ExcelNpoi.SetCell(ws, firstRow, LabelColumn, text);
+        }
+
+        /// <summary>
+        /// 按最终行数重建全部标签合并区域。
+        /// NPOI 的 ShiftRows 不会同步合并区域，模板里的合并又都是标签（樣品編號 / 分组标签 /
+        /// 规格标签 / 统计块标签），行数变化后干脆整表重建，避免留下指向错行的旧合并。
+        /// </summary>
+        private static void RebuildMerges(ISheet ws, int beforeCount, int afterCount)
+        {
+            for (int i = ws.NumMergedRegions - 1; i >= 0; i--)
+            {
+                ws.RemoveMergedRegion(i);
+            }
+            // 樣品編號 # of Samples：B3:C4
+            ExcelNpoi.Merge(ws, 3, LabelColumn, 4, LabelColumn + 1);
+            if (beforeCount > 1)
+            {
+                ExcelNpoi.Merge(ws, FirstDataRow, LabelColumn, FirstDataRow + beforeCount - 1, LabelColumn);
+            }
+            if (afterCount > 1)
+            {
+                ExcelNpoi.Merge(ws, FirstDataRow + beforeCount, LabelColumn, FirstDataRow + beforeCount + afterCount - 1, LabelColumn);
+            }
+            int specMaxRow = FirstDataRow + beforeCount + afterCount;
+            ExcelNpoi.Merge(ws, specMaxRow, LabelColumn, specMaxRow, LabelColumn + 1);
+            ExcelNpoi.Merge(ws, specMaxRow + 1, LabelColumn, specMaxRow + 1, LabelColumn + 1);
+            int row = specMaxRow + 2;
+            if (beforeCount > 0)
+            {
+                for (int i = 0; i < 4; i++)
+                {
+                    ExcelNpoi.Merge(ws, row + i, LabelColumn, row + i, LabelColumn + 1);
+                }
+                row += 4;
+            }
+            if (afterCount > 0)
+            {
+                for (int i = 0; i < 4; i++)
+                {
+                    ExcelNpoi.Merge(ws, row + i, LabelColumn, row + i, LabelColumn + 1);
+                }
             }
         }
     }

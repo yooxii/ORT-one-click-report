@@ -1698,7 +1698,7 @@
   <data name="ATE_Submit" xml:space="preserve"><value>提交到報告</value></data>
   <data name="ATE_ReportType" xml:space="preserve"><value>報告類型</value></data>
   <data name="ATE_NextOutOfSpec" xml:space="preserve"><value>跳到下一個超限</value></data>
-  <data name="ATE_CapacityFull" xml:space="preserve"><value>「{0}」最多只能選 {1} 筆資料，請先把多餘的資料移出。</value></data>
+  <data name="ATE_CapacityFull" xml:space="preserve"><value>「{0}」最多只能選 {1} 筆資料，放不下這一列。要換組請先用「移出」騰出位置；在同一個組裡拖動只是調整順序。</value></data>
   <data name="ATE_NoOutOfSpec" xml:space="preserve"><value>沒有超出限值的資料。</value></data>
   <data name="ATE_NoSelection" xml:space="preserve"><value>請先選擇要移動的資料列。</value></data>
   <data name="ATE_DragHint" xml:space="preserve"><value>拖動列左側的窄條可以調整順序，也可以拖到另一組改變試驗前/試驗後歸屬；數值可直接雙擊編輯，超出上下限的會標紅。</value></data>

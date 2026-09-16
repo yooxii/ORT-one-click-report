@@ -1698,7 +1698,7 @@ Comment: {2}</value>
   <data name="ATE_Submit" xml:space="preserve"><value>Submit to report</value></data>
   <data name="ATE_ReportType" xml:space="preserve"><value>Report type</value></data>
   <data name="ATE_NextOutOfSpec" xml:space="preserve"><value>Next out-of-limit</value></data>
-  <data name="ATE_CapacityFull" xml:space="preserve"><value>"{0}" can hold at most {1} rows; move some rows out first.</value></data>
+  <data name="ATE_CapacityFull" xml:space="preserve"><value>"{0}" can hold at most {1} rows, so this row cannot go in. Move a row out first to make room; dragging inside a group only changes the order.</value></data>
   <data name="ATE_NoOutOfSpec" xml:space="preserve"><value>No values are out of the limits.</value></data>
   <data name="ATE_NoSelection" xml:space="preserve"><value>Select the rows to move first.</value></data>
   <data name="ATE_DragHint" xml:space="preserve"><value>Drag the narrow strip on the left of a row to reorder it, or drop it on another group to change Pre/Post. Double-click a value to edit it; values outside the limits are highlighted in red.</value></data>
