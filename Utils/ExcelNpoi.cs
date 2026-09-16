@@ -789,6 +789,12 @@ namespace ORT一键报告.Utils
             => sheet.SetColumnWidth(col1 - 1, (int)Math.Round(characters * 256));
 
         /// <summary>
+        /// 列宽（字符宽，与 <see cref="SetColumnWidth"/> 单位一致）
+        /// </summary>
+        public static double ColumnWidthInChars(ISheet sheet, int col1)
+            => sheet == null || col1 < 1 ? 0 : sheet.GetColumnWidth(col1 - 1) / 256.0;
+
+        /// <summary>
         /// 设置行高（磅，等价 EPPlus 的 Row(i).Height，传入 &lt;=0 表示自动）
         /// </summary>
         public static void SetRowHeight(ISheet sheet, int row1, double points)

@@ -508,6 +508,64 @@ namespace ORT一键报告.Services
         }
 
         /// <summary>
+        /// 让每个测试项的合并跨度都放得下它的名字：跨度总宽不够时，把差额平摊到跨度内的各列
+        /// （历史报告的日期列宽度就是按内容拉开的，否则文字会溢出、和相邻测试项重叠）
+        /// </summary>
+        private static void EnsureItemColumnWidths(ISheet sheet, List<(int From, int To, string Text)> spans, int firstCol, int lastCol)
+        {
+            if (sheet == null || spans.Count == 0 || lastCol < firstCol)
+            {
+                return;
+            }
+            double[] widths = new double[lastCol + 1];
+            for (int c = firstCol; c <= lastCol; c++)
+            {
+                widths[c] = ExcelNpoi.ColumnWidthInChars(sheet, c);
+            }
+            foreach ((int from, int to, string text) in spans)
+            {
+                int a = Math.Max(from, firstCol);
+                int b = Math.Min(to, lastCol);
+                if (b < a || string.IsNullOrEmpty(text))
+                {
+                    continue;
+                }
+                double total = 0;
+                for (int c = a; c <= b; c++)
+                {
+                    total += widths[c];
+                }
+                double needed = MeasureTextWidth(text) + 2.0; // 两侧各留一点边距
+                if (needed <= total)
+                {
+                    continue;
+                }
+                double extra = (needed - total) / (b - a + 1);
+                for (int c = a; c <= b; c++)
+                {
+                    widths[c] += extra;
+                }
+            }
+            for (int c = firstCol; c <= lastCol; c++)
+            {
+                ExcelNpoi.SetColumnWidth(sheet, c, widths[c]);
+            }
+        }
+
+        /// <summary>
+        /// 估算文字占用的字符宽（列宽单位）：全角字符按 2、其余按 1
+        /// </summary>
+        private static double MeasureTextWidth(string text)
+        {
+            double width = 0;
+            foreach (char ch in text ?? "")
+            {
+                width += ch > 0x2E80 ? 2.0 : 1.0;
+            }
+            return width;
+        }
+
+        /// <summary>
         /// 测试项配图：计划索引时从历史报告的 ORT Plan 表里抽出来并按测试项归好了类，
         /// 这里把同名测试项的图片放回它所在行的 E 列（与历史报告一致）。
         /// </summary>
@@ -628,13 +686,24 @@ namespace ORT一键报告.Services
             }
 
             // 2. 清空并重建"测试安排"区域（先去掉该区域的合并，避免残留）；
-            //    B 列是单体序号（模板里 1、2、3），清空时保留并重写
+            //    表头块（No. / UUT S/N / Config / S/N，行 3~5 的 B~D 列）与它的合并要保留，
+            //    所以合并只从第 6 行开始清、这三行也只从 E 列开始清空
             int lastRow = ExcelNpoi.LastRow(sheet);
             int clearLastRow = firstSnRow + snCount + Math.Max(workOrders.Count, 1); // 含工令行
             int lastCol = Math.Max(templateLastCol, firstDateCol + snCount * 20);
-            RemoveMergesInRows(sheet, weekRow, Math.Max(clearLastRow, lastRow));
+            RemoveMergesInRows(sheet, firstSnRow - 1, Math.Max(clearLastRow, lastRow));
             for (int r = weekRow; r <= clearLastRow; r++)
             {
+                bool headerRow = r <= uutRow;
+                if (headerRow)
+                {
+                    // 表头三行只清日程区（E 列起），"UUT S/N / Config / S/N" 这些标题留着
+                    if (lastCol >= firstDateCol)
+                    {
+                        ExcelNpoi.ClearCells(sheet, r, firstDateCol, lastCol);
+                    }
+                    continue;
+                }
                 ExcelNpoi.ClearCells(sheet, r, 3, lastCol);
                 if (r >= firstSnRow && r < firstSnRow + snCount)
                 {
@@ -717,6 +786,7 @@ namespace ORT一键报告.Services
 
             // 5. 测试安排：每个序列号都走一遍计划里的测试（同一天范围合并），单元格格式沿用模板的测试项行
             int lastSnRow = firstSnRow + snCount - 1;
+            List<(int From, int To, string Text)> spans = [];
             foreach (ReportTemplateItem item in request.Items ?? [])
             {
                 if (!item.Start.HasValue || !item.End.HasValue)
@@ -729,6 +799,11 @@ namespace ORT一键报告.Services
                 {
                     continue;
                 }
+                if (to > lastDateCol)
+                {
+                    to = lastDateCol;
+                }
+                spans.Add((from, to, item.TestItemName ?? ""));
                 for (int i = 0; i < snCount; i++)
                 {
                     int row = firstSnRow + i;
@@ -753,6 +828,10 @@ namespace ORT一键报告.Services
                     }
                 }
             }
+
+            // 5.5 列宽按测试项文字自适应：合并跨度里放不下测试项目名时会溢出到相邻单元格造成重叠，
+            //     这里按"跨度总宽 ≥ 文字宽"补足（历史报告里日期列宽度就是这样按内容拉开的）
+            EnsureItemColumnWidths(sheet, spans, firstDateCol, lastDateCol);
 
             // 6. 排期用不到的末尾列：整列清干净（连模板残留的黑底/边框一起去掉）
             ICellStyle blankStyle = ExcelNpoi.ExistingCell(sheet, weekRow - 1, firstDateCol)?.CellStyle
@@ -883,6 +962,9 @@ namespace ORT一键报告.Services
             int lastTableRow = Math.Max(row - 1, firstDataRow);
             RewriteHyperlinks(sheet, targetFolder, itemNameRows);
             ApplyStatusBackground(wb, sheet, lastTableRow);
+            // 表格边框与 Waterfall 一致：最外一圈粗黑线、内部细灰线（表头行 5 起、到最后一个测试项行为止）
+            ExcelNpoi.ApplyBlockBorder(wb, sheet, 5, 2, lastTableRow, 12,
+                BorderStyle.Thin, BorderStyle.Medium, IndexedGreyBorder, IndexedBlackBorder);
         }
 
         /// <summary>
