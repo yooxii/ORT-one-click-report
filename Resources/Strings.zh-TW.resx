@@ -1712,4 +1712,5 @@
   <data name="ATE_SelectHint" xml:space="preserve"><value>請點擊右側按鈕選擇ATE資料檔案</value></data>
   <data name="Msg_NoATETemplate" xml:space="preserve"><value>預設ATE模板不存在，請先選擇 ATE 模板路徑。</value></data>
   <data name="ATE_DragHandle" xml:space="preserve"><value>按住這裡可以把這一列拖到別的順序或另一組</value></data>
+  <data name="ATE_Opening" xml:space="preserve"><value>正在開啟 ATE 資料，請稍候…</value></data>
 </root>

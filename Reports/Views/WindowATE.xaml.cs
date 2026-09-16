@@ -9,6 +9,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -169,7 +170,7 @@ namespace ORT一键报告.Reports.Views
 
         /* ###############################  读取数据  ################################ */
 
-        private void OpenATEDatas_Click(object sender, RoutedEventArgs e)
+        private async void OpenATEDatas_Click(object sender, RoutedEventArgs e)
         {
             AppSettingsService settings = App.ServiceProvider.GetService(typeof(AppSettingsService)) as AppSettingsService;
             OpenFileDialog dialog = new()
@@ -183,25 +184,34 @@ namespace ORT一键报告.Reports.Views
                 _ = MessageBox.Show(LanguageService.Get("Msg_NoATEFile"), LanguageService.Get("Cap_Warning"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
-            LoadFromFile(dialog.FileName);
+            await LoadFromFileAsync(dialog.FileName);
         }
 
-        private void btn_reread_Click(object sender, RoutedEventArgs e)
+        private async void btn_reread_Click(object sender, RoutedEventArgs e)
         {
             if (string.IsNullOrWhiteSpace(ATEFilePath))
             {
                 _ = MessageBox.Show(LanguageService.Get("Msg_NoATEFile"), LanguageService.Get("Cap_Warning"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
-            LoadFromFile(ATEFilePath);
+            await LoadFromFileAsync(ATEFilePath);
         }
 
         /// <summary>读取 ATE 原始数据并重建界面（自动分组，不可靠时全部放到未使用让用户自己选）</summary>
-        private void LoadFromFile(string fileName)
+        private async Task LoadFromFileAsync(string fileName)
         {
+            PopupWindow popup = new()
+            {
+                Owner = this,
+                Title = LanguageService.Get("Title_Processing"),
+                Message = LanguageService.Get("ATE_Opening")
+            };
+            popup.Show();
             try
             {
-                AteSheet sheet = AteReportData.Read(fileName);
+                // 先让"正在打开"提示画出来，再放到后台线程读取，界面不会假死
+                await System.Windows.Threading.Dispatcher.Yield(System.Windows.Threading.DispatcherPriority.Background);
+                AteSheet sheet = await Task.Run(() => AteReportData.Read(fileName));
                 if (sheet == null)
                 {
                     _logger.Warn($"ATE 数据文件里找不到 S/N / MAX_SPEC 行：{fileName}");
@@ -219,6 +229,10 @@ namespace ORT一键报告.Reports.Views
             {
                 _logger.Error(ex, "读取ATE数据发生错误");
                 _ = MessageBox.Show(ex.Message, LanguageService.Get("Cap_Error"), MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                popup.Close();
             }
         }
 

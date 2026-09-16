@@ -1712,4 +1712,5 @@ Comment: {2}</value>
   <data name="ATE_SelectHint" xml:space="preserve"><value>Click the button on the right to choose the ATE data file</value></data>
   <data name="Msg_NoATETemplate" xml:space="preserve"><value>No default ATE template found; please choose an ATE template path first.</value></data>
   <data name="ATE_DragHandle" xml:space="preserve"><value>Drag here to reorder this row or move it to the other group</value></data>
+  <data name="ATE_Opening" xml:space="preserve"><value>Opening the ATE data, please wait…</value></data>
 </root>

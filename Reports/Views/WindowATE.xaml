@@ -6,7 +6,7 @@
         xmlns:lex="http://wpflocalizeextension.codeplex.com"
         xmlns:local="clr-namespace:ORT一键报告"
         mc:Ignorable="d"
-        Title="{lex:Loc ATE_Title}" Height="760" Width="1240" MinHeight="500" MinWidth="900"
+        Title="{lex:Loc ATE_Title}" Height="780" Width="1240" MinHeight="520" MinWidth="900"
         WindowStartupLocation="CenterScreen">
     <Window.Resources>
         <!-- 行标题就是拖动把手：给出可见的底色和拖动光标，否则用户不知道能拖 -->
@@ -33,13 +33,13 @@
             <RowDefinition Height="auto"/>
             <RowDefinition/>
             <RowDefinition Height="auto"/>
+            <RowDefinition Height="auto"/>
         </Grid.RowDefinitions>
 
         <!-- 菜单 -->
         <Menu Grid.Row="0" VerticalContentAlignment="Center">
             <MenuItem Header="{lex:Loc Common_Open}" Click="OpenATEDatas_Click"/>
             <MenuItem Header="{lex:Loc ATE_Reload}" Click="btn_reread_Click"/>
-            <MenuItem Header="{lex:Loc Common_Save}" Click="SaveATEDatas_Click"/>
             <MenuItem Header="{lex:Loc Common_Exit}" Click="Close_Click"/>
         </Menu>
 
@@ -55,52 +55,27 @@
             <Button x:Name="btn_ATETemplate" Content="{lex:Loc Common_Browse}" Grid.Column="2" MinWidth="80" Click="btn_ATETemplate_Click"/>
         </Grid>
 
-        <!-- 工具栏 -->
+        <!-- 工具栏：除保存 / 提交到报告外的按钮都在这一行 -->
         <WrapPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,5">
-            <Button x:Name="btn_save" Content="{lex:Loc Common_Save}" MinWidth="90" Margin="0,0,10,0" Click="SaveATEDatas_Click"/>
-            <Label Content="{lex:Loc ATE_ReportType}" VerticalAlignment="Center"/>
-            <ComboBox x:Name="cmb_reportType" MinWidth="140" VerticalContentAlignment="Center"/>
-            <Button x:Name="btn_submit" Content="{lex:Loc ATE_Submit}" MinWidth="120" Margin="6,0,14,0" Click="SubmitToReport_Click"/>
-            <Button x:Name="btn_nextBad" Content="{lex:Loc ATE_NextOutOfSpec}" MinWidth="140" Margin="0,0,10,0" Click="NextOutOfSpec_Click"/>
-            <Button x:Name="btn_reread" Content="{lex:Loc ATE_Reload}" MinWidth="90" Click="btn_reread_Click"/>
+            <Button x:Name="btn_nextBad" Content="{lex:Loc ATE_NextOutOfSpec}" MinWidth="130" Margin="0,0,6,0" Click="NextOutOfSpec_Click"/>
+            <Button x:Name="btn_reread" Content="{lex:Loc ATE_Reload}" MinWidth="90" Margin="0,0,14,0" Click="btn_reread_Click"/>
+            <Button x:Name="btn_toPre" Content="{lex:Loc ATE_MoveToPre}" MinWidth="100" Margin="0,0,6,0" Click="MoveToPre_Click"/>
+            <Button x:Name="btn_toPost" Content="{lex:Loc ATE_MoveToPost}" MinWidth="100" Margin="0,0,6,0" Click="MoveToPost_Click"/>
+            <Button x:Name="btn_toPool" Content="{lex:Loc ATE_MoveOut}" MinWidth="80" Margin="0,0,14,0" Click="MoveToPool_Click"/>
+            <TextBlock x:Name="txt_counts" VerticalAlignment="Center" FontWeight="Bold" Margin="0,0,14,0"/>
+            <TextBlock x:Name="txt_bad" VerticalAlignment="Center"/>
         </WrapPanel>
 
-        <!-- 主体：未使用 / 试验前 / 试验后 -->
+        <!-- 数据区：三个区域垂直排列，宽度拉满、能看到更多数据与更多行 -->
         <Grid Grid.Row="3">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="200"/>
-                <ColumnDefinition/>
-                <ColumnDefinition/>
-            </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
-                <RowDefinition Height="auto"/>
-                <RowDefinition/>
+                <RowDefinition Height="2*"/>
+                <RowDefinition Height="2*"/>
+                <RowDefinition Height="1*"/>
             </Grid.RowDefinitions>
 
-            <StackPanel Grid.Row="0" Grid.ColumnSpan="3" Orientation="Horizontal" Margin="0,0,0,4">
-                <Button x:Name="btn_toPre" Content="{lex:Loc ATE_MoveToPre}" MinWidth="100" Click="MoveToPre_Click"/>
-                <Button x:Name="btn_toPost" Content="{lex:Loc ATE_MoveToPost}" MinWidth="100" Margin="5,0,0,0" Click="MoveToPost_Click"/>
-                <Button x:Name="btn_toPool" Content="{lex:Loc ATE_MoveOut}" MinWidth="80" Margin="5,0,0,0" Click="MoveToPool_Click"/>
-                <TextBlock x:Name="txt_counts" VerticalAlignment="Center" Margin="14,0,0,0" FontWeight="Bold"/>
-                <TextBlock x:Name="txt_bad" VerticalAlignment="Center" Margin="14,0,0,0"/>
-            </StackPanel>
-
-            <!-- 未使用的原始数据 -->
-            <Grid Grid.Row="1" Grid.Column="0" Margin="0,0,5,0">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="auto"/>
-                    <RowDefinition/>
-                </Grid.RowDefinitions>
-                <TextBlock Text="{lex:Loc ATE_Pool}" FontWeight="Bold" Margin="2,0,0,3"/>
-                <ListBox x:Name="lb_pool" Grid.Row="1" SelectionMode="Extended" DisplayMemberPath="SN"
-                         AllowDrop="True" DragOver="DropTarget_DragOver"
-                         PreviewMouseLeftButtonDown="Pool_PreviewMouseLeftButtonDown"
-                         PreviewMouseMove="Pool_PreviewMouseMove"
-                         Drop="Pool_Drop"/>
-            </Grid>
-
             <!-- 试验前 -->
-            <Grid Grid.Row="1" Grid.Column="1" Margin="0,0,5,0">
+            <Grid Grid.Row="0" Margin="0,0,0,4">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="auto"/>
                     <RowDefinition/>
@@ -109,7 +84,8 @@
                 <DataGrid x:Name="dg_pre" Grid.Row="1"
                           AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
                           CanUserReorderColumns="False" CanUserResizeRows="False"
-                          HeadersVisibility="All" RowHeaderWidth="26" RowHeaderStyle="{StaticResource AteRowHeaderStyle}" SelectionUnit="Cell" SelectionMode="Extended"
+                          HeadersVisibility="All" RowHeaderWidth="26" RowHeaderStyle="{StaticResource AteRowHeaderStyle}"
+                          SelectionUnit="Cell" SelectionMode="Extended"
                           GridLinesVisibility="All" ClipboardCopyMode="None"
                           AllowDrop="True" DragOver="DropTarget_DragOver" Drop="Grid_Drop"
                           PreviewMouseLeftButtonDown="Grid_PreviewMouseLeftButtonDown"
@@ -117,7 +93,7 @@
             </Grid>
 
             <!-- 试验后 -->
-            <Grid Grid.Row="1" Grid.Column="2">
+            <Grid Grid.Row="1" Margin="0,0,0,4">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="auto"/>
                     <RowDefinition/>
@@ -126,14 +102,38 @@
                 <DataGrid x:Name="dg_post" Grid.Row="1"
                           AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
                           CanUserReorderColumns="False" CanUserResizeRows="False"
-                          HeadersVisibility="All" RowHeaderWidth="26" RowHeaderStyle="{StaticResource AteRowHeaderStyle}" SelectionUnit="Cell" SelectionMode="Extended"
+                          HeadersVisibility="All" RowHeaderWidth="26" RowHeaderStyle="{StaticResource AteRowHeaderStyle}"
+                          SelectionUnit="Cell" SelectionMode="Extended"
                           GridLinesVisibility="All" ClipboardCopyMode="None"
                           AllowDrop="True" DragOver="DropTarget_DragOver" Drop="Grid_Drop"
                           PreviewMouseLeftButtonDown="Grid_PreviewMouseLeftButtonDown"
                           PreviewMouseMove="Grid_PreviewMouseMove"/>
             </Grid>
+
+            <!-- 未使用的原始数据 -->
+            <Grid Grid.Row="2">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="auto"/>
+                    <RowDefinition/>
+                </Grid.RowDefinitions>
+                <TextBlock Text="{lex:Loc ATE_Pool}" FontWeight="Bold" Margin="2,0,0,3"/>
+                <ListBox x:Name="lb_pool" Grid.Row="1" MinHeight="60" SelectionMode="Extended" DisplayMemberPath="SN"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto"
+                         AllowDrop="True" DragOver="DropTarget_DragOver"
+                         PreviewMouseLeftButtonDown="Pool_PreviewMouseLeftButtonDown"
+                         PreviewMouseMove="Pool_PreviewMouseMove"
+                         Drop="Pool_Drop"/>
+            </Grid>
         </Grid>
 
         <TextBlock Grid.Row="4" x:Name="txt_hint" Text="{lex:Loc ATE_DragHint}" TextWrapping="Wrap" Margin="0,5,0,0" Opacity="0.85"/>
+
+        <!-- 最下方：保存 / 提交到报告 -->
+        <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,8,0,2">
+            <Button x:Name="btn_save" Content="{lex:Loc Common_Save}" MinWidth="110" Margin="0,0,18,0" Click="SaveATEDatas_Click"/>
+            <Label Content="{lex:Loc ATE_ReportType}" VerticalAlignment="Center"/>
+            <ComboBox x:Name="cmb_reportType" MinWidth="150" VerticalContentAlignment="Center"/>
+            <Button x:Name="btn_submit" Content="{lex:Loc ATE_Submit}" MinWidth="130" Margin="10,0,0,0" Click="SubmitToReport_Click"/>
+        </StackPanel>
     </Grid>
 </Window>
