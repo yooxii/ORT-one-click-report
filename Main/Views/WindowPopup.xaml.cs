@@ -1,4 +1,5 @@
-﻿using System;
+using ORT一键报告.Services;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -40,6 +41,80 @@ namespace ORT一键报告
             InitializeComponent();
             DataContext = this;
             _buttons = new List<ButtonConfig>();
+            // 没配按钮 = 当"处理中/请稍候"窗口用：显示不确定进度条
+            if (_buttons.Count == 0)
+            {
+                BusyBar.Visibility = Visibility.Visible;
+            }
+            Loaded += (s, e) => _shownAt = DateTime.Now;
+            Closing += OnBusyClosingDelay;
+        }
+
+        /// <summary>等待窗口至少显示这么久：操作很快时也有一眼反馈，不会一闪而过</summary>
+        private const int BusyMinVisibleMs = 400;
+
+        private DateTime _shownAt = DateTime.Now;
+        private bool _delayedClose;
+
+        /// <summary>等待窗口（无按钮）显示不足 BusyMinVisibleMs 时延后关闭</summary>
+        private void OnBusyClosingDelay(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            if (_buttons.Count > 0 || _delayedClose)
+            {
+                return;
+            }
+            double elapsed = (DateTime.Now - _shownAt).TotalMilliseconds;
+            if (elapsed >= BusyMinVisibleMs)
+            {
+                return;
+            }
+            e.Cancel = true;
+            _delayedClose = true;
+            System.Windows.Threading.DispatcherTimer timer = new()
+            {
+                Interval = TimeSpan.FromMilliseconds(BusyMinVisibleMs - elapsed)
+            };
+            timer.Tick += (s, args) =>
+            {
+                timer.Stop();
+                Close();
+            };
+            timer.Start();
+        }
+
+        /// <summary>
+        /// 显示"正在处理"等待窗口（带不确定进度条）。返回窗口实例，调用方处理完自行 Close()。
+        /// </summary>
+        public static PopupWindow ShowBusy(string message, Window owner = null)
+        {
+            PopupWindow window = new()
+            {
+                Title = LanguageService.Get("Title_Processing"),
+                Message = message
+            };
+            window.Owner = owner ?? FindActiveWindow();
+            window.BusyBar.Visibility = Visibility.Visible;
+            window.IconBadge.Visibility = Visibility.Collapsed;
+            window.ButtonPanel.Visibility = Visibility.Collapsed;
+            window.Show();
+            return window;
+        }
+
+        /// <summary>取当前活动（或主）窗口，作为等待窗口的属主，保证居中显示</summary>
+        private static Window FindActiveWindow()
+        {
+            if (Application.Current == null)
+            {
+                return null;
+            }
+            foreach (Window w in Application.Current.Windows)
+            {
+                if (w != null && w.IsVisible && w.IsActive)
+                {
+                    return w;
+                }
+            }
+            return Application.Current.MainWindow is { IsVisible: true } main ? main : null;
         }
 
         public static string Show(string message, string title, MessageBoxImage icon, params (string Text, string Result)[] buttons)
@@ -94,42 +169,47 @@ namespace ORT一键报告
                 _buttons.Add(new ButtonConfig(btn.Text, btn.Result));
             }
 
+            BusyBar.Visibility = Visibility.Collapsed;
             SetIcon(icon);
             CreateButtons();
         }
 
+        /// <summary>
+        /// 图标、颜色都走主题语义键（错误红 / 警告黄 / 成功绿），未设置图标时隐藏图标徽标
+        /// </summary>
         public void SetIcon(MessageBoxImage icon)
         {
-            string glyph, color;
+            string glyph;
+            string colorKey;
+            string badgeKey;
             switch (icon)
             {
                 case MessageBoxImage.Error:
                     glyph = "\xE783";
-                    color = "#D0021B";
+                    colorKey = "StatusErrorBrush";
+                    badgeKey = "StatusErrorBgBrush";
                     break;
                 case MessageBoxImage.Question:
-                    glyph = "\xE11D";
-                    color = "#4A90E2";
-                    break;
                 case MessageBoxImage.Warning:
-                    glyph = "\xE7BA";
-                    color = "#4A90E2";
+                    glyph = icon == MessageBoxImage.Question ? "\xE11D" : "\xE7BA";
+                    colorKey = "StatusWarnBrush";
+                    badgeKey = "StatusWarnBgBrush";
                     break;
                 case MessageBoxImage.Information:
                     glyph = "\xE946";
-                    color = "#50C878";
-                    break;
-                case MessageBoxImage.None:
-                    glyph = "";
-                    color = "#50C878";
+                    colorKey = "StatusOkBrush";
+                    badgeKey = "StatusOkBgBrush";
                     break;
                 default:
-                    glyph = "\xE946";
-                    color = "#50C878";
+                    glyph = "";
+                    colorKey = "StatusOkBrush";
+                    badgeKey = "StatusOkBgBrush";
                     break;
             }
             IconText.Text = glyph;
-            IconText.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString(color));
+            IconBadge.Visibility = string.IsNullOrEmpty(glyph) ? Visibility.Collapsed : Visibility.Visible;
+            IconText.SetResourceReference(TextBlock.ForegroundProperty, colorKey);
+            IconBadge.SetResourceReference(Border.BackgroundProperty, badgeKey);
         }
 
         private void CreateButtons()
@@ -160,6 +240,8 @@ namespace ORT一键报告
 
                 ButtonPanel.Children.Add(btn);
             }
+            ButtonPanel.Visibility = _buttons.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+            BusyBar.Visibility = _buttons.Count > 0 ? Visibility.Collapsed : Visibility.Visible;
         }
     }
 }

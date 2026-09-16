@@ -194,10 +194,9 @@ namespace ORT一键报告.Reports.ViewModels
 
         private async void Finish()
         {
-            PopupWindow popup = new() { Title = LanguageService.Get("Title_SaveReport"), Message = "处理中..." };
+            PopupWindow popup = PopupWindow.ShowBusy(LanguageService.Get("Title_SaveReport") + "：" + LanguageService.Get("Msg_PleaseWait"));
             try
             {
-                popup.Show();
                 await Task.Run(() => { ReportFinish(ReportHeaderVM); });
             }
             catch (Exception ex)

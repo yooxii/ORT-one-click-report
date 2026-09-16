@@ -97,10 +97,8 @@ namespace ORT一键报告.Reports.Views
 
         private void ATEWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            if (Owner is WindowMainReport main)
-            {
-                cmb_reportType.ItemsSource = WindowMainReport.AteReportTypes;
-            }
+            // 可提交的报告类型：直接取静态列表，不依赖 Owner（ATE 窗口已不再给报告窗口当属主）
+            cmb_reportType.ItemsSource = WindowMainReport.AteReportTypes;
             if (cmb_reportType.Items.Count > 0)
             {
                 cmb_reportType.SelectedIndex = 0;
@@ -237,13 +235,7 @@ namespace ORT一键报告.Reports.Views
         /// <summary>读取 ATE 原始数据并重建界面（自动分组，不可靠时全部放到未使用让用户自己选）</summary>
         private async Task LoadFromFileAsync(string fileName)
         {
-            PopupWindow popup = new()
-            {
-                Owner = this,
-                Title = LanguageService.Get("Title_Processing"),
-                Message = LanguageService.Get("ATE_Opening")
-            };
-            popup.Show();
+            PopupWindow popup = PopupWindow.ShowBusy(LanguageService.Get("ATE_Opening"), this);
             try
             {
                 // 先让"正在打开"提示画出来，再放到后台线程读取，界面不会假死
@@ -610,7 +602,7 @@ namespace ORT一键报告.Reports.Views
 
         /* ###############################  生成 / 提交  ################################ */
 
-        private void SaveATEDatas_Click(object sender, RoutedEventArgs e)
+        private async void SaveATEDatas_Click(object sender, RoutedEventArgs e)
         {
             if (!EnsureDataLoaded())
             {
@@ -637,7 +629,8 @@ namespace ORT一键报告.Reports.Views
             {
                 return;
             }
-            if (GenerateReport(template, dialog.FileName, out string error))
+            (bool ok, string error) = await GenerateReportAsync(template, dialog.FileName);
+            if (ok)
             {
                 _ = MessageBox.Show(string.Format(LanguageService.Get("ATE_Saved"), dialog.FileName), LanguageService.Get("ATE_Title"), MessageBoxButton.OK, MessageBoxImage.Information);
             }
@@ -647,7 +640,7 @@ namespace ORT一键报告.Reports.Views
             }
         }
 
-        private void SubmitToReport_Click(object sender, RoutedEventArgs e)
+        private async void SubmitToReport_Click(object sender, RoutedEventArgs e)
         {
             if (!EnsureDataLoaded())
             {
@@ -680,7 +673,8 @@ namespace ORT一键报告.Reports.Views
                 dir = Path.GetDirectoryName(ATEFilePath);
             }
             string outputPath = Path.Combine(dir, Path.GetFileNameWithoutExtension(ATEFilePath) + " ATE report" + template.Extension);
-            if (!GenerateReport(template, outputPath, out string error))
+            (bool generated, string error) = await GenerateReportAsync(template, outputPath);
+            if (!generated)
             {
                 _ = MessageBox.Show(error, LanguageService.Get("Cap_ATEReportFailed"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
@@ -695,22 +689,30 @@ namespace ORT一键报告.Reports.Views
             }
         }
 
-        private bool GenerateReport(FileInfo template, string outputPath, out string error)
+        /// <summary>
+        /// 生成 ATE 报告：数据列多时比较慢，先弹"正在处理"等待窗口（带进度条），
+        /// 再放到后台线程写文件，界面不会假死。
+        /// </summary>
+        private async Task<(bool Ok, string Error)> GenerateReportAsync(FileInfo template, string outputPath)
         {
-            error = null;
+            List<AteRow> before = _pre.Select(r => r.ToAteRow()).ToList();
+            List<AteRow> after = _post.Select(r => r.ToAteRow()).ToList();
+            PopupWindow popup = PopupWindow.ShowBusy(LanguageService.Get("ATE_Saving"), this);
             try
             {
-                List<AteRow> before = _pre.Select(r => r.ToAteRow()).ToList();
-                List<AteRow> after = _post.Select(r => r.ToAteRow()).ToList();
-                AteReportData.Write(_sheet, before, after, template.FullName, outputPath);
+                await System.Windows.Threading.Dispatcher.Yield(System.Windows.Threading.DispatcherPriority.Background);
+                await Task.Run(() => AteReportData.Write(_sheet, before, after, template.FullName, outputPath));
                 _logger.Info($"ATE 报告已生成：{outputPath}（试验前 {before.Count} 条 / 试验后 {after.Count} 条）");
-                return true;
+                return (true, null);
             }
             catch (Exception ex)
             {
                 _logger.Error(ex, LanguageService.Get("Cap_ATEReportFailed"));
-                error = ex.Message;
-                return false;
+                return (false, ex.Message);
+            }
+            finally
+            {
+                popup.Close();
             }
         }
 

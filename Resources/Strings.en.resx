@@ -1713,4 +1713,6 @@ Comment: {2}</value>
   <data name="Msg_NoATETemplate" xml:space="preserve"><value>No default ATE template found; please choose an ATE template path first.</value></data>
   <data name="ATE_DragHandle" xml:space="preserve"><value>Drag here to reorder this row or move it to the other group</value></data>
   <data name="ATE_Opening" xml:space="preserve"><value>Opening the ATE data, please wait…</value></data>
+  <data name="Msg_PleaseWait" xml:space="preserve"><value>Working, please wait…</value></data>
+  <data name="ATE_Saving" xml:space="preserve"><value>Generating the ATE report, please wait…</value></data>
 </root>

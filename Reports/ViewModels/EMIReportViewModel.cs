@@ -512,8 +512,7 @@ namespace ORT一键报告.Reports.ViewModels
 
         private async void ConvertToPdfAsync(string sourcePath)
         {
-            PopupWindow popup = new() { Title = LanguageService.Get("Title_Processing"), Message = "请耐心等待..." };
-            popup.Show();
+            PopupWindow popup = PopupWindow.ShowBusy(LanguageService.Get("Msg_PleaseWait"));
             (int Converted, int Failed) result = (0, 0);
             await Task.Run(() =>
             {

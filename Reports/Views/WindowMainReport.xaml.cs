@@ -278,7 +278,7 @@ namespace ORT一键报告.Reports.Views
 
         private async void DoReport_Click(object sender, RoutedEventArgs e)
         {
-            PopupWindow popup = new() { Title = LanguageService.Get("Title_Processing"), Message = "请耐心等待..." };
+            PopupWindow popup = PopupWindow.ShowBusy(LanguageService.Get("Msg_PleaseWait"), this);
             if (sender is not Button btn)
             {
                 return;
@@ -287,7 +287,6 @@ namespace ORT一键报告.Reports.Views
 
             try
             {
-                popup.Show();
                 string ReportName = MainVM.ReportPath;
                 if (string.IsNullOrWhiteSpace(ReportName) || !File.Exists(ReportName))
                 {
