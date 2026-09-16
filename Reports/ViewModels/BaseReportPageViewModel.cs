@@ -33,7 +33,7 @@ namespace ORT一键报告.Reports.ViewModels
 
         public string RootReportPath { get; set; }
 
-        private string _atePath = "请点击右侧按钮选择ATE数据文件";
+        private string _atePath = LanguageService.Get("ATE_SelectHint");
         public string ATEPath { get => _atePath; set => SetProperty(ref _atePath, value); }
 
         private int _testTime;

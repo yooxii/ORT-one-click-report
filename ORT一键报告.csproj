@@ -218,6 +218,7 @@
       <DependentUpon>WindowEMIReportSetup.xaml</DependentUpon>
     </Compile>
     <Compile Include="Utils\Image.cs" />
+    <Compile Include="Utils\AteReportData.cs" />
     <Compile Include="Utils\Report.cs" />
     <Compile Include="Utils\ExcelNpoi.cs" />
     <Compile Include="Utils\ExcelOleEmbedder.cs" />

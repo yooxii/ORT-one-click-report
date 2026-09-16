@@ -199,6 +199,16 @@ namespace ORT一键报告.Reports.Views
 
         /* ###############################  事件函数  ################################ */
 
+        /// <summary>
+        /// ATE 工具「提交到报告」：把生成好的 ATE 文件填到本报告页的 ATE 数据里
+        /// （生成报告时会作为 OLE 附件嵌入）
+        /// </summary>
+        public void SetAteData(string filePath)
+        {
+            BaseReportPageVM.ATEPath = filePath;
+            _logger.Info($"{ReportType}报告：已接收 ATE 数据文件 {filePath}");
+        }
+
         private void Info_Set_Click(object sender, RoutedEventArgs e)
         {
             SetInfoToWindow();

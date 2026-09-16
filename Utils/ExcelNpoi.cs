@@ -801,15 +801,29 @@ namespace ORT一键报告.Utils
 
             // 计算删除后的目标合并区域集合，然后整体重建合并列表（避免边删边改索引错乱）
             List<CellRangeAddress> desired = [];
+            void Keep(int firstRow, int lastRow, int firstCol, int lastCol)
+            {
+                // 合并区域至少要覆盖 2 个单元格，否则 NPOI 的 AddMergedRegion 会抛
+                // "Merged region B6 must contain 2 or more cells"（截断到只剩一行一列时会踩到）
+                if (lastRow > firstRow || lastCol > firstCol)
+                {
+                    desired.Add(new CellRangeAddress(firstRow, lastRow, firstCol, lastCol));
+                }
+            }
             for (int i = 0; i < sheet.NumMergedRegions; i++)
             {
                 CellRangeAddress rg = sheet.GetMergedRegion(i);
                 if (rg.LastRow < start0 || rg.FirstRow > delLast0)
                 {
                     // 与删除区不相交：在下方则整体上移
-                    desired.Add(rg.FirstRow > delLast0
-                        ? new CellRangeAddress(rg.FirstRow - count, rg.LastRow - count, rg.FirstColumn, rg.LastColumn)
-                        : new CellRangeAddress(rg.FirstRow, rg.LastRow, rg.FirstColumn, rg.LastColumn));
+                    if (rg.FirstRow > delLast0)
+                    {
+                        Keep(rg.FirstRow - count, rg.LastRow - count, rg.FirstColumn, rg.LastColumn);
+                    }
+                    else
+                    {
+                        Keep(rg.FirstRow, rg.LastRow, rg.FirstColumn, rg.LastColumn);
+                    }
                     continue;
                 }
                 if (rg.FirstRow >= start0 && rg.LastRow <= delLast0)
@@ -819,7 +833,7 @@ namespace ORT一键报告.Utils
                 if (rg.FirstRow < start0)
                 {
                     // 跨过删除区上边界 -> 截断到删除区之前
-                    desired.Add(new CellRangeAddress(rg.FirstRow, start0 - 1, rg.FirstColumn, rg.LastColumn));
+                    Keep(rg.FirstRow, start0 - 1, rg.FirstColumn, rg.LastColumn);
                 }
                 // 顶部落在删除区内、尾部在外 -> 丢弃（无法保持矩形）
             }

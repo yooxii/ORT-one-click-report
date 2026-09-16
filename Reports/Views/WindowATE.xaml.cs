@@ -1,655 +1,690 @@
 using Microsoft.Win32;
 using NLog;
-using NPOI.SS.UserModel;
-using NPOI.XSSF.UserModel;
-using ORT一键报告.Utils;
-using ORT一键报告.Models;
 using ORT一键报告.Services;
+using ORT一键报告.Utils;
 using System;
 using System.Collections.Generic;
-using System.Data;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
+using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Data;
+using System.Windows.Input;
+using System.Windows.Media;
 using static ORT一键报告.Utils.Report;
 
 namespace ORT一键报告.Reports.Views
 {
     /// <summary>
-    /// ATEWindow.xaml 的交互逻辑
+    /// ATE 数据工具：读取 ATE 原始数据（xls/xlsx），人工选择试验前/试验后数据（可拖动排序、可直接改数值），
+    /// 超出上下限的数据标红并可一键跳转，最后保存成报告文件或直接提交给某类报告。
     /// </summary>
     public partial class ATEWindow : Window
     {
         private readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
+        /// <summary>
+        /// 「提交到报告」的回调（报告类型, 生成好的文件路径）→ 是否成功；由打开本窗口的一键报告窗口提供
+        /// </summary>
+        public Func<string, string, bool> SubmitHandler { get; set; }
 
-        public class ATEItem
-        {
-            public string ItemName { get; set; }
-            public string OutputType { get; set; }
-            public string SN { get; set; }
-            public string Value { get; set; }
-            public string MaxSpec { get; set; }
-            public string MinSpec { get; set; }
-            public bool IsPassed
-            {
-                get
-                {
-                    try
-                    {
-                        if (MaxSpec[0] == '-')
-                        {
-                            double _Max = double.Parse(MaxSpec);
-                            double _Min = double.Parse(MinSpec);
-                            MaxSpec = Math.Max(_Max, _Min).ToString();
-                            MinSpec = Math.Min(_Max, _Min).ToString();
-                        }
-                        if ((MaxSpec == "*" || MaxSpec == " " || double.Parse(Value) <= double.Parse(MaxSpec)) &&
-                            (MinSpec == "*" || MinSpec == " " || double.Parse(Value) >= double.Parse(MinSpec)))
-                        {
-                            return true;
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        LogManager.GetCurrentClassLogger().Error(ex, "数据转换错误");
-                    }
-                    return false;
-                }
-            }
-        }
+        /// <summary>当前打开的 ATE 原始数据文件</summary>
+        public string ATEFilePath { get; private set; }
 
-        public class ATERows
-        {
-            public string SN { get; set; }
-            public List<string> Datas { get; set; }
-            public List<int> BadDataIndexs { get; set; }
-            public void Clear()
-            {
-                SN = "";
-                Datas?.Clear();
-                BadDataIndexs?.Clear();
-            }
-        }
+        private AteSheet _sheet;
+        private readonly ObservableCollection<RowVm> _pool = [];
+        private readonly ObservableCollection<RowVm> _pre = [];
+        private readonly ObservableCollection<RowVm> _post = [];
+        private ItemsControl _activeControl;
+        private int _badCursor;
+        private int _suppressCount;
 
-        public class ATEItems
-        {
-            public List<string> ItemNames { get; set; }
-            public List<string> OutputTypes { get; set; }
-            public List<string> ShortTitles { get; set; }
-            public List<ATERows> BeforeDatas { get; set; }
-            public List<ATERows> AfterDatas { get; set; }
-            public List<string> MaxSpecs { get; set; }
-            public List<string> MinSpecs { get; set; }
-            public int Count;
-            public ATEItems()
-            {
-                BeforeDatas = new List<ATERows>();
-                AfterDatas = new List<ATERows>();
-                ShortTitles = new List<string>();
-                Count = 0;
-            }
-            public void Clear()
-            {
-                ItemNames?.Clear();
-                OutputTypes?.Clear();
-                ShortTitles?.Clear();
-                BeforeDatas?.Clear();
-                AfterDatas?.Clear();
-                MaxSpecs?.Clear();
-                MinSpecs?.Clear();
-                Count = 0;
-            }
-            public void Add(ATEItem item, bool isBefore)
-            {
-                List<ATERows> Datas = isBefore ? BeforeDatas : AfterDatas;
-                if (Count == 0)
-                {
-                    // 首次新建
-                    Datas.Add(new ATERows()
-                    {
-                        SN = item.SN,
-                        Datas = new List<string>() { item.Value },
-                        BadDataIndexs = item.IsPassed ? new List<int>() : new List<int>() { 0 }
-                    });
-                    ItemNames = new List<string>() { item.ItemName };
-                    OutputTypes = new List<string>() { item.OutputType };
-                    MaxSpecs = new List<string>() { item.MaxSpec };
-                    MinSpecs = new List<string>() { item.MinSpec };
-                }
-                else
-                {
-                    // 每个SN对应数据源的一行
-                    ATERows tempDatas = Datas.Find(t => t.SN == item.SN);
-                    if (tempDatas != null)
-                    {
-                        if (!item.IsPassed)
-                        {
-                            tempDatas.BadDataIndexs.Add(Datas.Count);
-                        }
-                        tempDatas.Datas.Add(item.Value);
-                    }
-                    else
-                    {
-                        Datas.Add(new ATERows()
-                        {
-                            SN = item.SN,
-                            Datas = new List<string>() { item.Value },
-                            BadDataIndexs = item.IsPassed ? new List<int>() : new List<int>() { 0 }
-                        });
-                    }
-                    // 测试名称和输出类型如果不同就新增
-                    if (ItemNames.FindIndex(t => t.Equals(item.ItemName)) == -1 || OutputTypes.FindIndex(t => t.Equals(item.OutputType)) == -1)
-                    {
-                        ItemNames.Add(item.ItemName);
-                        OutputTypes.Add(item.OutputType);
-                        MaxSpecs.Add(item.MaxSpec);
-                        MinSpecs.Add(item.MinSpec);
-                    }
-                }
-                Count++;
-            }
-            public DataTable ToItemSource()
-            {
-                if (ItemNames is null)
-                {
-                    return new DataTable();
-                }
-                DataTable res = new DataTable();
-                res.Columns.Add("SN", typeof(string));
-                for (int i = 0; i < ItemNames.Count; i++)
-                {
-                    string title = $"{ItemNames[i].Split(' ')[0]} {OutputTypes[i]}";
-                    ShortTitles.Add(title);
-                    res.Columns.Add(title, typeof(string));
-                }
-                foreach (ATERows bData in BeforeDatas)
-                {
-                    List<string> tmp = new List<string>() { bData.SN };
-                    tmp.AddRange(bData.Datas);
-                    res.Rows.Add(tmp.ToArray());
-                }
-                foreach (ATERows aData in AfterDatas)
-                {
-                    List<string> tmp = new List<string>() { aData.SN };
-                    tmp.AddRange(aData.Datas);
-                    res.Rows.Add(tmp.ToArray());
-                }
-                List<string> tmpSpec = new List<string>() { "MAX_SPEC" };
-                tmpSpec.AddRange(MaxSpecs);
-                res.Rows.Add(tmpSpec.ToArray());
-
-                tmpSpec.Clear();
-                tmpSpec.Add("MIN_SPEC");
-                tmpSpec.AddRange(MinSpecs);
-                res.Rows.Add(tmpSpec.ToArray());
-
-                return res;
-            }
-        }
-
-
-        public ATEItems ATEitems = new ATEItems();
-        public DataTable ATETable;
-        public string ATEFilePath;
-        public string SaveATEPath;
-        public string TempATEDir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "ORTTemp", "ATE");
+        private static readonly Brush BadForeground = new SolidColorBrush(Color.FromRgb(0xE5, 0x39, 0x35));
+        private static readonly Brush BadBackground = new SolidColorBrush(Color.FromArgb(0x33, 0xE5, 0x39, 0x35));
 
         public ATEWindow()
         {
             InitializeComponent();
-            Closed += ATEWindow_Closed;
+            lb_pool.ItemsSource = _pool;
+            dg_pre.ItemsSource = _pre;
+            dg_post.ItemsSource = _post;
+            _activeControl = lb_pool;
+            Loaded += ATEWindow_Loaded;
+            Closed += (s, e) => Utils.Report.ClearTempDir();
         }
 
-        private void ATEWindow_Closed(object sender, EventArgs e)
+        private void ATEWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            ClearTempDir();
-        }
-
-        /* ###############################  功能函数  ################################ */
-        private string F_xls2xlsx(string filePath)
-        {
-            // 1. 基础校验
-            if (string.IsNullOrWhiteSpace(filePath))
+            if (Owner is WindowMainReport main)
             {
-                return null;
+                cmb_reportType.ItemsSource = WindowMainReport.AteReportTypes;
             }
-
-            // 2. 规范扩展名判断
-            string extension = System.IO.Path.GetExtension(filePath);
-            if (!extension.Equals(".xls", StringComparison.OrdinalIgnoreCase))
+            if (cmb_reportType.Items.Count > 0)
             {
-                return filePath; // 已经是 xlsx 或其他格式，直接返回
+                cmb_reportType.SelectedIndex = 0;
             }
-
-            if (!File.Exists(filePath))
+            if (string.IsNullOrWhiteSpace(text_ATETemplate.Text))
             {
-                _logger.Error($"文件不存在: {filePath}");
-                return null;
-            }
-
-            string outputFilePath = null;
-            // 后期绑定调用 Excel COM：不依赖 Interop PIA / office.dll，只要求装了 Excel
-            dynamic excelApp = null;
-            dynamic workbook = null;
-
-            try
-            {
-                // 3. 生成唯一的临时输出路径 (防止文件名冲突)
-                if (!Directory.Exists(TempATEDir))
-                {
-                    _ = Directory.CreateDirectory(TempATEDir);
-                }
-                outputFilePath = Path.Combine(TempATEDir, Guid.NewGuid().ToString() + ".xlsx");
-
-                // 4. 启动 Excel (增加错误处理)
-                Type excelType = Type.GetTypeFromProgID("Excel.Application");
-                if (excelType == null)
-                {
-                    _logger.Error("未检测到 Excel，无法把 xls 转换为 xlsx");
-                    return null;
-                }
-                excelApp = Activator.CreateInstance(excelType);
-                excelApp.Visible = false;
-                excelApp.DisplayAlerts = false;
-
-                // 5. 打开文件 (增加重试机制以应对文件被占用)
-                int retryCount = 0;
-                bool opened = false;
-                while (retryCount < 3 && !opened)
-                {
-                    try
-                    {
-                        // 使用 ReadOnly 模式打开，减少文件锁冲突（Open(Filename, UpdateLinks, ReadOnly)）
-                        workbook = excelApp.Workbooks.Open(filePath, Type.Missing, true);
-                        opened = true;
-                    }
-                    catch (IOException)
-                    {
-                        retryCount++;
-                        System.Threading.Thread.Sleep(500); // 等待 0.5 秒后重试
-                    }
-                }
-
-                if (!opened)
-                {
-                    throw new Exception("无法打开源文件，可能文件正被占用。");
-                }
-
-                // 6. 另存为 xlsx (FileFormat 51 = xlOpenXMLWorkbook)
-                workbook.SaveAs(outputFilePath, 51);
-                workbook.Close(false); // 关闭源文件，不保存更改
-
-                return outputFilePath;
-            }
-            catch (Exception ex)
-            {
-                _logger.Error(ex, "xls文件转xlsx文件失败");
-                // 如果转换失败，确保删除可能产生的半成品文件
-                if (outputFilePath != null && File.Exists(outputFilePath))
-                {
-                    try { File.Delete(outputFilePath); } catch { }
-                }
-                return null;
-            }
-            finally
-            {
-                // 7. 严格的 COM 对象释放
-                if (workbook != null)
-                {
-                    try { System.Runtime.InteropServices.Marshal.ReleaseComObject(workbook); } catch { }
-                }
-
-                if (excelApp != null)
-                {
-                    try { excelApp.Quit(); } catch { }
-                    try { System.Runtime.InteropServices.Marshal.ReleaseComObject(excelApp); } catch { }
-                }
-
-                // 强制垃圾回收，帮助释放 COM 引用
-                GC.Collect();
-                GC.WaitForPendingFinalizers();
-                GC.Collect();
-                GC.WaitForPendingFinalizers();
-            }
-        }
-
-        private bool IsPair(string a, string b, char aC = '1', char bC = '2')
-        {
-            if (string.IsNullOrEmpty(a) || string.IsNullOrEmpty(b) || a.Length != b.Length)
-            {
-                return false;
-            }
-            int diffCount = 0;
-            int diffIndex = -1;
-            for (int i = 0; i < a.Length; i++)
-            {
-                if (a[i] != b[i])
-                {
-                    diffCount++;
-                    diffIndex = i;
-                    if (diffCount > 1)
-                    {
-                        return false;
-                    }
-                }
-            }
-            if (diffCount != 1)
-            {
-                return false;
-            }
-            char c1 = a[diffIndex];
-            char c2 = b[diffIndex];
-            return (c1 == bC && c2 == aC) || (c1 == aC && c2 == bC);
-        }
-
-        private List<string> FindSNs(ISheet ws, DataCell startCell, DataCell maxSpecCell)
-        {
-            List<string> SNs = new();
-            for (int r = startCell.Row + 1; r < maxSpecCell.Row; r++)
-            {
-                SNs.Add(ExcelNpoi.CellText(ws, r, 1));
-            }
-            return SNs;
-        }
-
-        private void ReadATEDatas(string fileName)
-        {
-            try
-            {
-                FileInfo ateFile = new FileInfo(System.IO.Path.GetFullPath(fileName));
-                if (!ateFile.Exists)
-                {
-                    throw new FileNotFoundException($"ATE数据文件在{fileName}未找到");
-                }
-                XSSFWorkbook wb = ExcelNpoi.OpenRead(ateFile.FullName);
                 try
                 {
-                    ISheet ws = ExcelNpoi.SheetAt(wb, 0);
+                    text_ATETemplate.Text = GetATETemplate().FullName;
+                }
+                catch (Exception ex)
+                {
+                    _logger.Warn($"未能定位默认 ATE 模板：{ex.Message}");
+                }
+            }
+            UpdateCounts();
+        }
 
-                    DataCell startCell = FindCellByValue(ws, "s/n");
-                    DataCell maxSpecCell = FindCellByValue(ws, "MAX_SPEC");
+        /* ###############################  数据模型  ################################ */
 
-                    if (startCell.Row >= maxSpecCell.Row)
+        /// <summary>一个测试值单元格：可直接编辑，超出限值时标红</summary>
+        private sealed class CellVm : INotifyPropertyChanged
+        {
+            private readonly RowVm _owner;
+            private readonly int _index;
+            private string _value;
+
+            public CellVm(RowVm owner, int index, string value)
+            {
+                _owner = owner;
+                _index = index;
+                _value = value;
+            }
+
+            public string Value
+            {
+                get => _value;
+                set
+                {
+                    if (_value == value)
                     {
-                        _logger.Warn("无ATE数据");
-                        _ = MessageBox.Show(LocalizationHelper.Get("Msg_NoATEData"));
                         return;
                     }
+                    _value = value;
+                    OnPropertyChanged();
+                    OnPropertyChanged(nameof(IsOutOfSpec));
+                    _owner.NotifyChanged();
+                }
+            }
 
-                    List<string> SNs = FindSNs(ws, startCell, maxSpecCell);
-                    int flag = IsPair(SNs[0], SNs[1]) ? 1 : IsPair(SNs[0], SNs[SNs.Count / 2]) ? 2 : 3;
-                    if (ATEitems.Count != 0)
-                    {
-                        ATEitems.Clear();
-                    }
-                    int lastCol = ExcelNpoi.LastColumn(ws);
-                    for (int r = startCell.Row + 1; r < maxSpecCell.Row; r++)
-                    {
-                        for (int c = startCell.Column + 1; c <= lastCol; c++)
-                        {
-                            if (ExcelNpoi.CellText(ws, startCell.Row, c) == "")
-                            {
-                                break;
-                            }
-                            bool isBefore = flag == 1 ? (r - startCell.Row) % 2 == 1 : flag != 2 || (r - startCell.Row) / (SNs.Count / 2) == 0;
-                            ATEitems.Add(new ATEItem()
-                            {
-                                SN = ExcelNpoi.CellText(ws, r, startCell.Column),
-                                Value = ExcelNpoi.CellText(ws, r, c),
-                                MaxSpec = ExcelNpoi.CellText(ws, maxSpecCell.Row, c),
-                                MinSpec = ExcelNpoi.CellText(ws, maxSpecCell.Row + 1, c),
-                                ItemName = ExcelNpoi.CellText(ws, startCell.Row - 1, c),
-                                OutputType = ExcelNpoi.CellText(ws, startCell.Row, c)
-                            }, isBefore);
-                        }
-                    }
-                }
-                finally
-                {
-                    wb.Close();
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.Error(ex, "读取ATE数据发生错误");
-                _ = MessageBox.Show(ex + "读取ATE数据发生错误", LanguageService.Get("Cap_Error"));
-            }
+            /// <summary>是否超出上下限（上下限为空或 "*" 表示不考虑该侧）</summary>
+            public bool IsOutOfSpec => _owner.Sheet != null
+                && _index < _owner.Sheet.ItemCount
+                && AteReportData.IsOutOfSpec(_value, _owner.Sheet.MaxSpecs[_index], _owner.Sheet.MinSpecs[_index]);
+
+            public event PropertyChangedEventHandler PropertyChanged;
+
+            private void OnPropertyChanged([CallerMemberName] string name = null)
+                => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
         }
 
-        private void MakeATEDatas(FileInfo ATEtemp)
+        /// <summary>一行数据（一个样品的全部测试值）</summary>
+        private sealed class RowVm : INotifyPropertyChanged
         {
-            if (string.IsNullOrEmpty(ATEFilePath))
-            {
-                return;
-            }
-            _logger.Info("ATE报告生成中...");
-            try
-            {
-                XSSFWorkbook wb = ExcelNpoi.OpenRead(ATEtemp.FullName);
-                try
-                {
-                    ISheet ws = ExcelNpoi.SheetAt(wb, 0);
-                    int lastRow = ExcelNpoi.LastRow(ws);
+            private string _sn;
 
-                    // 1. 写入标题和Spec
-                    for (int c = 0; c < ATEitems.ItemNames.Count; c++)
-                    {
-                        ExcelNpoi.SetCell(ws, 3, c + 4, ATEitems.ItemNames[c]);
-                        ExcelNpoi.SetCell(ws, 4, c + 4, ATEitems.OutputTypes[c]);
-                        ExcelNpoi.SetCell(ws, 11, c + 4, ATEitems.MaxSpecs[c]);
-                        ExcelNpoi.SetCell(ws, 12, c + 4, ATEitems.MinSpecs[c]);
-                        if (c > 0)
-                        {
-                            // 2. 复制样式和公式（原 EPPlus 的 CopyStyles + CopyFormulas）
-                            ExcelNpoi.CopyColumnStylesAndFormulas(ws, 4, c + 4, 1, lastRow);
-                        }
-                    }
-                    // 3. 编辑行数量
-                    Make_EditRowCounts(ws);
-                    // 4. 写入数据
-                    for (int r = 0; r < ATETable.Rows.Count; r++)
-                    {
-                        List<object> dataArray = ATETable.Rows[r].ItemArray.ToList();
-                        for (int c = 0; c < dataArray.Count; c++)
-                        {
-                            ExcelNpoi.SetCell(ws, r + 5, c + 3, dataArray[c]);
-                        }
-                    }
-                    Make_SaveAsExcel(wb);
-                }
-                finally
-                {
-                    wb.Close();
-                }
-            }
-            catch (Exception ex)
+            public RowVm(AteSheet sheet, AteRow row, int sourceIndex)
             {
-                _logger.Error(ex, LanguageService.Get("Cap_ATEReportFailed"));
-                _ = MessageBox.Show(ex.Message, LanguageService.Get("Cap_ATEReportFailed"));
+                Sheet = sheet;
+                SourceIndex = sourceIndex;
+                _sn = row.SN;
+                Cells = new ObservableCollection<CellVm>(row.Values.Select((v, i) => new CellVm(this, i, v)));
             }
+
+            public AteSheet Sheet { get; }
+            public int SourceIndex { get; }
+            public ObservableCollection<CellVm> Cells { get; }
+
+            public string SN
+            {
+                get => _sn;
+                set
+                {
+                    if (_sn == value)
+                    {
+                        return;
+                    }
+                    _sn = value;
+                    OnPropertyChanged();
+                }
+            }
+
+            public int BadCount => Cells.Count(c => c.IsOutOfSpec);
+
+            public AteRow ToAteRow() => new() { SN = SN, Values = Cells.Select(c => c.Value).ToList() };
+
+            public void NotifyChanged() => OnPropertyChanged(nameof(BadCount));
+
+            public event PropertyChangedEventHandler PropertyChanged;
+
+            private void OnPropertyChanged([CallerMemberName] string name = null)
+                => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
         }
 
-        private void Make_EditRowCounts(ISheet ws)
-        {
-            int addRowCount = 0;
-            int lastCol = ExcelNpoi.LastColumn(ws);
-            // 试验前
-            if (ATEitems.BeforeDatas.Count > 3)
-            {
-                int n = ATEitems.BeforeDatas.Count - 3;
-                addRowCount += n;
-                ExcelNpoi.InsertRows(ws, 6, n);
-                for (int i = 0; i < n; i++)
-                {
-                    ExcelNpoi.CopyRowStyle(ws, 5, 6 + i, lastCol);
-                }
-            }
-            else if (ATEitems.BeforeDatas.Count < 3)
-            {
-                int n = 3 - ATEitems.BeforeDatas.Count;
-                ExcelNpoi.DeleteRows(ws, 5 + addRowCount, n);
-                addRowCount -= n;
-            }
-            // 试验后
-            if (ATEitems.AfterDatas.Count > 3)
-            {
-                int n = ATEitems.AfterDatas.Count - 3;
-                ExcelNpoi.InsertRows(ws, 9 + addRowCount, n);
-                for (int i = 0; i < n; i++)
-                {
-                    ExcelNpoi.CopyRowStyle(ws, 8 + addRowCount, 8 + addRowCount + i, lastCol);
-                }
-                addRowCount += n;
-            }
-            else if (ATEitems.AfterDatas.Count < 3)
-            {
-                int n = 3 - ATEitems.AfterDatas.Count;
-                ExcelNpoi.DeleteRows(ws, 8 + addRowCount, n);
-                addRowCount -= n;
-                // 如果没有试验后数据，删除试验后的部分
-                if (ATEitems.AfterDatas.Count == 0)
-                {
-                    ExcelNpoi.DeleteRows(ws, 17 + addRowCount, 4);
-                }
-            }
-        }
+        /* ###############################  读取数据  ################################ */
 
-        private void Make_SaveAsExcel(XSSFWorkbook wb)
+        private void OpenATEDatas_Click(object sender, RoutedEventArgs e)
         {
-            SaveFileDialog saveFileDialog = new SaveFileDialog
+            AppSettingsService settings = App.ServiceProvider.GetService(typeof(AppSettingsService)) as AppSettingsService;
+            OpenFileDialog dialog = new()
             {
-                FileName = Path.GetFileName(ATEFilePath),
-                Filter = "Excel文件|*.xlsx;*.xls",
-                InitialDirectory = Path.GetDirectoryName(ATEFilePath)
+                Filter = "ATE|*.xls;*.xlsx",
+                InitialDirectory = settings?.AteDataDir
             };
-            SaveATEPath = saveFileDialog.ShowDialog() == true
-                ? saveFileDialog.FileName
-                : Path.Combine(Directory.GetCurrentDirectory(), Path.GetFileName(ATEFilePath));
-            ExcelNpoi.Save(wb, SaveATEPath);
-            _logger.Info($"ATE报告已保存，路径：{SaveATEPath}");
-            _ = MessageBox.Show($"ATE报告已保存，路径：{SaveATEPath}");
-        }
-
-        private FileInfo GetATETemplate()
-        {
-            FileInfo ATEtemp;
-            try
-            {
-                ATEtemp = new FileInfo(Path.GetFullPath(text_ATETemplate.Text));
-                if (!ATEtemp.Exists)
-                {
-                    throw new FileNotFoundException("ATE模板路径不存在");
-                }
-            }
-            catch
-            {
-                string currentPath = Directory.GetCurrentDirectory();
-                string ATEtemplatePath = GetTemplatePath(System.IO.Path.Combine(currentPath, "Templates"), "ATE");
-                if (File.Exists(ATEtemplatePath))
-                {
-                    text_ATETemplate.Text = ATEtemplatePath;
-                    ATEtemp = new FileInfo(ATEtemplatePath);
-                }
-                else
-                {
-                    throw new FileNotFoundException("默认ATE模板不存在，请主动选择ATE模板路径");
-                }
-            }
-            return ATEtemp;
-        }
-
-        /* ###############################  事件函数  ################################ */
-        private async void OpenATEDatas_Click(object sender, RoutedEventArgs e)
-        {
-            FileDialog ateDialog = new OpenFileDialog()
-            {
-                Filter = "ATE数据文件|*.xls;*.xlsx",
-            };
-            if (ateDialog.ShowDialog() == true)
-            {
-                PopupWindow popup = new PopupWindow() { Title = LanguageService.Get("Title_Processing"), Message = "请耐心等待..." };
-
-                try
-                {
-                    popup.Show();
-                    await Task.Run(() =>
-                    {
-                        ATEFilePath = F_xls2xlsx(ateDialog.FileName);
-
-                        if (string.IsNullOrEmpty(ATEFilePath))
-                        {
-                            _logger.Warn("ATE数据路径选择错误");
-                            _ = MessageBox.Show(LocalizationHelper.Get("Msg_ATEPathError"), LanguageService.Get("Cap_Error"));
-                            throw new Exception("ATE数据路径选择错误");
-                        }
-
-                        ReadATEDatas(ATEFilePath);
-                        ATETable = ATEitems.ToItemSource();
-                    });
-                    dataGridATE.ItemsSource = ATETable.DefaultView;
-                }
-                finally
-                {
-                    popup.Close();
-                }
-            }
-            else
+            if (dialog.ShowDialog() != true)
             {
                 _logger.Warn("未选择ATE数据文件");
-                _ = MessageBox.Show(LocalizationHelper.Get("Msg_NoATEFile"));
+                _ = MessageBox.Show(LanguageService.Get("Msg_NoATEFile"), LanguageService.Get("Cap_Warning"), MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
             }
-        }
-
-        private async void SaveATEDatas_Click(object sender, RoutedEventArgs e)
-        {
-            FileInfo ATEtemp = GetATETemplate();
-            await Task.Run(() => { MakeATEDatas(ATEtemp); });
-        }
-
-        private void btn_ATETemplate_Click(object sender, RoutedEventArgs e)
-        {
-            FileDialog ATEtemplate = new OpenFileDialog()
-            {
-                Filter = "ATE数据模板|*.xls;*.xlsx",
-            };
-            if (ATEtemplate.ShowDialog() == true)
-            {
-                text_ATETemplate.Text = ATEtemplate.FileName;
-            }
-            else
-            {
-                string currentPath = Directory.GetCurrentDirectory();
-                string ATEtemplatePath = GetTemplatePath(System.IO.Path.Combine(currentPath, "Templates"), "ATE");
-                if (File.Exists(ATEtemplatePath))
-                {
-                    text_ATETemplate.Text = ATEtemplatePath;
-                }
-            }
-        }
-
-        private void Close_Click(object sender, RoutedEventArgs e)
-        {
-            Close();
+            LoadFromFile(dialog.FileName);
         }
 
         private void btn_reread_Click(object sender, RoutedEventArgs e)
         {
-            ReadATEDatas(ATEFilePath);
-            ATETable = ATEitems.ToItemSource();
-            dataGridATE.ItemsSource = ATETable.DefaultView;
+            if (string.IsNullOrWhiteSpace(ATEFilePath))
+            {
+                _ = MessageBox.Show(LanguageService.Get("Msg_NoATEFile"), LanguageService.Get("Cap_Warning"), MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            LoadFromFile(ATEFilePath);
         }
 
-        private void MakeATEReport_Click(object sender, RoutedEventArgs e)
+        /// <summary>读取 ATE 原始数据并重建界面（自动分组，不可靠时全部放到未使用让用户自己选）</summary>
+        private void LoadFromFile(string fileName)
         {
-            Thickness btn_thick = new Thickness(10, 1, 10, 1);
-            Button btn_before = new Button() { Content = "试验前", Margin = btn_thick, Width = 60, Height = 25 };
-            Button btn_after = new Button() { Content = "试验后", Margin = btn_thick, Width = 60, Height = 25 };
-            Button btn_both = new Button() { Content = "都要", Margin = btn_thick, Width = 60, Height = 25 };
-            //PopupWindow popup = new PopupWindow("保存选项", "ATE要保存哪部分数据？", new List<object> { btn_before, btn_after, btn_both });
-
+            try
+            {
+                AteSheet sheet = AteReportData.Read(fileName);
+                if (sheet == null)
+                {
+                    _logger.Warn($"ATE 数据文件里找不到 S/N / MAX_SPEC 行：{fileName}");
+                    _ = MessageBox.Show(LanguageService.Get("Msg_NoATEData"), LanguageService.Get("Cap_Warning"), MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+                _sheet = sheet;
+                ATEFilePath = fileName;
+                BuildRows();
+                BuildColumns();
+                UpdateCounts();
+                _logger.Info($"ATE 数据读取完成：{fileName}（{sheet.Rows.Count} 条数据 / {sheet.ItemCount} 个测试项）");
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "读取ATE数据发生错误");
+                _ = MessageBox.Show(ex.Message, LanguageService.Get("Cap_Error"), MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
+
+        private void BuildRows()
+        {
+            _pool.Clear();
+            _pre.Clear();
+            _post.Clear();
+            _badCursor = 0;
+            List<RowVm> rows = _sheet.Rows.Select((r, i) => new RowVm(_sheet, r, i)).ToList();
+            bool[] guess = AteReportData.GuessIsBefore(_sheet.Rows.Select(r => r.SN).ToList());
+            if (guess != null && guess.Count(x => x) <= _sheet.MaxPerGroup && guess.Count(x => !x) <= _sheet.MaxPerGroup)
+            {
+                for (int i = 0; i < rows.Count; i++)
+                {
+                    (guess[i] ? _pre : _post).Add(rows[i]);
+                }
+                _logger.Info($"ATE 自动分组：试验前 {_pre.Count} 条 / 试验后 {_post.Count} 条");
+            }
+            else
+            {
+                // 人工填写的数据分组规律不可靠：全部放进"未使用"，由用户自己选
+                foreach (RowVm row in rows)
+                {
+                    _pool.Add(row);
+                }
+                _logger.Warn("ATE 自动分组不可靠，已把全部数据放到「未使用」，请手动选择试验前/试验后");
+            }
+        }
+
+        /* ###############################  界面列  ################################ */
+
+        private void BuildColumns()
+        {
+            BuildGridColumns(dg_pre);
+            BuildGridColumns(dg_post);
+        }
+
+        private void BuildGridColumns(DataGrid grid)
+        {
+            grid.Columns.Clear();
+            grid.Columns.Add(new DataGridTextColumn
+            {
+                Header = "S/N",
+                Binding = new Binding(nameof(RowVm.SN)) { Mode = BindingMode.TwoWay },
+                Width = 150
+            });
+            for (int i = 0; i < _sheet.ItemCount; i++)
+            {
+                int index = i;
+                grid.Columns.Add(new DataGridTextColumn
+                {
+                    Header = BuildHeader(index),
+                    Binding = new Binding($"Cells[{index}].Value") { Mode = BindingMode.TwoWay },
+                    Width = 96,
+                    ElementStyle = BadStyle(index, false),
+                    EditingElementStyle = BadStyle(index, true)
+                });
+            }
+        }
+
+        /// <summary>列标题：测试项目名 + 上下限（鼠标悬停看测试条件）</summary>
+        private object BuildHeader(int index)
+        {
+            string max = AteReportData.SpecText(_sheet.MaxSpecs[index]);
+            string min = AteReportData.SpecText(_sheet.MinSpecs[index]);
+            return new TextBlock
+            {
+                Text = $"{_sheet.OutputTypes[index]}\n{min} ~ {max}",
+                TextWrapping = TextWrapping.Wrap,
+                TextAlignment = TextAlignment.Center,
+                ToolTip = $"{_sheet.Conditions[index]}\n{LanguageService.Get("ATE_Limits")}: {min} ~ {max}"
+            };
+        }
+
+        /// <summary>超出限值的单元格标红（显示态与编辑态都要标）</summary>
+        private static Style BadStyle(int index, bool editing)
+        {
+            Style style = new(editing ? typeof(TextBox) : typeof(TextBlock));
+            DataTrigger trigger = new()
+            {
+                Binding = new Binding($"Cells[{index}].IsOutOfSpec"),
+                Value = true
+            };
+            trigger.Setters.Add(new Setter(editing ? Control.ForegroundProperty : TextBlock.ForegroundProperty, BadForeground));
+            trigger.Setters.Add(new Setter(editing ? Control.BackgroundProperty : TextBlock.BackgroundProperty, BadBackground));
+            style.Triggers.Add(trigger);
+            return style;
+        }
+
+        private void UpdateCounts()
+        {
+            if (_suppressCount > 0)
+            {
+                return;
+            }
+            int max = _sheet?.MaxPerGroup ?? 0;
+            txt_preTitle.Text = $"{LanguageService.Get("ATE_PreTest")}  {_pre.Count}/{max}";
+            txt_postTitle.Text = $"{LanguageService.Get("ATE_PostTest")}  {_post.Count}/{max}";
+            txt_counts.Text = string.Format(LanguageService.Get("ATE_PoolCount"), _pool.Count);
+            int bad = _pre.Concat(_post).Sum(r => r.BadCount);
+            txt_bad.Text = bad > 0 ? string.Format(LanguageService.Get("ATE_BadCount"), bad) : "";
+        }
+
+        /* ###############################  拖动排序 / 换组  ################################ */
+
+        private Point _dragStart;
+        private RowVm _dragRow;
+        private bool _dragArmed;
+
+        private static T FindAncestor<T>(DependencyObject source) where T : DependencyObject
+        {
+            while (source != null && source is not T)
+            {
+                source = VisualTreeHelper.GetParent(source) ?? LogicalTreeHelper.GetParent(source);
+            }
+            return source as T;
+        }
+
+        private void Pool_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            _activeControl = lb_pool;
+            RowVm row = (FindAncestor<ListBoxItem>(e.OriginalSource as DependencyObject) as FrameworkElement)?.DataContext as RowVm;
+            _dragRow = row;
+            _dragArmed = row != null;
+            _dragStart = e.GetPosition(null);
+        }
+
+        private void Pool_PreviewMouseMove(object sender, MouseEventArgs e)
+        {
+            StartDragIfNeeded(lb_pool, e);
+        }
+
+        private void Grid_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            DataGrid grid = (DataGrid)sender;
+            _activeControl = grid;
+            // 只有从行标题（左侧窄条）按住才能拖动，避免影响单元格编辑与选择
+            bool onRowHeader = FindAncestor<DataGridRowHeader>(e.OriginalSource as DependencyObject) != null;
+            DataGridRow container = FindAncestor<DataGridRow>(e.OriginalSource as DependencyObject);
+            _dragRow = onRowHeader ? container?.Item as RowVm : null;
+            _dragArmed = _dragRow != null;
+            _dragStart = e.GetPosition(null);
+        }
+
+        private void Grid_PreviewMouseMove(object sender, MouseEventArgs e)
+        {
+            StartDragIfNeeded((DataGrid)sender, e);
+        }
+
+        private void StartDragIfNeeded(DependencyObject source, MouseEventArgs e)
+        {
+            if (!_dragArmed || _dragRow == null || e.LeftButton != MouseButtonState.Pressed)
+            {
+                return;
+            }
+            Vector delta = e.GetPosition(null) - _dragStart;
+            if (Math.Abs(delta.X) < SystemParameters.MinimumHorizontalDragDistance
+                && Math.Abs(delta.Y) < SystemParameters.MinimumVerticalDragDistance)
+            {
+                return;
+            }
+            _dragArmed = false;
+            _ = DragDrop.DoDragDrop(source, _dragRow, DragDropEffects.Move);
+        }
+
+        private void DropTarget_DragOver(object sender, DragEventArgs e)
+        {
+            e.Effects = e.Data.GetDataPresent(typeof(RowVm)) ? DragDropEffects.Move : DragDropEffects.None;
+            e.Handled = true;
+        }
+
+        private void Grid_Drop(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetData(typeof(RowVm)) is not RowVm row)
+            {
+                return;
+            }
+            DataGrid grid = (DataGrid)sender;
+            ObservableCollection<RowVm> target = ReferenceEquals(grid, dg_pre) ? _pre : _post;
+            _ = MoveRow(row, target, DropIndex(grid, e.GetPosition(grid)));
+            e.Handled = true;
+        }
+
+        private void Pool_Drop(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetData(typeof(RowVm)) is not RowVm row)
+            {
+                return;
+            }
+            _ = MoveRow(row, _pool, _pool.Count);
+            e.Handled = true;
+        }
+
+        private static int DropIndex(DataGrid grid, Point point)
+        {
+            DataGridRow container = FindAncestor<DataGridRow>(grid.InputHitTest(point) as DependencyObject);
+            if (container == null)
+            {
+                return grid.Items.Count;
+            }
+            int index = grid.ItemContainerGenerator.IndexFromContainer(container);
+            return index < 0 ? grid.Items.Count : index;
+        }
+
+        /// <summary>
+        /// 把一行数据移到目标分组（未使用/试验前/试验后）；每组最多 AteSheet.MaxPerGroup 条
+        /// </summary>
+        private bool MoveRow(RowVm row, ObservableCollection<RowVm> target, int index)
+        {
+            if (target != _pool && target.Count >= (_sheet?.MaxPerGroup ?? int.MaxValue) && !target.Contains(row))
+            {
+                string group = ReferenceEquals(target, _pre) ? LanguageService.Get("ATE_PreTest") : LanguageService.Get("ATE_PostTest");
+                _ = MessageBox.Show(
+                    string.Format(LanguageService.Get("ATE_CapacityFull"), group, _sheet.MaxPerGroup),
+                    LanguageService.Get("Cap_Warning"), MessageBoxButton.OK, MessageBoxImage.Warning);
+                return false;
+            }
+            ObservableCollection<RowVm> source = _pool.Contains(row) ? _pool : _pre.Contains(row) ? _pre : _post;
+            int oldIndex = source.IndexOf(row);
+            if (ReferenceEquals(source, target) && oldIndex >= 0 && oldIndex < index)
+            {
+                index--;
+            }
+            source.Remove(row);
+            index = Math.Max(0, Math.Min(index, target.Count));
+            target.Insert(index, row);
+            UpdateCounts();
+            return true;
+        }
+
+        private void MoveToPre_Click(object sender, RoutedEventArgs e) => MoveSelected(_pre);
+
+        private void MoveToPost_Click(object sender, RoutedEventArgs e) => MoveSelected(_post);
+
+        private void MoveToPool_Click(object sender, RoutedEventArgs e) => MoveSelected(_pool);
+
+        private void MoveSelected(ObservableCollection<RowVm> target)
+        {
+            List<RowVm> selected = SelectedRows();
+            if (selected.Count == 0)
+            {
+                _ = MessageBox.Show(LanguageService.Get("ATE_NoSelection"), LanguageService.Get("Cap_Warning"), MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            foreach (RowVm row in selected)
+            {
+                _ = MoveRow(row, target, target.Count);
+            }
+        }
+
+        /// <summary>当前焦点所在控件里选中的数据行</summary>
+        private List<RowVm> SelectedRows()
+        {
+            if (_activeControl is ListBox list)
+            {
+                return list.SelectedItems.Cast<RowVm>().ToList();
+            }
+            if (_activeControl is DataGrid grid)
+            {
+                // selected cells or whole selected rows (clicking the row header) both work
+                List<RowVm> rows = grid.SelectedCells.Select(c => c.Item as RowVm).Where(r => r != null).Distinct().ToList();
+                if (rows.Count == 0)
+                {
+                    rows = grid.SelectedItems.Cast<RowVm>().ToList();
+                }
+                return rows;
+            }
+            return [];
+        }
+
+        /* ###############################  超限跳转  ################################ */
+
+        private void NextOutOfSpec_Click(object sender, RoutedEventArgs e)
+        {
+            List<(DataGrid Grid, RowVm Row, int Index)> bad = [];
+            foreach (DataGrid grid in new[] { dg_pre, dg_post })
+            {
+                foreach (RowVm row in ReferenceEquals(grid, dg_pre) ? _pre : _post)
+                {
+                    for (int i = 0; i < row.Cells.Count; i++)
+                    {
+                        if (row.Cells[i].IsOutOfSpec)
+                        {
+                            bad.Add((grid, row, i));
+                        }
+                    }
+                }
+            }
+            if (bad.Count == 0)
+            {
+                _ = MessageBox.Show(LanguageService.Get("ATE_NoOutOfSpec"), LanguageService.Get("ATE_Title"), MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+            _badCursor %= bad.Count;
+            (DataGrid badGrid, RowVm badRow, int badIndex) = bad[_badCursor];
+            _badCursor = (_badCursor + 1) % bad.Count;
+            // 第 0 列是 S/N，项目列从 1 开始
+            if (badIndex + 1 < badGrid.Columns.Count)
+            {
+                DataGridColumn column = badGrid.Columns[badIndex + 1];
+                badGrid.ScrollIntoView(badRow, column);
+                badGrid.CurrentCell = new DataGridCellInfo(badRow, column);
+                badGrid.SelectedCells.Clear();
+                badGrid.SelectedCells.Add(badGrid.CurrentCell);
+                _ = badGrid.Focus();
+                badGrid.BeginEdit();
+            }
+            _logger.Info($"跳到第 {_badCursor}/{bad.Count} 处超限：{badRow.SN} / {_sheet.OutputTypes[badIndex]} = {badRow.Cells[badIndex].Value}");
+            txt_bad.Text = string.Format(LanguageService.Get("ATE_BadCount"), bad.Count);
+        }
+
+        /* ###############################  生成 / 提交  ################################ */
+
+        private void SaveATEDatas_Click(object sender, RoutedEventArgs e)
+        {
+            if (!EnsureDataLoaded())
+            {
+                return;
+            }
+            FileInfo template;
+            try
+            {
+                template = GetATETemplate();
+            }
+            catch (Exception ex)
+            {
+                _ = MessageBox.Show(ex.Message, LanguageService.Get("Cap_ATEReportFailed"), MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+            string extension = template.Extension;
+            SaveFileDialog dialog = new()
+            {
+                FileName = Path.GetFileNameWithoutExtension(ATEFilePath) + " ATE report" + extension,
+                Filter = $"Excel|*{extension}",
+                InitialDirectory = Path.GetDirectoryName(ATEFilePath)
+            };
+            if (dialog.ShowDialog() != true)
+            {
+                return;
+            }
+            if (GenerateReport(template, dialog.FileName, out string error))
+            {
+                _ = MessageBox.Show(string.Format(LanguageService.Get("ATE_Saved"), dialog.FileName), LanguageService.Get("ATE_Title"), MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            else
+            {
+                _ = MessageBox.Show(error, LanguageService.Get("Cap_ATEReportFailed"), MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void SubmitToReport_Click(object sender, RoutedEventArgs e)
+        {
+            if (!EnsureDataLoaded())
+            {
+                return;
+            }
+            if (SubmitHandler == null)
+            {
+                _ = MessageBox.Show(LanguageService.Get("ATE_SubmitNoTarget"), LanguageService.Get("Cap_Warning"), MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            if (cmb_reportType.SelectedItem is not string reportType)
+            {
+                _ = MessageBox.Show(LanguageService.Get("ATE_NoReportType"), LanguageService.Get("Cap_Warning"), MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            FileInfo template;
+            try
+            {
+                template = GetATETemplate();
+            }
+            catch (Exception ex)
+            {
+                _ = MessageBox.Show(ex.Message, LanguageService.Get("Cap_ATEReportFailed"), MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+            AppSettingsService settings = App.ServiceProvider.GetService(typeof(AppSettingsService)) as AppSettingsService;
+            string dir = settings?.AteDataDir;
+            if (string.IsNullOrWhiteSpace(dir))
+            {
+                dir = Path.GetDirectoryName(ATEFilePath);
+            }
+            string outputPath = Path.Combine(dir, Path.GetFileNameWithoutExtension(ATEFilePath) + " ATE report" + template.Extension);
+            if (!GenerateReport(template, outputPath, out string error))
+            {
+                _ = MessageBox.Show(error, LanguageService.Get("Cap_ATEReportFailed"), MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+            if (SubmitHandler(reportType, outputPath))
+            {
+                _ = MessageBox.Show(string.Format(LanguageService.Get("ATE_Submitted"), reportType, outputPath), LanguageService.Get("ATE_Title"), MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            else
+            {
+                _ = MessageBox.Show(LanguageService.Get("ATE_SubmitNoTarget"), LanguageService.Get("Cap_Warning"), MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+
+        private bool GenerateReport(FileInfo template, string outputPath, out string error)
+        {
+            error = null;
+            try
+            {
+                List<AteRow> before = _pre.Select(r => r.ToAteRow()).ToList();
+                List<AteRow> after = _post.Select(r => r.ToAteRow()).ToList();
+                AteReportData.Write(_sheet, before, after, template.FullName, outputPath);
+                _logger.Info($"ATE 报告已生成：{outputPath}（试验前 {before.Count} 条 / 试验后 {after.Count} 条）");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, LanguageService.Get("Cap_ATEReportFailed"));
+                error = ex.Message;
+                return false;
+            }
+        }
+
+        private bool EnsureDataLoaded()
+        {
+            if (_sheet != null && !string.IsNullOrWhiteSpace(ATEFilePath))
+            {
+                return true;
+            }
+            _ = MessageBox.Show(LanguageService.Get("Msg_NoATEFile"), LanguageService.Get("Cap_Warning"), MessageBoxButton.OK, MessageBoxImage.Warning);
+            return false;
+        }
+
+        private FileInfo GetATETemplate()
+        {
+            string text = text_ATETemplate.Text?.Trim();
+            if (!string.IsNullOrWhiteSpace(text) && text != LanguageService.Get("Common_PleaseSelect"))
+            {
+                FileInfo info = new(Path.GetFullPath(text));
+                if (info.Exists)
+                {
+                    return info;
+                }
+            }
+            string defaultPath = GetTemplatePath(Path.Combine(Directory.GetCurrentDirectory(), "Templates"), "ATE");
+            if (File.Exists(defaultPath))
+            {
+                text_ATETemplate.Text = defaultPath;
+                return new FileInfo(defaultPath);
+            }
+            throw new FileNotFoundException(LanguageService.Get("Msg_NoATETemplate"));
+        }
+
+        private void btn_ATETemplate_Click(object sender, RoutedEventArgs e)
+        {
+            OpenFileDialog dialog = new()
+            {
+                Filter = "ATE|*.xls;*.xlsx"
+            };
+            if (dialog.ShowDialog() == true)
+            {
+                text_ATETemplate.Text = dialog.FileName;
+                return;
+            }
+            string defaultPath = GetTemplatePath(Path.Combine(Directory.GetCurrentDirectory(), "Templates"), "ATE");
+            if (File.Exists(defaultPath))
+            {
+                text_ATETemplate.Text = defaultPath;
+            }
+        }
+
+        private void Close_Click(object sender, RoutedEventArgs e) => Close();
     }
 }

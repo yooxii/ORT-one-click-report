@@ -1689,4 +1689,27 @@
   <data name="Toast_Pos_BottomLeft" xml:space="preserve"><value>左下角</value></data>
   <data name="Toast_ValueChanged" xml:space="preserve"><value>已修改 {0}：{1} → {2}</value></data>
   <data name="Toast_ReportPathEmpty" xml:space="preserve"><value>报告路径未设置，请在 设置→路径 中配置</value></data>
+  <data name="ATE_Pool" xml:space="preserve"><value>未使用</value></data>
+  <data name="ATE_PreTest" xml:space="preserve"><value>试验前</value></data>
+  <data name="ATE_PostTest" xml:space="preserve"><value>试验后</value></data>
+  <data name="ATE_MoveToPre" xml:space="preserve"><value>→ 试验前</value></data>
+  <data name="ATE_MoveToPost" xml:space="preserve"><value>→ 试验后</value></data>
+  <data name="ATE_MoveOut" xml:space="preserve"><value>移出</value></data>
+  <data name="ATE_Submit" xml:space="preserve"><value>提交到报告</value></data>
+  <data name="ATE_ReportType" xml:space="preserve"><value>报告类型</value></data>
+  <data name="ATE_NextOutOfSpec" xml:space="preserve"><value>跳到下一个超限</value></data>
+  <data name="ATE_CapacityFull" xml:space="preserve"><value>「{0}」最多只能选 {1} 条数据，请先把多余的数据移出。</value></data>
+  <data name="ATE_NoOutOfSpec" xml:space="preserve"><value>没有超出限值的数据。</value></data>
+  <data name="ATE_NoSelection" xml:space="preserve"><value>请先选择要移动的数据行。</value></data>
+  <data name="ATE_DragHint" xml:space="preserve"><value>拖动行左侧的窄条可以调整顺序，也可以拖到另一组改变试验前/试验后归属；数值可直接双击编辑，超出上下限的会标红。</value></data>
+  <data name="ATE_Saved" xml:space="preserve"><value>ATE 报告已保存：{0}</value></data>
+  <data name="ATE_Submitted" xml:space="preserve"><value>已提交到「{0}」报告：{1}</value></data>
+  <data name="ATE_SubmitNoTarget" xml:space="preserve"><value>没有可接收 ATE 数据的报告窗口。</value></data>
+  <data name="ATE_NoReportType" xml:space="preserve"><value>请先选择要提交的报告类型。</value></data>
+  <data name="ATE_Limits" xml:space="preserve"><value>限值</value></data>
+  <data name="ATE_PoolCount" xml:space="preserve"><value>未使用 {0} 条</value></data>
+  <data name="ATE_BadCount" xml:space="preserve"><value>超出限值 {0} 处</value></data>
+  <data name="ATE_SelectHint" xml:space="preserve"><value>请点击右侧按钮选择ATE数据文件</value></data>
+  <data name="Msg_NoATETemplate" xml:space="preserve"><value>默认ATE模板不存在，请先选择 ATE 模板路径。</value></data>
+  <data name="ATE_DragHandle" xml:space="preserve"><value>按住这里可以把这一行拖到别的顺序或另一组</value></data>
 </root>

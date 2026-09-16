@@ -332,9 +332,35 @@ namespace ORT一键报告.Reports.Views
         {
             ATEWindow ateWindow = new()
             {
-                Owner = this
+                Owner = this,
+                SubmitHandler = SubmitAteData
             };
             ateWindow.Show();
+        }
+
+        /// <summary>支持接收 ATE 数据（做成 ATE 报告并嵌入）的报告类型</summary>
+        public static IReadOnlyList<string> AteReportTypes { get; } = ["Thermal Shock", "Burn In"];
+
+        /// <summary>
+        /// ATE 工具「提交到报告」：把生成好的 ATE 文件填到指定报告类型的页面里（Tab 未创建时先创建）。
+        /// 报告生成时会把这个文件作为 OLE 附件嵌到报告里。
+        /// </summary>
+        public bool SubmitAteData(string reportType, string filePath)
+        {
+            if (string.IsNullOrWhiteSpace(reportType) || string.IsNullOrWhiteSpace(filePath)
+                || !ReportTabDefs.TryGetValue(reportType, out ReportTabDef def))
+            {
+                return false;
+            }
+            AddTab(reportType, def);
+            if (!_tabs.TryGetValue(reportType, out (TabItem Tab, UserControl Page) entry) || entry.Page is not BaseReportPage page)
+            {
+                return false;
+            }
+            page.SetAteData(filePath);
+            tab_report.SelectedItem = entry.Tab;
+            _logger.Info($"ATE 数据已提交到「{reportType}」报告：{filePath}");
+            return true;
         }
 
         private void MenuItem_ReportTemplate_Click(object sender, RoutedEventArgs e)
