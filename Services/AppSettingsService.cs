@@ -265,7 +265,8 @@ namespace ORT一键报告.Services
                     {
                         FontFamily = values.TryGetValue("ui.fontFamily", out string ff) && !string.IsNullOrWhiteSpace(ff) ? ff : "Microsoft YaHei UI",
                         FontSize = ResolveFontSize(values),
-                        FontWeight = values.TryGetValue("ui.fontWeight", out string fw) && !string.IsNullOrWhiteSpace(fw) ? fw : "Normal"
+                        FontWeight = values.TryGetValue("ui.fontWeight", out string fw) && !string.IsNullOrWhiteSpace(fw) ? fw : "Normal",
+                        BackgroundImage = values.TryGetValue("ui.backgroundImage", out string bg) && !string.IsNullOrWhiteSpace(bg) ? bg : null
                     },
                     Paths = new PathSettings
                     {
@@ -473,6 +474,7 @@ namespace ORT一键报告.Services
                     ["ui.fontFamily"] = Settings.UI.FontFamily,
                     ["ui.fontSize"] = Settings.UI.FontSize.ToString(),
                     ["ui.fontWeight"] = Settings.UI.FontWeight,
+                    ["ui.backgroundImage"] = Settings.UI.BackgroundImage,
                     ["paths.schedule"] = Settings.Paths.SchedulePath,
                     ["paths.requisition"] = Settings.Paths.RequisitionPath,
                     ["paths.report"] = Settings.Paths.ReportPath

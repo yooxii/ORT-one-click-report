@@ -1,0 +1,27 @@
+<Window x:Class="ORT一键报告.Main.Views.WindowListPicker" Background="{DynamicResource WindowBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:lex="http://wpflocalizeextension.codeplex.com"
+        mc:Ignorable="d"
+        Title="{Binding Title}" Height="380" Width="600" MinHeight="260" MinWidth="420"
+        WindowStartupLocation="CenterOwner">
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto"/>
+            <RowDefinition/>
+            <RowDefinition Height="auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock x:Name="txt_hint" Grid.Row="0" TextWrapping="Wrap" Margin="0,0,0,8"
+                   Foreground="{DynamicResource TextSecondaryBrush}"/>
+
+        <ListBox x:Name="lb_items" Grid.Row="1" DisplayMemberPath="Display" MouseDoubleClick="Lb_Items_MouseDoubleClick"/>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+            <Button Content="{lex:Loc Common_OK}" IsDefault="True" MinWidth="92" Padding="12,4" Click="Btn_Ok_Click"/>
+            <Button Content="{lex:Loc Common_Cancel}" IsCancel="True" MinWidth="92" Padding="12,4" Margin="8,0,0,0"/>
+        </StackPanel>
+    </Grid>
+</Window>

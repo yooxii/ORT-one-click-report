@@ -240,6 +240,31 @@ namespace ORT一键报告.Main.Views
             _loading = false;
         }
 
+        /* ###############################  主界面背景图  ################################ */
+
+        /// <summary>选择主界面背景图（点保存后应用）</summary>
+        private void Btn_BrowseBackground_Click(object sender, RoutedEventArgs e)
+        {
+            Microsoft.Win32.OpenFileDialog dialog = new()
+            {
+                Title = LanguageService.Get("Settings_BackgroundImage"),
+                Filter = "图片|*.png;*.jpg;*.jpeg;*.bmp;*.gif|所有文件|*.*",
+                InitialDirectory = System.IO.File.Exists(txt_background.Text)
+                    ? System.IO.Path.GetDirectoryName(txt_background.Text)
+                    : null
+            };
+            if (dialog.ShowDialog() == true)
+            {
+                txt_background.Text = dialog.FileName;
+            }
+        }
+
+        /// <summary>清除背景图（点保存后生效，主界面回到主题背景）</summary>
+        private void Btn_ClearBackground_Click(object sender, RoutedEventArgs e)
+        {
+            txt_background.Text = "";
+        }
+
         /* ###############################  邮件设置  ################################ */
 
         /// <summary>
@@ -497,6 +522,7 @@ namespace ORT一键报告.Main.Views
             cb_fontSize.Text = settings.UI.FontSize.ToString();
             LoadFontWeightOptions();
             LoadToastPositions();
+            txt_background.Text = settings.UI.BackgroundImage ?? "";
             if (_isAdmin)
             {
                 LoadMailValues();
@@ -559,6 +585,8 @@ namespace ORT一键报告.Main.Views
             {
                 settings.UI.FontWeight = fontWeight;
             }
+            // 背景图：立即写入并保存，让主界面当场生效
+            settings.UI.BackgroundImage = string.IsNullOrWhiteSpace(txt_background.Text) ? null : txt_background.Text.Trim();
 
             settings.Paths.SchedulePath = TrimOrNull(txt_schedule.Text);
             settings.Paths.RequisitionPath = TrimOrNull(txt_requisition.Text);

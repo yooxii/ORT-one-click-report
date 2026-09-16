@@ -2140,4 +2140,18 @@
   <data name="PlanIndex_Status_Failed" xml:space="preserve">
     <value>失敗</value>
   </data>
+  <data name="Settings_BackgroundImage" xml:space="preserve"><value>主介面背景圖</value></data>
+  <data name="Settings_BackgroundImageHint" xml:space="preserve"><value>選一張圖片作為主介面背景（鋪滿視窗並加淡淡遮罩），可隨時清除；點「儲存」後生效。</value></data>
+  <data name="Common_Clear" xml:space="preserve"><value>清除</value></data>
+  <data name="ReportTemplate_PickItemTitle" xml:space="preserve"><value>從測試項目表選擇測試項目</value></data>
+  <data name="ReportTemplate_PickItemHint" xml:space="preserve"><value>可搜尋、可多選（按住 Ctrl / Shift），雙擊一列即確定；已在清單裡的測試項目不再顯示。</value></data>
+  <data name="ReportTemplate_PickItemCount" xml:space="preserve"><value>共 {0} 個可新增的測試項目，目前顯示 {1} 個。</value></data>
+  <data name="ReportTemplate_Owner" xml:space="preserve"><value>負責人</value></data>
+  <data name="ReportTemplate_Msg_PickItemRequired" xml:space="preserve"><value>請先選擇要新增的測試項目。</value></data>
+  <data name="ReportTemplate_Msg_CatalogEmpty" xml:space="preserve"><value>測試項目表裡還沒有資料，請先在管理→測試項目中維護。</value></data>
+  <data name="Plans_Menu_ViewTemplate" xml:space="preserve"><value>查看報告模板</value></data>
+  <data name="Plans_ToolTip_ViewTemplate" xml:space="preserve"><value>開啟該記錄報告資料夾裡的報告檔案</value></data>
+  <data name="Plans_Msg_TemplateFileMissing" xml:space="preserve"><value>報告資料夾裡沒有找到報告檔案：{0}</value></data>
+  <data name="Dlg_PickReportFile" xml:space="preserve"><value>選擇要查看的報告檔案</value></data>
+  <data name="Dlg_PickReportFileHint" xml:space="preserve"><value>報告資料夾裡有多個檔案，請選擇要開啟的那一份：{0}</value></data>
 </root>

@@ -2140,4 +2140,18 @@
   <data name="PlanIndex_Status_Failed" xml:space="preserve">
     <value>失败</value>
   </data>
+  <data name="Settings_BackgroundImage" xml:space="preserve"><value>主界面背景图</value></data>
+  <data name="Settings_BackgroundImageHint" xml:space="preserve"><value>选一张图片作为主界面背景（铺满窗口并加淡淡遮罩），可随时清除；点「保存」后生效。</value></data>
+  <data name="Common_Clear" xml:space="preserve"><value>清除</value></data>
+  <data name="ReportTemplate_PickItemTitle" xml:space="preserve"><value>从测试项目表选择测试项</value></data>
+  <data name="ReportTemplate_PickItemHint" xml:space="preserve"><value>可搜索、可多选（按住 Ctrl / Shift），双击一行即确定；已在列表里的测试项不再显示。</value></data>
+  <data name="ReportTemplate_PickItemCount" xml:space="preserve"><value>共 {0} 个可添加的测试项，当前显示 {1} 个。</value></data>
+  <data name="ReportTemplate_Owner" xml:space="preserve"><value>负责人</value></data>
+  <data name="ReportTemplate_Msg_PickItemRequired" xml:space="preserve"><value>请先选择要添加的测试项。</value></data>
+  <data name="ReportTemplate_Msg_CatalogEmpty" xml:space="preserve"><value>测试项目表里还没有数据，请先在管理→测试项目中维护。</value></data>
+  <data name="Plans_Menu_ViewTemplate" xml:space="preserve"><value>查看报告模板</value></data>
+  <data name="Plans_ToolTip_ViewTemplate" xml:space="preserve"><value>打开该记录报告文件夹里的报告文件</value></data>
+  <data name="Plans_Msg_TemplateFileMissing" xml:space="preserve"><value>报告文件夹里没有找到报告文件：{0}</value></data>
+  <data name="Dlg_PickReportFile" xml:space="preserve"><value>选择要查看的报告文件</value></data>
+  <data name="Dlg_PickReportFileHint" xml:space="preserve"><value>报告文件夹里有多个文件，请选择要打开的那一份：{0}</value></data>
 </root>

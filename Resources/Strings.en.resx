@@ -2140,4 +2140,18 @@ Build the plan index now (compress repeated text into shared templates)?</value>
   <data name="PlanIndex_Status_Failed" xml:space="preserve">
     <value>Failed</value>
   </data>
+  <data name="Settings_BackgroundImage" xml:space="preserve"><value>Main window background</value></data>
+  <data name="Settings_BackgroundImageHint" xml:space="preserve"><value>Pick an image as the main window background (it fills the window with a light scrim). You can clear it anytime; it takes effect after saving.</value></data>
+  <data name="Common_Clear" xml:space="preserve"><value>Clear</value></data>
+  <data name="ReportTemplate_PickItemTitle" xml:space="preserve"><value>Pick test items from the catalog</value></data>
+  <data name="ReportTemplate_PickItemHint" xml:space="preserve"><value>Search or multi-select (Ctrl / Shift); double-click a row to confirm. Items already in the list are hidden.</value></data>
+  <data name="ReportTemplate_PickItemCount" xml:space="preserve"><value>{0} item(s) available, {1} shown.</value></data>
+  <data name="ReportTemplate_Owner" xml:space="preserve"><value>Owner</value></data>
+  <data name="ReportTemplate_Msg_PickItemRequired" xml:space="preserve"><value>Select the test items to add first.</value></data>
+  <data name="ReportTemplate_Msg_CatalogEmpty" xml:space="preserve"><value>The test item catalog is empty; maintain it under Admin - Test items first.</value></data>
+  <data name="Plans_Menu_ViewTemplate" xml:space="preserve"><value>View report template</value></data>
+  <data name="Plans_ToolTip_ViewTemplate" xml:space="preserve"><value>Open the report file inside this record's report folder</value></data>
+  <data name="Plans_Msg_TemplateFileMissing" xml:space="preserve"><value>No report file found in the report folder: {0}</value></data>
+  <data name="Dlg_PickReportFile" xml:space="preserve"><value>Choose the report file to open</value></data>
+  <data name="Dlg_PickReportFileHint" xml:space="preserve"><value>The report folder has several files; choose the one to open: {0}</value></data>
 </root>

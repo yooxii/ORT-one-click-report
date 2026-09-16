@@ -162,6 +162,23 @@
                                 </ComboBox.ItemTemplate>
                             </ComboBox>
                         </Grid>
+                        <!-- 主界面背景图：铺满主界面，可自行更换或清除 -->
+                        <Grid Margin="0,10,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" SharedSizeGroup="SettingsLabel"/>
+                                <ColumnDefinition Width="*" MinWidth="160"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{lex:Loc Settings_BackgroundImage}" VerticalAlignment="Center"
+                                       ToolTip="{lex:Loc Settings_BackgroundImageHint}"/>
+                            <TextBox x:Name="txt_background" Grid.Column="1" VerticalContentAlignment="Center"
+                                     ToolTip="{lex:Loc Settings_BackgroundImageHint}"/>
+                            <Button x:Name="btn_browseBackground" Grid.Column="2" Content="{lex:Loc Common_Browse}" Margin="6,0,0,0" Padding="10,2"
+                                    Click="Btn_BrowseBackground_Click" ToolTip="{lex:Loc Settings_BackgroundImageHint}"/>
+                            <Button x:Name="btn_clearBackground" Grid.Column="3" Content="{lex:Loc Common_Clear}" Margin="6,0,0,0" Padding="10,2"
+                                    Click="Btn_ClearBackground_Click"/>
+                        </Grid>
                     </StackPanel>
                 </Border>
 

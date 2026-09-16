@@ -92,6 +92,8 @@ namespace ORT一键报告.Reports.Views
                 cb_model.Text = plan.ModelName ?? "";
                 txt_jobNo.Text = plan.JobNo ?? "";
                 txt_stage.Text = plan.Stage ?? PlanStage.MP;
+                // 客户别直接取这条计划记录的"客户别"
+                FillCustomer(plan.ModelName, plan.Customer);
                 if (plan.StartDate.HasValue)
                 {
                     dp_start.SelectedDate = plan.StartDate.Value;
@@ -164,6 +166,8 @@ namespace ORT一键报告.Reports.Views
             }
             try
             {
+                // 客户别先按计划表带出（该机种没有测试计划时同样要带出来）
+                FillCustomer(modelName, FindPlanByModel(modelName)?.Customer);
                 if (!overwrite && _items.Count > 0)
                 {
                     return; // 用户已手工调整过，不静默覆盖
@@ -194,7 +198,6 @@ namespace ORT一键报告.Reports.Views
                     });
                 }
                 txt_stage.Text = plan.Stage;
-                FillCustomerFromMapping(modelName);
                 AutoSchedule(true);
                 if (_items.Count == 0)
                 {
@@ -208,9 +211,16 @@ namespace ORT一键报告.Reports.Views
             }
         }
 
-        /// <summary>按机种映射带出客户别（计划/领用表里维护的客户别）</summary>
-        private void FillCustomerFromMapping(string modelName)
+        /// <summary>
+        /// 带出客户别：以计划表里的"客户别"为准，计划里没有时再退回机种映射
+        /// </summary>
+        private void FillCustomer(string modelName, string customer)
         {
+            if (!string.IsNullOrWhiteSpace(customer))
+            {
+                txt_customer.Text = customer.Trim();
+                return;
+            }
             if (!string.IsNullOrWhiteSpace(txt_customer.Text))
             {
                 return;
@@ -228,6 +238,27 @@ namespace ORT一键报告.Reports.Views
             catch (Exception ex)
             {
                 _logger.Warn($"查询机种映射失败: {ex.Message}");
+            }
+        }
+
+        /// <summary>取该机种在计划表里的记录（客户别从计划表带出）</summary>
+        private Plan FindPlanByModel(string modelName)
+        {
+            if (string.IsNullOrWhiteSpace(modelName))
+            {
+                return null;
+            }
+            try
+            {
+                return _db.FreeSql.Select<Plan>()
+                    .Where(p => p.ModelName == modelName)
+                    .OrderByDescending(p => p.Id)
+                    .First();
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn($"查询计划表失败: {ex.Message}");
+                return null;
             }
         }
 
@@ -293,36 +324,56 @@ namespace ORT一键报告.Reports.Views
 
         private void Btn_AddItem_Click(object sender, RoutedEventArgs e)
         {
+            // 测试项从"测试项目表"（test_items_catalog）里选，不再手工输入名称
+            AdminService admin = App.ServiceProvider.GetRequiredService<AdminService>();
+            List<TestItemCatalog> catalog = admin.GetTestItems();
+            if (catalog.Count == 0)
+            {
+                ToastService.Show(LanguageService.Get("ReportTemplate_Msg_CatalogEmpty"), ToastType.Warning);
+                return;
+            }
+            List<TestItemCatalog> picked = WindowTemplateItemPicker.Pick(this, catalog, _items.Select(i => i.TestItemName));
+            if (picked.Count == 0)
+            {
+                return;
+            }
             List<PlanItemTemplate> templates = _planService.GetTemplates();
-            WindowAdminInput dialog = new(LanguageService.Get("ReportTemplate_AddItem"),
-                (LanguageService.Get("ReportTemplate_Item"), "", false),
-                (LanguageService.Get("ReportTemplate_Category"), "RELIABILITY TEST", false),
-                (LanguageService.Get("ReportTemplate_PeriodHours"), "24", false));
-            if (dialog.ShowDialog() != true || string.IsNullOrWhiteSpace(dialog.Values[0]))
+            List<string> added = [];
+            foreach (TestItemCatalog entry in picked)
             {
-                return;
+                string name = entry.Name?.Trim();
+                string key = PlanIndexService.NameKey(name);
+                if (string.IsNullOrWhiteSpace(name) || _items.Any(i => PlanIndexService.NameKey(i.TestItemName) == key))
+                {
+                    added.Add(name ?? "");
+                    continue;
+                }
+                PlanItemTemplate template = templates.FirstOrDefault(t => PlanIndexService.NameKey(t.TestItemName) == key);
+                ReportTemplateItem item = new()
+                {
+                    TestItemName = name,
+                    // 分类/抽样计划/测试条件/通过判定仍取"计划模板 + 机种差异"的结果
+                    Category = template?.Category ?? "RELIABILITY TEST",
+                    SamplingPlan = template?.SamplingPlan,
+                    TestCondition = template?.TestCondition,
+                    PassCriterion = template?.PassCriterion,
+                    Remark = template?.Remark ?? entry.Remark,
+                    // 试验周期优先用测试项目表里维护的小时数
+                    PeriodHours = !string.IsNullOrWhiteSpace(entry.Period)
+                        ? entry.Period.Trim()
+                        : (string.IsNullOrWhiteSpace(template?.Period) ? "24" : template.Period)
+                };
+                _items.Add(item);
             }
-            string name = dialog.Values[0].Trim();
-            string key = PlanIndexService.NameKey(name);
-            PlanItemTemplate template = templates.FirstOrDefault(t => PlanIndexService.NameKey(t.TestItemName) == key);
-            if (_items.Any(i => PlanIndexService.NameKey(i.TestItemName) == key))
-            {
-                ToastService.Show(string.Format(LanguageService.Get("ReportTemplate_DuplicateSkippedFormat"), name), ToastType.Warning);
-                return;
-            }
-            ReportTemplateItem item = new()
-            {
-                TestItemName = name,
-                Category = string.IsNullOrWhiteSpace(dialog.Values[1]) ? template?.Category : dialog.Values[1].Trim(),
-                SamplingPlan = template?.SamplingPlan,
-                TestCondition = template?.TestCondition,
-                PassCriterion = template?.PassCriterion,
-                Remark = template?.Remark,
-                PeriodHours = string.IsNullOrWhiteSpace(dialog.Values[2]) ? (template?.Period ?? "24") : dialog.Values[2].Trim()
-            };
-            _items.Add(item);
             AutoSchedule(true);
-            dg_items.SelectedItem = item;
+            if (added.Count > 0)
+            {
+                ToastService.Show(string.Format(LanguageService.Get("ReportTemplate_DuplicateSkippedFormat"), string.Join("、", added)), ToastType.Warning);
+            }
+            if (_items.Count > 0)
+            {
+                dg_items.SelectedItem = _items[_items.Count - 1];
+            }
         }
 
         private void Btn_RemoveItem_Click(object sender, RoutedEventArgs e)

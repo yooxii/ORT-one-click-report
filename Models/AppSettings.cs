@@ -215,6 +215,11 @@ namespace ORT一键报告.Models
         /// Toast 提示出现位置（TopRight/TopLeft/BottomRight/BottomLeft），默认右上角
         /// </summary>
         public string ToastPosition { get; set; } = "TopRight";
+
+        /// <summary>
+        /// 主界面背景图片路径（空=不用背景图）。仅主界面使用，图片铺满窗口并盖一层淡淡遮罩保证可读。
+        /// </summary>
+        public string BackgroundImage { get; set; }
     }
 
     /// <summary>

@@ -57,12 +57,47 @@ namespace ORT一键报告
             // 启动时应用设置字体，并在设置变更时实时刷新所有已打开窗口
             Loaded += (s, e) => _appSettings.ApplyFont(this);
             _appSettings.SettingsChanged += () => Dispatcher.Invoke(() => _appSettings.ApplyFontToAll());
+            // 主界面背景图（设置→界面 里选择）
+            Loaded += (s, e) => ApplyBackgroundImage();
+            _appSettings.SettingsChanged += () => Dispatcher.Invoke(ApplyBackgroundImage);
 
             _auth.AuthChanged += () => Dispatcher.Invoke(UpdateUIByPermission);
             Loaded += (s, e) => UpdateUIByPermission();
             Loaded += (s, e) => StartMailReminder();
             Loaded += (s, e) => StartPlanIndexScheduler();
             Closed += (s, e) => _mailTimer.Stop();
+        }
+
+        /// <summary>
+        /// 应用主界面背景图：从设置里取路径，铺满窗口并显示淡淡遮罩；
+        /// 路径为空或文件不存在时回到主题背景。
+        /// </summary>
+        private void ApplyBackgroundImage()
+        {
+            string path = _appSettings.Settings?.UI?.BackgroundImage;
+            if (!string.IsNullOrWhiteSpace(path) && System.IO.File.Exists(path))
+            {
+                try
+                {
+                    System.Windows.Media.Imaging.BitmapImage image = new();
+                    image.BeginInit();
+                    image.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad; // 读完即释放，不锁文件
+                    image.UriSource = new Uri(path, UriKind.Absolute);
+                    image.EndInit();
+                    img_background.Source = image;
+                    img_background.Visibility = Visibility.Visible;
+                    rect_scrim.Visibility = Visibility.Visible;
+                    _logger.Info($"主界面背景图已应用：{path}");
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    _logger.Warn($"加载主界面背景图失败：{ex.Message}");
+                }
+            }
+            img_background.Source = null;
+            img_background.Visibility = Visibility.Collapsed;
+            rect_scrim.Visibility = Visibility.Collapsed;
         }
 
         /// <summary>

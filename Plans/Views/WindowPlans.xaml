@@ -277,7 +277,7 @@
                             <MenuItem Header="{lex:Loc Plans_OpenReportFolder}" Click="Menu_OpenReportFolder_Click" ToolTip="{lex:Loc Plans_ToolTip_OpenFolder}"/>
                             <MenuItem Header="{lex:Loc Plans_OpenOverview}" Click="Menu_OpenReportOverview_Click" ToolTip="{lex:Loc Plans_ToolTip_OpenOverview}"/>
                             <MenuItem Header="{lex:Loc Plans_OpenMainReport}" Click="Menu_OpenMainReport_Click" ToolTip="{lex:Loc Plans_ToolTip_OpenMainReport}"/>
-                            <MenuItem Header="{lex:Loc Plans_Menu_BuildTemplate}" Click="Menu_BuildReportTemplate_Click" ToolTip="{lex:Loc Plans_ToolTip_BuildTemplate}"/>
+                            <MenuItem x:Name="menu_buildTemplate" Header="{lex:Loc Plans_Menu_BuildTemplate}" Click="Menu_BuildReportTemplate_Click" ToolTip="{lex:Loc Plans_ToolTip_BuildTemplate}"/>
                             <Separator/>
                             <MenuItem Header="{lex:Loc Common_CopyRow}" Click="Menu_CopyPlanRow_Click"/>
                             <MenuItem Header="{lex:Loc Common_CopyCell}" Click="Menu_CopyPlanCell_Click"/>

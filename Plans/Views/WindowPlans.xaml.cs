@@ -8,6 +8,7 @@ using ORT一键报告.Reports.Views;
 using ORT一键报告.Services;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.ComponentModel;
 using System.Globalization;
 using System.IO;
@@ -70,6 +71,8 @@ namespace ORT一键报告.Plans.Views
             {
                 BuildSortMenu(menu_plan_sort, dg_plans);
                 BuildColumnMenu(menu_plan_columns, dg_plans);
+                // 已有报告的记录：入口改成「查看报告模板」（打开报告文件夹里的报告文件）
+                UpdateTemplateMenuItem();
             };
             Closing += (s, e) => SaveColumnState();
             // 报告文件夹扫描完成后，提示用户建立计划索引（每个窗口实例只提示一次）
@@ -826,7 +829,22 @@ namespace ORT一键报告.Plans.Views
         }
 
         /// <summary>
-        /// 右键"建立报告模板"：只对还没有报告文件夹的记录有意义；带着该行机种打开报告模板工具
+        /// 右键菜单打开前：该记录已经有报告文件夹时，把入口文案改成「查看报告模板」
+        /// </summary>
+        private void UpdateTemplateMenuItem()
+        {
+            Plan plan = CurrentPlan;
+            bool hasReport = plan != null
+                && !string.IsNullOrWhiteSpace(plan.JobNo)
+                && _vm.FindReportLink(plan.JobNo) != null;
+            menu_buildTemplate.Header = LanguageService.Get(hasReport ? "Plans_Menu_ViewTemplate" : "Plans_Menu_BuildTemplate");
+            menu_buildTemplate.ToolTip = LanguageService.Get(hasReport ? "Plans_ToolTip_ViewTemplate" : "Plans_ToolTip_BuildTemplate");
+        }
+
+        /// <summary>
+        /// 右键「建立报告模板 / 查看报告模板」：
+        /// 还没有报告的记录 → 打开报告模板工具（带该行机种）；
+        /// 已经有报告的记录 → 直接打开报告文件夹里的报告文件（多个时让用户选一个）
         /// </summary>
         private void Menu_BuildReportTemplate_Click(object sender, RoutedEventArgs e)
         {
@@ -836,12 +854,103 @@ namespace ORT一键报告.Plans.Views
                 _ = MessageBox.Show(LanguageService.Get("Plans_Msg_TemplateSelectPlan"), LanguageService.Get("Cap_Info"));
                 return;
             }
-            if (!string.IsNullOrWhiteSpace(plan.JobNo) && _vm.FindReportLink(plan.JobNo) != null)
+            ReportLink link = string.IsNullOrWhiteSpace(plan.JobNo) ? null : _vm.FindReportLink(plan.JobNo);
+            if (link != null)
             {
-                _ = MessageBox.Show(LanguageService.Get("Plans_Msg_TemplateHasReport"), LanguageService.Get("Cap_Info"));
+                ViewExistingReportTemplate(plan, link);
                 return;
             }
             OpenReportTemplateWindow(plan);
+        }
+
+        /// <summary>
+        /// 查看已有报告：打开报告文件夹里的报告文件（Excel）；
+        /// 文件夹里有多个时弹窗让用户选一个。
+        /// </summary>
+        private void ViewExistingReportTemplate(Plan plan, ReportLink link)
+        {
+            List<string> files = FindReportFiles(link.ReportDir);
+            if (files.Count == 0)
+            {
+                _ = MessageBox.Show(string.Format(LanguageService.Get("Plans_Msg_TemplateFileMissing"), link.ReportDir),
+                    LanguageService.Get("Cap_Info"));
+                return;
+            }
+            string chosen;
+            if (files.Count == 1)
+            {
+                chosen = files[0];
+            }
+            else
+            {
+                chosen = ORT一键报告.Main.Views.WindowListPicker.Pick(this,
+                    LanguageService.Get("Dlg_PickReportFile"),
+                    string.Format(LanguageService.Get("Dlg_PickReportFileHint"), link.ReportDir),
+                    files.Select(f => new ORT一键报告.Main.Views.WindowListPicker.ListItem
+                    {
+                        Display = Path.GetFileName(f),
+                        Value = f
+                    }));
+            }
+            if (string.IsNullOrWhiteSpace(chosen))
+            {
+                return;
+            }
+            try
+            {
+                Process.Start(new ProcessStartInfo(chosen) { UseShellExecute = true });
+                _logger.Info($"查看报告模板（{plan.JobNo}）：{chosen}");
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "打开报告文件失败");
+                _ = MessageBox.Show($"打开报告文件失败：{ex.Message}", LanguageService.Get("Cap_Error"));
+            }
+        }
+
+        /// <summary>
+        /// 找出报告文件夹里的报告文件：优先 ReportDir 本身，其次其下的 Report 子文件夹；
+        /// 排除临时/隐藏文件。
+        /// </summary>
+        private static List<string> FindReportFiles(string reportDir)
+        {
+            List<string> result = [];
+            if (string.IsNullOrWhiteSpace(reportDir))
+            {
+                return result;
+            }
+            string[] extensions = [".xlsx", ".xls", ".xlsm"];
+            void Collect(string dir)
+            {
+                if (string.IsNullOrWhiteSpace(dir) || !Directory.Exists(dir))
+                {
+                    return;
+                }
+                try
+                {
+                    foreach (string file in Directory.GetFiles(dir))
+                    {
+                        if (Path.GetFileName(file).StartsWith("~$", StringComparison.Ordinal))
+                        {
+                            continue;   // Excel 打开时的临时文件
+                        }
+                        if (extensions.Contains(Path.GetExtension(file).ToLowerInvariant()))
+                        {
+                            result.Add(file);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    LogManager.GetCurrentClassLogger().Warn($"枚举报告文件失败 {dir}：{ex.Message}");
+                }
+            }
+            Collect(reportDir);
+            if (result.Count == 0)
+            {
+                Collect(Path.Combine(reportDir, "Report"));
+            }
+            return result.OrderBy(f => f, StringComparer.OrdinalIgnoreCase).ToList();
         }
 
         /// <summary>
