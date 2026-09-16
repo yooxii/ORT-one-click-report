@@ -20,6 +20,10 @@
             <MenuItem Header="{lex:Loc MainWindow_Menu_View}">
                 <MenuItem Header="{lex:Loc MainWindow_Menu_ViewLog}" Click="MenuItem_ViewLog_Click"/>
             </MenuItem>
+            <MenuItem Header="{lex:Loc MainWindow_Menu_Tools}">
+                <MenuItem Header="{lex:Loc MainWindow_Menu_ReportTemplate}" Click="MenuItem_ReportTemplate_Click"
+                          ToolTip="{lex:Loc MainWindow_ToolTip_ReportTemplate}"/>
+            </MenuItem>
             <MenuItem Header="{lex:Loc MainWindow_Menu_Settings}" Click="MenuItem_Settings_Click"/>
             <MenuItem x:Name="menu_account" Header="{lex:Loc MainWindow_Menu_Account}" Click="MenuItem_Login_Click"/>
             <MenuItem Header="{lex:Loc MainWindow_Menu_Logout}" Click="MenuItem_Quit_Click"/>

@@ -600,6 +600,9 @@ namespace ORT一键报告.Utils
             public bool WrapText { get; set; }
             public double? FontSize { get; set; }
 
+            /// <summary>是否加粗（与 FontSize 一起生效）</summary>
+            public bool Bold { get; set; }
+
             /// <summary>填充色（RGB），为空则不填充</summary>
             public byte[] FillRgb { get; set; }
         }
@@ -629,7 +632,7 @@ namespace ORT一键报告.Utils
         private static ICellStyle BuildStyle(IWorkbook workbook, CellStyleSpec spec, bool top, bool bottom, bool left, bool right)
         {
             string fill = spec.FillRgb == null ? "" : string.Join(",", spec.FillRgb);
-            string key = $"spec:{spec.NumberFormat}|{spec.Border}|{spec.OuterBorder}|{spec.Horizontal}|{spec.Vertical}|{spec.WrapText}|{spec.FontSize}|{fill}|{top}{bottom}{left}{right}";
+            string key = $"spec:{spec.NumberFormat}|{spec.Border}|{spec.OuterBorder}|{spec.Horizontal}|{spec.Vertical}|{spec.WrapText}|{spec.FontSize}|{spec.Bold}|{fill}|{top}{bottom}{left}{right}";
             return Style(workbook, key, style =>
             {
                 if (!string.IsNullOrEmpty(spec.NumberFormat))
@@ -662,10 +665,14 @@ namespace ORT一键报告.Utils
                 {
                     style.WrapText = true;
                 }
-                if (spec.FontSize is double fontSize)
+                if (spec.FontSize.HasValue || spec.Bold)
                 {
                     IFont font = workbook.CreateFont();
-                    font.FontHeightInPoints = (short)Math.Round(fontSize);
+                    if (spec.FontSize.HasValue)
+                    {
+                        font.FontHeightInPoints = (short)Math.Round(spec.FontSize.Value);
+                    }
+                    font.IsBold = spec.Bold;
                     style.SetFont(font);
                 }
                 if (spec.FillRgb != null)

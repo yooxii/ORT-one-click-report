@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -1715,4 +1715,429 @@ Comment: {2}</value>
   <data name="ATE_Opening" xml:space="preserve"><value>Opening the ATE data, please wait…</value></data>
   <data name="Msg_PleaseWait" xml:space="preserve"><value>Working, please wait…</value></data>
   <data name="ATE_Saving" xml:space="preserve"><value>Generating the ATE report, please wait…</value></data>
+  <data name="Admin_TestPlanTab" xml:space="preserve">
+    <value>Test Plans</value>
+  </data>
+  <data name="PlanIndex_PlansTab" xml:space="preserve">
+    <value>Test Plans</value>
+  </data>
+  <data name="PlanIndex_TemplatesTab" xml:space="preserve">
+    <value>Plan Item Templates</value>
+  </data>
+  <data name="PlanIndex_DiffsTab" xml:space="preserve">
+    <value>Differences to Confirm</value>
+  </data>
+  <data name="PlanIndex_Build" xml:space="preserve">
+    <value>Build Plan Index</value>
+  </data>
+  <data name="PlanIndex_ToolTip_Build" xml:space="preserve">
+    <value>Scan report folders and compress repeated test-item text into shared templates; can resume on another client</value>
+  </data>
+  <data name="PlanIndex_Rebuild" xml:space="preserve">
+    <value>Reindex All</value>
+  </data>
+  <data name="PlanIndex_ToolTip_Rebuild" xml:space="preserve">
+    <value>Ignore existing results and parse all reports again</value>
+  </data>
+  <data name="PlanIndex_Stop" xml:space="preserve">
+    <value>Stop</value>
+  </data>
+  <data name="PlanIndex_RebuildMerge" xml:space="preserve">
+    <value>Merge Again</value>
+  </data>
+  <data name="PlanIndex_ReportRoot" xml:space="preserve">
+    <value>Report Path</value>
+  </data>
+  <data name="PlanIndex_NoRoot" xml:space="preserve">
+    <value>Report path is not configured</value>
+  </data>
+  <data name="PlanIndex_Plans" xml:space="preserve">
+    <value>Plans</value>
+  </data>
+  <data name="PlanIndex_Items" xml:space="preserve">
+    <value>Plan Items</value>
+  </data>
+  <data name="PlanIndex_ItemEditor" xml:space="preserve">
+    <value>Item Editor</value>
+  </data>
+  <data name="PlanIndex_AddPlan" xml:space="preserve">
+    <value>Add Plan</value>
+  </data>
+  <data name="PlanIndex_DeletePlan" xml:space="preserve">
+    <value>Delete Plan</value>
+  </data>
+  <data name="PlanIndex_AddItem" xml:space="preserve">
+    <value>Add Item</value>
+  </data>
+  <data name="PlanIndex_DeleteItem" xml:space="preserve">
+    <value>Delete Item</value>
+  </data>
+  <data name="PlanIndex_MoveUp" xml:space="preserve">
+    <value>Move Up</value>
+  </data>
+  <data name="PlanIndex_MoveDown" xml:space="preserve">
+    <value>Move Down</value>
+  </data>
+  <data name="PlanIndex_AdoptTemplate" xml:space="preserve">
+    <value>Use Template</value>
+  </data>
+  <data name="PlanIndex_ConfirmDiff" xml:space="preserve">
+    <value>Confirm</value>
+  </data>
+  <data name="PlanIndex_UnconfirmDiff" xml:space="preserve">
+    <value>Unconfirm</value>
+  </data>
+  <data name="PlanIndex_SaveItem" xml:space="preserve">
+    <value>Save Item</value>
+  </data>
+  <data name="PlanIndex_SaveTemplate" xml:space="preserve">
+    <value>Save Template</value>
+  </data>
+  <data name="PlanIndex_DeleteTemplate" xml:space="preserve">
+    <value>Delete Template</value>
+  </data>
+  <data name="PlanIndex_AddTemplate" xml:space="preserve">
+    <value>Add Template</value>
+  </data>
+  <data name="PlanIndex_SyncTestItems" xml:space="preserve">
+    <value>Register Test Items</value>
+  </data>
+  <data name="PlanIndex_Order" xml:space="preserve">
+    <value>No.</value>
+  </data>
+  <data name="PlanIndex_Category" xml:space="preserve">
+    <value>Category</value>
+  </data>
+  <data name="PlanIndex_ItemName" xml:space="preserve">
+    <value>Test Item</value>
+  </data>
+  <data name="PlanIndex_SamplingPlan" xml:space="preserve">
+    <value>Sampling Plan</value>
+  </data>
+  <data name="PlanIndex_TestCondition" xml:space="preserve">
+    <value>Test Condition</value>
+  </data>
+  <data name="PlanIndex_PassCriterion" xml:space="preserve">
+    <value>Pass Criterion</value>
+  </data>
+  <data name="PlanIndex_Remark" xml:space="preserve">
+    <value>Remark</value>
+  </data>
+  <data name="PlanIndex_Period" xml:space="preserve">
+    <value>Period (h)</value>
+  </data>
+  <data name="PlanIndex_Usage" xml:space="preserve">
+    <value>Usage</value>
+  </data>
+  <data name="PlanIndex_Manual" xml:space="preserve">
+    <value>Manual</value>
+  </data>
+  <data name="PlanIndex_OverrideFields" xml:space="preserve">
+    <value>Overridden</value>
+  </data>
+  <data name="PlanIndex_OverrideValue" xml:space="preserve">
+    <value>Model Value</value>
+  </data>
+  <data name="PlanIndex_TemplateValue" xml:space="preserve">
+    <value>Template Value</value>
+  </data>
+  <data name="PlanIndex_OtherVariants" xml:space="preserve">
+    <value>Other Variants</value>
+  </data>
+  <data name="PlanIndex_PlanTitle" xml:space="preserve">
+    <value>Plan</value>
+  </data>
+  <data name="PlanIndex_TemplatePreview" xml:space="preserve">
+    <value>Template</value>
+  </data>
+  <data name="PlanIndex_FromIndex" xml:space="preserve">
+    <value>Source</value>
+  </data>
+  <data name="PlanIndex_StageMP" xml:space="preserve">
+    <value>MP</value>
+  </data>
+  <data name="PlanIndex_StageNPI" xml:space="preserve">
+    <value>NPI</value>
+  </data>
+  <data name="PlanIndex_ItemCount" xml:space="preserve">
+    <value>Items</value>
+  </data>
+  <data name="PlanIndex_DiffCount" xml:space="preserve">
+    <value>Diffs</value>
+  </data>
+  <data name="PlanIndex_UpdatedAt" xml:space="preserve">
+    <value>Updated</value>
+  </data>
+  <data name="PlanIndex_DragHint" xml:space="preserve">
+    <value>Tip: drag rows in the item list to reorder test items</value>
+  </data>
+  <data name="PlanIndex_Msg_DeletePlanFormat" xml:space="preserve">
+    <value>Delete the test plan of "{0}" and all its items?</value>
+  </data>
+  <data name="PlanIndex_Msg_DeleteItem" xml:space="preserve">
+    <value>Delete the selected plan item?</value>
+  </data>
+  <data name="PlanIndex_Msg_DeleteTemplate" xml:space="preserve">
+    <value>Delete this template? Items referencing it will lose the template.</value>
+  </data>
+  <data name="PlanIndex_Msg_ItemNameRequired" xml:space="preserve">
+    <value>Test item name is required</value>
+  </data>
+  <data name="PlanIndex_Msg_PlanNameRequired" xml:space="preserve">
+    <value>Model name is required</value>
+  </data>
+  <data name="PlanIndex_Msg_Saved" xml:space="preserve">
+    <value>Saved</value>
+  </data>
+  <data name="PlanIndex_Msg_NoPlanSelected" xml:space="preserve">
+    <value>Select a test plan first</value>
+  </data>
+  <data name="PlanIndex_Msg_NoItemSelected" xml:space="preserve">
+    <value>Select a plan item first</value>
+  </data>
+  <data name="PlanIndex_Msg_NoTemplateSelected" xml:space="preserve">
+    <value>Select a template first</value>
+  </data>
+  <data name="PlanIndex_Msg_IndexDoneFormat" xml:space="preserve">
+    <value>Plan index finished: {0}</value>
+  </data>
+  <data name="PlanIndex_Msg_IndexFailedFormat" xml:space="preserve">
+    <value>Plan index failed: {0}</value>
+  </data>
+  <data name="PlanIndex_Msg_IndexRunning" xml:space="preserve">
+    <value>Building plan index in the background</value>
+  </data>
+  <data name="PlanIndex_Msg_OtherClient" xml:space="preserve">
+    <value>The plan index is running on another client; it will resume later</value>
+  </data>
+  <data name="PlanIndex_Msg_SyncResultFormat" xml:space="preserve">
+    <value>Registered {0} test items</value>
+  </data>
+  <data name="PlanIndex_Msg_SyncNone" xml:space="preserve">
+    <value>No test item needs registering</value>
+  </data>
+  <data name="PlanIndex_Msg_ConfirmAllFormat" xml:space="preserve">
+    <value>Confirmed {0} differences</value>
+  </data>
+  <data name="PlanIndex_Msg_ReindexConfirm" xml:space="preserve">
+    <value>Reindexing re-parses all reports and refreshes index-generated items (confirmed differences are kept). Continue?</value>
+  </data>
+  <data name="PlanIndex_Msg_NoJob" xml:space="preserve">
+    <value>No index job yet - click Build Plan Index first</value>
+  </data>
+  <data name="PlanIndex_Settings_Title" xml:space="preserve">
+    <value>Plan Index</value>
+  </data>
+  <data name="PlanIndex_Settings_Auto" xml:space="preserve">
+    <value>Build plan index automatically when idle</value>
+  </data>
+  <data name="PlanIndex_Settings_AutoHint" xml:space="preserve">
+    <value>When enabled and an administrator is signed in, indexing resumes in the background after the machine is idle for the configured time</value>
+  </data>
+  <data name="PlanIndex_Settings_Idle" xml:space="preserve">
+    <value>Start after idle (minutes)</value>
+  </data>
+  <data name="PlanIndex_Settings_IdleHint" xml:space="preserve">
+    <value>Indexing starts after no keyboard/mouse input for this long (default 10)</value>
+  </data>
+  <data name="Plans_Menu_BuildTemplate" xml:space="preserve">
+    <value>Create Report Template</value>
+  </data>
+  <data name="Plans_ToolTip_BuildTemplate" xml:space="preserve">
+    <value>This record has no report folder yet - generate a report template</value>
+  </data>
+  <data name="Plans_Menu_PlanIndex" xml:space="preserve">
+    <value>Build Plan Index</value>
+  </data>
+  <data name="Plans_Menu_ReportTemplate" xml:space="preserve">
+    <value>Report Template Tool</value>
+  </data>
+  <data name="Plans_ToolTip_ReportTemplate" xml:space="preserve">
+    <value>Open the report template tool</value>
+  </data>
+  <data name="Plans_Msg_IndexPrompt" xml:space="preserve">
+    <value>Report scan finished: {0} report folders found.
+Build the plan index now (compress repeated text into shared templates)?</value>
+  </data>
+  <data name="Plans_Msg_IndexPromptTitle" xml:space="preserve">
+    <value>Build Plan Index</value>
+  </data>
+  <data name="Plans_Msg_IndexNothing" xml:space="preserve">
+    <value>No indexable report folders found - check the report path setting</value>
+  </data>
+  <data name="Plans_Msg_TemplateSelectPlan" xml:space="preserve">
+    <value>Select a plan row first</value>
+  </data>
+  <data name="Plans_Msg_TemplateHasReport" xml:space="preserve">
+    <value>This record already has a report folder</value>
+  </data>
+  <data name="MainWindow_Menu_Tools" xml:space="preserve">
+    <value>Tools</value>
+  </data>
+  <data name="MainWindow_Menu_ReportTemplate" xml:space="preserve">
+    <value>Report Template Tool</value>
+  </data>
+  <data name="MainWindow_ToolTip_ReportTemplate" xml:space="preserve">
+    <value>Generate a report template from the model's test plan</value>
+  </data>
+  <data name="ReportTemplate_Title" xml:space="preserve">
+    <value>Report Template Tool</value>
+  </data>
+  <data name="ReportTemplate_BaseInfo" xml:space="preserve">
+    <value>Basic Info</value>
+  </data>
+  <data name="ReportTemplate_Items" xml:space="preserve">
+    <value>Test Items &amp; Schedule</value>
+  </data>
+  <data name="ReportTemplate_Plan" xml:space="preserve">
+    <value>Test Plan</value>
+  </data>
+  <data name="ReportTemplate_ModelName" xml:space="preserve">
+    <value>Model Name</value>
+  </data>
+  <data name="ReportTemplate_Customer" xml:space="preserve">
+    <value>Customer</value>
+  </data>
+  <data name="ReportTemplate_JobNo" xml:space="preserve">
+    <value>RT Job No.</value>
+  </data>
+  <data name="ReportTemplate_Period" xml:space="preserve">
+    <value>Period</value>
+  </data>
+  <data name="ReportTemplate_Revision" xml:space="preserve">
+    <value>Revision</value>
+  </data>
+  <data name="ReportTemplate_Stage" xml:space="preserve">
+    <value>Product Stage</value>
+  </data>
+  <data name="ReportTemplate_SerialNumbers" xml:space="preserve">
+    <value>Serial Numbers (one per line)</value>
+  </data>
+  <data name="ReportTemplate_WorkOrder" xml:space="preserve">
+    <value>Work Order</value>
+  </data>
+  <data name="ReportTemplate_StartDate" xml:space="preserve">
+    <value>Start Date</value>
+  </data>
+  <data name="ReportTemplate_OutputPath" xml:space="preserve">
+    <value>Output Folder</value>
+  </data>
+  <data name="ReportTemplate_Browse" xml:space="preserve">
+    <value>Browse...</value>
+  </data>
+  <data name="ReportTemplate_Generate" xml:space="preserve">
+    <value>Generate Template</value>
+  </data>
+  <data name="ReportTemplate_OpenFolder" xml:space="preserve">
+    <value>Open Output Folder</value>
+  </data>
+  <data name="ReportTemplate_Close" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="ReportTemplate_Item" xml:space="preserve">
+    <value>Test Item</value>
+  </data>
+  <data name="ReportTemplate_Category" xml:space="preserve">
+    <value>Category</value>
+  </data>
+  <data name="ReportTemplate_SamplingPlan" xml:space="preserve">
+    <value>Sampling Plan</value>
+  </data>
+  <data name="ReportTemplate_TestCondition" xml:space="preserve">
+    <value>Test Condition</value>
+  </data>
+  <data name="ReportTemplate_PassCriterion" xml:space="preserve">
+    <value>Pass Criterion</value>
+  </data>
+  <data name="ReportTemplate_Remark" xml:space="preserve">
+    <value>Remark</value>
+  </data>
+  <data name="ReportTemplate_PeriodHours" xml:space="preserve">
+    <value>Period (h)</value>
+  </data>
+  <data name="ReportTemplate_StartTime" xml:space="preserve">
+    <value>Start</value>
+  </data>
+  <data name="ReportTemplate_EndTime" xml:space="preserve">
+    <value>End</value>
+  </data>
+  <data name="ReportTemplate_PlanHours" xml:space="preserve">
+    <value>Total Hours</value>
+  </data>
+  <data name="ReportTemplate_MoveUp" xml:space="preserve">
+    <value>Move Up</value>
+  </data>
+  <data name="ReportTemplate_MoveDown" xml:space="preserve">
+    <value>Move Down</value>
+  </data>
+  <data name="ReportTemplate_AddItem" xml:space="preserve">
+    <value>Add Item</value>
+  </data>
+  <data name="ReportTemplate_RemoveItem" xml:space="preserve">
+    <value>Remove Item</value>
+  </data>
+  <data name="ReportTemplate_DragHint" xml:space="preserve">
+    <value>Tip: drag rows to reorder test items</value>
+  </data>
+  <data name="ReportTemplate_AutoFill" xml:space="preserve">
+    <value>Auto Schedule</value>
+  </data>
+  <data name="ReportTemplate_SelectPlan" xml:space="preserve">
+    <value>Select Model Plan</value>
+  </data>
+  <data name="ReportTemplate_LoadPlan" xml:space="preserve">
+    <value>Load Plan</value>
+  </data>
+  <data name="ReportTemplate_Msg_ModelRequired" xml:space="preserve">
+    <value>Model name is required</value>
+  </data>
+  <data name="ReportTemplate_Msg_OutputRequired" xml:space="preserve">
+    <value>Choose an output folder first</value>
+  </data>
+  <data name="ReportTemplate_Msg_SNRequired" xml:space="preserve">
+    <value>At least one serial number is required</value>
+  </data>
+  <data name="ReportTemplate_Msg_GeneratedFormat" xml:space="preserve">
+    <value>Report template generated:
+{0}</value>
+  </data>
+  <data name="ReportTemplate_Msg_FailedFormat" xml:space="preserve">
+    <value>Generation failed: {0}</value>
+  </data>
+  <data name="ReportTemplate_Msg_TemplateMissingFormat" xml:space="preserve">
+    <value>Report template not found: {0}</value>
+  </data>
+  <data name="ReportTemplate_Msg_PlanMissingFormat" xml:space="preserve">
+    <value>Model {0} has no test plan - build the plan index or maintain it manually</value>
+  </data>
+  <data name="ReportTemplate_Msg_PlanEmpty" xml:space="preserve">
+    <value>The plan has no test items</value>
+  </data>
+  <data name="ReportTemplate_Msg_AutoFilled" xml:space="preserve">
+    <value>Auto-scheduled by period and working days; adjust as needed</value>
+  </data>
+  <data name="ReportTemplate_Msg_FolderExists" xml:space="preserve">
+    <value>The target folder already exists. Continue?</value>
+  </data>
+  <data name="ReportTemplate_Msg_CopyFailedFormat" xml:space="preserve">
+    <value>Copying the report template failed: {0}</value>
+  </data>
+  <data name="ReportTemplate_DuplicateSkippedFormat" xml:space="preserve">
+    <value>Items already in the plan were skipped: {0}</value>
+  </data>
+  <data name="PlanIndex_Status_Pending" xml:space="preserve">
+    <value>Pending</value>
+  </data>
+  <data name="PlanIndex_Status_Running" xml:space="preserve">
+    <value>Running</value>
+  </data>
+  <data name="PlanIndex_Status_Paused" xml:space="preserve">
+    <value>Paused</value>
+  </data>
+  <data name="PlanIndex_Status_Done" xml:space="preserve">
+    <value>Done</value>
+  </data>
+  <data name="PlanIndex_Status_Failed" xml:space="preserve">
+    <value>Failed</value>
+  </data>
 </root>

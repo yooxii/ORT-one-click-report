@@ -1,9 +1,10 @@
-﻿<Window x:Class="ORT一键报告.Admin.Views.WindowAdmin" Background="{DynamicResource WindowBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}"
+<Window x:Class="ORT一键报告.Admin.Views.WindowAdmin" Background="{DynamicResource WindowBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:lex="http://wpflocalizeextension.codeplex.com"
+        xmlns:local="clr-namespace:ORT一键报告.Admin.Views"
         mc:Ignorable="d"
         Title="{lex:Loc Admin_Title}" Height="600" Width="950" MinHeight="450" MinWidth="750"
         WindowStartupLocation="CenterOwner">
@@ -132,6 +133,11 @@
                     </DataGrid.Columns>
                 </DataGrid>
             </Grid>
+        </TabItem>
+
+        <!--测试计划管理（按机种+阶段维护计划、测试项模板，并执行计划索引）-->
+        <TabItem Header="{lex:Loc Admin_TestPlanTab}">
+            <local:UserControlTestPlans/>
         </TabItem>
 
         <!--产品类型管理-->

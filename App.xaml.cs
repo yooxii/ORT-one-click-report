@@ -87,6 +87,10 @@ namespace ORT一键报告
                 services.AddSingleton<MailService>();
                 services.AddSingleton<MailNotifier>();
                 services.AddSingleton<ReportGenerationService>();
+                services.AddSingleton<ReportTemplateService>();
+                services.AddSingleton<TestPlanService>();
+                services.AddSingleton<PlanIndexService>();
+                services.AddSingleton<PlanIndexScheduler>();
 
                 // ViewModels
                 services.AddTransient<MainViewModel>();

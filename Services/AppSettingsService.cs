@@ -201,10 +201,49 @@ namespace ORT一键报告.Services
         }
 
         /// <summary>
+        /// 读取整数型设置（不存在或无法解析时返回 defaultValue）
+        /// </summary>
+        public int GetInt(string key, int defaultValue)
+        {
+            string value = _db.FreeSql.Select<AppSetting>().Where(s => s.Key == key).First()?.Value;
+            return int.TryParse(value, out int result) ? result : defaultValue;
+        }
+
+        /// <summary>
+        /// 写入整数型设置（存在则更新，不存在则插入）
+        /// </summary>
+        public void SetInt(string key, int value) => SetText(key, value.ToString());
+
+        /// <summary>
+        /// 读取文本型设置（不存在时返回 defaultValue）
+        /// </summary>
+        public string GetText(string key, string defaultValue = null)
+        {
+            string value = _db.FreeSql.Select<AppSetting>().Where(s => s.Key == key).First()?.Value;
+            return value ?? defaultValue;
+        }
+
+        /// <summary>
+        /// 写入文本型设置（存在则更新，不存在则插入）
+        /// </summary>
+        public void SetText(string key, string value)
+        {
+            AppSetting existing = _db.FreeSql.Select<AppSetting>().Where(s => s.Key == key).First();
+            if (existing == null)
+            {
+                _db.FreeSql.Insert(new AppSetting { Key = key, Value = value }).ExecuteAffrows();
+            }
+            else if (existing.Value != value)
+            {
+                existing.Value = value;
+                _db.FreeSql.Update<AppSetting>().SetSource(existing).Where(s => s.Id == existing.Id).ExecuteAffrows();
+            }
+        }
+
+        /// <summary>
         /// 从数据库加载设置；首次运行时兼容迁移旧版 settings.json 与旧版 ATE/EMI 数据库键
         /// </summary>
-        private void Load()
-        {
+        private void Load()        {
             try
             {
                 Dictionary<string, string> values = _db.FreeSql.Select<AppSetting>()

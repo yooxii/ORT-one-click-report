@@ -104,7 +104,7 @@ namespace ORT一键报告.Main.Views
         /// </summary>
         private void HideAdminOnlySections()
         {
-            foreach (string tag in new[] { "sec_mail", "sec_mail_template", "sec_dbpath" })
+            foreach (string tag in new[] { "sec_mail", "sec_mail_template", "sec_dbpath", "sec_planindex" })
             {
                 int index = _sections.FindIndex(section => section.Tag == tag);
                 if (index >= 0)
@@ -134,6 +134,7 @@ namespace ORT一键报告.Main.Views
             _sections.Add(("sec_report", sec_report));
             _sections.Add(("sec_mail", sec_mail));
             _sections.Add(("sec_mail_template", sec_mail_template));
+            _sections.Add(("sec_planindex", sec_planindex));
         }
 
         /// <summary>
@@ -510,6 +511,11 @@ namespace ORT一键报告.Main.Views
             txt_schedule.Text = settings.Paths.SchedulePath;
             txt_requisition.Text = settings.Paths.RequisitionPath;
             txt_report.Text = settings.Paths.ReportPath;
+
+            // 计划索引：空闲自动执行（仅管理员界面可见）
+            chk_planIndexAuto.IsChecked = _settings.GetBool(PlanIndexScheduler.SettingAutoKey, false);
+            txt_planIndexIdle.Text = _settings.GetInt(PlanIndexScheduler.SettingIdleMinutesKey,
+                PlanIndexScheduler.DefaultIdleMinutes).ToString();
         }
 
         /* ###############################  保存/应用/取消  ################################ */
@@ -557,6 +563,19 @@ namespace ORT一键报告.Main.Views
             settings.Paths.SchedulePath = TrimOrNull(txt_schedule.Text);
             settings.Paths.RequisitionPath = TrimOrNull(txt_requisition.Text);
             settings.Paths.ReportPath = TrimOrNull(txt_report.Text);
+
+            // 计划索引：空闲自动执行（非管理员界面未载入，不得回写）
+            if (_isAdmin)
+            {
+                if (!int.TryParse(txt_planIndexIdle.Text?.Trim(), out int idleMinutes) || idleMinutes < 1)
+                {
+                    _ = MessageBox.Show(LanguageService.Get("PlanIndex_Settings_IdleHint"), LanguageService.Get("Cap_Info"));
+                    txt_planIndexIdle.Focus();
+                    return false;
+                }
+                _settings.SetBool(PlanIndexScheduler.SettingAutoKey, chk_planIndexAuto.IsChecked == true);
+                _settings.SetInt(PlanIndexScheduler.SettingIdleMinutesKey, idleMinutes);
+            }
             if (_isAdmin)
             {
                 // 非管理员界面未载入邮件设置，不得回写（避免把管理员的配置覆盖掉）

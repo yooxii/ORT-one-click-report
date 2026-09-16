@@ -43,6 +43,7 @@
                     <TreeViewItem Header="{lex:Loc Settings_Mail}" IsExpanded="True" Tag="sec_mail">
                         <TreeViewItem Header="{lex:Loc Settings_MailTemplates}" Tag="sec_mail_template"/>
                     </TreeViewItem>
+                    <TreeViewItem Header="{lex:Loc PlanIndex_Settings_Title}" Tag="sec_planindex"/>
                 </TreeView>
             </DockPanel>
         </Border>
@@ -267,6 +268,22 @@
                             <TextBox x:Name="txt_report" VerticalContentAlignment="Center"/>
                             <Button Content="{lex:Loc Common_BrowseEllipsis}" Grid.Column="2" Padding="6,3" Click="Btn_Browse_Click" Tag="ReportPath"/>
                         </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!--计划索引（空闲自动执行）；仅管理员可见-->
+                <Border x:Name="sec_planindex" Padding="0,10">
+                    <StackPanel>
+                        <TextBlock Text="{lex:Loc PlanIndex_Settings_Title}" FontSize="16" FontWeight="SemiBold"/>
+                        <TextBlock Text="{lex:Loc PlanIndex_Settings_AutoHint}" Foreground="{DynamicResource TextSecondaryBrush}"
+                                   TextWrapping="Wrap" Margin="0,2,0,8"/>
+                        <CheckBox x:Name="chk_planIndexAuto" Content="{lex:Loc PlanIndex_Settings_Auto}" Margin="0,2,0,8"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                            <Label Content="{lex:Loc PlanIndex_Settings_Idle}" VerticalContentAlignment="Center"/>
+                            <TextBox x:Name="txt_planIndexIdle" Width="70" VerticalContentAlignment="Center" Margin="4,0,0,0"/>
+                        </StackPanel>
+                        <TextBlock Text="{lex:Loc PlanIndex_Settings_IdleHint}" Foreground="{DynamicResource TextSecondaryBrush}"
+                                   TextWrapping="Wrap" Margin="0,4,0,0"/>
                     </StackPanel>
                 </Border>
 

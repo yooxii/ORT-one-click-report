@@ -1,0 +1,244 @@
+<UserControl x:Class="ORT一键报告.Admin.Views.UserControlTestPlans"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:lex="http://wpflocalizeextension.codeplex.com"
+             mc:Ignorable="d">
+    <Grid Margin="5">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="auto"/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+
+        <!--索引工具条：建立/继续、重新索引、停止、重新归并 + 进度-->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,5">
+            <Button x:Name="btn_index" Content="{lex:Loc PlanIndex_Build}" Padding="10,3" Click="Btn_Index_Click"
+                    ToolTip="{lex:Loc PlanIndex_ToolTip_Build}"/>
+            <Button x:Name="btn_reindex" Content="{lex:Loc PlanIndex_Rebuild}" Padding="10,3" Margin="8,0,0,0" Click="Btn_Reindex_Click"
+                    ToolTip="{lex:Loc PlanIndex_ToolTip_Rebuild}"/>
+            <Button x:Name="btn_stop" Content="{lex:Loc PlanIndex_Stop}" Padding="10,3" Margin="8,0,0,0" Click="Btn_Stop_Click"/>
+            <Button x:Name="btn_merge" Content="{lex:Loc PlanIndex_RebuildMerge}" Padding="10,3" Margin="8,0,0,0" Click="Btn_Merge_Click"
+                    ToolTip="{lex:Loc PlanIndex_ToolTip_Build}"/>
+            <Separator Margin="10,2"/>
+            <Button x:Name="btn_syncItems" Content="{lex:Loc PlanIndex_SyncTestItems}" Padding="10,3" Click="Btn_SyncTestItems_Click"/>
+            <Button x:Name="btn_refresh" Content="{lex:Loc Common_Refresh}" Padding="10,3" Margin="8,0,0,0" Click="Btn_Refresh_Click"/>
+            <TextBlock x:Name="txt_root" VerticalAlignment="Center" Margin="14,0,0,0"
+                       Foreground="{DynamicResource TextSecondaryBrush}" TextTrimming="CharacterEllipsis"/>
+        </StackPanel>
+
+        <!--进度与状态-->
+        <Grid Grid.Row="1" Margin="0,0,0,5">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="220"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <ProgressBar x:Name="pb_index" Height="16" Minimum="0" Maximum="100" Value="0"/>
+            <TextBlock x:Name="txt_status" Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center"
+                       Foreground="{DynamicResource TextSecondaryBrush}" TextTrimming="CharacterEllipsis"
+                       ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
+        </Grid>
+
+        <TabControl Grid.Row="2">
+
+            <!--测试计划：左侧计划列表，中间明细，右侧明细编辑-->
+            <TabItem Header="{lex:Loc PlanIndex_PlansTab}">
+                <Grid Margin="3">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="260" MinWidth="180"/>
+                        <ColumnDefinition Width="5"/>
+                        <ColumnDefinition Width="2*" MinWidth="240"/>
+                        <ColumnDefinition Width="5"/>
+                        <ColumnDefinition Width="3*" MinWidth="260"/>
+                    </Grid.ColumnDefinitions>
+
+                    <DockPanel Grid.Column="0">
+                        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,4">
+                            <Button Content="{lex:Loc PlanIndex_AddPlan}" Padding="8,2" Click="Btn_AddPlan_Click"/>
+                            <Button Content="{lex:Loc PlanIndex_DeletePlan}" Padding="8,2" Margin="6,0,0,0" Click="Btn_DeletePlan_Click"/>
+                        </StackPanel>
+                        <DataGrid x:Name="dg_plans" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False"
+                                  SelectionMode="Single" SelectionUnit="FullRow" HeadersVisibility="Column"
+                                  GridLinesVisibility="Horizontal" SelectionChanged="Dg_Plans_SelectionChanged">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="{lex:Loc Plans_ModelName}" Binding="{Binding ModelName}" Width="*"/>
+                                <DataGridTextColumn Header="{lex:Loc Plans_Stage}" Binding="{Binding StageDisplay}" Width="60"/>
+                                <DataGridTextColumn Header="{lex:Loc PlanIndex_ItemCount}" Binding="{Binding ItemCount}" Width="55"/>
+                                <DataGridTextColumn Header="{lex:Loc PlanIndex_DiffCount}" Binding="{Binding OverrideCount}" Width="55"/>
+                                <DataGridTextColumn Header="{lex:Loc PlanIndex_UpdatedAt}" Binding="{Binding UpdatedAt, StringFormat=yyyy/M/d HH:mm}" Width="110"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </DockPanel>
+
+                    <GridSplitter Grid.Column="1" HorizontalAlignment="Stretch" Background="Transparent"/>
+
+                    <DockPanel Grid.Column="2">
+                        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,4">
+                            <Button Content="{lex:Loc PlanIndex_AddItem}" Padding="8,2" Click="Btn_AddItem_Click"/>
+                            <Button Content="{lex:Loc PlanIndex_DeleteItem}" Padding="8,2" Margin="6,0,0,0" Click="Btn_DeleteItem_Click"/>
+                            <Button Content="{lex:Loc PlanIndex_MoveUp}" Padding="8,2" Margin="6,0,0,0" Click="Btn_MoveUp_Click"/>
+                            <Button Content="{lex:Loc PlanIndex_MoveDown}" Padding="8,2" Margin="6,0,0,0" Click="Btn_MoveDown_Click"/>
+                            <Button Content="{lex:Loc PlanIndex_AdoptTemplate}" Padding="8,2" Margin="6,0,0,0" Click="Btn_AdoptTemplate_Click"/>
+                        </StackPanel>
+                        <TextBlock DockPanel.Dock="Bottom" Text="{lex:Loc PlanIndex_DragHint}" TextWrapping="Wrap" Margin="0,4,0,0"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"/>
+                        <DataGrid x:Name="dg_items" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False"
+                                  SelectionMode="Single" SelectionUnit="FullRow" HeadersVisibility="Column"
+                                  GridLinesVisibility="Horizontal" SelectionChanged="Dg_Items_SelectionChanged">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="{lex:Loc PlanIndex_Order}" Binding="{Binding OrderNo}" Width="45" IsReadOnly="True"/>
+                                <DataGridTextColumn Header="{lex:Loc PlanIndex_ItemName}" Binding="{Binding TestItemName}" Width="*"/>
+                                <DataGridTextColumn Header="{lex:Loc PlanIndex_Category}" Binding="{Binding Category}" Width="120"/>
+                                <DataGridTextColumn Header="{lex:Loc PlanIndex_OverrideFields}" Binding="{Binding OverriddenFieldsDisplay}" Width="150" IsReadOnly="True"/>
+                                <DataGridCheckBoxColumn Header="{lex:Loc PlanIndex_ConfirmDiff}" Binding="{Binding Confirmed}" Width="60"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </DockPanel>
+
+                    <GridSplitter Grid.Column="3" HorizontalAlignment="Stretch" Background="Transparent"/>
+
+                    <ScrollViewer Grid.Column="4" VerticalScrollBarVisibility="Auto">
+                        <StackPanel x:Name="panel_editor" Margin="4,0,4,0">
+                            <TextBlock Text="{lex:Loc PlanIndex_ItemEditor}" FontWeight="Bold" Margin="0,0,0,6"/>
+                            <TextBlock Text="{lex:Loc PlanIndex_ItemName}"/>
+                            <TextBox x:Name="txt_itemName" Margin="0,2,0,6"/>
+                            <TextBlock Text="{lex:Loc PlanIndex_Category}"/>
+                            <TextBox x:Name="txt_itemCategory" Margin="0,2,0,6"/>
+                            <TextBlock Text="{lex:Loc PlanIndex_Period}"/>
+                            <TextBox x:Name="txt_itemPeriod" Margin="0,2,0,6" Width="120" HorizontalAlignment="Left"/>
+                            <TextBlock Text="{lex:Loc PlanIndex_SamplingPlan}"/>
+                            <TextBox x:Name="txt_itemSampling" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="50" MaxHeight="120"
+                                     VerticalScrollBarVisibility="Auto" Margin="0,2,0,6"/>
+                            <TextBlock Text="{lex:Loc PlanIndex_TestCondition}"/>
+                            <TextBox x:Name="txt_itemCondition" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="70" MaxHeight="160"
+                                     VerticalScrollBarVisibility="Auto" Margin="0,2,0,6"/>
+                            <TextBlock Text="{lex:Loc PlanIndex_PassCriterion}"/>
+                            <TextBox x:Name="txt_itemCriterion" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="70" MaxHeight="160"
+                                     VerticalScrollBarVisibility="Auto" Margin="0,2,0,6"/>
+                            <TextBlock Text="{lex:Loc PlanIndex_Remark}"/>
+                            <TextBox x:Name="txt_itemRemark" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="40" MaxHeight="100"
+                                     VerticalScrollBarVisibility="Auto" Margin="0,2,0,6"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,2,0,8">
+                                <Button Content="{lex:Loc PlanIndex_SaveItem}" Padding="10,3" Click="Btn_SaveItem_Click"/>
+                                <Button Content="{lex:Loc PlanIndex_ConfirmDiff}" Padding="10,3" Margin="8,0,0,0" Click="Btn_ConfirmItem_Click"/>
+                                <Button Content="{lex:Loc PlanIndex_UnconfirmDiff}" Padding="10,3" Margin="8,0,0,0" Click="Btn_UnconfirmItem_Click"/>
+                            </StackPanel>
+                            <Expander Header="{lex:Loc PlanIndex_TemplatePreview}">
+                                <StackPanel x:Name="panel_templatePreview" Margin="4">
+                                    <TextBlock Text="{lex:Loc PlanIndex_ItemName}" FontWeight="Bold"/>
+                                    <TextBox x:Name="txt_tplName" IsReadOnly="True" TextWrapping="Wrap"
+                                             Background="Transparent" BorderThickness="0"/>
+                                    <TextBlock Text="{lex:Loc PlanIndex_SamplingPlan}" FontWeight="Bold" Margin="0,6,0,0"/>
+                                    <TextBox x:Name="txt_tplSampling" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap"
+                                             MinHeight="40" Background="Transparent" BorderThickness="0"/>
+                                    <TextBlock Text="{lex:Loc PlanIndex_TestCondition}" FontWeight="Bold" Margin="0,6,0,0"/>
+                                    <TextBox x:Name="txt_tplCondition" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap"
+                                             MinHeight="60" Background="Transparent" BorderThickness="0"/>
+                                    <TextBlock Text="{lex:Loc PlanIndex_PassCriterion}" FontWeight="Bold" Margin="0,6,0,0"/>
+                                    <TextBox x:Name="txt_tplCriterion" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap"
+                                             MinHeight="60" Background="Transparent" BorderThickness="0"/>
+                                    <TextBlock Text="{lex:Loc PlanIndex_Remark}" FontWeight="Bold" Margin="0,6,0,0"/>
+                                    <TextBox x:Name="txt_tplRemark" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap"
+                                             MinHeight="30" Background="Transparent" BorderThickness="0"/>
+                                </StackPanel>
+                            </Expander>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+            </TabItem>
+
+            <!--计划项模板：重复出现的公共文本只在这里保存一份-->
+            <TabItem Header="{lex:Loc PlanIndex_TemplatesTab}">
+                <Grid Margin="3">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="auto"/>
+                        <RowDefinition Height="3*"/>
+                        <RowDefinition Height="5"/>
+                        <RowDefinition Height="2*"/>
+                    </Grid.RowDefinitions>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                        <Button Content="{lex:Loc PlanIndex_AddTemplate}" Padding="8,2" Click="Btn_AddTemplate_Click"/>
+                        <Button Content="{lex:Loc PlanIndex_SaveTemplate}" Padding="8,2" Margin="6,0,0,0" Click="Btn_SaveTemplate_Click"/>
+                        <Button Content="{lex:Loc PlanIndex_DeleteTemplate}" Padding="8,2" Margin="6,0,0,0" Click="Btn_DeleteTemplate_Click"/>
+                        <TextBlock Margin="14,0,0,0" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"
+                                   Text="{lex:Loc PlanIndex_ToolTip_Build}" TextTrimming="CharacterEllipsis"/>
+                    </StackPanel>
+                    <DataGrid x:Name="dg_templates" Grid.Row="1" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False"
+                              SelectionMode="Single" SelectionUnit="FullRow" HeadersVisibility="Column"
+                              GridLinesVisibility="Horizontal" SelectionChanged="Dg_Templates_SelectionChanged">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="{lex:Loc PlanIndex_ItemName}" Binding="{Binding TestItemName}" Width="*"/>
+                            <DataGridTextColumn Header="{lex:Loc PlanIndex_Category}" Binding="{Binding Category}" Width="140"/>
+                            <DataGridTextColumn Header="{lex:Loc PlanIndex_Period}" Binding="{Binding Period}" Width="90"/>
+                            <DataGridTextColumn Header="{lex:Loc PlanIndex_Usage}" Binding="{Binding UsageCount}" Width="70" IsReadOnly="True"/>
+                            <DataGridCheckBoxColumn Header="{lex:Loc PlanIndex_Manual}" Binding="{Binding IsManual}" Width="70"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    <GridSplitter Grid.Row="2" HorizontalAlignment="Stretch" VerticalAlignment="Center" Background="Transparent"/>
+                    <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto">
+                        <StackPanel Margin="4">
+                            <TextBlock Text="{lex:Loc PlanIndex_SamplingPlan}"/>
+                            <TextBox x:Name="txt_tplEditSampling" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="50"
+                                     VerticalScrollBarVisibility="Auto" Margin="0,2,0,6"/>
+                            <TextBlock Text="{lex:Loc PlanIndex_TestCondition}"/>
+                            <TextBox x:Name="txt_tplEditCondition" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="70"
+                                     VerticalScrollBarVisibility="Auto" Margin="0,2,0,6"/>
+                            <TextBlock Text="{lex:Loc PlanIndex_PassCriterion}"/>
+                            <TextBox x:Name="txt_tplEditCriterion" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="70"
+                                     VerticalScrollBarVisibility="Auto" Margin="0,2,0,6"/>
+                            <TextBlock Text="{lex:Loc PlanIndex_Remark}"/>
+                            <TextBox x:Name="txt_tplEditRemark" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="40"
+                                     VerticalScrollBarVisibility="Auto" Margin="0,2,0,6"/>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+            </TabItem>
+
+            <!--待确认差异：索引自动取多数写法作模板，其余作为该机种差异列出-->
+            <TabItem Header="{lex:Loc PlanIndex_DiffsTab}">
+                <Grid Margin="3">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="auto"/>
+                        <RowDefinition/>
+                    </Grid.RowDefinitions>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                        <Button Content="{lex:Loc PlanIndex_AdoptTemplate}" Padding="8,2" Click="Btn_DiffAdopt_Click"/>
+                        <Button Content="{lex:Loc PlanIndex_ConfirmDiff}" Padding="8,2" Margin="6,0,0,0" Click="Btn_DiffConfirm_Click"/>
+                        <Button Content="{lex:Loc Common_Refresh}" Padding="8,2" Margin="6,0,0,0" Click="Btn_RefreshDiffs_Click"/>
+                    </StackPanel>
+                    <DataGrid x:Name="dg_diffs" Grid.Row="1" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False"
+                              SelectionMode="Single" SelectionUnit="FullRow" HeadersVisibility="Column"
+                              GridLinesVisibility="Horizontal" ColumnWidth="*">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="{lex:Loc PlanIndex_PlanTitle}" Binding="{Binding PlanTitle}" Width="160"/>
+                            <DataGridTextColumn Header="{lex:Loc PlanIndex_ItemName}" Binding="{Binding TestItemName}" Width="170"/>
+                            <DataGridTextColumn Header="{lex:Loc PlanIndex_OverrideFields}" Binding="{Binding OverrideFields}" Width="140"/>
+                            <DataGridTextColumn Header="{lex:Loc PlanIndex_OverrideValue}" Binding="{Binding ModelValue}" Width="2*">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="TextWrapping" Value="Wrap"/>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <DataGridTextColumn Header="{lex:Loc PlanIndex_TemplateValue}" Binding="{Binding TemplateValue}" Width="2*">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="TextWrapping" Value="Wrap"/>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <DataGridTextColumn Header="{lex:Loc PlanIndex_OtherVariants}" Binding="{Binding Variants}" Width="2*">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="TextWrapping" Value="Wrap"/>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </TabItem>
+        </TabControl>
+    </Grid>
+</UserControl>

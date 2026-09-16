@@ -32,6 +32,7 @@ namespace ORT一键报告.Plans.Views
     {
         private readonly Logger _logger = LogManager.GetCurrentClassLogger();
         private readonly PlansViewModel _vm;
+        private readonly AppSettingsService _appSettings;
 
         private static readonly string LayoutFile
             = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data", "plans_layout.json");
@@ -40,6 +41,7 @@ namespace ORT一键报告.Plans.Views
         {
             InitializeComponent();
             _vm = App.ServiceProvider.GetRequiredService<PlansViewModel>();
+            _appSettings = App.ServiceProvider.GetRequiredService<AppSettingsService>();
             DataContext = _vm;
             SetupHeaderMenus();
             Loaded += (s, e) =>
@@ -70,6 +72,51 @@ namespace ORT一键报告.Plans.Views
                 BuildColumnMenu(menu_plan_columns, dg_plans);
             };
             Closing += (s, e) => SaveColumnState();
+            // 报告文件夹扫描完成后，提示用户建立计划索引（每个窗口实例只提示一次）
+            _vm.ReportScanCompleted += OnReportScanCompleted;
+        }
+
+        /* ###############################  计划索引提示  ################################ */
+
+        /// <summary>是否已经提示过建立计划索引（避免每次刷新都弹）</summary>
+        private bool _indexPrompted;
+
+        /// <summary>
+        /// 扫描完成后提示建立计划索引：用户同意即后台开始（可在其他客户端断点继续）
+        /// </summary>
+        private async void OnReportScanCompleted(int reportCount)
+        {
+            if (_indexPrompted || reportCount <= 0)
+            {
+                return;
+            }
+            try
+            {
+                PlanIndexService indexService = App.ServiceProvider.GetRequiredService<PlanIndexService>();
+                if (indexService.IsRunning || indexService.GetLatestJob(_appSettings.ReportDir) != null)
+                {
+                    return; // 已经有索引任务（做过或正在做）就不再打扰
+                }
+                _indexPrompted = true;
+                MessageBoxResult choice = MessageBox.Show(
+                    string.Format(LanguageService.Get("Plans_Msg_IndexPrompt"), reportCount),
+                    LanguageService.Get("Plans_Msg_IndexPromptTitle"),
+                    MessageBoxButton.YesNo, MessageBoxImage.Question);
+                if (choice != MessageBoxResult.Yes)
+                {
+                    return;
+                }
+                PlanIndexRunResult result = await indexService.RunAsync(_appSettings.ReportDir,
+                    App.ServiceProvider.GetRequiredService<IPermissionService>().CurrentUser);
+                ToastService.Show(result.Completed || result.Started
+                    ? result.Message
+                    : string.Format(LanguageService.Get("PlanIndex_Msg_IndexFailedFormat"), result.Message),
+                    result.Started ? ToastType.Info : ToastType.Warning);
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn($"提示建立计划索引失败: {ex.Message}");
+            }
         }
 
         /* ###############################  视图菜单开关  ################################ */
@@ -775,6 +822,81 @@ namespace ORT一键报告.Plans.Views
             {
                 _logger.Error(ex, "从计划表打开一键报告失败");
                 _ = MessageBox.Show($"打开一键报告失败：{ex.Message}", LanguageService.Get("Cap_Error"));
+            }
+        }
+
+        /// <summary>
+        /// 右键"建立报告模板"：只对还没有报告文件夹的记录有意义；带着该行机种打开报告模板工具
+        /// </summary>
+        private void Menu_BuildReportTemplate_Click(object sender, RoutedEventArgs e)
+        {
+            Plan plan = CurrentPlan;
+            if (plan == null)
+            {
+                _ = MessageBox.Show(LanguageService.Get("Plans_Msg_TemplateSelectPlan"), LanguageService.Get("Cap_Info"));
+                return;
+            }
+            if (!string.IsNullOrWhiteSpace(plan.JobNo) && _vm.FindReportLink(plan.JobNo) != null)
+            {
+                _ = MessageBox.Show(LanguageService.Get("Plans_Msg_TemplateHasReport"), LanguageService.Get("Cap_Info"));
+                return;
+            }
+            OpenReportTemplateWindow(plan);
+        }
+
+        /// <summary>
+        /// 工具菜单/工具栏的通用入口：打开报告模板工具（不带机种，由用户在窗口里选择）
+        /// </summary>
+        private void Menu_ReportTemplate_Click(object sender, RoutedEventArgs e) => OpenReportTemplateWindow(null);
+
+        private void OpenReportTemplateWindow(Plan plan)
+        {
+            try
+            {
+                WindowReportTemplate window = new();
+                if (plan != null)
+                {
+                    window.PrefillFromPlan(plan, _vm.FindRequisitionForPlan(plan));
+                }
+                window.Show();
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "打开报告模板工具失败");
+                _ = MessageBox.Show($"打开报告模板工具失败：{ex.Message}", LanguageService.Get("Cap_Error"));
+            }
+        }
+
+        /// <summary>
+        /// 工具菜单/工具栏：建立计划索引（后台执行，可在其他客户端断点继续）
+        /// </summary>
+        private async void Menu_PlanIndex_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                PlanIndexService indexService = App.ServiceProvider.GetRequiredService<PlanIndexService>();
+                if (indexService.IsRunning)
+                {
+                    ToastService.Show(LanguageService.Get("PlanIndex_Msg_IndexRunning"), ToastType.Info);
+                    return;
+                }
+                string root = _appSettings.ReportDir;
+                if (string.IsNullOrWhiteSpace(root))
+                {
+                    ToastService.Show(LanguageService.Get("PlanIndex_NoRoot"), ToastType.Warning);
+                    return;
+                }
+                PlanIndexRunResult result = await indexService.RunAsync(root,
+                    App.ServiceProvider.GetRequiredService<IPermissionService>().CurrentUser);
+                ToastService.Show(string.IsNullOrWhiteSpace(result.Message)
+                    ? LanguageService.Get("PlanIndex_Msg_OtherClient")
+                    : result.Message, result.Started ? ToastType.Info : ToastType.Warning);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "建立计划索引失败");
+                _ = MessageBox.Show(string.Format(LanguageService.Get("PlanIndex_Msg_IndexFailedFormat"), ex.Message),
+                    LanguageService.Get("Cap_Error"));
             }
         }
 

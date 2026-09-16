@@ -137,6 +137,16 @@
     <Compile Include="Services\MailService.cs" />
     <Compile Include="Services\MailNotifier.cs" />
     <Compile Include="Services\ReportGenerationService.cs" />
+    <Compile Include="Models\TestPlan.cs" />
+    <Compile Include="Utils\OrtPlanParser.cs" />
+    <Compile Include="Services\TestPlanService.cs" />
+    <Compile Include="Services\PlanIndexService.cs" />
+    <Compile Include="Services\PlanIndexScheduler.cs" />
+    <Compile Include="Services\ReportTemplateService.cs" />
+    <Compile Include="Utils\DataGridRowDrag.cs" />
+    <Compile Include="Admin\Views\UserControlTestPlans.xaml.cs">
+      <DependentUpon>UserControlTestPlans.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Services\AppSettingsService.cs" />
     <Compile Include="Services\UiScale.cs" />
     <Compile Include="Services\LocalizationHelper.cs" />
@@ -405,6 +415,10 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="Admin\Views\UserControlTestPlans.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="Review\Views\WindowReview.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -448,6 +462,12 @@
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
     <None Include="Resources\image_xlsx.emf.bin" />
+  </ItemGroup>
+  <ItemGroup>
+    <!--报告模板目录随生成一起放到输出目录：报告模板工具与一键报告都按 exe 同级的 Templates 找模板-->
+    <None Include="Templates\**\*.*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

@@ -638,6 +638,11 @@ namespace ORT一键报告.Plans.ViewModels
         private int _scanSeq;
 
         /// <summary>
+        /// 报告文件夹扫描完成（参数为匹配到的报告夹数量）。界面据此提示用户建立计划索引。
+        /// </summary>
+        public event Action<int> ReportScanCompleted;
+
+        /// <summary>
         /// 后台遍历报告路径，按工作编号匹配报告文件夹并保存到 report_links 表。
         /// 报告夹结构：文件夹名包含工作编号，内含 Report 子文件夹与一个 Excel 报告概览文件。
         /// </summary>
@@ -680,6 +685,8 @@ namespace ORT一键报告.Plans.ViewModels
                         UpdatePlanReportFlags();
                         PlansView.Refresh();
                         _logger.Info($"报告扫描完成: {root} 下匹配 {found.Count} 个报告夹");
+                        // 扫描完成后提示用户建立计划索引（界面侧决定是否提示、提示一次）
+                        ReportScanCompleted?.Invoke(found.Count);
                     });
                 }
                 catch (Exception ex)

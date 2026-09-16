@@ -26,6 +26,7 @@ namespace ORT一键报告
         private readonly ReviewService _reviewService;
         private readonly AppSettingsService _appSettings;
         private readonly MailNotifier _mailNotifier;
+        private readonly PlanIndexScheduler _indexScheduler;
 
         /// <summary>计划结束日期提醒的定时检查（每 6 小时一次）</summary>
         private readonly System.Windows.Threading.DispatcherTimer _mailTimer = new()
@@ -44,6 +45,7 @@ namespace ORT一键报告
             _reviewService = App.ServiceProvider.GetRequiredService<ReviewService>();
             _appSettings = App.ServiceProvider.GetRequiredService<AppSettingsService>();
             _mailNotifier = App.ServiceProvider.GetRequiredService<MailNotifier>();
+            _indexScheduler = App.ServiceProvider.GetRequiredService<PlanIndexScheduler>();
 
             MainVM = App.ServiceProvider.GetRequiredService<MainViewModel>();
             DataContext = MainVM;
@@ -59,7 +61,31 @@ namespace ORT一键报告
             _auth.AuthChanged += () => Dispatcher.Invoke(UpdateUIByPermission);
             Loaded += (s, e) => UpdateUIByPermission();
             Loaded += (s, e) => StartMailReminder();
+            Loaded += (s, e) => StartPlanIndexScheduler();
             Closed += (s, e) => _mailTimer.Stop();
+        }
+
+        /// <summary>
+        /// 启动"空闲时自动建立计划索引"：设置里开启（且为管理员）时才会真正执行；
+        /// 任务与进度都落库，关掉程序或换台电脑都会从断点继续。
+        /// </summary>
+        private void StartPlanIndexScheduler()
+        {
+            try
+            {
+                _indexScheduler.Finished += message =>
+                {
+                    if (!string.IsNullOrWhiteSpace(message))
+                    {
+                        ToastService.Show(message, ORT一键报告.Main.Views.ToastType.Info);
+                    }
+                };
+                _indexScheduler.Start();
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn($"启动空闲计划索引失败: {ex.Message}");
+            }
         }
 
         /// <summary>
@@ -226,8 +252,16 @@ namespace ORT一键报告
             windowLog.Show();
         }
 
-        private void MenuItem_Settings_Click(object sender, RoutedEventArgs e)
+        /// <summary>
+        /// 工具菜单：报告模板工具（由机种测试计划直接生成报告模板）
+        /// </summary>
+        private void MenuItem_ReportTemplate_Click(object sender, RoutedEventArgs e)
         {
+            WindowReportTemplate window = new();
+            window.Show();
+        }
+
+        private void MenuItem_Settings_Click(object sender, RoutedEventArgs e)        {
             WindowAppSettings settingsWindow = new()
             {
                 Owner = null
