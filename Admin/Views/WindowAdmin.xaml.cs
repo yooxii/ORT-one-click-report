@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using ORT一键报告.Models;
 using ORT一键报告.Services;
 using System;
@@ -335,7 +335,18 @@ namespace ORT一键报告.Admin.Views
 
         private void LoadTestItems()
         {
+            // 没有测试种类时先按历史报告与关键词自动归类（用户手工改过的不动）
+            _admin.EnsureTestItemCategories();
             dg_testItems.ItemsSource = _admin.GetTestItems();
+        }
+
+        /// <summary>手工触发自动归类：把"不确定"的项目重新判一遍（手工归类过的不动）</summary>
+        private void Btn_AutoCategory_Click(object sender, RoutedEventArgs e)
+        {
+            int changed = _admin.AutoAssignTestItemCategories();
+            LoadTestItems();
+            _ = MessageBox.Show(string.Format(LanguageService.Get("Admin_AutoCategoryDone"), changed),
+                LanguageService.Get("Cap_Info"));
         }
 
         private TestItemCatalog SelectedTestItem => dg_testItems.SelectedItem as TestItemCatalog;
@@ -356,6 +367,7 @@ namespace ORT一键报告.Admin.Views
             {
                 Name = dialog.ItemName,
                 Period = dialog.Period,
+                Category = dialog.Category,
                 Owner = dialog.Owner,
                 Remark = dialog.Remark
             });
@@ -386,6 +398,7 @@ namespace ORT一键报告.Admin.Views
                 Id = selected.Id,
                 Name = dialog.ItemName,
                 Period = dialog.Period,
+                Category = dialog.Category,
                 Owner = dialog.Owner,
                 Remark = dialog.Remark
             });

@@ -440,6 +440,21 @@
   <data name="Admin_TestTime" xml:space="preserve">
     <value>Test Time</value>
   </data>
+  <data name="Admin_TestCategory" xml:space="preserve">
+    <value>Test Category</value>
+  </data>
+  <data name="Admin_AutoCategory" xml:space="preserve">
+    <value>Auto Classify</value>
+  </data>
+  <data name="Admin_AutoCategoryHint" xml:space="preserve">
+    <value>Re-classify the Uncertain test items by keywords and historical reports (manual values kept)</value>
+  </data>
+  <data name="Admin_TestCategoryHint" xml:space="preserve">
+    <value>ORT Plan / TestStatus group rows follow the test category; unknown items go to Uncertain and can be classified here</value>
+  </data>
+  <data name="Admin_AutoCategoryDone" xml:space="preserve">
+    <value>Auto-classified {0} test items</value>
+  </data>
   <data name="Admin_Technician" xml:space="preserve">
     <value>Technician</value>
   </data>

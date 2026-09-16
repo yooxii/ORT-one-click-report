@@ -1,4 +1,4 @@
-﻿using FreeSql;
+using FreeSql;
 using NLog;
 using ORT一键报告.Models;
 using System;
@@ -32,6 +32,11 @@ namespace ORT一键报告.Services
         public string OleDir { get; }
 
         /// <summary>
+        /// 计划索引抽出的测试项目配图目录（随数据库一起走，多客户端共用）
+        /// </summary>
+        public string PlanImagesDir { get; }
+
+        /// <summary>
         /// FreeSql 实例
         /// </summary>
         public IFreeSql FreeSql { get; }
@@ -42,8 +47,10 @@ namespace ORT一键报告.Services
             DbPath = AppSettingsService.ResolveDbPath();
             DataDir = Path.GetDirectoryName(DbPath);
             OleDir = Path.Combine(DataDir, "OleFiles");
+            PlanImagesDir = Path.Combine(DataDir, "PlanImages");
             Directory.CreateDirectory(DataDir);
             Directory.CreateDirectory(OleDir);
+            Directory.CreateDirectory(PlanImagesDir);
 
             string connStr = $"Data Source={DbPath};Pooling=true;Min Pool Size=1;Max Pool Size=10";
             FreeSql = new FreeSqlBuilder()

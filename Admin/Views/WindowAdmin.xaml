@@ -118,6 +118,8 @@
                     <Button Content="{lex:Loc Common_Add}" Padding="10,3" Click="Btn_NewTestItem_Click"/>
                     <Button Content="{lex:Loc Common_Edit}" Padding="10,3" Margin="8,0,0,0" Click="Btn_EditTestItem_Click"/>
                     <Button Content="{lex:Loc Common_Delete}" Padding="10,3" Margin="8,0,0,0" Click="Btn_DeleteTestItem_Click"/>
+                    <Button Content="{lex:Loc Admin_AutoCategory}" Padding="10,3" Margin="20,0,0,0" Click="Btn_AutoCategory_Click"
+                            ToolTip="{lex:Loc Admin_AutoCategoryHint}"/>
                     <Button Content="{lex:Loc Admin_SyncFromFile}" Padding="10,3" Margin="20,0,0,0" Click="Btn_SyncTestItems_Click"
                             ToolTip="{lex:Loc Admin_ToolTip_SyncFromFile}"/>
                     <Button Content="{lex:Loc Common_Refresh}" Padding="10,3" Margin="8,0,0,0" Click="Btn_RefreshTestItems_Click"/>
@@ -127,6 +129,7 @@
                           HeadersVisibility="Column" GridLinesVisibility="Horizontal">
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="{lex:Loc Admin_TestExperiment}" Binding="{Binding Name}" Width="220"/>
+                        <DataGridTextColumn Header="{lex:Loc Admin_TestCategory}" Binding="{Binding Category}" Width="120"/>
                         <DataGridTextColumn Header="{lex:Loc Admin_TestTime}" Binding="{Binding Period}" Width="80"/>
                         <DataGridTextColumn Header="{lex:Loc Plans_Owner}" Binding="{Binding OwnerDisplay}" Width="120"/>
                         <DataGridTextColumn Header="{lex:Loc Admin_Remark}" Binding="{Binding Remark}" Width="*"/>

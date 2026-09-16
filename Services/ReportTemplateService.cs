@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using static ORT一键报告.Utils.Report;
 
@@ -143,6 +144,21 @@ namespace ORT一键报告.Services
     public class ReportTemplateService
     {
         private readonly Logger _logger = LogManager.GetCurrentClassLogger();
+        private readonly DatabaseService _db;
+
+        /// <summary>EMU/像素（Excel 锚点单位：914400 EMU = 1 英寸 = 96 像素）</summary>
+        private const int EmuPerPixel = 9525;
+
+        /// <summary>测试项配图在 ORT Plan 表里的最大尺寸（像素），超出按比例缩小</summary>
+        private const int PictureMaxWidth = 200;
+        private const int PictureMaxHeight = 140;
+
+        public ReportTemplateService() { }
+
+        public ReportTemplateService(DatabaseService db)
+        {
+            _db = db;
+        }
 
         /// <summary>模板目录名（程序目录 Templates 下）</summary>
         public const string TemplateFolderName = "# ORT Test Report (WK#)_#";
@@ -211,6 +227,8 @@ namespace ORT一键报告.Services
             }
             try
             {
+                // 排期：调用方一般已经排好了，这里再排一次（幂等），避免漏排时 Waterfall 是空的
+                Schedule(request.Items, request.StartDate);
                 string week = ExtractWeek(request.Period);
                 string folderName = BuildFolderName(request.ModelName, week, request.JobNo);
                 string targetFolder = Path.Combine(request.OutputRoot, folderName);
@@ -239,17 +257,24 @@ namespace ORT一键报告.Services
                 XSSFWorkbook wb = ExcelNpoi.OpenRead(overviewPath);
                 try
                 {
+                    // 模板是从历史报告另存来的，里面还挂着共享公式组；
+                    // 先规范化（写成普通公式），否则删/插行后共享公式失效，Excel 打开会要求修复
+                    ExcelNpoi.NormalizeFormulas(wb);
                     WriteCover(wb, request);
                     WriteOrtPlan(wb, request);
                     WriteWaterfall(wb, request);
-                    WriteTestStatus(wb, request);
+                    WriteTestStatus(wb, request, targetFolder);
                     EnsureSheetOrder(wb);
+                    wb.SetForceFormulaRecalculation(true);
                     ExcelNpoi.Save(wb, overviewPath);
                 }
                 finally
                 {
                     wb.Close();
                 }
+
+                // 保存后清掉外部工作簿引用/失效命名区域/calcChain，避免 Excel 打开时提示"检测到错误"
+                XlsxCleaner.Clean(overviewPath);
 
                 result.Ok = true;
                 result.Folder = targetFolder;
@@ -338,7 +363,7 @@ namespace ORT一键报告.Services
         /// 生成 ORT Plan 表：标题 + 建立信息 + 表头 + 分类行/测试项行 + 表末 Note。
         /// 版式与原报告一致（B=NO. C=TEST ITEMS D=SAMPLING PLAN E=TEST CONDITOIN F=PASS CRITERION G=COMMENT）。
         /// </summary>
-        private static void WriteOrtPlan(IWorkbook wb, ReportTemplateRequest request)
+        private void WriteOrtPlan(IWorkbook wb, ReportTemplateRequest request)
         {
             ISheet sheet = FindSheet(wb, "ort plan") ?? wb.CreateSheet("ORT Plan");
             // 清空重建（模板里没有这张表，或已有内容时都按计划重写）
@@ -378,40 +403,41 @@ namespace ORT一键报告.Services
             int row = 6;
             int no = 0;
             int categoryNo = 0;
-            string currentCategory = null;
-            foreach (ReportTemplateItem item in request.Items ?? [])
+            List<(ReportTemplateItem Item, int Row)> itemRows = [];
+            // 按"测试种类"分组（同一类的测试项排在一起，历史报告就是这个样子）
+            foreach (KeyValuePair<string, List<ReportTemplateItem>> group in GroupByCategory(request.Items))
             {
-                string category = string.IsNullOrWhiteSpace(item.Category) ? currentCategory : item.Category.Trim();
-                if (!string.IsNullOrWhiteSpace(category) && !string.Equals(category, currentCategory, StringComparison.OrdinalIgnoreCase))
-                {
-                    currentCategory = category;
-                    categoryNo++;
-                    no = 0;
-                    ExcelNpoi.SetCell(sheet, row, 2, categoryNo);
-                    ExcelNpoi.SetCell(sheet, row, 3, category);
-                    ExcelNpoi.ApplyStyle(sheet, row, 2, row, 7, new ExcelNpoi.CellStyleSpec
-                    {
-                        Bold = true,
-                        Border = BorderStyle.Thin,
-                        Vertical = VerticalAlignment.Center
-                    });
-                    ExcelNpoi.Merge(sheet, row, 3, row, 7);
-                    row++;
-                }
-                no++;
-                ExcelNpoi.SetCell(sheet, row, 2, no);
-                ExcelNpoi.SetCell(sheet, row, 3, item.TestItemName ?? "");
-                ExcelNpoi.SetCell(sheet, row, 4, item.SamplingPlan ?? "");
-                ExcelNpoi.SetCell(sheet, row, 5, item.TestCondition ?? "");
-                ExcelNpoi.SetCell(sheet, row, 6, item.PassCriterion ?? "");
-                ExcelNpoi.SetCell(sheet, row, 7, item.Remark ?? "");
+                categoryNo++;
+                no = 0;
+                ExcelNpoi.SetCell(sheet, row, 2, categoryNo);
+                ExcelNpoi.SetCell(sheet, row, 3, group.Key);
                 ExcelNpoi.ApplyStyle(sheet, row, 2, row, 7, new ExcelNpoi.CellStyleSpec
                 {
+                    Bold = true,
                     Border = BorderStyle.Thin,
-                    Vertical = VerticalAlignment.Top,
-                    WrapText = true
+                    Vertical = VerticalAlignment.Center
                 });
+                ExcelNpoi.Merge(sheet, row, 3, row, 7);
                 row++;
+
+                foreach (ReportTemplateItem item in group.Value)
+                {
+                    no++;
+                    ExcelNpoi.SetCell(sheet, row, 2, no);
+                    ExcelNpoi.SetCell(sheet, row, 3, item.TestItemName ?? "");
+                    ExcelNpoi.SetCell(sheet, row, 4, item.SamplingPlan ?? "");
+                    ExcelNpoi.SetCell(sheet, row, 5, item.TestCondition ?? "");
+                    ExcelNpoi.SetCell(sheet, row, 6, item.PassCriterion ?? "");
+                    ExcelNpoi.SetCell(sheet, row, 7, item.Remark ?? "");
+                    ExcelNpoi.ApplyStyle(sheet, row, 2, row, 7, new ExcelNpoi.CellStyleSpec
+                    {
+                        Border = BorderStyle.Thin,
+                        Vertical = VerticalAlignment.Top,
+                        WrapText = true
+                    });
+                    itemRows.Add((item, row));
+                    row++;
+                }
             }
 
             // 表末 Note（计划的抽样原则说明；计划里没有就用通用文案）
@@ -429,13 +455,125 @@ namespace ORT一键报告.Services
             ExcelNpoi.SetColumnWidth(sheet, 5, 31.4);
             ExcelNpoi.SetColumnWidth(sheet, 6, 37.9);
             ExcelNpoi.SetColumnWidth(sheet, 7, 12.4);
+
+            WriteOrtPlanLogo(wb, sheet);
+            WriteOrtPlanPictures(wb, sheet, itemRows);
+        }
+
+        /// <summary>
+        /// ORT Plan 标题左边的公司 logo：其他三张表都有，模板里没有这张表，
+        /// 这里从同一工作簿的其他表里取（最小的那张图就是 logo），按历史报告的锚点放在标题左边。
+        /// </summary>
+        private static void WriteOrtPlanLogo(IWorkbook wb, ISheet sheet)
+        {
+            if (sheet == null || sheet.CreateDrawingPatriarch() is XSSFDrawing drawing && drawing.GetShapes().Count > 0)
+            {
+                return; // 已经有图（例如模板本身就带 logo）就不重复放
+            }
+            byte[] logo = FindLogoBytes(wb);
+            if (logo == null)
+            {
+                return;
+            }
+            ExcelNpoi.AddPictureAnchored(wb, sheet, logo, ExcelNpoi.DetectPictureType(logo),
+                col1: 2, row1: 1, col2: 3, row2: 2, dx1: 0, dy1: 19050, dx2: 1104900, dy2: 190500);
+        }
+
+        /// <summary>找公司 logo 的图片字节：整册里体积最小的那张图（其他三张表标题左边都是它）</summary>
+        private static byte[] FindLogoBytes(IWorkbook wb)
+        {
+            byte[] best = null;
+            for (int i = 0; i < wb.NumberOfSheets; i++)
+            {
+                foreach (ExcelNpoi.SheetPicture picture in ExcelNpoi.PictureDetails(wb.GetSheetAt(i)))
+                {
+                    byte[] bytes = picture.Bytes;
+                    if (bytes == null || bytes.Length == 0 || bytes.Length > 20 * 1024)
+                    {
+                        continue;
+                    }
+                    if (best == null || bytes.Length < best.Length)
+                    {
+                        best = bytes;
+                    }
+                }
+            }
+            return best;
+        }
+
+        /// <summary>
+        /// 测试项配图：计划索引时从历史报告的 ORT Plan 表里抽出来并按测试项归好了类，
+        /// 这里把同名测试项的图片放回它所在行的 E 列（与历史报告一致）。
+        /// </summary>
+        private void WriteOrtPlanPictures(IWorkbook wb, ISheet sheet, List<(ReportTemplateItem Item, int Row)> itemRows)
+        {
+            if (_db == null || itemRows.Count == 0)
+            {
+                return;
+            }
+            try
+            {
+                foreach ((ReportTemplateItem item, int row) in itemRows)
+                {
+                    string key = PlanIndexService.NameKey(item.TestItemName);
+                    if (string.IsNullOrEmpty(key))
+                    {
+                        continue;
+                    }
+                    List<PlanItemImage> images = _db.FreeSql.Select<PlanItemImage>()
+                        .Where(i => i.NameKey == key)
+                        .OrderBy(i => i.OrderNo)
+                        .ToList();
+                    if (images.Count == 0)
+                    {
+                        continue;
+                    }
+                    int offsetY = 0;
+                    int placed = 0;
+                    foreach (PlanItemImage image in images)
+                    {
+                        if (placed >= 3)
+                        {
+                            break; // 最多放 3 张，避免把表格撑得过高
+                        }
+                        string path = Path.Combine(_db.PlanImagesDir, image.FileName ?? "");
+                        if (!File.Exists(path))
+                        {
+                            continue;
+                        }
+                        byte[] bytes = File.ReadAllBytes(path);
+                        ScaleToFit(image.WidthPx, image.HeightPx, out int width, out int height);
+                        ExcelNpoi.AddPictureAnchored(wb, sheet, bytes, ExcelNpoi.DetectPictureType(bytes),
+                            col1: 5, row1: row, col2: 5, row2: row,
+                            dx1: 0, dy1: offsetY,
+                            dx2: width * EmuPerPixel, dy2: offsetY + height * EmuPerPixel);
+                        offsetY += (height + 4) * EmuPerPixel;
+                        placed++;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn($"写入 ORT Plan 配图失败：{ex.Message}");
+            }
+        }
+
+        /// <summary>按最大尺寸等比缩放（尺寸读不出来时给默认值）</summary>
+        private static void ScaleToFit(int widthPx, int heightPx, out int width, out int height)
+        {
+            width = widthPx > 0 ? widthPx : PictureMaxWidth;
+            height = heightPx > 0 ? heightPx : PictureMaxHeight;
+            double scale = Math.Min(1.0, Math.Min((double)PictureMaxWidth / width, (double)PictureMaxHeight / height));
+            width = Math.Max(1, (int)Math.Round(width * scale));
+            height = Math.Max(1, (int)Math.Round(height * scale));
         }
 
         /* ###############################  Waterfall  ################################ */
 
         /// <summary>
-        /// Waterfall：D 列填序列号、序列号下一行填工令、E4 填起始日期，
-        /// 右侧按排期写入每天的测试安排（同一天范围的同名测试合并单元格）。
+        /// Waterfall：D 列填序列号、序列号之后每行一个工令、起始日期写在第一列（其余列由公式顺推，
+        /// 格式沿用模板里日期/星期/UUT 序号三行的既有格式），右侧按排期写入每天的测试安排
+        /// （同一天范围的同名测试合并单元格，单元格格式沿用模板里的测试项行）。
         /// </summary>
         private static void WriteWaterfall(IWorkbook wb, ReportTemplateRequest request)
         {
@@ -444,14 +582,30 @@ namespace ORT一键报告.Services
             {
                 return;
             }
+            const int weekRow = 3;   // 星期（=WEEKDAY(日期,2)，周末由模板的条件格式涂灰）
+            const int dateRow = 4;   // 日期（第一列填起始日期，其余 =前一列+1）
+            const int uutRow = 5;    // UUT S/N 序号（第一列 1，其余 =前一列+1）
             const int firstSnRow = 7;
-            const int dateRow = 4;
             const int firstDateCol = 5; // E 列
+            const int templateSnRows = 3;
+
+            // 模板里这三行与测试项行各自的格式先取下来（清空后样式就没了）
+            ICellStyle weekStyle = ExcelNpoi.ExistingCell(sheet, weekRow, firstDateCol)?.CellStyle;
+            ICellStyle dateStyle = ExcelNpoi.ExistingCell(sheet, dateRow, firstDateCol)?.CellStyle;
+            ICellStyle uutStyle = ExcelNpoi.ExistingCell(sheet, uutRow, firstDateCol)?.CellStyle;
+            ICellStyle itemStyle = ExcelNpoi.ExistingCell(sheet, firstSnRow, firstDateCol)?.CellStyle;
+            ICellStyle lastItemStyle = ExcelNpoi.ExistingCell(sheet, firstSnRow + templateSnRows - 1, firstDateCol)?.CellStyle;
+            int templateLastCol = Math.Max(ExcelNpoi.LastColumn(sheet), firstDateCol);
+
             List<string> sns = (request.SerialNumbers ?? []).Where(s => !string.IsNullOrWhiteSpace(s)).Select(s => s.Trim()).ToList();
             int snCount = Math.Max(sns.Count, 1);
+            List<string> workOrders = (request.WorkOrder ?? "")
+                .Split(['\n', '\r', '\t', ' ', ',', '，', ';', '；'], StringSplitOptions.RemoveEmptyEntries)
+                .Select(w => w.Trim())
+                .Where(w => w.Length > 0)
+                .ToList();
 
             // 1. 序列号行数按实际调整（模板里预留了 3 行）
-            const int templateSnRows = 3;
             if (snCount < templateSnRows)
             {
                 ExcelNpoi.DeleteRows(sheet, firstSnRow + snCount, templateSnRows - snCount);
@@ -459,44 +613,42 @@ namespace ORT一键报告.Services
             else if (snCount > templateSnRows)
             {
                 int extra = snCount - templateSnRows;
-                int totalCols = Math.Max(ExcelNpoi.LastColumn(sheet), firstDateCol);
                 for (int i = 0; i < extra; i++)
                 {
                     int insertAt = firstSnRow + templateSnRows + i;
                     ExcelNpoi.InsertRows(sheet, insertAt, 1);
-                    ExcelNpoi.CopyRowStyle(sheet, firstSnRow + templateSnRows - 1, insertAt, totalCols);
+                    ExcelNpoi.CopyRowStyle(sheet, firstSnRow + templateSnRows - 1, insertAt, templateLastCol);
                 }
             }
 
             // 2. 清空并重建"测试安排"区域（先去掉该区域的合并，避免残留）；
             //    B 列是单体序号（模板里 1、2、3），清空时保留并重写
             int lastRow = ExcelNpoi.LastRow(sheet);
-            int clearLastRow = firstSnRow + snCount + 1; // 含工令行
-            int lastCol = Math.Max(ExcelNpoi.LastColumn(sheet), firstDateCol + snCount * 20);
-            RemoveMergesInRows(sheet, firstSnRow, Math.Max(clearLastRow, lastRow));
-            for (int r = firstSnRow; r <= clearLastRow; r++)
+            int clearLastRow = firstSnRow + snCount + Math.Max(workOrders.Count, 1); // 含工令行
+            int lastCol = Math.Max(templateLastCol, firstDateCol + snCount * 20);
+            RemoveMergesInRows(sheet, weekRow, Math.Max(clearLastRow, lastRow));
+            for (int r = weekRow; r <= clearLastRow; r++)
             {
                 ExcelNpoi.ClearCells(sheet, r, 3, lastCol);
-                if (r < firstSnRow + snCount)
+                if (r >= firstSnRow && r < firstSnRow + snCount)
                 {
                     ExcelNpoi.SetCell(sheet, r, 2, r - firstSnRow + 1);
                 }
             }
 
-            // 3. 起始日期 + 序列号 + 工令
+            // 3. 起始日期 + 序列号 + 工令（多个工令各占一行）
             //    起始日期对齐到工作日：第一项测试必然落在 E 列，概览读取（Waterfall 的 S/N 判定）也才稳
             DateTime start = NextWorkingDay(request.StartDate);
-            ExcelNpoi.SetCell(sheet, dateRow, firstDateCol, start);
             for (int i = 0; i < sns.Count; i++)
             {
                 ExcelNpoi.SetCell(sheet, firstSnRow + i, 4, sns[i]);
             }
-            if (!string.IsNullOrWhiteSpace(request.WorkOrder))
+            for (int i = 0; i < workOrders.Count; i++)
             {
-                ExcelNpoi.SetCell(sheet, firstSnRow + snCount, 4, request.WorkOrder.Trim());
+                ExcelNpoi.SetCell(sheet, firstSnRow + snCount + i, 4, workOrders[i]);
             }
 
-            // 4. 每一天的日期/星期/日号（超出模板已有列时补公式与样式）
+            // 4. 日期/星期/UUT 序号：第一列填起始日期，其余列用公式顺推（格式沿用模板列）
             int totalDays = 0;
             foreach (ReportTemplateItem item in request.Items ?? [])
             {
@@ -507,39 +659,58 @@ namespace ORT一键报告.Services
             }
             totalDays = Math.Max(totalDays, 1);
             int lastDateCol = firstDateCol + totalDays - 1;
-            int existingLastCol = ExcelNpoi.LastColumn(sheet);
             for (int c = firstDateCol; c <= lastDateCol; c++)
             {
+                ICell dateCell = ExcelNpoi.Cell(sheet, dateRow, c);
                 if (c == firstDateCol)
                 {
-                    ExcelNpoi.SetCell(sheet, dateRow, c, start);
+                    dateCell.SetCellValue(start);
                 }
                 else
                 {
-                    ICell cell = ExcelNpoi.Cell(sheet, dateRow, c);
-                    cell.CellFormula = $"{ExcelNpoi.AddressOf(dateRow, c - 1)}+1";
-                    cell.CellStyle = ExcelNpoi.DateStyleOf(wb);
-                    ICell weekCell = ExcelNpoi.Cell(sheet, dateRow - 1, c);
-                    weekCell.CellFormula = $"WEEKDAY({ExcelNpoi.AddressOf(dateRow, c)},2)";
-                    ICell dayCell = ExcelNpoi.Cell(sheet, dateRow + 1, c);
-                    dayCell.CellFormula = $"DAY({ExcelNpoi.AddressOf(dateRow, c)})";
-                    // 样式沿用前一列的（模板列已有日期/星期/日号的格式）
-                    for (int r = dateRow - 1; r <= dateRow + 1; r++)
-                    {
-                        ICellStyle style = ExcelNpoi.ExistingCell(sheet, r, c - 1)?.CellStyle;
-                        if (style != null)
-                        {
-                            ExcelNpoi.Cell(sheet, r, c).CellStyle = style;
-                        }
-                    }
+                    dateCell.CellFormula = $"{ExcelNpoi.AddressOf(dateRow, c - 1)}+1";
+                }
+                if (dateStyle != null)
+                {
+                    dateCell.CellStyle = dateStyle;
+                }
+
+                ICell weekCell = ExcelNpoi.Cell(sheet, weekRow, c);
+                weekCell.CellFormula = $"WEEKDAY({ExcelNpoi.AddressOf(dateRow, c)},2)";
+                if (weekStyle != null)
+                {
+                    weekCell.CellStyle = weekStyle;
+                }
+
+                ICell uutCell = ExcelNpoi.Cell(sheet, uutRow, c);
+                if (c == firstDateCol)
+                {
+                    uutCell.SetCellValue(1d);
+                }
+                else
+                {
+                    uutCell.CellFormula = $"{ExcelNpoi.AddressOf(uutRow, c - 1)}+1";
+                }
+                if (uutStyle != null)
+                {
+                    uutCell.CellStyle = uutStyle;
                 }
             }
-            for (int c = existingLastCol + 1; c <= lastDateCol; c++)
+            // 排期结束之后的列清空（模板里留着上一条报告的日期，别留在新表上）
+            for (int c = lastDateCol + 1; c <= templateLastCol; c++)
+            {
+                for (int r = weekRow; r <= uutRow; r++)
+                {
+                    ExcelNpoi.ClearCells(sheet, r, c, c);
+                }
+            }
+            for (int c = templateLastCol + 1; c <= lastDateCol; c++)
             {
                 ExcelNpoi.SetColumnWidth(sheet, c, 5.4);
             }
 
-            // 5. 测试安排：每个序列号都走一遍计划里的测试（同一天范围合并）
+            // 5. 测试安排：每个序列号都走一遍计划里的测试（同一天范围合并），单元格格式沿用模板的测试项行
+            int lastSnRow = firstSnRow + snCount - 1;
             foreach (ReportTemplateItem item in request.Items ?? [])
             {
                 if (!item.Start.HasValue || !item.End.HasValue)
@@ -556,12 +727,20 @@ namespace ORT一键报告.Services
                 {
                     int row = firstSnRow + i;
                     ExcelNpoi.SetCell(sheet, row, from, item.TestItemName ?? "");
-                    ExcelNpoi.ApplyStyle(sheet, row, from, row, to, new ExcelNpoi.CellStyleSpec
+                    ICellStyle style = row == lastSnRow && lastItemStyle != null ? lastItemStyle : itemStyle;
+                    if (style != null)
                     {
-                        Horizontal = HorizontalAlignment.Center,
-                        Vertical = VerticalAlignment.Center,
-                        WrapText = true
-                    });
+                        ExcelNpoi.ApplyStyle(sheet, row, from, row, to, style);
+                    }
+                    else
+                    {
+                        ExcelNpoi.ApplyStyle(sheet, row, from, row, to, new ExcelNpoi.CellStyleSpec
+                        {
+                            Horizontal = HorizontalAlignment.Center,
+                            Vertical = VerticalAlignment.Center,
+                            WrapText = true
+                        });
+                    }
                     if (to > from)
                     {
                         ExcelNpoi.Merge(sheet, row, from, row, to);
@@ -574,10 +753,10 @@ namespace ORT一键报告.Services
 
         /// <summary>
         /// TestStatus：按计划重建"分类行 + 测试项行"，并重算合计行。
-        /// 模板的数据行先整段删除再按需要重建，避免残留模板里的旧测试项；
-        /// 分类行/测试项行的样式取模板既有行，保持外观一致。
+        /// 分类取测试项目的"测试种类"（可靠性/环境 → ENVIRONMENT TESTS，EMC → EMC ），
+        /// 每个测试项的单元格样式、超链接（指向 Report 文件夹里对应的报告）与整表底色都按历史报告的样子还原。
         /// </summary>
-        private static void WriteTestStatus(IWorkbook wb, ReportTemplateRequest request)
+        private static void WriteTestStatus(IWorkbook wb, ReportTemplateRequest request, string targetFolder)
         {
             ISheet sheet = FindSheet(wb, "teststatus") ?? FindSheet(wb, "test status");
             if (sheet == null)
@@ -586,9 +765,10 @@ namespace ORT一键报告.Services
             }
             const int totalRow = 8;
             const int firstDataRow = 9;
-            // 模板第 9 行是分类行、第 10 行是测试项行，先把样式留下来
-            ICellStyle categoryStyle = ExcelNpoi.ExistingCell(sheet, firstDataRow, 2)?.CellStyle;
-            ICellStyle itemStyle = ExcelNpoi.ExistingCell(sheet, firstDataRow + 1, 2)?.CellStyle;
+            // 模板里 合计行 / 分类行 / 测试项行 分别留了各列的格式，逐列取下来套用
+            ICellStyle[] totalStyles = CaptureRowStyles(sheet, totalRow);
+            ICellStyle[] categoryStyles = CaptureRowStyles(sheet, firstDataRow);
+            ICellStyle[] itemStyles = CaptureRowStyles(sheet, firstDataRow + 1);
             int templateLast = ExcelNpoi.LastRow(sheet);
             int templateRows = Math.Max(templateLast - firstDataRow + 1, 0);
 
@@ -596,8 +776,7 @@ namespace ORT一键报告.Services
             List<KeyValuePair<string, List<ReportTemplateItem>>> groups = [];
             foreach (ReportTemplateItem item in request.Items ?? [])
             {
-                string category = string.IsNullOrWhiteSpace(item.Category) ? "RELIABILITY TEST" : item.Category.Trim();
-                category = TestStatusCategory(category);
+                string category = TestCategories.StatusDisplay(item.Category);
                 int index = groups.FindIndex(g => string.Equals(g.Key, category, StringComparison.OrdinalIgnoreCase));
                 if (index < 0)
                 {
@@ -622,11 +801,12 @@ namespace ORT一键报告.Services
             // 合计行（B8:D8 合并）
             ExcelNpoi.SetCell(sheet, totalRow, 2, "Total");
             ExcelNpoi.Merge(sheet, totalRow, 2, totalRow, 4);
-            ApplyStyleOrKeep(sheet, totalRow, 2, totalRow, 12, categoryStyle);
+            ApplyRowStyles(sheet, totalRow, totalStyles);
 
             int row = firstDataRow;
             int categoryNo = 0;
             List<int> categoryRows = [];
+            List<(int Row, string ItemName)> itemNameRows = [];
             foreach (KeyValuePair<string, List<ReportTemplateItem>> group in groups)
             {
                 categoryNo++;
@@ -636,7 +816,7 @@ namespace ORT一键报告.Services
                 ExcelNpoi.SetCell(sheet, row, 2, categoryNo);
                 ExcelNpoi.SetCell(sheet, row, 4, group.Key);
                 ExcelNpoi.Merge(sheet, row, 2, row, 3);
-                ApplyStyleOrKeep(sheet, row, 2, row, 12, categoryStyle);
+                ApplyRowStyles(sheet, row, categoryStyles);
                 SumRow(sheet, row, firstItemRow, lastItemRow);
                 row++;
 
@@ -652,11 +832,12 @@ namespace ORT一键报告.Services
                     ExcelNpoi.SetCell(sheet, row, 6, 0d);
                     ExcelNpoi.SetCell(sheet, row, 7, 0d);
                     ExcelNpoi.SetCell(sheet, row, 8, 0d);
-                    ApplyStyleOrKeep(sheet, row, 2, row, 12, itemStyle);
+                    ApplyRowStyles(sheet, row, itemStyles);
                     // 完成率/% 与合计行同构：由已录入的完成数自动计算
                     SetFormula(sheet, row, 9, $"IFERROR((F{row}+H{row})/E{row},0)");
                     SetFormula(sheet, row, 10, $"IFERROR(G{row}/F{row},0)");
                     SetFormula(sheet, row, 11, $"IFERROR((F{row}-G{row})/E{row},0)");
+                    itemNameRows.Add((row, item.TestItemName ?? ""));
                     row++;
                 }
             }
@@ -669,25 +850,168 @@ namespace ORT一键报告.Services
             SetFormula(sheet, totalRow, 9, $"IFERROR((F{totalRow}+H{totalRow})/E{totalRow},0)");
             SetFormula(sheet, totalRow, 10, $"IFERROR(G{totalRow}/F{totalRow},0)");
             SetFormula(sheet, totalRow, 11, $"IFERROR((F{totalRow}-G{totalRow})/E{totalRow},0)");
+
+            // 建立信息（历史报告里在标题下方）
+            if (!string.IsNullOrWhiteSpace(request.CreatedBy))
+            {
+                ExcelNpoi.SetCell(sheet, 4, 4, $"Create by: {request.CreatedBy.Trim()}");
+            }
+
+            int lastTableRow = Math.Max(row - 1, firstDataRow);
+            RewriteHyperlinks(sheet, targetFolder, itemNameRows);
+            ApplyStatusBackground(wb, sheet, lastTableRow);
         }
 
         /// <summary>
-        /// TestStatus 的分类名：既有报告里环境类测试写的是 ENVIRONMENT TESTS、EMC 组写的是 "EMC "，
-        /// 这里按同样写法转换，保持与历史报告一致（ORT Plan 表仍用计划里的 RELIABILITY TEST）。
+        /// 按"测试种类"分组（按首次出现顺序；同类的测试项排在一起，与历史报告的 ORT Plan / TestStatus 一致）
         /// </summary>
-        private static string TestStatusCategory(string category)
+        private static List<KeyValuePair<string, List<ReportTemplateItem>>> GroupByCategory(IEnumerable<ReportTemplateItem> items)
         {
-            string text = (category ?? "").Trim();
-            if (text.Equals("RELIABILITY TEST", StringComparison.OrdinalIgnoreCase)
-                || text.Equals("ENVIRONMENT TEST", StringComparison.OrdinalIgnoreCase))
+            List<KeyValuePair<string, List<ReportTemplateItem>>> groups = [];
+            foreach (ReportTemplateItem item in items ?? [])
             {
-                return "ENVIRONMENT TESTS";
+                string category = TestCategories.Normalize(item.Category) ?? TestCategories.Uncertain;
+                int index = groups.FindIndex(g => string.Equals(g.Key, category, StringComparison.OrdinalIgnoreCase));
+                if (index < 0)
+                {
+                    groups.Add(new KeyValuePair<string, List<ReportTemplateItem>>(category, [item]));
+                }
+                else
+                {
+                    groups[index].Value.Add(item);
+                }
             }
-            if (text.Equals("EMC", StringComparison.OrdinalIgnoreCase))
+            return groups;
+        }
+
+        /// <summary>取模板某一行的各列样式（下标 = 列号）</summary>
+        private static ICellStyle[] CaptureRowStyles(ISheet sheet, int row1)
+        {
+            int lastCol = Math.Max(ExcelNpoi.LastColumn(sheet), 12);
+            ICellStyle[] styles = new ICellStyle[lastCol + 1];
+            for (int c = 1; c <= lastCol; c++)
             {
-                return "EMC ";
+                styles[c] = ExcelNpoi.ExistingCell(sheet, row1, c)?.CellStyle;
             }
-            return text;
+            return styles;
+        }
+
+        /// <summary>按列套用模板行样式（取不到样式的列保持原样）</summary>
+        private static void ApplyRowStyles(ISheet sheet, int row1, ICellStyle[] styles)
+        {
+            if (styles == null)
+            {
+                return;
+            }
+            for (int c = 1; c < styles.Length; c++)
+            {
+                if (styles[c] != null)
+                {
+                    ExcelNpoi.Cell(sheet, row1, c).CellStyle = styles[c];
+                }
+            }
+        }
+
+        /// <summary>
+        /// 重建测试项的超链接：每个测试项指向 Report 文件夹里它自己那份报告
+        /// （历史报告里测试项名是蓝字带下划线，点了直接打开对应报告；模板里现成的链接行号会对不上）。
+        /// </summary>
+        private static void RewriteHyperlinks(ISheet sheet, string targetFolder, List<(int Row, string ItemName)> itemNameRows)
+        {
+            if (sheet is not XSSFSheet xssf)
+            {
+                return;
+            }
+            foreach (IHyperlink link in sheet.GetHyperlinkList().ToList())
+            {
+                xssf.RemoveHyperlink(link.FirstRow, link.FirstColumn);
+            }
+            List<string> reports = FindReportFiles(targetFolder);
+            if (reports.Count == 0)
+            {
+                return;
+            }
+            foreach ((int row, string itemName) in itemNameRows)
+            {
+                string file = reports.FirstOrDefault(f => NameMatches(f, itemName));
+                if (file == null)
+                {
+                    continue;
+                }
+                XSSFHyperlink link = new(HyperlinkType.File)
+                {
+                    Address = $"Report/{file}",
+                    FirstRow = row - 1,
+                    LastRow = row - 1,
+                    FirstColumn = 3,
+                    LastColumn = 3
+                };
+                xssf.AddHyperlink(link);
+            }
+        }
+
+        /// <summary>报告文件夹（根目录下的 Report 子文件夹）里的报告文件</summary>
+        private static List<string> FindReportFiles(string targetFolder)
+        {
+            try
+            {
+                string dir = string.IsNullOrWhiteSpace(targetFolder) ? null : Path.Combine(targetFolder, "Report");
+                if (dir == null || !Directory.Exists(dir))
+                {
+                    return [];
+                }
+                return Directory.GetFiles(dir, "*.xls*")
+                    .Select(Path.GetFileName)
+                    .Where(f => !f.StartsWith("~$", StringComparison.Ordinal))
+                    .OrderBy(f => f)
+                    .ToList();
+            }
+            catch (Exception)
+            {
+                return [];
+            }
+        }
+
+        /// <summary>报告文件名与测试项名是否对应（忽略大小写、空格、连字符与 "1.2 " 这类编号前缀）</summary>
+        private static bool NameMatches(string fileName, string itemName)
+        {
+            string file = NormalizeForMatch(Path.GetFileNameWithoutExtension(fileName ?? ""));
+            string item = NormalizeForMatch(itemName);
+            if (file.Length == 0 || item.Length == 0)
+            {
+                return false;
+            }
+            // 去掉编号前缀（如 12ORTBURNINTESTREPORT → ORTBURNINTESTREPORT 不好剥，改用互相包含判断）
+            return file.Contains(item) || item.Contains(file);
+        }
+
+        /// <summary>只留字母数字并转大写（"1.2 ORT Burn-In Test Report" → "12ORTBURNINTESTREPORT"）</summary>
+        private static string NormalizeForMatch(string text)
+        {
+            StringBuilder builder = new();
+            foreach (char ch in text ?? "")
+            {
+                if (char.IsLetterOrDigit(ch))
+                {
+                    builder.Append(char.ToUpperInvariant(ch));
+                }
+            }
+            return builder.ToString();
+        }
+
+        /// <summary>
+        /// 整表底色：全表铺淡灰，表格及表格周围一格刷白（与历史报告一致）。
+        /// 已有的彩色底纹（黑表头、蓝色分类行等）保持不动。
+        /// </summary>
+        private static void ApplyStatusBackground(IWorkbook wb, ISheet sheet, int lastTableRow)
+        {
+            const int tableFirstCol = 2;
+            const int tableLastCol = 12; // L 列（COMMENTS）
+            int canvasLastRow = lastTableRow + 12;
+            int canvasLastCol = tableLastCol + 6;
+            // 先刷白（表格 + 周围一格；标题区一并留白），再铺灰——铺灰会跳过已有底纹的单元格
+            ExcelNpoi.ApplyFillOverlay(wb, sheet, 1, tableFirstCol - 1, lastTableRow + 1, tableLastCol + 1, ExcelNpoi.IndexedWhite);
+            ExcelNpoi.ApplyFillOverlay(wb, sheet, 1, 1, canvasLastRow, canvasLastCol, ExcelNpoi.IndexedSilver);
         }
 
         /// <summary>
@@ -698,7 +1022,7 @@ namespace ORT一键报告.Services
             ICell cell = ExcelNpoi.Cell(sheet, row, col);
             ICellStyle style = cell.CellStyle;
             cell.SetCellValue((string)null);
-            cell.CellFormula = formula;
+            ExcelNpoi.SetFormula(sheet, row, col, formula);
             if (style != null)
             {
                 cell.CellStyle = style;
@@ -810,7 +1134,7 @@ namespace ORT一键报告.Services
                 request.Items.Add(new ReportTemplateItem
                 {
                     TestItemName = item.TestItemName,
-                    Category = item.Category ?? item.Template?.Category,
+                    Category = TestCategories.Normalize(item.Category ?? item.Template?.Category) ?? TestCategories.Uncertain,
                     SamplingPlan = item.EffectiveSamplingPlan,
                     TestCondition = item.EffectiveTestCondition,
                     PassCriterion = item.EffectivePassCriterion,

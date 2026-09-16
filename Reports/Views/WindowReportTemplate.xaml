@@ -96,10 +96,11 @@
 
         <GridSplitter Grid.Row="2" HorizontalAlignment="Stretch" VerticalAlignment="Center" Background="Transparent"/>
 
-        <!--测试项目安排（可拖动排序，日期可改）-->
+        <!--测试项目安排（强制按开始日期排序，不能点表头排序，日期可改）-->
         <DataGrid x:Name="dg_items" Grid.Row="3" AutoGenerateColumns="False" CanUserAddRows="False"
-                  SelectionMode="Single" SelectionUnit="FullRow" HeadersVisibility="Column"
-                  GridLinesVisibility="Horizontal" SelectionChanged="Dg_Items_SelectionChanged">
+                  CanUserSortColumns="False" SelectionMode="Single" SelectionUnit="FullRow" HeadersVisibility="Column"
+                  GridLinesVisibility="Horizontal" SelectionChanged="Dg_Items_SelectionChanged"
+                  CellEditEnding="Dg_Items_CellEditEnding">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="{lex:Loc ReportTemplate_Category}" Binding="{Binding Category}" Width="140"/>
                 <DataGridTextColumn Header="{lex:Loc ReportTemplate_Item}" Binding="{Binding TestItemName}" Width="*"/>

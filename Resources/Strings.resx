@@ -440,6 +440,21 @@
   <data name="Admin_TestTime" xml:space="preserve">
     <value>试验时间</value>
   </data>
+  <data name="Admin_TestCategory" xml:space="preserve">
+    <value>测试种类</value>
+  </data>
+  <data name="Admin_AutoCategory" xml:space="preserve">
+    <value>自动归类</value>
+  </data>
+  <data name="Admin_AutoCategoryHint" xml:space="preserve">
+    <value>把「不确定」的测试项目重新归类（关键词 + 历史报告，手工归类过的不动）</value>
+  </data>
+  <data name="Admin_TestCategoryHint" xml:space="preserve">
+    <value>报告 ORT Plan / TestStatus 的分组行按测试种类归类；认不出的归「不确定」，可在这里手工归类</value>
+  </data>
+  <data name="Admin_AutoCategoryDone" xml:space="preserve">
+    <value>已自动归类 {0} 个测试项目</value>
+  </data>
   <data name="Admin_Technician" xml:space="preserve">
     <value>技术员</value>
   </data>

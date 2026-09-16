@@ -13,6 +13,9 @@ namespace ORT一键报告.Utils
         /// <summary>是否为分类行（如 RELIABILITY TEST / EMC）</summary>
         public bool IsCategory { get; set; }
 
+        /// <summary>所在工作表行号（1 基，用于把图片锚点归到对应测试项）</summary>
+        public int Row { get; set; }
+
         /// <summary>所属分类（分类行即自身文本）</summary>
         public string Category { get; set; }
 
@@ -75,6 +78,13 @@ namespace ORT一键报告.Utils
         /// <summary>解析工作簿里的 ORT Plan 表（按名称找，找不到返回 null）</summary>
         public static ParsedOrtPlan ParseWorkbook(IWorkbook workbook)
         {
+            ISheet sheet = FindSheet(workbook);
+            return sheet == null ? null : Parse(sheet);
+        }
+
+        /// <summary>按名称查找 ORT Plan 工作表（找不到返回 null）</summary>
+        public static ISheet FindSheet(IWorkbook workbook)
+        {
             if (workbook == null)
             {
                 return null;
@@ -84,7 +94,7 @@ namespace ORT一键报告.Utils
                 string name = workbook.GetSheetName(i);
                 if (!string.IsNullOrWhiteSpace(name) && NormalizeName(name).Contains("ORTPLAN"))
                 {
-                    return Parse(workbook.GetSheetAt(i));
+                    return workbook.GetSheetAt(i);
                 }
             }
             return null;
@@ -200,13 +210,14 @@ namespace ORT一键报告.Utils
                 if (onlyItem && LooksLikeCategory(item))
                 {
                     category = item;
-                    plan.Rows.Add(new ParsedOrtPlanRow { IsCategory = true, Category = category, TestItemName = item });
+                    plan.Rows.Add(new ParsedOrtPlanRow { IsCategory = true, Row = r, Category = category, TestItemName = item });
                     continue;
                 }
 
                 plan.Rows.Add(new ParsedOrtPlanRow
                 {
                     IsCategory = false,
+                    Row = r,
                     Category = category,
                     TestItemName = item,
                     SamplingPlan = sample,

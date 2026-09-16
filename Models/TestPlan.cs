@@ -546,4 +546,49 @@ namespace ORT一键报告.Models
         [Column(DbType = "text", IsNullable = true)]
         public string Remark { get; set; }
     }
+
+    /// <summary>
+    /// 测试项目配图（plan_item_images 表）：计划索引时从历史报告的 ORT Plan 表里抽出图片，
+    /// 按锚点所在行归到对应的测试项目上；生成新报告模板时把图片一起放进 ORT Plan 表
+    /// （历史报告里每个测试项目旁边都有设备/测试现场照片）。
+    /// 图片文件落在数据库目录下的 PlanImages 文件夹，这里只存相对文件名。
+    /// </summary>
+    [Table(Name = "plan_item_images")]
+    public class PlanItemImage
+    {
+        [Column(IsPrimary = true, IsIdentity = true)]
+        public long Id { get; set; }
+
+        /// <summary>测试项目名的归一化键（见 PlanIndexService.NameKey）</summary>
+        [Column(StringLength = 128, IsNullable = false)]
+        public string NameKey { get; set; }
+
+        /// <summary>测试项目名（原样，便于人工核对）</summary>
+        [Column(StringLength = 128, IsNullable = true)]
+        public string TestItemName { get; set; }
+
+        /// <summary>来源机种</summary>
+        [Column(StringLength = 128, IsNullable = true)]
+        public string ModelName { get; set; }
+
+        /// <summary>来源报告概览文件</summary>
+        [Column(StringLength = 512, IsNullable = true)]
+        public string SourceFile { get; set; }
+
+        /// <summary>图片文件名（相对 PlanImages 目录）</summary>
+        [Column(StringLength = 256, IsNullable = true)]
+        public string FileName { get; set; }
+
+        /// <summary>图片宽度（像素）</summary>
+        public int WidthPx { get; set; }
+
+        /// <summary>图片高度（像素）</summary>
+        public int HeightPx { get; set; }
+
+        /// <summary>同一测试项目内的顺序</summary>
+        public int OrderNo { get; set; }
+
+        [Column(IsNullable = true)]
+        public DateTime? UpdatedAt { get; set; }
+    }
 }

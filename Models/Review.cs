@@ -1,4 +1,4 @@
-﻿using FreeSql.DataAnnotations;
+using FreeSql.DataAnnotations;
 using System;
 
 namespace ORT一键报告.Models
@@ -126,6 +126,13 @@ namespace ORT一键报告.Models
         /// </summary>
         [Column(StringLength = 32, IsNullable = true)]
         public string Period { get; set; }
+
+        /// <summary>
+        /// 测试种类（RELIABILITY TEST / EMC / 不确定…）：报告 ORT Plan 与 TestStatus 的分组行按此归类，
+        /// 计划索引时按历史报告归入的类别自动填，认不出来的归"不确定"，由用户在管理界面手工归类
+        /// </summary>
+        [Column(StringLength = 64, IsNullable = true)]
+        public string Category { get; set; }
 
         /// <summary>
         /// 负责人（显示用文本，多个以"/"分隔；由 OwnerIds 对应的显示名同步维护，导入时存原始文本）

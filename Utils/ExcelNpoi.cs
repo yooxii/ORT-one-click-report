@@ -324,9 +324,139 @@ namespace ORT一键报告.Utils
             => Style(workbook, "date:yyyy/M/d", style => style.DataFormat = workbook.CreateDataFormat().GetFormat("yyyy/M/d"));
 
         /// <summary>
-        /// 写公式
+        /// 写公式。
+        /// 先清空单元格原有公式再写：模板里的公式可能是共享公式（f 上带 t="shared"/si），
+        /// 只改文本的话新公式仍挂在旧的共享组上，删/插行后 Excel 会判定共享公式失效，
+        /// 打开时报"检测到错误…已删除记录：共享公式"并要求修复。
         /// </summary>
-        public static void SetFormula(ISheet sheet, int row1, int col1, string formula) => Cell(sheet, row1, col1).CellFormula = formula;
+        public static void SetFormula(ISheet sheet, int row1, int col1, string formula)
+        {
+            ICell cell = Cell(sheet, row1, col1);
+            if (cell.CellType == CellType.Formula)
+            {
+                cell.SetCellFormula(null);
+            }
+            if (!string.IsNullOrEmpty(formula))
+            {
+                cell.CellFormula = formula;
+            }
+        }
+
+        /// <summary>
+        /// 把工作表里所有公式"就地重写"一遍，消掉模板残留的共享公式组
+        /// （共享公式的公式文本按单元格位置偏移后写成普通公式；主单元格已被覆盖、
+        /// 无法还原的则直接去掉公式，保留缓存值）。生成前调用一次。
+        /// </summary>
+        public static int NormalizeFormulas(ISheet sheet)
+        {
+            if (sheet == null)
+            {
+                return 0;
+            }
+            int count = 0;
+            for (int r = 0; r <= sheet.LastRowNum; r++)
+            {
+                IRow row = sheet.GetRow(r);
+                if (row == null)
+                {
+                    continue;
+                }
+                for (int c = 0; c < row.LastCellNum; c++)
+                {
+                    ICell cell = row.GetCell(c);
+                    if (cell == null || cell.CellType != CellType.Formula)
+                    {
+                        continue;
+                    }
+                    string formula = null;
+                    try
+                    {
+                        formula = cell.CellFormula;
+                    }
+                    catch (Exception)
+                    {
+                        formula = null; // 主单元格已被删掉的共享公式，取不到文本
+                    }
+                    try
+                    {
+                        cell.SetCellFormula(null);
+                    }
+                    catch (Exception)
+                    {
+                        continue;
+                    }
+                    if (!string.IsNullOrEmpty(formula))
+                    {
+                        cell.CellFormula = formula;
+                        count++;
+                    }
+                }
+            }
+            return count;
+        }
+
+        /// <summary>把整个工作簿所有工作表的公式规范化（见 <see cref="NormalizeFormulas(ISheet)"/>）</summary>
+        public static int NormalizeFormulas(IWorkbook workbook)
+        {
+            if (workbook == null)
+            {
+                return 0;
+            }
+            int count = 0;
+            for (int i = 0; i < workbook.NumberOfSheets; i++)
+            {
+                count += NormalizeFormulas(workbook.GetSheetAt(i));
+            }
+            return count;
+        }
+
+        /// <summary>Excel 索引色：白</summary>
+        public const short IndexedWhite = 9;
+
+        /// <summary>Excel 索引色：淡灰（历史报告里表格外的底色）</summary>
+        public const short IndexedSilver = 22;
+
+        /// <summary>
+        /// 给区域内"没有自己底纹"的单元格刷一层底色（保留模板里已有的黑/蓝等彩色底纹），
+        /// 用于把整张表铺成淡灰背景、表格周围刷白。颜色用 Excel 索引色（见 IndexedWhite/IndexedSilver）。
+        /// </summary>
+        public static int ApplyFillOverlay(IWorkbook workbook, ISheet sheet, int row1, int col1, int row2, int col2,
+            short indexedColor)
+        {
+            if (sheet == null)
+            {
+                return 0;
+            }
+            int r1 = Math.Max(1, Math.Min(row1, row2));
+            int r2 = Math.Max(row1, row2);
+            int c1 = Math.Max(1, Math.Min(col1, col2));
+            int c2 = Math.Max(col1, col2);
+            int count = 0;
+            for (int r = r1; r <= r2; r++)
+            {
+                for (int c = c1; c <= c2; c++)
+                {
+                    ICell cell = Cell(sheet, r, c);
+                    ICellStyle source = cell.CellStyle;
+                    if (source != null && source.FillPattern != FillPattern.NoFill)
+                    {
+                        continue; // 已有底纹（黑表头/蓝色分类行/白底等）保持不动
+                    }
+                    string key = string.Format("overlayfill:{0}:{1}", indexedColor, source == null ? -1 : source.Index);
+                    cell.CellStyle = Style(workbook, key, style =>
+                    {
+                        if (source != null)
+                        {
+                            style.CloneStyleFrom(source);
+                        }
+                        style.FillForegroundColor = indexedColor;
+                        style.FillPattern = FillPattern.SolidForeground;
+                    });
+                    count++;
+                }
+            }
+            return count;
+        }
 
         /// <summary>
         /// 清空某行指定列的单元格内容（保留样式）
@@ -964,6 +1094,31 @@ namespace ORT一键报告.Utils
         }
 
         /// <summary>
+        /// 按"两个单元格 + EMU 偏移"锚定插入图片（与 Excel 原生锚点一致，1 基行列，偏移单位为 EMU）。
+        /// 用于把历史报告里的图片（logo 与测试项目配图）原样搬到新表上。
+        /// </summary>
+        public static IPicture AddPictureAnchored(IWorkbook workbook, ISheet sheet, byte[] imageBytes, PictureType type,
+            int col1, int row1, int col2, int row2, int dx1, int dy1, int dx2, int dy2)
+        {
+            if (imageBytes == null || imageBytes.Length == 0)
+            {
+                return null;
+            }
+            int pictureIndex = workbook.AddPicture(imageBytes, type);
+            IDrawing drawing = sheet.CreateDrawingPatriarch();
+            IClientAnchor anchor = workbook.GetCreationHelper().CreateClientAnchor();
+            anchor.Col1 = Math.Max(0, col1 - 1);
+            anchor.Row1 = Math.Max(0, row1 - 1);
+            anchor.Col2 = Math.Max(0, col2 - 1);
+            anchor.Row2 = Math.Max(0, row2 - 1);
+            anchor.Dx1 = dx1;
+            anchor.Dy1 = dy1;
+            anchor.Dx2 = dx2;
+            anchor.Dy2 = dy2;
+            return drawing.CreatePicture(anchor, pictureIndex);
+        }
+
+        /// <summary>
         /// 读取工作表中的图片（左上角 1 基行列 + 字节）
         /// </summary>
         public static List<(int Row, int Column, string Name, byte[] Bytes)> Pictures(ISheet sheet)
@@ -985,6 +1140,92 @@ namespace ORT一键报告.Utils
                     byte[] bytes = picture.PictureData?.Data;
                     list.Add((anchor.Row1 + 1, anchor.Col1 + 1, picture.Name, bytes));
                 }
+            }
+            return list;
+        }
+
+        /// <summary>
+        /// 工作表里的一张图片（含锚点位置与 EMU 偏移，便于原样搬到别的表上）
+        /// </summary>
+        public sealed class SheetPicture
+        {
+            /// <summary>左上角所在行（1 基）</summary>
+            public int Row { get; set; }
+
+            /// <summary>左上角所在列（1 基）</summary>
+            public int Column { get; set; }
+
+            /// <summary>右下角所在行（1 基）</summary>
+            public int Row2 { get; set; }
+
+            /// <summary>右下角所在列（1 基）</summary>
+            public int Column2 { get; set; }
+
+            /// <summary>左上角偏移（EMU）</summary>
+            public int Dx1 { get; set; }
+
+            /// <summary>左上角偏移（EMU）</summary>
+            public int Dy1 { get; set; }
+
+            /// <summary>右下角偏移（EMU）</summary>
+            public int Dx2 { get; set; }
+
+            /// <summary>右下角偏移（EMU）</summary>
+            public int Dy2 { get; set; }
+
+            /// <summary>形状名</summary>
+            public string Name { get; set; }
+
+            /// <summary>图片字节</summary>
+            public byte[] Bytes { get; set; }
+
+            /// <summary>图片宽度（EMU）</summary>
+            public int Width
+            {
+                get
+                {
+                    if (Row == Row2)
+                    {
+                        return Math.Max(0, Dx2 - Dx1);
+                    }
+                    return Math.Max(0, Dx2 - Dx1);
+                }
+            }
+
+            /// <summary>图片高度（EMU）</summary>
+            public int Height => Math.Max(0, Dy2 - Dy1);
+        }
+
+        /// <summary>
+        /// 读取工作表中的图片（含锚点与尺寸）
+        /// </summary>
+        public static List<SheetPicture> PictureDetails(ISheet sheet)
+        {
+            List<SheetPicture> list = [];
+            if (sheet == null || sheet.CreateDrawingPatriarch() is not XSSFDrawing drawing)
+            {
+                return list;
+            }
+            foreach (XSSFShape shape in drawing.GetShapes())
+            {
+                if (shape is not XSSFPicture picture)
+                {
+                    continue;
+                }
+                IClientAnchor anchor = picture.ClientAnchor;
+                list.Add(new SheetPicture
+                {
+                    Row = anchor.Row1 + 1,
+                    Column = anchor.Col1 + 1,
+                    Row2 = anchor.Row2 + 1,
+                    Column2 = anchor.Col2 + 1,
+                    Dx1 = anchor.Dx1,
+                    Dy1 = anchor.Dy1,
+                    Dx2 = anchor.Dx2,
+                    Dy2 = anchor.Dy2,
+                    Name = picture.Name,
+                    Bytes = picture.PictureData?.Data
+                });
             }
             return list;
         }

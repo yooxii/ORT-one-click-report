@@ -440,6 +440,21 @@
   <data name="Admin_TestTime" xml:space="preserve">
     <value>試驗時間</value>
   </data>
+  <data name="Admin_TestCategory" xml:space="preserve">
+    <value>測試種類</value>
+  </data>
+  <data name="Admin_AutoCategory" xml:space="preserve">
+    <value>自動歸類</value>
+  </data>
+  <data name="Admin_AutoCategoryHint" xml:space="preserve">
+    <value>把「不確定」的測試項目重新歸類（關鍵字 + 歷史報告，手工歸類過的不動）</value>
+  </data>
+  <data name="Admin_TestCategoryHint" xml:space="preserve">
+    <value>報告 ORT Plan / TestStatus 的分組列依測試種類歸類；認不出的歸「不確定」，可在此手工歸類</value>
+  </data>
+  <data name="Admin_AutoCategoryDone" xml:space="preserve">
+    <value>已自動歸類 {0} 個測試項目</value>
+  </data>
   <data name="Admin_Technician" xml:space="preserve">
     <value>技術員</value>
   </data>

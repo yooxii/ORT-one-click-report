@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -525,6 +526,8 @@ namespace ORT一键报告.Services
                     {
                         _db.FreeSql.Insert(raws).ExecuteAffrows();
                     }
+                    // 顺手把 ORT Plan 表里的图片按测试项抽出来（生成新报告模板时一并写入）
+                    IndexOrtPlanImages(wb, plan, entry.OverviewFile, model);
                     entry.ModelName = model;
                     entry.Stage = stage;
                     entry.Note = Truncate(note, 1000);
@@ -550,6 +553,145 @@ namespace ORT一键报告.Services
                 entry.UpdatedAt = DateTime.Now;
                 _db.FreeSql.Update<PlanIndexEntry>().SetSource(entry).Where(e => e.Id == entry.Id).ExecuteAffrows();
             }
+        }
+
+        /// <summary>
+        /// 从历史报告的 ORT Plan 表里抽出配图，按锚点所在行归到对应测试项目上。
+        /// 图片落盘到数据库目录下的 PlanImages，数据库里只记相对文件名；
+        /// 同一个测试项目以最新一份报告为准（覆盖式更新，重建索引不会越积越多）。
+        /// </summary>
+        private void IndexOrtPlanImages(NPOI.SS.UserModel.IWorkbook wb, ParsedOrtPlan plan, string overviewFile, string model)
+        {
+            try
+            {
+                NPOI.SS.UserModel.ISheet sheet = OrtPlanParser.FindSheet(wb);
+                List<ExcelNpoi.SheetPicture> pictures = ExcelNpoi.PictureDetails(sheet);
+                List<ParsedOrtPlanRow> itemRows = plan.Items.Where(r => r.Row > 0 && !string.IsNullOrWhiteSpace(r.TestItemName)).ToList();
+                if (pictures.Count == 0 || itemRows.Count == 0)
+                {
+                    return;
+                }
+                // 1. 图片 → 测试项：取锚点行（左上角）之前最近的一个测试项；在表头之前的一律忽略（表头只有 logo）
+                Dictionary<string, List<(string Name, string Key, byte[] Bytes)>> matched = [];
+                foreach (ExcelNpoi.SheetPicture picture in pictures)
+                {
+                    if (picture.Bytes == null || picture.Bytes.Length == 0 || picture.Row <= plan.HeaderRow)
+                    {
+                        continue; // 表头区的公司 logo 不算测试项配图
+                    }
+                    ParsedOrtPlanRow row = itemRows.LastOrDefault(r => r.Row <= picture.Row);
+                    if (row == null)
+                    {
+                        continue;
+                    }
+                    string key = NameKey(row.TestItemName);
+                    if (string.IsNullOrEmpty(key))
+                    {
+                        continue;
+                    }
+                    if (!matched.TryGetValue(key, out List<(string, string, byte[])> list))
+                    {
+                        list = [];
+                        matched[key] = list;
+                    }
+                    list.Add((row.TestItemName, key, picture.Bytes));
+                }
+                if (matched.Count == 0)
+                {
+                    return;
+                }
+
+                // 2. 覆盖式落库：先清掉这些测试项的旧记录与旧文件
+                Directory.CreateDirectory(_db.PlanImagesDir);
+                foreach (KeyValuePair<string, List<(string Name, string Key, byte[] Bytes)>> pair in matched)
+                {
+                    foreach (PlanItemImage old in _db.FreeSql.Select<PlanItemImage>().Where(i => i.NameKey == pair.Key).ToList())
+                    {
+                        DeleteImageFile(old.FileName);
+                    }
+                    _db.FreeSql.Delete<PlanItemImage>().Where(i => i.NameKey == pair.Key).ExecuteAffrows();
+                    int order = 0;
+                    string safeKey = SafeFileName(pair.Key);
+                    foreach ((string name, string key, byte[] bytes) in pair.Value)
+                    {
+                        order++;
+                        string fileName = $"{safeKey}_{order}.png";
+                        string fullPath = Path.Combine(_db.PlanImagesDir, fileName);
+                        File.WriteAllBytes(fullPath, bytes);
+                        GetImageSize(bytes, out int width, out int height);
+                        _db.FreeSql.Insert(new PlanItemImage
+                        {
+                            NameKey = key,
+                            TestItemName = name,
+                            ModelName = model,
+                            SourceFile = Truncate(overviewFile, 500),
+                            FileName = fileName,
+                            WidthPx = width,
+                            HeightPx = height,
+                            OrderNo = order,
+                            UpdatedAt = DateTime.Now
+                        }).ExecuteAffrows();
+                    }
+                }
+                _logger.Info($"已抽取 ORT Plan 配图：{matched.Count} 个测试项目（{Path.GetFileName(overviewFile)}）");
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn($"抽取 ORT Plan 配图失败（{Path.GetFileName(overviewFile)}）：{ex.Message}");
+            }
+        }
+
+        /// <summary>删掉旧的配图文件（文件不存在当作已删）</summary>
+        private void DeleteImageFile(string fileName)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(fileName))
+                {
+                    return;
+                }
+                string path = Path.Combine(_db.PlanImagesDir, fileName);
+                if (File.Exists(path))
+                {
+                    File.Delete(path);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn($"删除旧配图失败（{fileName}）：{ex.Message}");
+            }
+        }
+
+        /// <summary>图片像素尺寸（读不出来时按 0 记）</summary>
+        private static void GetImageSize(byte[] bytes, out int width, out int height)
+        {
+            width = 0;
+            height = 0;
+            try
+            {
+                using MemoryStream stream = new(bytes);
+                using System.Drawing.Image image = System.Drawing.Image.FromStream(stream);
+                width = image.Width;
+                height = image.Height;
+            }
+            catch (Exception)
+            {
+                // 认不出尺寸就算了，生成报告时按默认大小放
+            }
+        }
+
+        /// <summary>归一化键转成安全的文件名</summary>
+        private static string SafeFileName(string key)
+        {
+            StringBuilder builder = new();
+            foreach (char ch in key ?? "")
+            {
+                if (char.IsLetterOrDigit(ch))
+                {
+                    builder.Append(ch);
+                }
+            }
+            return builder.Length == 0 ? "item" : builder.ToString();
         }
 
         /// <summary>取 Cover 工作表（按名称找，找不到退回第一张表）</summary>

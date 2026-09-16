@@ -184,12 +184,13 @@ namespace ORT一键报告.Reports.Views
                 }
                 List<TestPlanItem> planItems = _planService.GetItems(plan.Id);
                 _items.Clear();
+                Dictionary<string, string> categories = LoadTestCategories();
                 foreach (TestPlanItem item in planItems)
                 {
                     _items.Add(new ReportTemplateItem
                     {
                         TestItemName = item.TestItemName,
-                        Category = item.Category ?? item.Template?.Category,
+                        Category = ResolveCategory(categories, item.TestItemName, item.Category ?? item.Template?.Category),
                         SamplingPlan = item.EffectiveSamplingPlan,
                         TestCondition = item.EffectiveTestCondition,
                         PassCriterion = item.EffectivePassCriterion,
@@ -209,6 +210,48 @@ namespace ORT一键报告.Reports.Views
                 _logger.Error(ex, "载入机种测试计划失败");
                 ToastService.Show(string.Format(LanguageService.Get("ReportTemplate_Msg_FailedFormat"), ex.Message), ToastType.Warning);
             }
+        }
+
+        /// <summary>
+        /// 测试种类表：测试项目名（归一化键）→ 测试种类（测试项目表里维护的值）
+        /// </summary>
+        private Dictionary<string, string> LoadTestCategories()
+        {
+            Dictionary<string, string> map = [];
+            try
+            {
+                AdminService admin = App.ServiceProvider.GetRequiredService<AdminService>();
+                // 没有测试种类的先在管理端自动归类（关键词 + 历史报告）
+                admin.EnsureTestItemCategories();
+                foreach (TestItemCatalog entry in admin.GetTestItems())
+                {
+                    string key = PlanIndexService.NameKey(entry.Name);
+                    string category = TestCategories.Normalize(entry.Category);
+                    if (!string.IsNullOrEmpty(key) && !string.IsNullOrEmpty(category))
+                    {
+                        map[key] = category;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn($"读取测试项目种类失败: {ex.Message}");
+            }
+            return map;
+        }
+
+        /// <summary>
+        /// 取测试种类：以"测试项目表"的归类为准（用户可手工归类），
+        /// 没有归类时退回计划模板里历史报告的分类，仍没有就归"不确定"
+        /// </summary>
+        private static string ResolveCategory(Dictionary<string, string> categories, string testItemName, string planCategory)
+        {
+            string key = PlanIndexService.NameKey(testItemName);
+            if (categories != null && !string.IsNullOrEmpty(key) && categories.TryGetValue(key, out string category))
+            {
+                return category;
+            }
+            return TestCategories.Normalize(planCategory) ?? TestCategories.Uncertain;
         }
 
         /// <summary>
@@ -271,16 +314,48 @@ namespace ORT一键报告.Reports.Views
         }
 
         /// <summary>
-        /// 按开始日期与每项测试的试验周期排期（开始日期落在工作日）
+        /// 按开始日期与每项测试的试验周期排期（开始日期落在工作日），
+        /// 并把表格强制按开始日期排序（表格不允许点表头排序）
         /// </summary>
         private void AutoSchedule(bool refresh)
         {
             DateTime start = dp_start.SelectedDate ?? DateTime.Today;
             ReportTemplateService.Schedule(_items.ToList(), start);
+            SortItemsByStart();
             if (refresh)
             {
                 dg_items.Items.Refresh();
             }
+        }
+
+        /// <summary>
+        /// 强制按开始日期升序（没有开始日期的排在最后）；
+        /// 排期与手工改日期后都会调用，保证表格顺序始终与排期一致
+        /// </summary>
+        private void SortItemsByStart()
+        {
+            List<ReportTemplateItem> sorted = _items
+                .OrderBy(i => i.Start ?? DateTime.MaxValue)
+                .ThenBy(i => i.End ?? DateTime.MaxValue)
+                .ToList();
+            for (int target = 0; target < sorted.Count; target++)
+            {
+                int current = _items.IndexOf(sorted[target]);
+                if (current >= 0 && current != target)
+                {
+                    _items.Move(current, target);
+                }
+            }
+        }
+
+        /// <summary>表格里直接改了开始日期后重新排序</summary>
+        private void Dg_Items_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
+        {
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                SortItemsByStart();
+                dg_items.Items.Refresh();
+            }), System.Windows.Threading.DispatcherPriority.Background);
         }
 
         private void MoveItem(int delta)
@@ -338,6 +413,7 @@ namespace ORT一键报告.Reports.Views
                 return;
             }
             List<PlanItemTemplate> templates = _planService.GetTemplates();
+            Dictionary<string, string> categories = LoadTestCategories();
             List<string> added = [];
             foreach (TestItemCatalog entry in picked)
             {
@@ -352,8 +428,8 @@ namespace ORT一键报告.Reports.Views
                 ReportTemplateItem item = new()
                 {
                     TestItemName = name,
-                    // 分类/抽样计划/测试条件/通过判定仍取"计划模板 + 机种差异"的结果
-                    Category = template?.Category ?? "RELIABILITY TEST",
+                    // 分类（测试种类）以测试项目表的归类为准，计划模板里历史报告的分类作为兜底
+                    Category = ResolveCategory(categories, name, template?.Category),
                     SamplingPlan = template?.SamplingPlan,
                     TestCondition = template?.TestCondition,
                     PassCriterion = template?.PassCriterion,

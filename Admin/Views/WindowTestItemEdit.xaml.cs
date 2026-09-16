@@ -22,6 +22,7 @@ namespace ORT一键报告.Admin.Views
 
         public string ItemName => txt_name.Text?.Trim();
         public string Period => txt_period.Text?.Trim();
+        public string Category => cmb_category.Text?.Trim();
         public string Owner => txt_owner.Text?.Trim();
         public string Remark => txt_remark.Text?.Trim();
 
@@ -34,6 +35,10 @@ namespace ORT一键报告.Admin.Views
             Title = title;
             txt_name.Text = item?.Name ?? "";
             txt_period.Text = item?.Period ?? "";
+            cmb_category.ItemsSource = TestCategories.Known.ToList();
+            cmb_category.Text = string.IsNullOrWhiteSpace(item?.Category)
+                ? TestCategories.Classify(item?.Name)
+                : item.Category;
             txt_remark.Text = item?.Remark ?? "";
             txt_owner.Text = item?.Owner ?? "";
             BuildTechnicianList(technicians ?? []);

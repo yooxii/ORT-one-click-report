@@ -448,6 +448,61 @@ namespace ORT一键报告.Services
         }
 
         /// <summary>
+        /// 按名称关键词与历史报告给测试项目自动归类（测试种类），只补"没有种类"和"不确定"的项目，
+        /// 用户手工归类过的不动。关键词优先（历史报告里"Conducted EMI Measurement"曾被归到
+        /// RELIABILITY TEST，按关键词判才是 EMC），关键词认不出时用计划索引里归并出来的分类。
+        /// </summary>
+        /// <returns>本次改了归类的条数</returns>
+        public int AutoAssignTestItemCategories()
+        {
+            List<TestItemCatalog> items = _db.FreeSql.Select<TestItemCatalog>().ToList();
+            if (items.Count == 0)
+            {
+                return 0;
+            }
+            Dictionary<string, string> fromHistory = _db.FreeSql.Select<PlanItemTemplate>().ToList()
+                .Where(t => !string.IsNullOrWhiteSpace(t.Category))
+                .GroupBy(t => PlanIndexService.NameKey(t.TestItemName))
+                .Where(g => !string.IsNullOrEmpty(g.Key))
+                .ToDictionary(g => g.Key, g => TestCategories.Normalize(g.Select(t => t.Category)));
+            int changed = 0;
+            foreach (TestItemCatalog item in items)
+            {
+                bool uncertain = string.IsNullOrWhiteSpace(item.Category)
+                    || string.Equals(item.Category.Trim(), TestCategories.Uncertain, StringComparison.Ordinal);
+                if (!uncertain)
+                {
+                    continue; // 已归好类（可能是用户手工改的），不覆盖
+                }
+                string keyword = TestCategories.Classify(item.Name);
+                string category = keyword;
+                if (category == TestCategories.Uncertain)
+                {
+                    category = fromHistory.TryGetValue(PlanIndexService.NameKey(item.Name), out string history)
+                        && !string.IsNullOrEmpty(history)
+                        ? history
+                        : TestCategories.Uncertain;
+                }
+                if (string.Equals(item.Category?.Trim(), category, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+                item.Category = category;
+                _db.FreeSql.Update<TestItemCatalog>()
+                    .Set(t => t.Category, category)
+                    .Where(t => t.Id == item.Id)
+                    .ExecuteAffrows();
+                changed++;
+            }
+            return changed;
+        }
+
+        /// <summary>
+        /// 保证测试项目都有测试种类（只补空的/不确定的，不动用户手工改过的）
+        /// </summary>
+        public int EnsureTestItemCategories() => AutoAssignTestItemCategories();
+
+        /// <summary>
         /// 按已加载的用户字典解析负责人显示名（优先 OwnerIds，回退 Owner 文本）
         /// </summary>
         private static string BuildOwnerDisplayFromMap(TestItemCatalog item, Dictionary<long, string> userNames)

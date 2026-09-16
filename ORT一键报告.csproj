@@ -127,6 +127,7 @@
     <Compile Include="Models\Requisition.cs" />
     <Compile Include="Reports\Models\ReportInputModels.cs" />
     <Compile Include="Models\Review.cs" />
+    <Compile Include="Models\TestCategories.cs" />
     <Compile Include="Models\AdminCatalogs.cs" />
     <Compile Include="Models\AppSettings.cs" />
     <Compile Include="Utils\PlanValidation.cs" />
@@ -231,6 +232,7 @@
     <Compile Include="Utils\AteReportData.cs" />
     <Compile Include="Utils\Report.cs" />
     <Compile Include="Utils\ExcelNpoi.cs" />
+    <Compile Include="Utils\XlsxCleaner.cs" />
     <Compile Include="Utils\ExcelOleEmbedder.cs" />
     <Compile Include="Utils\ExcelOleWriter.cs" />
     <Compile Include="Main\Views\WindowMainSettings.xaml.cs">
