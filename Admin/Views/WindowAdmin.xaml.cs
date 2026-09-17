@@ -121,7 +121,8 @@ namespace ORT一键报告.Admin.Views
             WindowAdminInput input = new(LanguageService.Get("Admin_NewUser"),
                 (LanguageService.Get("Admin_Username"), "", false),
                 (LanguageService.Get("Admin_DisplayNameFull"), "", false),
-                (LanguageService.Get("Admin_PasswordMin"), "", true))
+                // 密码留空＝暂不设密码：该账号只凭用户名登录，登录后提示本人设置
+                (LanguageService.Get("Admin_PasswordOptional"), "", true))
             {
             };
             if (input.ShowDialog() != true)
@@ -202,19 +203,23 @@ namespace ORT一键报告.Admin.Views
             }
             WindowAdminInput input = new(
                 string.Format(LanguageService.Get("Admin_ResetPasswordTitleFormat"), user.Username),
-                (LanguageService.Get("Admin_NewPasswordMin"), "", true))
+                // 留空＝清除密码：该账号改为只凭用户名登录，登录后提示本人设置
+                (LanguageService.Get("Admin_NewPasswordOptional"), "", true))
             {
             };
             if (input.ShowDialog() != true)
             {
                 return;
             }
-            string error = _auth.ResetPassword(user.Id, input.Values[0]);
-            _ = MessageBox.Show(error ?? LanguageService.Get("Msg_PasswordReset"),
+            string newPassword = input.Values[0];
+            string error = _auth.ResetPassword(user.Id, newPassword);
+            bool cleared = error == null && string.IsNullOrEmpty(newPassword);
+            _ = MessageBox.Show(
+                error ?? (cleared ? LanguageService.Get("Msg_PasswordCleared") : LanguageService.Get("Msg_PasswordReset")),
                 LanguageService.Get(error == null ? "Cap_Success" : "Cap_SaveFailed"));
-            if (error == null)
+            if (error == null && !cleared)
             {
-                // 密码变更通知（通知类邮件；邮件失败不影响业务）
+                // 密码变更通知（通知类邮件；邮件失败不影响业务）；清除密码时不发通知
                 _mailNotifier.NotifyPasswordChanged(user.Username, user.DisplayName, _auth.CurrentOperatorName);
             }
         }

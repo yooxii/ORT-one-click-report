@@ -201,6 +201,9 @@ namespace ORT一键报告
                     case Review.Views.WindowReview when !_permission.Can("review.view"):
                         toClose.Add(w);
                         break;
+                    case Main.Views.WindowUserCenter when _auth.CurrentUser == null:
+                        toClose.Add(w); // 注销后用户中心无内容可管理
+                        break;
                 }
             }
             foreach (Window w in toClose)
@@ -237,7 +240,48 @@ namespace ORT一键报告
             {
                 _logger.Info($"当前用户: {_auth.CurrentDisplayName}");
                 PromptCompleteEmailIfNeeded();
+                PromptSetPasswordIfNeeded();
             }
+        }
+
+        /// <summary>
+        /// 用户中心：管理当前登录用户自己的资料（显示名/邮箱/密码、本机登录信息）
+        /// </summary>
+        private void MenuItem_UserCenter_Click(object sender, RoutedEventArgs e)
+        {
+            if (_auth.CurrentUser == null)
+            {
+                _ = MessageBox.Show(LanguageService.Get("UserCenter_Msg_NeedLogin"), LanguageService.Get("Cap_NoPermission"));
+                return;
+            }
+            // 已打开的则聚焦，不重复打开
+            foreach (Window w in Application.Current.Windows)
+            {
+                if (w is WindowUserCenter existing)
+                {
+                    existing.Activate();
+                    return;
+                }
+            }
+            WindowUserCenter window = new();
+            window.Show();
+        }
+
+        /// <summary>
+        /// 账号还没设置密码（登录时只给了用户名）→ 提示去用户中心设置密码
+        /// </summary>
+        private void PromptSetPasswordIfNeeded()
+        {
+            if (!_auth.NeedsPasswordSetup || _auth.CurrentUser == null)
+            {
+                return;
+            }
+            if (MessageBox.Show(string.Format(LanguageService.Get("Msg_SetPasswordPromptFormat"), _auth.CurrentUser.Username),
+                LanguageService.Get("Dlg_SetPasswordTitle"), MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
+            {
+                return;
+            }
+            MenuItem_UserCenter_Click(this, new RoutedEventArgs());
         }
 
         /// <summary>

@@ -258,6 +258,9 @@
     <Compile Include="Main\Views\WindowListPicker.xaml.cs">
       <DependentUpon>WindowListPicker.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Main\Views\WindowUserCenter.xaml.cs">
+      <DependentUpon>WindowUserCenter.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Reports\Views\WindowReportTemplate.xaml.cs">
       <DependentUpon>WindowReportTemplate.xaml</DependentUpon>
     </Compile>
@@ -372,6 +375,10 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="Main\Views\WindowListPicker.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Main\Views\WindowUserCenter.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>

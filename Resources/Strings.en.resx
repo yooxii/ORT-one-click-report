@@ -506,6 +506,108 @@
   <data name="ReportTemplate_Msg_SelectItem" xml:space="preserve">
     <value>Select a test item in the list first</value>
   </data>
+  <data name="MainWindow_Menu_User" xml:space="preserve">
+    <value>User</value>
+  </data>
+  <data name="MainWindow_Menu_UserCenter" xml:space="preserve">
+    <value>User Center</value>
+  </data>
+  <data name="MainWindow_Menu_UserCenterHint" xml:space="preserve">
+    <value>View and edit your display name, e-mail and password</value>
+  </data>
+  <data name="UserCenter_Title" xml:space="preserve">
+    <value>User Center</value>
+  </data>
+  <data name="UserCenter_BasicInfo" xml:space="preserve">
+    <value>Account</value>
+  </data>
+  <data name="UserCenter_Username" xml:space="preserve">
+    <value>Login name</value>
+  </data>
+  <data name="UserCenter_Roles" xml:space="preserve">
+    <value>Roles</value>
+  </data>
+  <data name="UserCenter_CreatedAt" xml:space="preserve">
+    <value>Created</value>
+  </data>
+  <data name="UserCenter_ProfileSection" xml:space="preserve">
+    <value>Profile</value>
+  </data>
+  <data name="UserCenter_ProfileHint" xml:space="preserve">
+    <value>Leave the display name empty to use the login name; the e-mail is used for notifications</value>
+  </data>
+  <data name="UserCenter_PasswordSection" xml:space="preserve">
+    <value>Password</value>
+  </data>
+  <data name="UserCenter_CurrentPassword" xml:space="preserve">
+    <value>Current password</value>
+  </data>
+  <data name="UserCenter_ConfirmPassword" xml:space="preserve">
+    <value>Confirm new password</value>
+  </data>
+  <data name="UserCenter_PasswordKeepHint" xml:space="preserve">
+    <value>Leave empty to keep the current password; at least 6 characters</value>
+  </data>
+  <data name="UserCenter_NoPasswordHint" xml:space="preserve">
+    <value>This account has no password yet; after setting one, the next login will require it</value>
+  </data>
+  <data name="UserCenter_LocalLogin" xml:space="preserve">
+    <value>Local login</value>
+  </data>
+  <data name="UserCenter_CookieExpiryFormat" xml:space="preserve">
+    <value>Login information saved on this computer is valid until {0}</value>
+  </data>
+  <data name="UserCenter_NoCookie" xml:space="preserve">
+    <value>No login information saved on this computer</value>
+  </data>
+  <data name="UserCenter_ClearCookie" xml:space="preserve">
+    <value>Clear local login information</value>
+  </data>
+  <data name="UserCenter_ClearCookieConfirm" xml:space="preserve">
+    <value>Clear the login information saved on this computer? You will have to type the password again next time.</value>
+  </data>
+  <data name="UserCenter_CookieCleared" xml:space="preserve">
+    <value>Local login information cleared</value>
+  </data>
+  <data name="UserCenter_Saved" xml:space="preserve">
+    <value>Saved</value>
+  </data>
+  <data name="UserCenter_Msg_NeedLogin" xml:space="preserve">
+    <value>Please log in before using the User Center</value>
+  </data>
+  <data name="Msg_SetPasswordPromptFormat" xml:space="preserve">
+    <value>Account [{0}] has no password yet. Set one now?</value>
+  </data>
+  <data name="Dlg_SetPasswordTitle" xml:space="preserve">
+    <value>Set Password</value>
+  </data>
+  <data name="Msg_CurrentPasswordWrong" xml:space="preserve">
+    <value>Current password is incorrect</value>
+  </data>
+  <data name="Msg_PasswordMismatch" xml:space="preserve">
+    <value>The two new passwords do not match</value>
+  </data>
+  <data name="Msg_PasswordTooShort" xml:space="preserve">
+    <value>Password must be at least 6 characters</value>
+  </data>
+  <data name="Login_EnterUsername" xml:space="preserve">
+    <value>Please enter the user name</value>
+  </data>
+  <data name="Login_PasswordRequiredHint" xml:space="preserve">
+    <value>This account requires a password, please enter it</value>
+  </data>
+  <data name="Login_NoPasswordHint" xml:space="preserve">
+    <value>If the account has no password yet, leave the password empty to log in</value>
+  </data>
+  <data name="Admin_PasswordOptional" xml:space="preserve">
+    <value>Password (at least 6 chars; leave empty to create the account without a password - it can log in by user name and will be asked to set one)</value>
+  </data>
+  <data name="Admin_NewPasswordOptional" xml:space="preserve">
+    <value>New password (at least 6 chars; leave empty to clear the password so the account logs in by user name only)</value>
+  </data>
+  <data name="Msg_PasswordCleared" xml:space="preserve">
+    <value>Password cleared: the account can now log in with the user name only and will be asked to set a password</value>
+  </data>
   <data name="Admin_Technician" xml:space="preserve">
     <value>Technician</value>
   </data>

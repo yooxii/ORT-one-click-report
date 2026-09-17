@@ -506,6 +506,108 @@
   <data name="ReportTemplate_Msg_SelectItem" xml:space="preserve">
     <value>請先在列表裡選擇一個測試項目</value>
   </data>
+  <data name="MainWindow_Menu_User" xml:space="preserve">
+    <value>使用者</value>
+  </data>
+  <data name="MainWindow_Menu_UserCenter" xml:space="preserve">
+    <value>使用者中心</value>
+  </data>
+  <data name="MainWindow_Menu_UserCenterHint" xml:space="preserve">
+    <value>查看和修改自己的顯示名、郵箱與登入密碼</value>
+  </data>
+  <data name="UserCenter_Title" xml:space="preserve">
+    <value>使用者中心</value>
+  </data>
+  <data name="UserCenter_BasicInfo" xml:space="preserve">
+    <value>帳號資訊</value>
+  </data>
+  <data name="UserCenter_Username" xml:space="preserve">
+    <value>登入名</value>
+  </data>
+  <data name="UserCenter_Roles" xml:space="preserve">
+    <value>身分</value>
+  </data>
+  <data name="UserCenter_CreatedAt" xml:space="preserve">
+    <value>建立時間</value>
+  </data>
+  <data name="UserCenter_ProfileSection" xml:space="preserve">
+    <value>基本資料</value>
+  </data>
+  <data name="UserCenter_ProfileHint" xml:space="preserve">
+    <value>顯示名留空則顯示登入名；郵箱用於接收通知郵件</value>
+  </data>
+  <data name="UserCenter_PasswordSection" xml:space="preserve">
+    <value>密碼</value>
+  </data>
+  <data name="UserCenter_CurrentPassword" xml:space="preserve">
+    <value>目前密碼</value>
+  </data>
+  <data name="UserCenter_ConfirmPassword" xml:space="preserve">
+    <value>確認新密碼</value>
+  </data>
+  <data name="UserCenter_PasswordKeepHint" xml:space="preserve">
+    <value>不修改密碼時留空；密碼至少 6 位</value>
+  </data>
+  <data name="UserCenter_NoPasswordHint" xml:space="preserve">
+    <value>目前帳號還沒有設定密碼，設定後下次登入需要輸入密碼</value>
+  </data>
+  <data name="UserCenter_LocalLogin" xml:space="preserve">
+    <value>本機登入</value>
+  </data>
+  <data name="UserCenter_CookieExpiryFormat" xml:space="preserve">
+    <value>本機保存的登入資訊有效期至 {0}</value>
+  </data>
+  <data name="UserCenter_NoCookie" xml:space="preserve">
+    <value>本機沒有保存登入資訊</value>
+  </data>
+  <data name="UserCenter_ClearCookie" xml:space="preserve">
+    <value>清除本機登入資訊</value>
+  </data>
+  <data name="UserCenter_ClearCookieConfirm" xml:space="preserve">
+    <value>確認清除本機保存的登入資訊？清除後下次開啟程式需要重新輸入密碼。</value>
+  </data>
+  <data name="UserCenter_CookieCleared" xml:space="preserve">
+    <value>已清除本機保存的登入資訊</value>
+  </data>
+  <data name="UserCenter_Saved" xml:space="preserve">
+    <value>已保存</value>
+  </data>
+  <data name="UserCenter_Msg_NeedLogin" xml:space="preserve">
+    <value>請先登入後再使用使用者中心</value>
+  </data>
+  <data name="Msg_SetPasswordPromptFormat" xml:space="preserve">
+    <value>帳號 [{0}] 還沒有設定密碼，是否現在設定？</value>
+  </data>
+  <data name="Dlg_SetPasswordTitle" xml:space="preserve">
+    <value>設定密碼</value>
+  </data>
+  <data name="Msg_CurrentPasswordWrong" xml:space="preserve">
+    <value>目前密碼不正確</value>
+  </data>
+  <data name="Msg_PasswordMismatch" xml:space="preserve">
+    <value>兩次輸入的新密碼不一致</value>
+  </data>
+  <data name="Msg_PasswordTooShort" xml:space="preserve">
+    <value>密碼至少 6 位</value>
+  </data>
+  <data name="Login_EnterUsername" xml:space="preserve">
+    <value>請輸入使用者名稱</value>
+  </data>
+  <data name="Login_PasswordRequiredHint" xml:space="preserve">
+    <value>該帳號需要密碼，請輸入密碼</value>
+  </data>
+  <data name="Login_NoPasswordHint" xml:space="preserve">
+    <value>帳號未設定密碼時，密碼留空即可登入</value>
+  </data>
+  <data name="Admin_PasswordOptional" xml:space="preserve">
+    <value>密碼（至少6位；留空表示暫不設密碼，該帳號憑使用者名稱即可登入，登入後提示本人設定）</value>
+  </data>
+  <data name="Admin_NewPasswordOptional" xml:space="preserve">
+    <value>新密碼（至少6位；留空表示清除密碼，該帳號改為憑使用者名稱登入）</value>
+  </data>
+  <data name="Msg_PasswordCleared" xml:space="preserve">
+    <value>已清除該帳號的密碼：該帳號現在只憑使用者名稱即可登入，登入後會提示本人設定密碼</value>
+  </data>
   <data name="Admin_Technician" xml:space="preserve">
     <value>技術員</value>
   </data>

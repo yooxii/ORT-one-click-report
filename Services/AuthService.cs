@@ -25,6 +25,11 @@ namespace ORT一键报告.Services
         public User CurrentUser { get; private set; }
 
         /// <summary>
+        /// 本次登录是"账号还没设置密码"直接进来的（登录后应提示去用户中心设置密码）
+        /// </summary>
+        public bool PasswordlessLogin { get; private set; }
+
+        /// <summary>
         /// 当前用户的角色列表（未登录为空，视为游客）
         /// </summary>
         public List<UserRole> CurrentRoles { get; private set; } = [];
@@ -74,7 +79,9 @@ namespace ORT一键报告.Services
         }
 
         /// <summary>
-        /// 登录验证；成功时设置当前用户与角色
+        /// 登录验证；成功时设置当前用户与角色。
+        /// 账号**还没有设置密码**时，只给用户名（密码留空）也允许登录，登录后由界面提示去设置密码；
+        /// 账号已设置密码时按散列校验。
         /// </summary>
         public bool Login(string username, string password)
         {
@@ -85,9 +92,19 @@ namespace ORT一键报告.Services
                 {
                     return false;
                 }
-                if (user.PasswordHash != HashPassword(user.Salt, password))
+                bool hasPassword = HasPassword(user);
+                if (hasPassword)
                 {
-                    return false;
+                    if (user.PasswordHash != HashPassword(user.Salt, password ?? ""))
+                    {
+                        return false;
+                    }
+                }
+                else
+                {
+                    // 没设过密码：用户名对就放行（密码框留空即可），登录后提示设置密码
+                    PasswordlessLogin = true;
+                    _logger.Info($"用户 {user.Username} 尚未设置密码，按用户名直接登录");
                 }
                 CurrentUser = user;
                 CurrentRoles = _db.FreeSql.Select<UserRoleRow>()
@@ -98,7 +115,7 @@ namespace ORT一键报告.Services
                     .Select(r => r.Value)
                     .ToList();
                 _logger.Info($"用户登录: {user.Username}（角色: {string.Join(",", CurrentRoles)}）");
-                SaveLoginCookie(username, password);
+                SaveLoginCookie(username, password ?? "");
                 AuthChanged?.Invoke();
                 return true;
             }
@@ -120,8 +137,75 @@ namespace ORT一键报告.Services
             }
             CurrentUser = null;
             CurrentRoles = [];
+            PasswordlessLogin = false;
             ClearLoginCookie();
             AuthChanged?.Invoke();
+        }
+
+        /// <summary>
+        /// 该账号是否设置过密码（没有则允许只凭用户名登录）
+        /// </summary>
+        public static bool HasPassword(User user)
+            => user != null && !string.IsNullOrWhiteSpace(user.PasswordHash) && !string.IsNullOrWhiteSpace(user.Salt);
+
+        /// <summary>
+        /// 当前用户是否需要设置密码（账号没设过，或本次就是无密码登录进来的）
+        /// </summary>
+        public bool NeedsPasswordSetup => CurrentUser != null && (PasswordlessLogin || !HasPassword(CurrentUser));
+
+        /// <summary>
+        /// 校验当前登录用户的密码（用于"修改密码"前确认本人）
+        /// </summary>
+        public bool VerifyCurrentUserPassword(string password)
+            => CurrentUser != null && HasPassword(CurrentUser)
+               && CurrentUser.PasswordHash == HashPassword(CurrentUser.Salt, password ?? "");
+
+        /// <summary>
+        /// 设置/修改当前登录用户的密码（至少 6 位），返回错误信息；成功返回 null。
+        /// 成功后同步更新本地 cookie（旧密码已失效），下次"继续上次登录"不会失败。
+        /// </summary>
+        public string SetCurrentUserPassword(string newPassword)
+        {
+            if (CurrentUser == null)
+            {
+                return "请先登录";
+            }
+            if (string.IsNullOrWhiteSpace(newPassword) || newPassword.Length < 6)
+            {
+                return "密码至少6位";
+            }
+            string salt = NewSalt();
+            string hash = HashPassword(salt, newPassword);
+            _db.FreeSql.Update<User>()
+                .Set(u => u.Salt, salt)
+                .Set(u => u.PasswordHash, hash)
+                .Where(u => u.Id == CurrentUser.Id)
+                .ExecuteAffrows();
+            CurrentUser.Salt = salt;
+            CurrentUser.PasswordHash = hash;
+            PasswordlessLogin = false;
+            SaveLoginCookie(CurrentUser.Username, newPassword);
+            _logger.Info($"用户 {CurrentUser.Username} 已设置/修改密码");
+            return null;
+        }
+
+        /// <summary>
+        /// 修改当前登录用户的显示名（留空则界面回退显示登录名）
+        /// </summary>
+        public bool SetCurrentUserDisplayName(string displayName)
+        {
+            if (CurrentUser == null)
+            {
+                return false;
+            }
+            displayName = displayName?.Trim();
+            _db.FreeSql.Update<User>()
+                .Set(u => u.DisplayName, string.IsNullOrEmpty(displayName) ? null : displayName)
+                .Where(u => u.Id == CurrentUser.Id)
+                .ExecuteAffrows();
+            CurrentUser.DisplayName = displayName;
+            AuthChanged?.Invoke();
+            return true;
         }
 
         /* ###############################  本地登录 Cookie  ################################ */
@@ -256,15 +340,25 @@ namespace ORT一键报告.Services
                && System.Text.RegularExpressions.Regex.IsMatch(email.Trim(), @"^[^@\s]+@[^@\s]+\.[^@\s]+$");
 
         /// <summary>
-        /// 保存当前登录用户的邮箱（供登录后"完善邮箱"使用）
+        /// 保存当前登录用户的邮箱（供登录后"完善邮箱"使用；传空表示清空邮箱）
         /// </summary>
         public bool SetCurrentUserEmail(string email)
         {
-            if (CurrentUser == null || !IsValidEmail(email))
+            if (CurrentUser == null)
             {
                 return false;
             }
-            email = email.Trim();
+            email = email?.Trim();
+            if (string.IsNullOrEmpty(email))
+            {
+                _db.FreeSql.Update<User>().Set(u => u.Email, (string)null).Where(u => u.Id == CurrentUser.Id).ExecuteAffrows();
+                CurrentUser.Email = null;
+                return true;
+            }
+            if (!IsValidEmail(email))
+            {
+                return false;
+            }
             _db.FreeSql.Update<User>()
                 .Set(u => u.Email, email)
                 .Where(u => u.Id == CurrentUser.Id)
@@ -272,6 +366,36 @@ namespace ORT一键报告.Services
             CurrentUser.Email = email;
             _logger.Info($"用户 {CurrentUser.Username} 完善邮箱: {email}");
             return true;
+        }
+
+        /// <summary>
+        /// 保存当前登录用户的基本资料（显示名 + 邮箱；邮箱/显示名留空表示清空），
+        /// 返回错误信息；成功返回 null
+        /// </summary>
+        public string SaveCurrentUserProfile(string displayName, string email)
+        {
+            if (CurrentUser == null)
+            {
+                return "请先登录";
+            }
+            email = email?.Trim();
+            if (!string.IsNullOrEmpty(email) && !IsValidEmail(email))
+            {
+                return "邮箱格式不正确，请重新输入";
+            }
+            User row = _db.FreeSql.Select<User>().Where(u => u.Id == CurrentUser.Id).First();
+            if (row == null)
+            {
+                return "账号不存在或已被删除";
+            }
+            row.DisplayName = string.IsNullOrWhiteSpace(displayName) ? null : displayName.Trim();
+            row.Email = string.IsNullOrEmpty(email) ? null : email;
+            _db.FreeSql.Update<User>().SetSource(row).Where(u => u.Id == row.Id).ExecuteAffrows();
+            CurrentUser.DisplayName = row.DisplayName;
+            CurrentUser.Email = row.Email;
+            _logger.Info($"用户 {CurrentUser.Username} 更新资料：显示名={row.DisplayName ?? "-"}，邮箱={row.Email ?? "-"}");
+            AuthChanged?.Invoke();
+            return null;
         }
 
         /// <summary>
@@ -399,25 +523,31 @@ namespace ORT一键报告.Services
         /* ###############################  密码工具  ################################ */
 
         /// <summary>
-        /// 创建新用户（含角色），返回错误信息；成功返回null
+        /// 创建新用户（含角色），返回错误信息；成功返回null。
+        /// 密码留空表示"暂不设密码"：该账号可只凭用户名登录，登录后会提示本人设置密码。
         /// </summary>
         public string CreateUser(string username, string displayName, string password, IEnumerable<UserRole> roles)
         {
-            if (string.IsNullOrWhiteSpace(username) || password == null || password.Length < 6)
+            if (string.IsNullOrWhiteSpace(username))
             {
-                return "用户名不能为空，密码至少6位";
+                return "用户名不能为空";
+            }
+            if (!string.IsNullOrEmpty(password) && password.Length < 6)
+            {
+                return "密码至少6位（留空表示暂不设密码）";
             }
             if (_db.FreeSql.Select<User>().Where(u => u.Username == username).Any())
             {
                 return $"用户名 [{username}] 已存在";
             }
-            string salt = NewSalt();
+            bool passwordless = string.IsNullOrEmpty(password);
+            string salt = passwordless ? "" : NewSalt();
             User user = new()
             {
                 Username = username,
                 DisplayName = displayName,
                 Salt = salt,
-                PasswordHash = HashPassword(salt, password),
+                PasswordHash = passwordless ? "" : HashPassword(salt, password),
                 IsActive = true
             };
             user.Id = _db.FreeSql.Insert(user).ExecuteIdentity();
@@ -425,25 +555,32 @@ namespace ORT一键报告.Services
             {
                 _db.FreeSql.Insert(new UserRoleRow { UserId = user.Id, Role = role.ToString() }).ExecuteAffrows();
             }
-            _logger.Info($"创建用户: {username}（角色: {string.Join(",", roles)}）");
+            _logger.Info(passwordless
+                ? $"创建用户: {username}（未设密码，可凭用户名登录后自行设置；角色: {string.Join(",", roles)}）"
+                : $"创建用户: {username}（角色: {string.Join(",", roles)}）");
             return null;
         }
 
         /// <summary>
-        /// 重置用户密码，返回错误信息；成功返回null
+        /// 重置用户密码，返回错误信息；成功返回null。
+        /// 新密码留空表示清除密码（该账号改为只凭用户名登录，登录后提示本人设置密码）。
         /// </summary>
         public string ResetPassword(long userId, string newPassword)
         {
-            if (newPassword == null || newPassword.Length < 6)
+            if (!string.IsNullOrEmpty(newPassword) && newPassword.Length < 6)
             {
-                return "密码至少6位";
+                return "密码至少6位（留空表示清除密码）";
             }
-            string salt = NewSalt();
+            bool passwordless = string.IsNullOrEmpty(newPassword);
+            string salt = passwordless ? "" : NewSalt();
             _db.FreeSql.Update<User>()
                 .Set(u => u.Salt, salt)
-                .Set(u => u.PasswordHash, HashPassword(salt, newPassword))
+                .Set(u => u.PasswordHash, passwordless ? "" : HashPassword(salt, newPassword))
                 .Where(u => u.Id == userId)
                 .ExecuteAffrows();
+            _logger.Info(passwordless
+                ? $"已清除用户 #{userId} 的密码（改为凭用户名登录）"
+                : $"已重置用户 #{userId} 的密码");
             return null;
         }
 

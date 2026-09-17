@@ -70,9 +70,11 @@ namespace ORT一键报告.Main.Views
         {
             string username = txt_username.Text?.Trim();
             string password = txt_password.Password;
-            if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
+            // 密码可以留空：账号还没设置密码时，只给用户名也能登录（登录后提示设置密码）
+            if (string.IsNullOrEmpty(username))
             {
-                txt_error.Text = LanguageService.Get("Login_EnterUserPass");
+                txt_error.Text = LanguageService.Get("Login_EnterUsername");
+                txt_username.Focus();
                 return;
             }
             if (_auth.Login(username, password))
@@ -81,7 +83,9 @@ namespace ORT一键报告.Main.Views
             }
             else
             {
-                txt_error.Text = LanguageService.Get("Login_InvalidUserPass");
+                txt_error.Text = string.IsNullOrEmpty(password)
+                    ? LanguageService.Get("Login_PasswordRequiredHint")
+                    : LanguageService.Get("Login_InvalidUserPass");
                 txt_password.Clear();
                 txt_password.Focus();
             }
