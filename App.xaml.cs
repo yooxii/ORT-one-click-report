@@ -105,6 +105,21 @@ namespace ORT一键报告
                 services.AddTransient<PlansViewModel>();
 
                 ServiceProvider = services.BuildServiceProvider();
+
+                // 历史脏数据修正：早期版本会把计划表里的 Excel 公式原文（客户栏的
+                // IF(ISBLANK(...),"",VLOOKUP(...)) 之类）写进数据库，启动时统一改写为 #N/A
+                try
+                {
+                    int fixedCount = ServiceProvider.GetRequiredService<PlanExcelService>().FixFormulaTextValues();
+                    if (fixedCount > 0)
+                    {
+                        logger.Info($"启动时修正公式文本脏数据: {fixedCount}条");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger.Warn(ex, "启动时修正公式文本脏数据失败");
+                }
             }
             catch (Exception ex)
             {

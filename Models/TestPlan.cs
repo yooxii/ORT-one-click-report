@@ -585,6 +585,15 @@ namespace ORT一键报告.Models
         /// <summary>图片高度（像素）</summary>
         public int HeightPx { get; set; }
 
+        /// <summary>
+        /// 历史报告里这张图的锚点列（1 基，即"原来那一格"）：
+        /// 生成 ORT Plan 时图片要放回这一格、位于该格文字下方
+        /// </summary>
+        public int AnchorColumn { get; set; }
+
+        /// <summary>历史报告里这张图右下角的锚点列（1 基；图片跨列时大于 AnchorColumn）</summary>
+        public int AnchorColumn2 { get; set; }
+
         /// <summary>同一测试项目内的顺序</summary>
         public int OrderNo { get; set; }
 

@@ -179,12 +179,19 @@ namespace ORT一键报告.Utils
             }
             catch
             {
-                return cell.ToString() ?? "";
+                // 公式单元格取值失败时绝不把公式文本当内容返回（导入计划表会把 IF(...) 写进客户栏）
+                return cell.CellType == CellType.Formula ? FormulaErrorText : "";
             }
         }
 
+        /// <summary>公式无缓存结果时的占位文本（与 Excel 的错误值一致）</summary>
+        private const string FormulaErrorText = "#N/A";
+
         /// <summary>
-        /// 公式单元格的显示文本（取缓存的计算结果）
+        /// 公式单元格的显示文本（取缓存的计算结果）。
+        /// 注意：缓存结果是错误值时要返回 Excel 的错误文本（#N/A 等），
+        /// 不能落到 DataFormatter —— 对错误值它会把公式原文返回，导入后就成了脏数据。
+        /// 公式从未计算过（没有缓存结果）时返回 #N/A，同样不返回公式文本。
         /// </summary>
         private static string CachedText(ICell cell)
         {
@@ -200,8 +207,23 @@ namespace ORT一键报告.Utils
                         : cell.NumericCellValue.ToString(System.Globalization.CultureInfo.InvariantCulture);
                 case CellType.Blank:
                     return "";
+                case CellType.Error:
+                    return ErrorText(cell);
                 default:
-                    return new DataFormatter().FormatCellValue(cell);
+                    return FormulaErrorText;
+            }
+        }
+
+        /// <summary>Excel 错误值的显示文本（#N/A、#REF!、#VALUE! 等）</summary>
+        private static string ErrorText(ICell cell)
+        {
+            try
+            {
+                return FormulaError.ForInt(cell.ErrorCellValue).String;
+            }
+            catch
+            {
+                return FormulaErrorText;
             }
         }
 

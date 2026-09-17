@@ -230,6 +230,12 @@ namespace ORT一键报告.Services
             {
                 wb.Close();
             }
+            // 顺带把历史导入留下的公式文本脏数据（客户栏的 IF(ISBLANK(...)) 之类）一起修正
+            int fixedCount = FixFormulaTextValues(_db);
+            if (fixedCount > 0)
+            {
+                _logger.Info($"导入计划表时修正公式文本脏数据: {fixedCount}条");
+            }
             _logger.Info($"计划表导入完成: 新增{added}条, 更新{updated}条");
             return (added, updated, unmatched);
         }
@@ -436,6 +442,8 @@ namespace ORT一键报告.Services
         /// <summary>
         /// 按表头关键字(包含匹配, 忽略空白)读取单元格文本；空白返回null。
         /// 注：原表头中的"/"实为换行显示，规范化后不含斜杠，搜索关键字也不要带斜杠。
+        /// 公式单元格没有缓存结果时（见 ExcelNpoi.CellText）NPOI 可能给出公式原文，
+        /// 这里再兜一道：公式文本一律当作 #N/A，绝不写进数据库。
         /// </summary>
         private static string Cell(ISheet ws, int row, Dictionary<string, int> map, string headerKey)
         {
@@ -444,10 +452,109 @@ namespace ORT一键报告.Services
             {
                 if (kv.Key.Contains(normKey))
                 {
-                    return NullIfEmpty(ExcelNpoi.CellText(ws, row, kv.Value));
+                    string text = NullIfEmpty(ExcelNpoi.CellText(ws, row, kv.Value));
+                    return IsFormulaText(text) ? FormulaPlaceholder : text;
                 }
             }
             return null;
+        }
+
+        /// <summary>公式文本脏数据的占位值（与 Excel 里 VLOOKUP 取不到值时的显示一致）</summary>
+        public const string FormulaPlaceholder = "#N/A";
+
+        private static readonly Regex FormulaPattern = new(
+            @"(?:^=)|(?:\b(?:IF|ISBLANK|ISERROR|ISNA|IFERROR|IFNA|VLOOKUP|HLOOKUP|LOOKUP|INDEX|MATCH|XLOOKUP|SUM|SUMIF|SUMIFS|COUNT|COUNTA|COUNTIF|COUNTIFS|TEXT|LEFT|RIGHT|MID|TRIM|LEN|CONCATENATE|CONCAT|SUBSTITUTE|REPLACE|ROUND|ROUNDUP|ROUNDDOWN|TODAY|NOW|DATE|YEAR|MONTH|DAY|VALUE|UPPER|LOWER|PROPER|CHOOSE|OFFSET|INDIRECT)\s*\()",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        /// <summary>
+        /// 文本是否是 Excel 公式（历史导入脏数据：客户栏里出现 IF(ISBLANK(E117),"",VLOOKUP(...)) 这类公式原文）
+        /// </summary>
+        public static bool IsFormulaText(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text) || text.Length < 4)
+            {
+                return false;
+            }
+            string s = text.Trim();
+            if (s.StartsWith("=", StringComparison.Ordinal))
+            {
+                return true;
+            }
+            return FormulaPattern.IsMatch(s);
+        }
+
+        /// <summary>
+        /// 修正本服务所连数据库里的公式文本脏数据（实例版，供启动时/界面调用）
+        /// </summary>
+        public int FixFormulaTextValues() => FixFormulaTextValues(_db);
+
+        /// <summary>
+        /// 修正历史导入留下的公式文本脏数据：plans 表各文本列与 customers 字典里凡是公式原文的
+        /// 一律改写为 #N/A（同一个 #N/A 只保留一条客户记录）。
+        /// </summary>
+        /// <returns>被修正的记录数</returns>
+        public static int FixFormulaTextValues(DatabaseService db)
+        {
+            if (db == null)
+            {
+                return 0;
+            }
+            int fixedCount = 0;
+            string Fix(string value) => IsFormulaText(value) ? FormulaPlaceholder : value;
+
+            foreach (Plan plan in db.FreeSql.Select<Plan>().ToList())
+            {
+                bool dirty = false;
+                string[] before =
+                [
+                    plan.Customer, plan.Product, plan.ModelName, plan.Stage, plan.TestItem,
+                    plan.SampleSize, plan.TestPeriod, plan.Owner, plan.Status, plan.UploadELab, plan.Remark
+                ];
+                string[] after = before.Select(Fix).ToArray();
+                for (int i = 0; i < before.Length; i++)
+                {
+                    dirty |= before[i] != after[i];
+                }
+                if (!dirty)
+                {
+                    continue;
+                }
+                plan.Customer = after[0];
+                plan.Product = after[1];
+                plan.ModelName = after[2];
+                plan.Stage = after[3];
+                plan.TestItem = after[4];
+                plan.SampleSize = after[5];
+                plan.TestPeriod = after[6];
+                plan.Owner = after[7];
+                plan.Status = after[8];
+                plan.UploadELab = after[9];
+                plan.Remark = after[10];
+                db.FreeSql.Update<Plan>().SetSource(plan).Where(p => p.Id == plan.Id).ExecuteAffrows();
+                fixedCount++;
+            }
+
+            List<Customer> junk = db.FreeSql.Select<Customer>().OrderBy(c => c.Id).ToList()
+                .Where(c => IsFormulaText(c.Name)).ToList();
+            if (junk.Count > 0)
+            {
+                bool placeholderExists = db.FreeSql.Select<Customer>().Where(c => c.Name == FormulaPlaceholder).Any();
+                foreach (Customer customer in junk)
+                {
+                    if (placeholderExists)
+                    {
+                        db.FreeSql.Delete<Customer>().Where(c => c.Id == customer.Id).ExecuteAffrows();
+                    }
+                    else
+                    {
+                        customer.Name = FormulaPlaceholder;
+                        db.FreeSql.Update<Customer>().SetSource(customer).Where(c => c.Id == customer.Id).ExecuteAffrows();
+                        placeholderExists = true;
+                    }
+                    fixedCount++;
+                }
+            }
+            return fixedCount;
         }
 
         /// <summary>

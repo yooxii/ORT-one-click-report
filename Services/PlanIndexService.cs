@@ -572,7 +572,8 @@ namespace ORT一键报告.Services
                     return;
                 }
                 // 1. 图片 → 测试项：取锚点行（左上角）之前最近的一个测试项；在表头之前的一律忽略（表头只有 logo）
-                Dictionary<string, List<(string Name, string Key, byte[] Bytes)>> matched = [];
+                //    同时记下锚点列（"原来那一格"），生成时把图片放回该格的文字下方
+                Dictionary<string, List<(string Name, string Key, byte[] Bytes, int Col, int Col2)>> matched = [];
                 foreach (ExcelNpoi.SheetPicture picture in pictures)
                 {
                     if (picture.Bytes == null || picture.Bytes.Length == 0 || picture.Row <= plan.HeaderRow)
@@ -589,12 +590,12 @@ namespace ORT一键报告.Services
                     {
                         continue;
                     }
-                    if (!matched.TryGetValue(key, out List<(string, string, byte[])> list))
+                    if (!matched.TryGetValue(key, out List<(string, string, byte[], int, int)> list))
                     {
                         list = [];
                         matched[key] = list;
                     }
-                    list.Add((row.TestItemName, key, picture.Bytes));
+                    list.Add((row.TestItemName, key, picture.Bytes, picture.Column, picture.Column2));
                 }
                 if (matched.Count == 0)
                 {
@@ -603,7 +604,7 @@ namespace ORT一键报告.Services
 
                 // 2. 覆盖式落库：先清掉这些测试项的旧记录与旧文件
                 Directory.CreateDirectory(_db.PlanImagesDir);
-                foreach (KeyValuePair<string, List<(string Name, string Key, byte[] Bytes)>> pair in matched)
+                foreach (KeyValuePair<string, List<(string Name, string Key, byte[] Bytes, int Col, int Col2)>> pair in matched)
                 {
                     foreach (PlanItemImage old in _db.FreeSql.Select<PlanItemImage>().Where(i => i.NameKey == pair.Key).ToList())
                     {
@@ -612,7 +613,7 @@ namespace ORT一键报告.Services
                     _db.FreeSql.Delete<PlanItemImage>().Where(i => i.NameKey == pair.Key).ExecuteAffrows();
                     int order = 0;
                     string safeKey = SafeFileName(pair.Key);
-                    foreach ((string name, string key, byte[] bytes) in pair.Value)
+                    foreach ((string name, string key, byte[] bytes, int col, int col2) in pair.Value)
                     {
                         order++;
                         string fileName = $"{safeKey}_{order}.png";
@@ -628,6 +629,8 @@ namespace ORT一键报告.Services
                             FileName = fileName,
                             WidthPx = width,
                             HeightPx = height,
+                            AnchorColumn = col,
+                            AnchorColumn2 = col2 < col ? col : col2,
                             OrderNo = order,
                             UpdatedAt = DateTime.Now
                         }).ExecuteAffrows();

@@ -155,12 +155,33 @@ namespace ORT一键报告.Services
         /// <summary>测试安排区内线颜色（50% 灰）</summary>
         private const short IndexedGreyBorder = 23;
 
-        /// <summary>测试项配图在 ORT Plan 表里的最大尺寸（像素），超出按比例缩小</summary>
-        private const int PictureMaxWidth = 200;
-        private const int PictureMaxHeight = 110;
+        /// <summary>
+        /// 测试项配图在 ORT Plan 表里的最大高度（像素），超出按比例缩小
+        /// （宽度不设上限：图片放回"原来那一格"、宽度略小于单元格宽度，铺满整格）
+        /// </summary>
+        private const int PictureMaxHeight = 320;
 
-        /// <summary>ORT Plan 里测试项配图所在的列（H 列，表格右侧的照片列，不压文字）</summary>
-        private const int PictureColumn = 8;
+        /// <summary>配图两侧留白（像素）：图片宽度比单元格窄这么多，看起来是"铺满但不压边框"</summary>
+        private const int PictureCellMargin = 6;
+
+        /// <summary>配图与上方文字之间的间距（像素）</summary>
+        private const int PictureTextGap = 4;
+
+        /// <summary>同一格内多张配图之间的间距（像素）</summary>
+        private const int PictureGap = 6;
+
+        /// <summary>Excel 行高上限（磅），配图再高也不能超过</summary>
+        private const double MaxRowHeightPoints = 409.5;
+
+        /// <summary>
+        /// 配图默认放回的列（E 列 = TEST CONDITOIN）：历史报告里的配图都在这一格，位于文字下方；
+        /// 新抽取的图片会带上自己的锚点列，取不到时才用这个默认值
+        /// </summary>
+        private const int PictureDefaultColumn = 5;
+
+        /// <summary>ORT Plan 表格的列范围（C..G），配图只放回这个范围内</summary>
+        private const int PictureFirstColumn = 3;
+        private const int PictureLastColumn = 7;
 
         /// <summary>每个测试项最多放几张配图</summary>
         private const int PictureMaxPerItem = 2;
@@ -508,8 +529,8 @@ namespace ORT一键报告.Services
             ExcelNpoi.SetColumnWidth(sheet, 5, 31.4);
             ExcelNpoi.SetColumnWidth(sheet, 6, 37.9);
             ExcelNpoi.SetColumnWidth(sheet, 7, 12.4);
-            // 照片列（H）：测试项配图放在这里，宽度按配图最大宽度留够
-            ExcelNpoi.SetColumnWidth(sheet, PictureColumn, PictureMaxWidth / 7.0 + 2);
+            // 表格右侧的 H 列与历史报告一致留窄（配图已放回原来那一格，这里不再需要照片列）
+            ExcelNpoi.SetColumnWidth(sheet, 8, 2.125);
 
             WriteOrtPlanLogo(wb, sheet);
             WriteOrtPlanPictures(wb, sheet, itemRows);
@@ -616,8 +637,9 @@ namespace ORT一键报告.Services
 
         /// <summary>
         /// 测试项配图：计划索引时从历史报告的 ORT Plan 表里抽出来并按测试项归好了类，
-        /// 这里把同名测试项的图片放在该测试项所在行的**照片列（H 列，表格右侧）**，
-        /// 不再压到 TEST CONDITOIN / PASS CRITERION 的文字上；并按图片高度把行高撑开，避免相邻项目互相遮挡。
+        /// 生成新报告时把图片**放回原来那一格**（历史报告里都在 E 列 TEST CONDITOIN），
+        /// 位置在该格文字的下方（不压文字），行高按"文字 + 图片"撑开，
+        /// 图片宽度略小于单元格宽度（两侧各留 <see cref="PictureCellMargin"/> 像素），铺满整格。
         /// </summary>
         private void WriteOrtPlanPictures(IWorkbook wb, ISheet sheet, List<(ReportTemplateItem Item, int Row)> itemRows)
         {
@@ -642,11 +664,11 @@ namespace ORT一键报告.Services
                     {
                         continue;
                     }
-                    int offsetY = 0;
-                    int placed = 0;
+                    // 只保留文件真的存在、读得出来的图
+                    List<(PlanItemImage Image, byte[] Bytes)> usable = [];
                     foreach (PlanItemImage image in images)
                     {
-                        if (placed >= PictureMaxPerItem)
+                        if (usable.Count >= PictureMaxPerItem)
                         {
                             break;
                         }
@@ -655,22 +677,54 @@ namespace ORT一键报告.Services
                         {
                             continue;
                         }
-                        byte[] bytes = File.ReadAllBytes(path);
-                        ScaleToFit(image.WidthPx, image.HeightPx, out int width, out int height);
-                        ExcelNpoi.AddPictureAnchored(wb, sheet, bytes, ExcelNpoi.DetectPictureType(bytes),
-                            col1: PictureColumn, row1: row, col2: PictureColumn, row2: row,
-                            dx1: 0, dy1: offsetY,
-                            dx2: width * EmuPerPixel, dy2: offsetY + height * EmuPerPixel);
-                        offsetY += (height + 4) * EmuPerPixel;
-                        placed++;
+                        usable.Add((image, File.ReadAllBytes(path)));
                     }
-                    if (placed > 0)
+                    if (usable.Count == 0)
                     {
-                        // 行高取"文字估算高度"与"图片总高"的较大值，保证图片不被下一行压住、文字也不被裁掉
-                        double imagesHeight = offsetY / (double)EmuPerPixel * 72.0 / 96.0;
-                        double textHeight = EstimateOrtPlanRowHeight(item);
-                        ExcelNpoi.SetRowHeight(sheet, row, Math.Max(imagesHeight + 4, textHeight));
+                        continue;
                     }
+
+                    // 图片放回历史报告里的那一格（取不到锚点列时用 E 列）
+                    int col1 = PictureColumnOf(usable[0].Image.AnchorColumn);
+                    int col2 = PictureColumnOf(usable[0].Image.AnchorColumn2);
+                    if (col2 < col1)
+                    {
+                        col2 = col1;
+                    }
+                    int cellWidthPx = OrtPlanSpanWidthPx(sheet, col1, col2);
+                    int imageWidthPx = Math.Max(40, cellWidthPx - PictureCellMargin * 2); // 略小于单元格宽度
+                    double textPx = OrtPlanTextHeightPx(sheet, item, col1, col2);
+
+                    // 行高上限内均分给每张图（图片再多也不至于把行撑破）
+                    double availablePx = MaxRowHeightPoints * 96.0 / 72.0 - textPx - PictureTextGap - 4;
+                    availablePx = Math.Max(40, availablePx);
+                    int perImageCapPx = (int)Math.Max(50, Math.Min(PictureMaxHeight, availablePx / usable.Count));
+
+                    double yPx = textPx + PictureTextGap;
+                    double bottomPx = yPx;
+                    foreach ((PlanItemImage image, byte[] bytes) in usable)
+                    {
+                        ScaleToBox(image.WidthPx, image.HeightPx, imageWidthPx, perImageCapPx, out int width, out int height);
+                        int dx = Math.Max(0, (cellWidthPx - width) / 2); // 水平居中，两侧留白均匀
+                        // 跨列锚点：dx2 是"最后一列内的偏移"，不是整段宽度，按列宽把终点定位到正确的列
+                        int endCol = col1;
+                        double accPx = 0;
+                        while (endCol < col2 && accPx + OrtPlanColumnWidthPx(sheet, endCol) < dx + width)
+                        {
+                            accPx += OrtPlanColumnWidthPx(sheet, endCol);
+                            endCol++;
+                        }
+                        int dx2 = Math.Max(0, (int)Math.Round((dx + width - accPx) * EmuPerPixel));
+                        ExcelNpoi.AddPictureAnchored(wb, sheet, bytes, ExcelNpoi.DetectPictureType(bytes),
+                            col1: col1, row1: row, col2: endCol, row2: row,
+                            dx1: dx * EmuPerPixel, dy1: (int)Math.Round(yPx * EmuPerPixel),
+                            dx2: dx2, dy2: (int)Math.Round((yPx + height) * EmuPerPixel));
+                        yPx += height + PictureGap;
+                        bottomPx = yPx - PictureGap;
+                    }
+                    // 行高 = 文字 + 图片总高（不超过 Excel 行高上限）
+                    double rowPx = Math.Max(textPx + 4, bottomPx + 4);
+                    ExcelNpoi.SetRowHeight(sheet, row, Math.Min(MaxRowHeightPoints, rowPx * 72.0 / 96.0));
                 }
             }
             catch (Exception ex)
@@ -679,42 +733,70 @@ namespace ORT一键报告.Services
             }
         }
 
-        /// <summary>按最大尺寸等比缩放（尺寸读不出来时给默认值）</summary>
-        private static void ScaleToFit(int widthPx, int heightPx, out int width, out int height)
+        /// <summary>配图锚点列归一化到表格列范围内（C..G）；取不到时用默认的 E 列</summary>
+        private static int PictureColumnOf(int column)
+            => column < PictureFirstColumn || column > PictureLastColumn ? PictureDefaultColumn : column;
+
+        /// <summary>ORT Plan 表某一列有多少像素宽（1 基列号）</summary>
+        private static double OrtPlanColumnWidthPx(ISheet sheet, int col)
+            => Math.Max(1.0, ExcelNpoi.ColumnWidthInChars(sheet, col) * 7.0 + 5.0);
+
+        /// <summary>ORT Plan 表若干列合起来有多少像素宽（1 基列号）</summary>
+        private static int OrtPlanSpanWidthPx(ISheet sheet, int firstCol, int lastCol)
         {
-            width = widthPx > 0 ? widthPx : PictureMaxWidth;
-            height = heightPx > 0 ? heightPx : PictureMaxHeight;
-            double scale = Math.Min(1.0, Math.Min((double)PictureMaxWidth / width, (double)PictureMaxHeight / height));
-            width = Math.Max(1, (int)Math.Round(width * scale));
-            height = Math.Max(1, (int)Math.Round(height * scale));
+            double pixels = 0;
+            for (int c = firstCol; c <= lastCol; c++)
+            {
+                pixels += OrtPlanColumnWidthPx(sheet, c);
+            }
+            return Math.Max(20, (int)Math.Round(pixels));
         }
 
-        /// <summary>
-        /// 估算 ORT Plan 某个测试项行的文字高度（磅）：
-        /// 按各列的字符宽度折行数（D=16 / E=31.4 / F=37.9 字符），取最多的那一列
-        /// </summary>
-        private static double EstimateOrtPlanRowHeight(ReportTemplateItem item)
+        /// <summary>ORT Plan 某个测试项行在某几列里的文字高度（像素）：按列宽折行，取最高的那一列</summary>
+        private static double OrtPlanTextHeightPx(ISheet sheet, ReportTemplateItem item, int firstCol, int lastCol)
         {
-            double lines = 1;
-            lines = Math.Max(lines, Lines(item.SamplingPlan, 16));
-            lines = Math.Max(lines, Lines(item.TestCondition, 31.4));
-            lines = Math.Max(lines, Lines(item.PassCriterion, 37.9));
-            lines = Math.Max(lines, Lines(item.Remark, 12.4));
-            return lines * 13.5 + 4;
-
-            static double Lines(string text, double charsPerLine)
+            double maxPoints = 13.5;
+            for (int c = firstCol; c <= lastCol; c++)
             {
-                if (string.IsNullOrEmpty(text) || charsPerLine <= 0)
+                string text = OrtPlanCellText(item, c);
+                if (string.IsNullOrEmpty(text))
                 {
-                    return 1;
+                    continue;
                 }
-                double total = 0;
+                double charsPerLine = Math.Max(4.0, ExcelNpoi.ColumnWidthInChars(sheet, c) - 0.5);
+                double lines = 0;
                 foreach (string line in text.Replace("\r\n", "\n").Replace('\r', '\n').Split('\n'))
                 {
-                    total += Math.Max(1, Math.Ceiling(MeasureTextWidth(line) / charsPerLine));
+                    lines += Math.Max(1, Math.Ceiling(MeasureTextWidth(line) / charsPerLine));
                 }
-                return total;
+                maxPoints = Math.Max(maxPoints, lines * 13.5);
             }
+            return maxPoints * 96.0 / 72.0;
+        }
+
+        /// <summary>ORT Plan 行内某列（1 基）对应的文字</summary>
+        private static string OrtPlanCellText(ReportTemplateItem item, int column) => column switch
+        {
+            3 => item.TestItemName,
+            4 => item.SamplingPlan,
+            5 => item.TestCondition,
+            6 => item.PassCriterion,
+            7 => item.Remark,
+            _ => null
+        };
+
+        /// <summary>
+        /// 按目标框等比缩放：在不超过 maxWidthPx / maxHeightPx 的前提下尽量填满
+        /// （放大最多 2 倍，避免把小图标拉花；尺寸读不出来时按目标框算）
+        /// </summary>
+        private static void ScaleToBox(int widthPx, int heightPx, int maxWidthPx, int maxHeightPx, out int width, out int height)
+        {
+            width = widthPx > 0 ? widthPx : maxWidthPx;
+            height = heightPx > 0 ? heightPx : maxHeightPx;
+            double scale = Math.Min((double)maxWidthPx / width, (double)maxHeightPx / height);
+            scale = Math.Min(scale, 2.0);
+            width = Math.Max(1, (int)Math.Round(width * scale));
+            height = Math.Max(1, (int)Math.Round(height * scale));
         }
 
         /* ###############################  Waterfall  ################################ */

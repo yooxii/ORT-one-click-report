@@ -364,6 +364,8 @@ namespace ORT一键报告.Services
         /// </summary>
         public int SyncCustomersFromPlans()
         {
+            // 先修掉历史导入留下的公式文本脏数据（客户栏里的 IF(ISBLANK(...)) 之类）
+            PlanExcelService.FixFormulaTextValues(_db);
             List<Plan> plans = _db.FreeSql.Select<Plan>().Where(p => p.Customer != null).ToList();
             int added = 0;
             foreach (IGrouping<string, Plan> group in plans.GroupBy(p => p.Customer))

@@ -94,11 +94,6 @@
                        Foreground="{DynamicResource TextSecondaryBrush}"/>
         </StackPanel>
 
-        <!--可拖动的分隔条：上下拖动调整"测试项目安排"表格高度-->
-        <GridSplitter Grid.Row="2" Height="6" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
-                      ResizeDirection="Rows" ResizeBehavior="Next" Cursor="SizeNS"
-                      Background="{DynamicResource BorderSubtleBrush}" ToolTip="{lex:Loc ReportTemplate_DragToResize}"/>
-
         <!--测试项目安排（强制按开始日期排序，不能点表头排序，日期可改）-->
         <DataGrid x:Name="dg_items" Grid.Row="3" AutoGenerateColumns="False" CanUserAddRows="False"
                   CanUserSortColumns="False" SelectionMode="Single" SelectionUnit="FullRow" HeadersVisibility="Column"
