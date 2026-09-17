@@ -157,7 +157,22 @@ namespace ORT一键报告.Services
 
         /// <summary>测试项配图在 ORT Plan 表里的最大尺寸（像素），超出按比例缩小</summary>
         private const int PictureMaxWidth = 200;
-        private const int PictureMaxHeight = 140;
+        private const int PictureMaxHeight = 110;
+
+        /// <summary>ORT Plan 里测试项配图所在的列（H 列，表格右侧的照片列，不压文字）</summary>
+        private const int PictureColumn = 8;
+
+        /// <summary>每个测试项最多放几张配图</summary>
+        private const int PictureMaxPerItem = 2;
+
+        /// <summary>ORT Plan 大标题颜色 RGB(0,0,204)</summary>
+        private static readonly byte[] OrtPlanTitleRgb = [0x00, 0x00, 0xCC];
+
+        /// <summary>ORT Plan 测试种类行底纹 RGB(197,217,241)</summary>
+        private static readonly byte[] OrtPlanCategoryRgb = [197, 217, 241];
+
+        /// <summary>TEST CONDITOIN / PASS CRITERION 是否把冒号前的词组加粗</summary>
+        private const bool BoldBeforeColon = true;
 
         public ReportTemplateService() { }
 
@@ -326,23 +341,32 @@ namespace ORT一键报告.Services
                 date, System.Globalization.CalendarWeekRule.FirstFourDayWeek, DayOfWeek.Monday);
         }
 
-        /// <summary>递归复制目录（跳过 Excel 临时文件）</summary>
+        /// <summary>
+        /// 递归复制目录（跳过 Excel 临时文件与遗留的 setup_info.json）
+        /// </summary>
         private static void CopyDirectory(string source, string target)
         {
             Directory.CreateDirectory(target);
             foreach (string file in Directory.GetFiles(source))
             {
-                if (Path.GetFileName(file).StartsWith("~$", StringComparison.Ordinal))
+                string name = Path.GetFileName(file);
+                if (name.StartsWith("~$", StringComparison.Ordinal) || IsLegacyFile(name))
                 {
                     continue;
                 }
-                File.Copy(file, Path.Combine(target, Path.GetFileName(file)), true);
+                File.Copy(file, Path.Combine(target, name), true);
             }
             foreach (string dir in Directory.GetDirectories(source))
             {
                 CopyDirectory(dir, Path.Combine(target, Path.GetFileName(dir)));
             }
         }
+
+        /// <summary>
+        /// 早期模板里遗留、生成报告时不需要的文件（setup_info.json 是旧版设置文件，已废弃）
+        /// </summary>
+        private static bool IsLegacyFile(string fileName)
+            => fileName.Equals("setup_info.json", StringComparison.OrdinalIgnoreCase);
 
         /* ###############################  Cover  ################################ */
 
@@ -387,7 +411,14 @@ namespace ORT一键报告.Services
             }
 
             ExcelNpoi.SetCell(sheet, 1, 4, "Ongoing Reliability Test Plan");
-            ExcelNpoi.ApplyStyle(sheet, 1, 4, 1, 4, new ExcelNpoi.CellStyleSpec { Bold = true, FontSize = 14 });
+            // 大标题：加粗、24 号、颜色 RGB(0,0,204)（与 Cover/Waterfall/TestStatus 的标题同色）
+            ExcelNpoi.ApplyStyle(sheet, 1, 4, 1, 4, new ExcelNpoi.CellStyleSpec
+            {
+                Bold = true,
+                FontSize = 24,
+                FontRgb = OrtPlanTitleRgb,
+                Vertical = VerticalAlignment.Center
+            });
             ExcelNpoi.SetCell(sheet, 3, 2, string.IsNullOrWhiteSpace(request.CreatedBy) ? "" : $"Created By: {request.CreatedBy}");
             ExcelNpoi.SetCell(sheet, 3, 4, "Model: ");
             ExcelNpoi.SetCell(sheet, 3, 5, request.ModelName ?? "");
@@ -397,14 +428,19 @@ namespace ORT一键报告.Services
             {
                 ExcelNpoi.SetCell(sheet, 4, 2 + i, headers[i]);
             }
+            // 表头：黑底白字、加粗、居中
             ExcelNpoi.ApplyStyle(sheet, 4, 2, 4, 7, new ExcelNpoi.CellStyleSpec
             {
                 Bold = true,
                 Border = BorderStyle.Thin,
                 Horizontal = HorizontalAlignment.Center,
                 Vertical = VerticalAlignment.Center,
-                WrapText = true
+                WrapText = true,
+                FontRgb = [0xFF, 0xFF, 0xFF],
+                FillRgb = [0x00, 0x00, 0x00]
             });
+            // 表头与第一条分类之间的空行压到 5 像素高
+            ExcelNpoi.SetRowHeight(sheet, 5, 5 * 72.0 / 96.0);
 
             int row = 6;
             int no = 0;
@@ -417,11 +453,14 @@ namespace ORT一键报告.Services
                 no = 0;
                 ExcelNpoi.SetCell(sheet, row, 2, categoryNo);
                 ExcelNpoi.SetCell(sheet, row, 3, group.Key);
+                // 分类行：淡蓝底（RGB 197,217,241）、加粗、居中
                 ExcelNpoi.ApplyStyle(sheet, row, 2, row, 7, new ExcelNpoi.CellStyleSpec
                 {
                     Bold = true,
                     Border = BorderStyle.Thin,
-                    Vertical = VerticalAlignment.Center
+                    Horizontal = HorizontalAlignment.Center,
+                    Vertical = VerticalAlignment.Center,
+                    FillRgb = OrtPlanCategoryRgb
                 });
                 ExcelNpoi.Merge(sheet, row, 3, row, 7);
                 row++;
@@ -432,10 +471,18 @@ namespace ORT一键报告.Services
                     ExcelNpoi.SetCell(sheet, row, 2, no);
                     ExcelNpoi.SetCell(sheet, row, 3, item.TestItemName ?? "");
                     ExcelNpoi.SetCell(sheet, row, 4, item.SamplingPlan ?? "");
-                    ExcelNpoi.SetCell(sheet, row, 5, item.TestCondition ?? "");
-                    ExcelNpoi.SetCell(sheet, row, 6, item.PassCriterion ?? "");
+                    ExcelNpoi.SetRichText(sheet, row, 5, item.TestCondition, BoldBeforeColon);
+                    ExcelNpoi.SetRichText(sheet, row, 6, item.PassCriterion, BoldBeforeColon);
                     ExcelNpoi.SetCell(sheet, row, 7, item.Remark ?? "");
-                    ExcelNpoi.ApplyStyle(sheet, row, 2, row, 7, new ExcelNpoi.CellStyleSpec
+                    // 序号与测试名称居中，内容列左对齐并自动换行
+                    ExcelNpoi.ApplyStyle(sheet, row, 2, row, 3, new ExcelNpoi.CellStyleSpec
+                    {
+                        Border = BorderStyle.Thin,
+                        Horizontal = HorizontalAlignment.Center,
+                        Vertical = VerticalAlignment.Center,
+                        WrapText = true
+                    });
+                    ExcelNpoi.ApplyStyle(sheet, row, 4, row, 7, new ExcelNpoi.CellStyleSpec
                     {
                         Border = BorderStyle.Thin,
                         Vertical = VerticalAlignment.Top,
@@ -461,6 +508,8 @@ namespace ORT一键报告.Services
             ExcelNpoi.SetColumnWidth(sheet, 5, 31.4);
             ExcelNpoi.SetColumnWidth(sheet, 6, 37.9);
             ExcelNpoi.SetColumnWidth(sheet, 7, 12.4);
+            // 照片列（H）：测试项配图放在这里，宽度按配图最大宽度留够
+            ExcelNpoi.SetColumnWidth(sheet, PictureColumn, PictureMaxWidth / 7.0 + 2);
 
             WriteOrtPlanLogo(wb, sheet);
             WriteOrtPlanPictures(wb, sheet, itemRows);
@@ -567,7 +616,8 @@ namespace ORT一键报告.Services
 
         /// <summary>
         /// 测试项配图：计划索引时从历史报告的 ORT Plan 表里抽出来并按测试项归好了类，
-        /// 这里把同名测试项的图片放回它所在行的 E 列（与历史报告一致）。
+        /// 这里把同名测试项的图片放在该测试项所在行的**照片列（H 列，表格右侧）**，
+        /// 不再压到 TEST CONDITOIN / PASS CRITERION 的文字上；并按图片高度把行高撑开，避免相邻项目互相遮挡。
         /// </summary>
         private void WriteOrtPlanPictures(IWorkbook wb, ISheet sheet, List<(ReportTemplateItem Item, int Row)> itemRows)
         {
@@ -596,9 +646,9 @@ namespace ORT一键报告.Services
                     int placed = 0;
                     foreach (PlanItemImage image in images)
                     {
-                        if (placed >= 3)
+                        if (placed >= PictureMaxPerItem)
                         {
-                            break; // 最多放 3 张，避免把表格撑得过高
+                            break;
                         }
                         string path = Path.Combine(_db.PlanImagesDir, image.FileName ?? "");
                         if (!File.Exists(path))
@@ -608,11 +658,18 @@ namespace ORT一键报告.Services
                         byte[] bytes = File.ReadAllBytes(path);
                         ScaleToFit(image.WidthPx, image.HeightPx, out int width, out int height);
                         ExcelNpoi.AddPictureAnchored(wb, sheet, bytes, ExcelNpoi.DetectPictureType(bytes),
-                            col1: 5, row1: row, col2: 5, row2: row,
+                            col1: PictureColumn, row1: row, col2: PictureColumn, row2: row,
                             dx1: 0, dy1: offsetY,
                             dx2: width * EmuPerPixel, dy2: offsetY + height * EmuPerPixel);
                         offsetY += (height + 4) * EmuPerPixel;
                         placed++;
+                    }
+                    if (placed > 0)
+                    {
+                        // 行高取"文字估算高度"与"图片总高"的较大值，保证图片不被下一行压住、文字也不被裁掉
+                        double imagesHeight = offsetY / (double)EmuPerPixel * 72.0 / 96.0;
+                        double textHeight = EstimateOrtPlanRowHeight(item);
+                        ExcelNpoi.SetRowHeight(sheet, row, Math.Max(imagesHeight + 4, textHeight));
                     }
                 }
             }
@@ -630,6 +687,34 @@ namespace ORT一键报告.Services
             double scale = Math.Min(1.0, Math.Min((double)PictureMaxWidth / width, (double)PictureMaxHeight / height));
             width = Math.Max(1, (int)Math.Round(width * scale));
             height = Math.Max(1, (int)Math.Round(height * scale));
+        }
+
+        /// <summary>
+        /// 估算 ORT Plan 某个测试项行的文字高度（磅）：
+        /// 按各列的字符宽度折行数（D=16 / E=31.4 / F=37.9 字符），取最多的那一列
+        /// </summary>
+        private static double EstimateOrtPlanRowHeight(ReportTemplateItem item)
+        {
+            double lines = 1;
+            lines = Math.Max(lines, Lines(item.SamplingPlan, 16));
+            lines = Math.Max(lines, Lines(item.TestCondition, 31.4));
+            lines = Math.Max(lines, Lines(item.PassCriterion, 37.9));
+            lines = Math.Max(lines, Lines(item.Remark, 12.4));
+            return lines * 13.5 + 4;
+
+            static double Lines(string text, double charsPerLine)
+            {
+                if (string.IsNullOrEmpty(text) || charsPerLine <= 0)
+                {
+                    return 1;
+                }
+                double total = 0;
+                foreach (string line in text.Replace("\r\n", "\n").Replace('\r', '\n').Split('\n'))
+                {
+                    total += Math.Max(1, Math.Ceiling(MeasureTextWidth(line) / charsPerLine));
+                }
+                return total;
+            }
         }
 
         /* ###############################  Waterfall  ################################ */

@@ -78,6 +78,8 @@
             <MenuItem Header="{lex:Loc MainWindow_Menu_Tools}">
                 <MenuItem Header="{lex:Loc Plans_Menu_ReportTemplate}" Click="Menu_ReportTemplate_Click"
                           ToolTip="{lex:Loc Plans_ToolTip_ReportTemplate}"/>
+                <MenuItem Header="{lex:Loc Plans_RefreshReports}" Click="Menu_RefreshReportLinks_Click"
+                          ToolTip="{lex:Loc Plans_ToolTip_RefreshReports}"/>
                 <MenuItem Header="{lex:Loc Plans_Menu_PlanIndex}" Click="Menu_PlanIndex_Click"
                           ToolTip="{lex:Loc PlanIndex_ToolTip_Build}"/>
             </MenuItem>
@@ -109,6 +111,7 @@
                 <Button Content="{lex:Loc Plans_ReturnTransfer}" Click="Btn_ReturnLine_Click" ToolTip="{lex:Loc Plans_ToolTip_ReturnTransfer}"/>
                 <Separator/>
                 <Button Content="{lex:Loc Plans_Menu_ReportTemplate}" Click="Menu_ReportTemplate_Click" ToolTip="{lex:Loc Plans_ToolTip_ReportTemplate}"/>
+                <Button Content="{lex:Loc Plans_RefreshReports}" Click="Menu_RefreshReportLinks_Click" ToolTip="{lex:Loc Plans_ToolTip_RefreshReports}"/>
                 <Button Content="{lex:Loc Plans_Menu_PlanIndex}" Click="Menu_PlanIndex_Click" ToolTip="{lex:Loc PlanIndex_ToolTip_Build}"/>
                 <Separator/>
                 <Button Content="{lex:Loc Common_Refresh}" Command="{Binding RefreshCommand}" ToolTip="{lex:Loc Plans_ToolTip_Reload}"/>

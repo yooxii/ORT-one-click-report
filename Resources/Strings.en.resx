@@ -608,6 +608,21 @@
   <data name="Msg_PasswordCleared" xml:space="preserve">
     <value>Password cleared: the account can now log in with the user name only and will be asked to set a password</value>
   </data>
+  <data name="Plans_RefreshReports" xml:space="preserve">
+    <value>Refresh Report Folders</value>
+  </data>
+  <data name="Plans_ToolTip_RefreshReports" xml:space="preserve">
+    <value>Rescan the report root folder and refresh the report marks on the plan table (no restart needed after creating a report folder)</value>
+  </data>
+  <data name="Plans_Msg_ReportsUpdating" xml:space="preserve">
+    <value>Updating report folders...</value>
+  </data>
+  <data name="Plans_Msg_ReportsUpdatedFormat" xml:space="preserve">
+    <value>Report folders updated: {0} folder(s) matched</value>
+  </data>
+  <data name="ReportTemplate_DragToResize" xml:space="preserve">
+    <value>Drag to resize</value>
+  </data>
   <data name="Admin_Technician" xml:space="preserve">
     <value>Technician</value>
   </data>

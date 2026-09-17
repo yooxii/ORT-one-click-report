@@ -417,6 +417,68 @@ namespace ORT一键报告.Utils
         public const short IndexedSilver = 22;
 
         /// <summary>
+        /// 写"富文本"单元格：每一行若含冒号（英文 : 或中文 ：），把冒号前的词组加粗
+        /// （历史报告里 TEST CONDITOIN / PASS CRITERION 的写法）。
+        /// <paramref name="boldBeforeColon"/>=false 时与普通 SetCell 等价。
+        /// </summary>
+        public static void SetRichText(ISheet sheet, int row1, int col1, string text, bool boldBeforeColon)
+        {
+            if (sheet == null)
+            {
+                return;
+            }
+            ICell cell = Cell(sheet, row1, col1);
+            if (string.IsNullOrEmpty(text))
+            {
+                cell.SetCellValue("");
+                return;
+            }
+            if (!boldBeforeColon)
+            {
+                cell.SetCellValue(text);
+                return;
+            }
+            XSSFRichTextString rich = new(text);
+            IFont boldFont = null;
+            int lineStart = 0;
+            for (int i = 0; i <= text.Length; i++)
+            {
+                if (i < text.Length && text[i] != '\n')
+                {
+                    continue;
+                }
+                int colon = -1;
+                for (int j = lineStart; j < i; j++)
+                {
+                    if (text[j] == ':' || text[j] == '：')
+                    {
+                        colon = j;
+                        break;
+                    }
+                }
+                if (colon > lineStart)
+                {
+                    boldFont ??= BoldFontOf(sheet.Workbook);
+                    rich.ApplyFont(lineStart, colon, boldFont);
+                }
+                lineStart = i + 1;
+            }
+            cell.SetCellValue(rich);
+        }
+
+        /// <summary>取（或建）工作簿里的加粗字体，供富文本分段加粗复用</summary>
+        private static IFont BoldFontOf(IWorkbook workbook)
+        {
+            ICellStyle style = Style(workbook, "richtext:bold", cellStyle =>
+            {
+                IFont font = workbook.CreateFont();
+                font.IsBold = true;
+                cellStyle.SetFont(font);
+            });
+            return style.GetFont(workbook);
+        }
+
+        /// <summary>
         /// 给区域内"没有自己底纹"的单元格刷一层底色（保留模板里已有的黑/蓝等彩色底纹），
         /// 用于把整张表铺成淡灰背景、表格周围刷白。颜色用 Excel 索引色（见 IndexedWhite/IndexedSilver）。
         /// </summary>
@@ -832,6 +894,9 @@ namespace ORT一键报告.Utils
             /// <summary>是否加粗（与 FontSize 一起生效）</summary>
             public bool Bold { get; set; }
 
+            /// <summary>字体颜色（RGB），为空则用默认色</summary>
+            public byte[] FontRgb { get; set; }
+
             /// <summary>填充色（RGB），为空则不填充</summary>
             public byte[] FillRgb { get; set; }
         }
@@ -861,7 +926,8 @@ namespace ORT一键报告.Utils
         private static ICellStyle BuildStyle(IWorkbook workbook, CellStyleSpec spec, bool top, bool bottom, bool left, bool right)
         {
             string fill = spec.FillRgb == null ? "" : string.Join(",", spec.FillRgb);
-            string key = $"spec:{spec.NumberFormat}|{spec.Border}|{spec.OuterBorder}|{spec.Horizontal}|{spec.Vertical}|{spec.WrapText}|{spec.FontSize}|{spec.Bold}|{fill}|{top}{bottom}{left}{right}";
+            string font = spec.FontRgb == null ? "" : string.Join(",", spec.FontRgb);
+            string key = $"spec:{spec.NumberFormat}|{spec.Border}|{spec.OuterBorder}|{spec.Horizontal}|{spec.Vertical}|{spec.WrapText}|{spec.FontSize}|{spec.Bold}|{font}|{fill}|{top}{bottom}{left}{right}";
             return Style(workbook, key, style =>
             {
                 if (!string.IsNullOrEmpty(spec.NumberFormat))
@@ -894,7 +960,7 @@ namespace ORT一键报告.Utils
                 {
                     style.WrapText = true;
                 }
-                if (spec.FontSize.HasValue || spec.Bold)
+                if (spec.FontSize.HasValue || spec.Bold || spec.FontRgb != null)
                 {
                     IFont font = workbook.CreateFont();
                     if (spec.FontSize.HasValue)
@@ -902,6 +968,12 @@ namespace ORT一键报告.Utils
                         font.FontHeightInPoints = (short)Math.Round(spec.FontSize.Value);
                     }
                     font.IsBold = spec.Bold;
+                    if (spec.FontRgb != null && spec.FontRgb.Length >= 3 && font is XSSFFont xssfFont)
+                    {
+                        XSSFColor color = new XSSFColor();
+                        color.SetRgb(spec.FontRgb);
+                        xssfFont.SetColor(color);
+                    }
                     style.SetFont(font);
                 }
                 if (spec.FillRgb != null)

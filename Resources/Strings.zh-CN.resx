@@ -608,6 +608,21 @@
   <data name="Msg_PasswordCleared" xml:space="preserve">
     <value>已清除该账号的密码：该账号现在只凭用户名即可登录，登录后会提示本人设置密码</value>
   </data>
+  <data name="Plans_RefreshReports" xml:space="preserve">
+    <value>更新报告文件夹</value>
+  </data>
+  <data name="Plans_ToolTip_RefreshReports" xml:space="preserve">
+    <value>重新扫描报告根目录，刷新计划表上的报告标记（新建的报告文件夹不必重启程序）</value>
+  </data>
+  <data name="Plans_Msg_ReportsUpdating" xml:space="preserve">
+    <value>正在更新报告文件夹…</value>
+  </data>
+  <data name="Plans_Msg_ReportsUpdatedFormat" xml:space="preserve">
+    <value>报告文件夹已更新：匹配到 {0} 个报告夹</value>
+  </data>
+  <data name="ReportTemplate_DragToResize" xml:space="preserve">
+    <value>拖动可调整高度</value>
+  </data>
   <data name="Admin_Technician" xml:space="preserve">
     <value>技术员</value>
   </data>

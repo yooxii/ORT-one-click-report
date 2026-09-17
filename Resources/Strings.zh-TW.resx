@@ -608,6 +608,21 @@
   <data name="Msg_PasswordCleared" xml:space="preserve">
     <value>已清除該帳號的密碼：該帳號現在只憑使用者名稱即可登入，登入後會提示本人設定密碼</value>
   </data>
+  <data name="Plans_RefreshReports" xml:space="preserve">
+    <value>更新報告資料夾</value>
+  </data>
+  <data name="Plans_ToolTip_RefreshReports" xml:space="preserve">
+    <value>重新掃描報告根目錄，刷新計畫表上的報告標記（新建的報告資料夾不必重啟程式）</value>
+  </data>
+  <data name="Plans_Msg_ReportsUpdating" xml:space="preserve">
+    <value>正在更新報告資料夾…</value>
+  </data>
+  <data name="Plans_Msg_ReportsUpdatedFormat" xml:space="preserve">
+    <value>報告資料夾已更新：匹配到 {0} 個報告夾</value>
+  </data>
+  <data name="ReportTemplate_DragToResize" xml:space="preserve">
+    <value>拖動可調整高度</value>
+  </data>
   <data name="Admin_Technician" xml:space="preserve">
     <value>技術員</value>
   </data>

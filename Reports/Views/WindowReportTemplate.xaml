@@ -13,10 +13,10 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="auto"/>
             <RowDefinition Height="auto"/>
-            <RowDefinition Height="5"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="5"/>
-            <RowDefinition Height="170" MinHeight="110"/>
+            <RowDefinition Height="6"/>
+            <RowDefinition Height="*" MinHeight="120"/>
+            <RowDefinition Height="6"/>
+            <RowDefinition Height="300" MinHeight="140"/>
             <RowDefinition Height="auto"/>
         </Grid.RowDefinitions>
 
@@ -94,7 +94,10 @@
                        Foreground="{DynamicResource TextSecondaryBrush}"/>
         </StackPanel>
 
-        <GridSplitter Grid.Row="2" HorizontalAlignment="Stretch" VerticalAlignment="Center" Background="Transparent"/>
+        <!--可拖动的分隔条：上下拖动调整"测试项目安排"表格高度-->
+        <GridSplitter Grid.Row="2" Height="6" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                      ResizeDirection="Rows" ResizeBehavior="Next" Cursor="SizeNS"
+                      Background="{DynamicResource BorderSubtleBrush}" ToolTip="{lex:Loc ReportTemplate_DragToResize}"/>
 
         <!--测试项目安排（强制按开始日期排序，不能点表头排序，日期可改）-->
         <DataGrid x:Name="dg_items" Grid.Row="3" AutoGenerateColumns="False" CanUserAddRows="False"
@@ -111,7 +114,10 @@
             </DataGrid.Columns>
         </DataGrid>
 
-        <GridSplitter Grid.Row="4" HorizontalAlignment="Stretch" VerticalAlignment="Center" Background="Transparent"/>
+        <!--可拖动的分隔条：上下拖动调整下方"测试计划"区域高度-->
+        <GridSplitter Grid.Row="4" Height="6" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                      ResizeDirection="Rows" ResizeBehavior="PreviousAndNext" Cursor="SizeNS"
+                      Background="{DynamicResource BorderSubtleBrush}" ToolTip="{lex:Loc ReportTemplate_DragToResize}"/>
 
         <!--选中测试项的测试计划（抽样计划/测试条件/通过判定，来自计划模板，可直接编辑或换用别的模板方案）-->
         <GroupBox Grid.Row="5" Header="{lex:Loc ReportTemplate_Plan}" Padding="6">

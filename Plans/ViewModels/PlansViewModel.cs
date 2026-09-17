@@ -642,6 +642,20 @@ namespace ORT一键报告.Plans.ViewModels
         /// </summary>
         public event Action<int> ReportScanCompleted;
 
+        /// <summary>本次扫描的完成回调（手动更新报告文件夹时用来提示结果）</summary>
+        private Action<int> _scanCallback;
+
+        /// <summary>
+        /// 手动更新报告文件夹：重新扫描报告根目录，刷新计划表的"报告"标记。
+        /// 新生成的报告模板文件夹、或在别处新增的报告夹，用这个入口立刻生效（不必重启程序）。
+        /// </summary>
+        /// <param name="completed">扫描完成后的回调（参数为匹配到的报告夹数量）</param>
+        public void RequestReportScan(Action<int> completed = null)
+        {
+            _scanCallback = completed;
+            StartReportScan();
+        }
+
         /// <summary>
         /// 后台遍历报告路径，按工作编号匹配报告文件夹并保存到 report_links 表。
         /// 报告夹结构：文件夹名包含工作编号，内含 Report 子文件夹与一个 Excel 报告概览文件。
@@ -657,6 +671,9 @@ namespace ORT一键报告.Plans.ViewModels
             if (root == null || jobNos.Count == 0)
             {
                 UpdatePlanReportFlags();
+                Action<int> empty = _scanCallback;
+                _scanCallback = null;
+                empty?.Invoke(0);
                 return;
             }
             int seq = ++_scanSeq;
@@ -687,6 +704,9 @@ namespace ORT一键报告.Plans.ViewModels
                         _logger.Info($"报告扫描完成: {root} 下匹配 {found.Count} 个报告夹");
                         // 扫描完成后提示用户建立计划索引（界面侧决定是否提示、提示一次）
                         ReportScanCompleted?.Invoke(found.Count);
+                        Action<int> callback = _scanCallback;
+                        _scanCallback = null;
+                        callback?.Invoke(found.Count);
                     });
                 }
                 catch (Exception ex)

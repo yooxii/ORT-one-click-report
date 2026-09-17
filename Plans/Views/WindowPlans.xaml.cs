@@ -958,6 +958,20 @@ namespace ORT一键报告.Plans.Views
         /// </summary>
         private void Menu_ReportTemplate_Click(object sender, RoutedEventArgs e) => OpenReportTemplateWindow(null);
 
+        /// <summary>
+        /// 工具菜单/工具栏：更新报告文件夹（重新扫描报告根目录，刷新计划表的报告标记）
+        /// </summary>
+        private void Menu_RefreshReportLinks_Click(object sender, RoutedEventArgs e)
+        {
+            ToastService.Show(LanguageService.Get("Plans_Msg_ReportsUpdating"), ToastType.Info);
+            _vm.RequestReportScan(count =>
+                ToastService.Show(string.Format(LanguageService.Get("Plans_Msg_ReportsUpdatedFormat"), count), ToastType.Info));
+        }
+
+        /// <summary>
+        /// 打开报告模板工具；关掉窗口后自动更新一次报告文件夹
+        /// （新生成的报告模板文件夹要立刻出现在计划表的"报告"标记上）
+        /// </summary>
         private void OpenReportTemplateWindow(Plan plan)
         {
             try
@@ -967,6 +981,17 @@ namespace ORT一键报告.Plans.Views
                 {
                     window.PrefillFromPlan(plan, _vm.FindRequisitionForPlan(plan));
                 }
+                window.Closed += (s, e) =>
+                {
+                    try
+                    {
+                        _vm.RequestReportScan();
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.Warn($"自动更新报告文件夹失败: {ex.Message}");
+                    }
+                };
                 window.Show();
             }
             catch (Exception ex)
