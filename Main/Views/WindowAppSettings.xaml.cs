@@ -533,6 +533,9 @@ namespace ORT一键报告.Main.Views
 
             _initialDataFolder = _settings.GetEffectiveDataFolder();
             txt_dataFolder.Text = _initialDataFolder;
+            // 数据文件夹只有管理员能改：非管理员直接禁用，避免"改了却存不进去"的困惑
+            txt_dataFolder.IsEnabled = _isAdmin;
+            btn_dataFolderBrowse.IsEnabled = _isAdmin;
             _initialAtePath = _settings.GetAteDataPath();
             txt_ate.Text = _initialAtePath;
             _initialEmiPath = _settings.GetEmiDataPath();
@@ -595,27 +598,25 @@ namespace ORT一键报告.Main.Views
             settings.Paths.RequisitionPath = TrimOrNull(txt_requisition.Text);
             settings.Paths.ReportPath = TrimOrNull(txt_report.Text);
 
-            // 数据文件夹：仅管理员可改；改了要确认新目录可用，并（改完保存后）提示重启
-            string newDataFolder = _initialDataFolder;
+            // 数据文件夹：仅管理员可改；先确认新目录可用（不可用就不保存）
             if (_isAdmin)
             {
-                newDataFolder = FolderUtil.Normalize(txt_dataFolder.Text);
-                if (string.IsNullOrEmpty(newDataFolder))
+                string typedFolder = FolderUtil.Normalize(txt_dataFolder.Text);
+                if (string.IsNullOrEmpty(typedFolder))
                 {
                     _ = MessageBox.Show(LanguageService.Get("Msg_DataFolderEmpty"), LanguageService.Get("Cap_Info"));
                     txt_dataFolder.Focus();
                     return false;
                 }
-                if (!string.Equals(newDataFolder, _initialDataFolder, StringComparison.OrdinalIgnoreCase)
-                    && !FolderUtil.TryPrepare(newDataFolder, out string folderError))
+                if (!string.Equals(typedFolder, _settings.GetEffectiveDataFolder(), StringComparison.OrdinalIgnoreCase)
+                    && !FolderUtil.TryPrepare(typedFolder, out string folderError))
                 {
                     _ = MessageBox.Show(string.Format(LanguageService.Get("Msg_DataFolderInvalidFormat"), folderError),
                         LanguageService.Get("Cap_Error"), MessageBoxButton.OK, MessageBoxImage.Warning);
                     txt_dataFolder.Focus();
                     return false;
                 }
-                txt_dataFolder.Text = newDataFolder;
-                _dataFolderChanged = !string.Equals(newDataFolder, _initialDataFolder, StringComparison.OrdinalIgnoreCase);
+                txt_dataFolder.Text = typedFolder;
             }
 
             // 计划索引：空闲自动执行（非管理员界面未载入，不得回写）
@@ -651,26 +652,49 @@ namespace ORT一键报告.Main.Views
                 _initialEmiPath = emiPath;
             }
 
-            // 数据文件夹：仅管理员；改了（或改了还没重启）就提示重启并支持一键重启
-            if (_isAdmin && !string.Equals(_initialDataFolder, _db.DataDir, StringComparison.OrdinalIgnoreCase))
+            // 数据文件夹：仅管理员。判据是"输入框里的路径 vs 磁盘上已保存的路径"，
+            // 不能用"是否与打开窗口时的值不同"这类内存标记——否则改完再打开会回到旧值。
+            if (TrySaveDataFolderFromUi(out string activeFolder, out string newFolder, out bool offerCopy))
             {
-                bool justChanged = _dataFolderChanged;
-                if (justChanged)
-                {
-                    _settings.SetDataFolder(newDataFolder);
-                    _initialDataFolder = _settings.GetEffectiveDataFolder();
-                    txt_dataFolder.Text = _initialDataFolder;
-                    _dataFolderChanged = false;
-                }
-                PromptRestartForDataFolder(_db.DataDir, _initialDataFolder, offerCopy: justChanged);
+                PromptRestartForDataFolder(activeFolder, newFolder, offerCopy);
             }
             return true;
         }
 
         /// <summary>
-        /// 数据文件夹是否需要重启才能生效（ApplyAll 里保存后由界面提示重启）
+        /// 把界面上的数据文件夹写回本机设置（仅管理员）。
+        /// 返回是否需要提示重启；activeFolder 为本次运行实际使用的文件夹（重启前不会变），
+        /// newFolder 为已保存的新文件夹，offerCopy 表示要不要问"是否把现有数据复制过去"。
         /// </summary>
-        private bool _dataFolderChanged;
+        private bool TrySaveDataFolderFromUi(out string activeFolder, out string newFolder, out bool offerCopy)
+        {
+            activeFolder = _db.DataDir;
+            newFolder = null;
+            offerCopy = false;
+            if (!_isAdmin)
+            {
+                return false;
+            }
+            string typed = FolderUtil.Normalize(txt_dataFolder.Text);
+            string stored = _settings.GetEffectiveDataFolder();
+            if (string.Equals(typed, stored, StringComparison.OrdinalIgnoreCase))
+            {
+                // 输入框没改：只有"上次改过但还没重启"时才需要再提示一次
+                if (string.Equals(stored, activeFolder, StringComparison.OrdinalIgnoreCase))
+                {
+                    return false;
+                }
+                newFolder = stored;
+                _initialDataFolder = stored;
+                return true;
+            }
+            _settings.SetDataFolder(typed);
+            newFolder = _settings.GetEffectiveDataFolder();
+            _initialDataFolder = newFolder;
+            txt_dataFolder.Text = newFolder;
+            offerCopy = true;
+            return true;
+        }
 
         /// <summary>
         /// 数据文件夹变更后的收尾：可选把当前数据复制到新文件夹，并提示重启（支持一键重启）
