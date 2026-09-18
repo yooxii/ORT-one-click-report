@@ -20,7 +20,12 @@ namespace ORT一键报告.Services
         private readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
         /// <summary>
-        /// 数据根目录（数据文件夹）
+        /// 设置里配置的数据文件夹（可能是 UNC 路径；实际使用的见 <see cref="DataDir"/>）
+        /// </summary>
+        public string ConfiguredDataFolder { get; }
+
+        /// <summary>
+        /// 数据根目录（实际使用：UNC 路径会被映射成网络驱动器后的盘符路径）
         /// </summary>
         public string DataDir { get; }
 
@@ -52,13 +57,32 @@ namespace ORT一键报告.Services
         public DatabaseService()
         {
             // 数据文件夹可在设置中修改（保存在程序目录的本机设置文件里，重启生效）
-            DataDir = AppSettingsService.ResolveDataFolder();
+            ConfiguredDataFolder = AppSettingsService.ResolveDataFolder();
+            // SQLite 打不开 UNC 路径的库文件（unable to open database file），
+            // 所以填 UNC 时先自动映射成网络驱动器，再用盘符路径访问
+            if (NetworkDriveMapper.IsUncPath(ConfiguredDataFolder))
+            {
+                if (!NetworkDriveMapper.TryMap(ConfiguredDataFolder, out string mappedFolder, out string mapError))
+                {
+                    throw new DataFolderUnavailableException(
+                        $"数据文件夹是网络路径（{ConfiguredDataFolder}），SQLite 不能直接使用 UNC 路径，" +
+                        $"自动映射为网络驱动器也失败了：{mapError}{Environment.NewLine}{Environment.NewLine}" +
+                        "请先手工把共享映射成盘符，例如在命令行执行：" + Environment.NewLine +
+                        "    net use Z: \\\\服务器\\共享 /persistent:yes" + Environment.NewLine +
+                        "然后在「设置 → 数据文件夹」里改成 Z:\\对应目录（或直接改程序目录下 Data\\local_settings.json 的 DataFolder）后重启。");
+                }
+                DataDir = mappedFolder;
+            }
+            else
+            {
+                DataDir = ConfiguredDataFolder;
+            }
             if (!FolderUtil.TryPrepare(DataDir, out string error))
             {
                 throw new DataFolderUnavailableException(
                     $"数据文件夹不可用：{error}{Environment.NewLine}{Environment.NewLine}" +
                     "请检查该文件夹是否存在、是否有读写权限（网络共享请确认能访问），" +
-                    $"或修改程序目录下 Data\\local_settings.json 里的 DataFolder（当前值：{DataDir}）。");
+                    $"或修改程序目录下 Data\\local_settings.json 里的 DataFolder（当前值：{ConfiguredDataFolder}）。");
             }
             IsNetworkFolder = FolderUtil.IsNetworkPath(DataDir);
             DbPath = Path.Combine(DataDir, "ort_plans.db");
@@ -67,15 +91,88 @@ namespace ORT一键报告.Services
             Directory.CreateDirectory(OleDir);
             Directory.CreateDirectory(PlanImagesDir);
 
-            string connStr = $"Data Source={DbPath};Pooling=true;Min Pool Size=1;Max Pool Size=10";
+            // 网络共享上的库不能是 WAL 模式（SQLite 的 WAL 依赖共享内存，SMB 上打不开），
+            // 打开之前先把它转成回滚日志模式；否则会一路报 unable to open database file
+            if (IsNetworkFolder)
+            {
+                EnsureRollbackJournalForNetworkFolder();
+            }
+
+            string connStr = $"Data Source={DbPath};Pooling=true;Min Pool Size=1;Max Pool Size=10;Default Timeout=30";
             FreeSql = new FreeSqlBuilder()
                 .UseConnectionString(DataType.Sqlite, connStr)
                 .UseAutoSyncStructure(true) // 首次运行自动建表/同步结构
                 .Build();
 
+            // 确认真的打得开：打不开就明确报错（否则界面能起来但每次操作都失败，只留下 "unable to open database file"）
+            VerifyOpenable();
             ConfigureJournal();
             MigrateLegacyPlansToRequisitions();
-            _logger.Info($"数据库初始化完成: {DbPath}（数据文件夹: {DataDir}{(IsNetworkFolder ? "，网络共享" : "")}）");
+            _logger.Info($"数据库初始化完成: {DbPath}（数据文件夹: {DataDir}{(IsNetworkFolder ? "，网络共享" : "")}，日志模式: {CurrentJournalMode() ?? "未知"}）");
+        }
+
+        /// <summary>
+        /// 网络共享上的库若是 WAL 模式，就地转成回滚日志模式（本地临时目录转换后写回）
+        /// </summary>
+        private void EnsureRollbackJournalForNetworkFolder()
+        {
+            try
+            {
+                if (!File.Exists(DbPath) || !SqliteFileUtil.IsWalFile(DbPath))
+                {
+                    return;
+                }
+                _logger.Warn($"数据库处于 WAL 模式，网络共享上无法打开，正在转换为回滚日志模式: {DbPath}");
+                if (SqliteFileUtil.TryConvertToRollbackInPlace(DbPath, out string convertError))
+                {
+                    _logger.Info("已转换为回滚日志模式（DELETE）");
+                }
+                else
+                {
+                    _logger.Error($"转换为回滚日志模式失败: {convertError}");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn($"检查/转换数据库日志模式失败: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 数据库打不开时给出带诊断信息的错误（路径、是否网络共享、是否 WAL、SQLite 原始错误）
+        /// </summary>
+        private void VerifyOpenable()
+        {
+            try
+            {
+                FreeSql.Ado.ExecuteScalar("SELECT COUNT(*) FROM sqlite_master;");
+            }
+            catch (Exception ex)
+            {
+                string wal = SqliteFileUtil.IsWalFile(DbPath) ? "是" : "否";
+                throw new DataFolderUnavailableException(
+                    $"数据文件夹里的数据库打不开：{ex.Message}{Environment.NewLine}{Environment.NewLine}" +
+                    $"数据库文件：{DbPath}{Environment.NewLine}" +
+                    $"网络共享：{(IsNetworkFolder ? "是" : "否")}；WAL 模式：{wal}{Environment.NewLine}{Environment.NewLine}" +
+                    "常见原因：库放在网络共享上且处于 WAL 模式（SQLite 的 WAL 依赖共享内存，共享文件夹上不可用）、" +
+                    "文件被别的程序独占、没有读写权限，或文件损坏。可确认该文件能否打开、" +
+                    "旁边是否有残留的 ort_plans.db-wal，或在设置里换回本地数据文件夹后重启。");
+            }
+        }
+
+        /// <summary>
+        /// 当前日志模式（诊断用）
+        /// </summary>
+        private string CurrentJournalMode()
+        {
+            try
+            {
+                return FreeSql.Ado.ExecuteScalar("PRAGMA journal_mode;") as string;
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         /// <summary>

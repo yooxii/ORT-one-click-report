@@ -663,12 +663,13 @@ namespace ORT一键报告.Main.Views
 
         /// <summary>
         /// 把界面上的数据文件夹写回本机设置（仅管理员）。
-        /// 返回是否需要提示重启；activeFolder 为本次运行实际使用的文件夹（重启前不会变），
+        /// 返回是否需要提示重启；activeFolder 为本次运行配置的数据文件夹（重启前不会变），
         /// newFolder 为已保存的新文件夹，offerCopy 表示要不要问"是否把现有数据复制过去"。
         /// </summary>
         private bool TrySaveDataFolderFromUi(out string activeFolder, out string newFolder, out bool offerCopy)
         {
-            activeFolder = _db.DataDir;
+            // 与"本次运行真正在用的数据文件夹"比较时要用配置值（UNC 会被映射成盘符，实际路径不同）
+            activeFolder = FolderUtil.Normalize(_db.ConfiguredDataFolder) ?? _db.DataDir;
             newFolder = null;
             offerCopy = false;
             if (!_isAdmin)

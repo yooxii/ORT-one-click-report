@@ -711,7 +711,7 @@
     <value>Default directory for EMI data. Saved with database path.</value>
   </data>
   <data name="Settings_DataFolderHint" xml:space="preserve">
-    <value>All data (database, attachments, plan pictures) is kept in this folder. It may be a network share such as \\server\share — point several PCs at the same folder to share one data set. This setting is stored on this PC; restart required.</value>
+    <value>All data (database, attachments, plan pictures) is kept in this folder. A network share path (\\server\share\dir) is allowed: SQLite cannot use UNC paths directly, so the share is mapped to a network drive automatically (if mapping fails the app tells you the net use command to run) — you may also pick an already-mapped drive letter such as Z:\... Point several PCs at the same folder to share one data set. This setting is stored on this PC; restart required.</value>
   </data>
   <data name="Settings_DirHint" xml:space="preserve">
     <value>Default directories for dialogs. Leave empty for system default.</value>

@@ -17,7 +17,7 @@ namespace ORT一键报告.Services
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
         /// <summary>数据文件夹里的数据项（相对路径）</summary>
-        private static readonly string[] DataItems = ["ort_plans.db", "ort_plans.db-wal", "ort_plans.db-shm", "OleFiles", "PlanImages"];
+        private static readonly string[] DataItems = ["OleFiles", "PlanImages"];
 
         /// <summary>
         /// 把 sourceDir 里的数据复制到 targetDir（目标已存在的同名文件不覆盖，避免覆盖共享文件夹里别人正在用的数据）
@@ -34,6 +34,7 @@ namespace ORT一键报告.Services
             {
                 return (0, errors);
             }
+            bool targetIsNetwork = FolderUtil.IsNetworkPath(target);
             // 数据库还在使用中：先把 WAL 内容并回主库，避免复制到"缺最新事务"的库
             if (freeSql != null)
             {
@@ -55,22 +56,45 @@ namespace ORT一键报告.Services
                 errors.Add($"无法创建目标文件夹「{target}」：{ex.Message}");
                 return (copied, errors);
             }
+
+            // 数据库：目标是网络共享时不能直接拷 WAL 模式的库（拷过去打不开），
+            // 先在本地临时目录转成回滚日志模式再写过去
+            string dbFrom = Path.Combine(source, "ort_plans.db");
+            string dbTo = Path.Combine(target, "ort_plans.db");
+            if (File.Exists(dbFrom) && !File.Exists(dbTo))
+            {
+                try
+                {
+                    if (targetIsNetwork)
+                    {
+                        if (SqliteFileUtil.CreateRollbackCopy(dbFrom, dbTo, out string dbError))
+                        {
+                            copied++;
+                        }
+                        else
+                        {
+                            errors.Add($"ort_plans.db: {dbError}");
+                        }
+                    }
+                    else
+                    {
+                        File.Copy(dbFrom, dbTo, overwrite: false);
+                        copied++;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    errors.Add($"ort_plans.db: {ex.Message}");
+                }
+            }
+
             foreach (string item in DataItems)
             {
                 string from = Path.Combine(source, item);
                 string to = Path.Combine(target, item);
                 try
                 {
-                    if (File.Exists(from))
-                    {
-                        if (File.Exists(to))
-                        {
-                            continue;
-                        }
-                        File.Copy(from, to, overwrite: false);
-                        copied++;
-                    }
-                    else if (Directory.Exists(from))
+                    if (Directory.Exists(from))
                     {
                         copied += CopyDirectory(from, to, errors);
                     }
@@ -80,7 +104,7 @@ namespace ORT一键报告.Services
                     errors.Add($"{item}: {ex.Message}");
                 }
             }
-            Logger.Info($"数据文件夹迁移完成：{source} → {target}，复制 {copied} 个文件，失败 {errors.Count} 项");
+            Logger.Info($"数据文件夹迁移完成：{source} → {target}（{(targetIsNetwork ? "网络共享" : "本地")}），复制 {copied} 个文件，失败 {errors.Count} 项");
             return (copied, errors);
         }
 

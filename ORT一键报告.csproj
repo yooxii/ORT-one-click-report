@@ -153,6 +153,8 @@
     <Compile Include="Services\LocalSettingsStore.cs" />
     <Compile Include="Services\DataFolderMigrator.cs" />
     <Compile Include="Utils\FolderUtil.cs" />
+    <Compile Include="Utils\NetworkDriveMapper.cs" />
+    <Compile Include="Utils\SqliteFileUtil.cs" />
     <Compile Include="Services\UiScale.cs" />
     <Compile Include="Services\LocalizationHelper.cs" />
     <Compile Include="Services\LanguageService.cs" />
