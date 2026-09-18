@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -692,8 +692,8 @@
   <data name="Settings_EMIPath" xml:space="preserve">
     <value>EMI Data Path</value>
   </data>
-  <data name="Settings_DBPath" xml:space="preserve">
-    <value>Database Path</value>
+  <data name="Settings_DataFolder" xml:space="preserve">
+    <value>Data Folder</value>
   </data>
   <data name="Settings_PlanPathHint" xml:space="preserve">
     <value>Default directory when importing plans (ORT Test Schedule).</value>
@@ -710,8 +710,8 @@
   <data name="Settings_EMIPathHint" xml:space="preserve">
     <value>Default directory for EMI data. Saved with database path.</value>
   </data>
-  <data name="Settings_DBPathHint" xml:space="preserve">
-    <value>Database file (ort_plans.db) directory. Saved in app directory, restart required.</value>
+  <data name="Settings_DataFolderHint" xml:space="preserve">
+    <value>All data (database, attachments, plan pictures) is kept in this folder. It may be a network share such as \\server\share — point several PCs at the same folder to share one data set. This setting is stored on this PC; restart required.</value>
   </data>
   <data name="Settings_DirHint" xml:space="preserve">
     <value>Default directories for dialogs. Leave empty for system default.</value>
@@ -1103,8 +1103,26 @@
   <data name="Msg_FontSizeTooLargeFormat" xml:space="preserve">
     <value>The maximum UI font size is {0}. Larger sizes cannot be displayed correctly, so this change was discarded.</value>
   </data>
-  <data name="Msg_DBPathSaved" xml:space="preserve">
-    <value>Database path saved. Restart to take effect.</value>
+  <data name="Msg_DataFolderSaved" xml:space="preserve">
+    <value>Data folder saved. Restart the program to take effect.</value>
+  </data>
+  <data name="Msg_DataFolderRestartAsk" xml:space="preserve">
+    <value>The data folder has changed and a restart is required (the database, attachments and pictures all move to the new folder). Restart now?</value>
+  </data>
+  <data name="Msg_DataFolderInvalidFormat" xml:space="preserve">
+    <value>The folder is not usable: {0}</value>
+  </data>
+  <data name="Msg_DataFolderEmpty" xml:space="preserve">
+    <value>Please enter the data folder path.</value>
+  </data>
+  <data name="Msg_DataFolderCopyAsk" xml:space="preserve">
+    <value>The new folder does not contain a database yet. Copy the current data (database / attachments / pictures) into it? Choosing No starts with empty data in the new folder.</value>
+  </data>
+  <data name="Msg_DataFolderCopiedFormat" xml:space="preserve">
+    <value>Data copied: {0} file(s). Restart the program to take effect.</value>
+  </data>
+  <data name="Msg_DataFolderCopyFailedFormat" xml:space="preserve">
+    <value>Data copy did not fully complete: {0}</value>
   </data>
   <data name="Msg_AddSubmitted" xml:space="preserve">
     <value>Add request submitted for review.</value>
@@ -1821,8 +1839,8 @@ Comment: {2}</value>
   <data name="Dlg_SelectDir" xml:space="preserve">
     <value>Select Directory</value>
   </data>
-  <data name="Dlg_SelectDBDir" xml:space="preserve">
-    <value>Select Database Directory</value>
+  <data name="Dlg_SelectDataFolder" xml:space="preserve">
+    <value>Select Data Folder</value>
   </data>
   <data name="Dlg_SelectPlanFile" xml:space="preserve">
     <value>Select Plan File (ORT Test Schedule)</value>

@@ -1,6 +1,7 @@
 using FreeSql;
 using NLog;
 using ORT一键报告.Models;
+using ORT一键报告.Utils;
 using System;
 using System.IO;
 
@@ -8,16 +9,18 @@ namespace ORT一键报告.Services
 {
     /// <summary>
     /// 全局数据库服务（SQLite + FreeSql）。
-    /// 数据库文件保存在程序根目录的 Data 文件夹中；
-    /// 嵌入对象（OLE）等附件保存在 Data\OleFiles 文件夹中。
-    /// 考虑最大并发 10 人次以内：启用 WAL 模式，连接池上限 10。
+    /// 数据库文件、附件（OleFiles）、配图（PlanImages）统一放在**数据文件夹**里
+    /// （见「设置 → 数据文件夹」；可以是本地目录，也可以是 \\服务器\共享 这类远程文件夹，
+    /// 多台电脑指向同一个文件夹即可共用同一套数据）。
+    /// 考虑最大并发 10 人次以内：本地目录用 WAL + 连接池；网络文件夹用回滚日志 +
+    /// 较长的忙等待（SQLite 的 WAL 依赖共享内存，在 SMB 共享上不可用）。
     /// </summary>
     public class DatabaseService : IDisposable
     {
         private readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
         /// <summary>
-        /// 数据根目录（程序根目录\Data）
+        /// 数据根目录（数据文件夹）
         /// </summary>
         public string DataDir { get; }
 
@@ -37,18 +40,30 @@ namespace ORT一键报告.Services
         public string PlanImagesDir { get; }
 
         /// <summary>
+        /// 数据文件夹是否在网络上（UNC 或映射的网络驱动器）
+        /// </summary>
+        public bool IsNetworkFolder { get; }
+
+        /// <summary>
         /// FreeSql 实例
         /// </summary>
         public IFreeSql FreeSql { get; }
 
         public DatabaseService()
         {
-            // 数据库路径可在设置中修改（保存在程序目录文件，重启生效）
-            DbPath = AppSettingsService.ResolveDbPath();
-            DataDir = Path.GetDirectoryName(DbPath);
+            // 数据文件夹可在设置中修改（保存在程序目录的本机设置文件里，重启生效）
+            DataDir = AppSettingsService.ResolveDataFolder();
+            if (!FolderUtil.TryPrepare(DataDir, out string error))
+            {
+                throw new DataFolderUnavailableException(
+                    $"数据文件夹不可用：{error}{Environment.NewLine}{Environment.NewLine}" +
+                    "请检查该文件夹是否存在、是否有读写权限（网络共享请确认能访问），" +
+                    $"或修改程序目录下 Data\\local_settings.json 里的 DataFolder（当前值：{DataDir}）。");
+            }
+            IsNetworkFolder = FolderUtil.IsNetworkPath(DataDir);
+            DbPath = Path.Combine(DataDir, "ort_plans.db");
             OleDir = Path.Combine(DataDir, "OleFiles");
             PlanImagesDir = Path.Combine(DataDir, "PlanImages");
-            Directory.CreateDirectory(DataDir);
             Directory.CreateDirectory(OleDir);
             Directory.CreateDirectory(PlanImagesDir);
 
@@ -58,10 +73,36 @@ namespace ORT一键报告.Services
                 .UseAutoSyncStructure(true) // 首次运行自动建表/同步结构
                 .Build();
 
-            // WAL 模式提升并发读写性能（最大并发10人次以内足够）
-            FreeSql.Ado.ExecuteNonQuery("PRAGMA journal_mode=WAL;");
+            ConfigureJournal();
             MigrateLegacyPlansToRequisitions();
-            _logger.Info($"数据库初始化完成: {DbPath}");
+            _logger.Info($"数据库初始化完成: {DbPath}（数据文件夹: {DataDir}{(IsNetworkFolder ? "，网络共享" : "")}）");
+        }
+
+        /// <summary>
+        /// 日志模式与并发等待：
+        /// - 本地目录：WAL（读写并发好，崩溃恢复快）；
+        /// - 网络共享：SQLite 的 WAL 需要共享内存映射，在 SMB 上不可用，改用回滚日志（TRUNCATE）
+        ///   并把同步级别提到 FULL；同时设置忙等待，多台电脑同时写时先排队重试而不是直接报 database is locked。
+        /// </summary>
+        private void ConfigureJournal()
+        {
+            try
+            {
+                if (IsNetworkFolder)
+                {
+                    FreeSql.Ado.ExecuteNonQuery("PRAGMA journal_mode=TRUNCATE;");
+                    FreeSql.Ado.ExecuteNonQuery("PRAGMA synchronous=FULL;");
+                }
+                else
+                {
+                    FreeSql.Ado.ExecuteNonQuery("PRAGMA journal_mode=WAL;");
+                }
+                FreeSql.Ado.ExecuteNonQuery("PRAGMA busy_timeout=30000;");
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn($"设置数据库日志模式/忙等待失败（继续运行）: {ex.Message}");
+            }
         }
 
         /// <summary>

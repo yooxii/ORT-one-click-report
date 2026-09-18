@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using ORT一键报告.Models;
 using ORT一键报告.Services;
+using ORT一键报告.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,7 +15,7 @@ namespace ORT一键报告.Main.Views
     /// <summary>
     /// WindowAppSettings.xaml 的交互逻辑：参考 VSCode 的设置页面。
     /// 左侧树状目录 + 右侧设置详情，支持同步滚动与点击跳转；
-    /// 修改后需点击“保存/应用”才生效（取消即时保存）；数据库路径仅管理员可修改。
+    /// 修改后需点击“保存/应用”才生效（取消即时保存）；数据文件夹仅管理员可修改（改后需重启）。
     /// </summary>
     public partial class WindowAppSettings : Window
     {
@@ -23,6 +24,7 @@ namespace ORT一键报告.Main.Views
         private readonly IPermissionService _permission;
         private readonly MailService _mail;
         private readonly MailNotifier _mailNotifier;
+        private readonly DatabaseService _db;
 
         /// <summary>邮件模板编辑器：类型代码 → 主题/正文输入框</summary>
         private readonly Dictionary<string, TextBox> _mailSubjectBoxes = [];
@@ -42,9 +44,9 @@ namespace ORT一键报告.Main.Views
         private bool _loading = true;
 
         /// <summary>
-        /// 打开窗口时的数据库路径（用于判断是否修改）
+        /// 打开窗口时的数据文件夹（数据库/附件/配图所在目录，用于判断是否修改）
         /// </summary>
-        private string _initialDbPath;
+        private string _initialDataFolder;
 
         /// <summary>
         /// 打开窗口时的 ATE/EMI 路径（用于判断是否修改）
@@ -75,6 +77,7 @@ namespace ORT一键报告.Main.Views
             _permission = App.ServiceProvider.GetRequiredService<IPermissionService>();
             _mail = App.ServiceProvider.GetRequiredService<MailService>();
             _mailNotifier = App.ServiceProvider.GetRequiredService<MailNotifier>();
+            _db = App.ServiceProvider.GetRequiredService<DatabaseService>();
             _isAdmin = _permission.Can("admin.manage");
 
             CollectSections();
@@ -528,8 +531,8 @@ namespace ORT一键报告.Main.Views
                 LoadMailValues();
             }
 
-            _initialDbPath = _settings.GetDatabasePath();
-            txt_dbpath.Text = _initialDbPath;
+            _initialDataFolder = _settings.GetEffectiveDataFolder();
+            txt_dataFolder.Text = _initialDataFolder;
             _initialAtePath = _settings.GetAteDataPath();
             txt_ate.Text = _initialAtePath;
             _initialEmiPath = _settings.GetEmiDataPath();
@@ -592,6 +595,29 @@ namespace ORT一键报告.Main.Views
             settings.Paths.RequisitionPath = TrimOrNull(txt_requisition.Text);
             settings.Paths.ReportPath = TrimOrNull(txt_report.Text);
 
+            // 数据文件夹：仅管理员可改；改了要确认新目录可用，并（改完保存后）提示重启
+            string newDataFolder = _initialDataFolder;
+            if (_isAdmin)
+            {
+                newDataFolder = FolderUtil.Normalize(txt_dataFolder.Text);
+                if (string.IsNullOrEmpty(newDataFolder))
+                {
+                    _ = MessageBox.Show(LanguageService.Get("Msg_DataFolderEmpty"), LanguageService.Get("Cap_Info"));
+                    txt_dataFolder.Focus();
+                    return false;
+                }
+                if (!string.Equals(newDataFolder, _initialDataFolder, StringComparison.OrdinalIgnoreCase)
+                    && !FolderUtil.TryPrepare(newDataFolder, out string folderError))
+                {
+                    _ = MessageBox.Show(string.Format(LanguageService.Get("Msg_DataFolderInvalidFormat"), folderError),
+                        LanguageService.Get("Cap_Error"), MessageBoxButton.OK, MessageBoxImage.Warning);
+                    txt_dataFolder.Focus();
+                    return false;
+                }
+                txt_dataFolder.Text = newDataFolder;
+                _dataFolderChanged = !string.Equals(newDataFolder, _initialDataFolder, StringComparison.OrdinalIgnoreCase);
+            }
+
             // 计划索引：空闲自动执行（非管理员界面未载入，不得回写）
             if (_isAdmin)
             {
@@ -625,18 +651,70 @@ namespace ORT一键报告.Main.Views
                 _initialEmiPath = emiPath;
             }
 
-            // 数据库路径：仅管理员，且仅在修改时保存（重启后生效）
-            if (_isAdmin)
+            // 数据文件夹：仅管理员；改了（或改了还没重启）就提示重启并支持一键重启
+            if (_isAdmin && !string.Equals(_initialDataFolder, _db.DataDir, StringComparison.OrdinalIgnoreCase))
             {
-                string dbPath = TrimOrNull(txt_dbpath.Text);
-                if (!string.Equals(dbPath, _initialDbPath, StringComparison.OrdinalIgnoreCase))
+                bool justChanged = _dataFolderChanged;
+                if (justChanged)
                 {
-                    _settings.SetDatabasePath(dbPath);
-                    _initialDbPath = dbPath;
-                    _ = MessageBox.Show(LocalizationHelper.Get("Msg_DBPathSaved"), LanguageService.Get("Cap_Info"));
+                    _settings.SetDataFolder(newDataFolder);
+                    _initialDataFolder = _settings.GetEffectiveDataFolder();
+                    txt_dataFolder.Text = _initialDataFolder;
+                    _dataFolderChanged = false;
                 }
+                PromptRestartForDataFolder(_db.DataDir, _initialDataFolder, offerCopy: justChanged);
             }
             return true;
+        }
+
+        /// <summary>
+        /// 数据文件夹是否需要重启才能生效（ApplyAll 里保存后由界面提示重启）
+        /// </summary>
+        private bool _dataFolderChanged;
+
+        /// <summary>
+        /// 数据文件夹变更后的收尾：可选把当前数据复制到新文件夹，并提示重启（支持一键重启）
+        /// </summary>
+        private void PromptRestartForDataFolder(string oldFolder, string newFolder, bool offerCopy)
+        {
+            // 新文件夹里没有数据库时，问一下要不要把当前数据带过去（换到远程共享时最常用）
+            string newDb = System.IO.Path.Combine(newFolder, "ort_plans.db");
+            if (offerCopy && !System.IO.File.Exists(newDb) && System.IO.Directory.Exists(oldFolder))
+            {
+                MessageBoxResult copy = MessageBox.Show(
+                    LanguageService.Get("Msg_DataFolderCopyAsk"),
+                    LanguageService.Get("Cap_Info"), MessageBoxButton.YesNo, MessageBoxImage.Question);
+                if (copy == MessageBoxResult.Yes)
+                {
+                    System.Windows.Input.Mouse.OverrideCursor = System.Windows.Input.Cursors.Wait;
+                    try
+                    {
+                        (int copied, List<string> errors) = DataFolderMigrator.CopyTo(oldFolder, newFolder, _db.FreeSql);
+                        string message = errors.Count == 0
+                            ? string.Format(LanguageService.Get("Msg_DataFolderCopiedFormat"), copied)
+                            : string.Format(LanguageService.Get("Msg_DataFolderCopyFailedFormat"), string.Join(Environment.NewLine, errors));
+                        MessageBox.Show(message, LanguageService.Get(errors.Count == 0 ? "Cap_Success" : "Cap_Error"),
+                            MessageBoxButton.OK, errors.Count == 0 ? MessageBoxImage.Information : MessageBoxImage.Warning);
+                    }
+                    finally
+                    {
+                        System.Windows.Input.Mouse.OverrideCursor = null;
+                    }
+                }
+            }
+            // 重启提示：一键重启
+            MessageBoxResult restart = MessageBox.Show(
+                LanguageService.Get("Msg_DataFolderRestartAsk"),
+                LanguageService.Get("Cap_Info"), MessageBoxButton.YesNo, MessageBoxImage.Question);
+            if (restart == MessageBoxResult.Yes)
+            {
+                App.RestartApplication();
+            }
+            else
+            {
+                // 稍后自己重启：明确告知还没生效
+                MessageBox.Show(LanguageService.Get("Msg_DataFolderSaved"), LanguageService.Get("Cap_Info"));
+            }
         }
 
         private void Cb_Language_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -742,16 +820,16 @@ namespace ORT一键报告.Main.Views
             }
         }
 
-        private void Btn_DbPathBrowse_Click(object sender, RoutedEventArgs e)
+        private void Btn_DataFolderBrowse_Click(object sender, RoutedEventArgs e)
         {
             if (!_isAdmin)
             {
                 return;
             }
-            string dir = _pathService.OpenPathDialog(LanguageService.Get("Dlg_SelectDBDir"), initPath: txt_dbpath.Text, isDir: true);
+            string dir = _pathService.OpenPathDialog(LanguageService.Get("Dlg_SelectDataFolder"), initPath: txt_dataFolder.Text, isDir: true);
             if (dir != null)
             {
-                txt_dbpath.Text = dir;
+                txt_dataFolder.Text = dir;
             }
         }
 

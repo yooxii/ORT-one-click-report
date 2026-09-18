@@ -211,38 +211,24 @@ namespace ORT一键报告.Services
         /* ###############################  本地登录 Cookie  ################################ */
 
         /// <summary>
-        /// 登录 cookie 文件（程序目录 Data 下），密码以 DPAPI 按当前 Windows 用户加密
-        /// </summary>
-        private static string CookieFile => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data", "auth_cookie.json");
-
-        /// <summary>
         /// cookie 有效期：一周
         /// </summary>
         private static readonly TimeSpan CookieLifetime = TimeSpan.FromDays(7);
 
-        private class CookieData
-        {
-            public string Username { get; set; }
-            public string PasswordEnc { get; set; }
-            public DateTime Expiry { get; set; }
-        }
-
         /// <summary>
-        /// 保存登录信息到本地 cookie（保留上一次登录，有效期一周）
+        /// 保存登录信息到本机设置文件（保留上一次登录，有效期一周；密码按当前 Windows 用户 DPAPI 加密）
         /// </summary>
         private void SaveLoginCookie(string username, string password)
         {
             try
             {
                 byte[] encrypted = ProtectedData.Protect(Encoding.UTF8.GetBytes(password), null, DataProtectionScope.CurrentUser);
-                CookieData cookie = new()
+                LocalSettingsStore.Update(s =>
                 {
-                    Username = username,
-                    PasswordEnc = Convert.ToBase64String(encrypted),
-                    Expiry = DateTime.Now + CookieLifetime
-                };
-                Directory.CreateDirectory(Path.GetDirectoryName(CookieFile));
-                File.WriteAllText(CookieFile, JsonConvert.SerializeObject(cookie));
+                    s.LoginUsername = username;
+                    s.LoginPasswordEnc = Convert.ToBase64String(encrypted);
+                    s.LoginExpiry = DateTime.Now + CookieLifetime;
+                });
             }
             catch (Exception ex)
             {
@@ -257,22 +243,18 @@ namespace ORT一键报告.Services
         {
             try
             {
-                if (!File.Exists(CookieFile))
+                LocalSettings local = LocalSettingsStore.Read();
+                if (string.IsNullOrWhiteSpace(local.LoginUsername) || string.IsNullOrWhiteSpace(local.LoginPasswordEnc))
                 {
                     return null;
                 }
-                CookieData cookie = JsonConvert.DeserializeObject<CookieData>(File.ReadAllText(CookieFile));
-                if (cookie == null || string.IsNullOrWhiteSpace(cookie.Username) || string.IsNullOrWhiteSpace(cookie.PasswordEnc))
-                {
-                    return null;
-                }
-                if (cookie.Expiry < DateTime.Now)
+                if (local.LoginExpiry == null || local.LoginExpiry < DateTime.Now)
                 {
                     ClearLoginCookie();
                     return null;
                 }
-                byte[] decrypted = ProtectedData.Unprotect(Convert.FromBase64String(cookie.PasswordEnc), null, DataProtectionScope.CurrentUser);
-                return (cookie.Username, Encoding.UTF8.GetString(decrypted));
+                byte[] decrypted = ProtectedData.Unprotect(Convert.FromBase64String(local.LoginPasswordEnc), null, DataProtectionScope.CurrentUser);
+                return (local.LoginUsername, Encoding.UTF8.GetString(decrypted));
             }
             catch (Exception ex)
             {
@@ -289,12 +271,8 @@ namespace ORT一键报告.Services
         {
             try
             {
-                if (!File.Exists(CookieFile))
-                {
-                    return null;
-                }
-                CookieData cookie = JsonConvert.DeserializeObject<CookieData>(File.ReadAllText(CookieFile));
-                return cookie != null && cookie.Expiry >= DateTime.Now ? cookie.Expiry : null;
+                LocalSettings local = LocalSettingsStore.Read();
+                return local.LoginExpiry != null && local.LoginExpiry >= DateTime.Now ? local.LoginExpiry : null;
             }
             catch
             {
@@ -303,16 +281,18 @@ namespace ORT一键报告.Services
         }
 
         /// <summary>
-        /// 完全清除本地登录 cookie（注销时调用）
+        /// 完全清除本机登录 cookie（注销时调用）
         /// </summary>
         public void ClearLoginCookie()
         {
             try
             {
-                if (File.Exists(CookieFile))
+                LocalSettingsStore.Update(s =>
                 {
-                    File.Delete(CookieFile);
-                }
+                    s.LoginUsername = null;
+                    s.LoginPasswordEnc = null;
+                    s.LoginExpiry = null;
+                });
             }
             catch (Exception ex)
             {

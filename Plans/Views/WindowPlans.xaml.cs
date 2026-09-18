@@ -35,9 +35,6 @@ namespace ORT一键报告.Plans.Views
         private readonly PlansViewModel _vm;
         private readonly AppSettingsService _appSettings;
 
-        private static readonly string LayoutFile
-            = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data", "plans_layout.json");
-
         public WindowPlans()
         {
             InitializeComponent();
@@ -1484,13 +1481,13 @@ namespace ORT一键报告.Plans.Views
         {
             try
             {
-                Directory.CreateDirectory(Path.GetDirectoryName(LayoutFile));
                 Dictionary<string, List<string>> state = new()
                 {
                     ["requisitions"] = dg_requisitions.Columns.Select(ColumnKey).ToList(),
                     ["plans"] = dg_plans.Columns.Select(ColumnKey).ToList()
                 };
-                File.WriteAllText(LayoutFile, Newtonsoft.Json.JsonConvert.SerializeObject(state));
+                // 列布局属于"本机设置"，与数据文件夹/登录信息一起存在本机设置文件里
+                LocalSettingsStore.Update(s => s.PlansLayout = state);
             }
             catch (Exception ex)
             {
@@ -1510,12 +1507,11 @@ namespace ORT一键报告.Plans.Views
         {
             try
             {
-                if (!File.Exists(LayoutFile))
+                Dictionary<string, List<string>> state = LocalSettingsStore.Read().PlansLayout;
+                if (state == null || state.Count == 0)
                 {
                     return;
                 }
-                Dictionary<string, List<string>> state = Newtonsoft.Json.JsonConvert
-                    .DeserializeObject<Dictionary<string, List<string>>>(File.ReadAllText(LayoutFile));
                 RestoreColumns(state.TryGetValue("requisitions", out List<string> reqKeys) ? reqKeys : null, dg_requisitions);
                 RestoreColumns(state.TryGetValue("plans", out List<string> planKeys) ? planKeys : null, dg_plans);
             }

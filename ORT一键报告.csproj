@@ -149,6 +149,10 @@
       <DependentUpon>UserControlTestPlans.xaml</DependentUpon>
     </Compile>
     <Compile Include="Services\AppSettingsService.cs" />
+    <Compile Include="Models\LocalSettings.cs" />
+    <Compile Include="Services\LocalSettingsStore.cs" />
+    <Compile Include="Services\DataFolderMigrator.cs" />
+    <Compile Include="Utils\FolderUtil.cs" />
     <Compile Include="Services\UiScale.cs" />
     <Compile Include="Services\LocalizationHelper.cs" />
     <Compile Include="Services\LanguageService.cs" />

@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -692,8 +692,8 @@
   <data name="Settings_EMIPath" xml:space="preserve">
     <value>EMI数据路径</value>
   </data>
-  <data name="Settings_DBPath" xml:space="preserve">
-    <value>数据库路径</value>
+  <data name="Settings_DataFolder" xml:space="preserve">
+    <value>数据文件夹</value>
   </data>
   <data name="Settings_PlanPathHint" xml:space="preserve">
     <value>导入计划表（ORT Test Schedule）时的默认目录。</value>
@@ -710,8 +710,8 @@
   <data name="Settings_EMIPathHint" xml:space="preserve">
     <value>选择EMI数据时的默认打开目录。此设置与数据库路径保存在同一位置。</value>
   </data>
-  <data name="Settings_DBPathHint" xml:space="preserve">
-    <value>数据库文件（ort_plans.db）保存目录。此设置保存在程序目录，修改后需重启程序生效。</value>
+  <data name="Settings_DataFolderHint" xml:space="preserve">
+    <value>数据库、附件、计划配图等全部数据都保存在这个文件夹里（可以填 \\服务器\共享 这类远程文件夹，多台电脑填同一个文件夹即可共用同一套数据）。此设置保存在本机，修改后需重启程序生效。</value>
   </data>
   <data name="Settings_DirHint" xml:space="preserve">
     <value>各对话框的默认打开目录。留空则使用系统默认位置。</value>
@@ -1103,8 +1103,26 @@
   <data name="Msg_FontSizeTooLargeFormat" xml:space="preserve">
     <value>界面字号上限为 {0} 号，再大界面将无法完整显示，已放弃本次修改。</value>
   </data>
-  <data name="Msg_DBPathSaved" xml:space="preserve">
-    <value>数据库路径已保存，重启程序后生效。</value>
+  <data name="Msg_DataFolderSaved" xml:space="preserve">
+    <value>数据文件夹已保存，重启程序后生效。</value>
+  </data>
+  <data name="Msg_DataFolderRestartAsk" xml:space="preserve">
+    <value>数据文件夹已更改，需要重启程序才能生效（数据库、附件与配图都会切换到新文件夹）。是否立即重启？</value>
+  </data>
+  <data name="Msg_DataFolderInvalidFormat" xml:space="preserve">
+    <value>该文件夹不可用：{0}</value>
+  </data>
+  <data name="Msg_DataFolderEmpty" xml:space="preserve">
+    <value>请填写数据文件夹路径。</value>
+  </data>
+  <data name="Msg_DataFolderCopyAsk" xml:space="preserve">
+    <value>新文件夹里还没有数据库。是否把当前数据（数据库 / 附件 / 配图）复制过去？选择"否"则在新文件夹里从空数据开始。</value>
+  </data>
+  <data name="Msg_DataFolderCopiedFormat" xml:space="preserve">
+    <value>数据复制完成，共 {0} 个文件，重启程序后生效。</value>
+  </data>
+  <data name="Msg_DataFolderCopyFailedFormat" xml:space="preserve">
+    <value>数据复制未全部完成：{0}</value>
   </data>
   <data name="Msg_AddSubmitted" xml:space="preserve">
     <value>新增请求已提交审核，待审核员通过后生效。</value>
@@ -1821,8 +1839,8 @@
   <data name="Dlg_SelectDir" xml:space="preserve">
     <value>选择目录</value>
   </data>
-  <data name="Dlg_SelectDBDir" xml:space="preserve">
-    <value>选择数据库保存目录</value>
+  <data name="Dlg_SelectDataFolder" xml:space="preserve">
+    <value>选择数据文件夹</value>
   </data>
   <data name="Dlg_SelectPlanFile" xml:space="preserve">
     <value>选择计划表文件(ORT Test Schedule)</value>

@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -692,8 +692,8 @@
   <data name="Settings_EMIPath" xml:space="preserve">
     <value>EMI資料路徑</value>
   </data>
-  <data name="Settings_DBPath" xml:space="preserve">
-    <value>資料庫路徑</value>
+  <data name="Settings_DataFolder" xml:space="preserve">
+    <value>資料儲存資料夾</value>
   </data>
   <data name="Settings_PlanPathHint" xml:space="preserve">
     <value>匯入計劃表（ORT Test Schedule）時的預設目錄。</value>
@@ -710,8 +710,8 @@
   <data name="Settings_EMIPathHint" xml:space="preserve">
     <value>選擇EMI資料時的預設開啟目錄。此設定與資料庫路徑儲存在同一位置。</value>
   </data>
-  <data name="Settings_DBPathHint" xml:space="preserve">
-    <value>資料庫檔案（ort_plans.db）儲存目錄。此設定儲存在程式目錄，修改後需重啟程式生效。</value>
+  <data name="Settings_DataFolderHint" xml:space="preserve">
+    <value>資料庫、附件、計畫配圖等全部資料都保存在這個資料夾裡（可以填 \\伺服器\共享 這類遠端資料夾，多台電腦填同一個資料夾即可共用同一套資料）。此設定保存在本機，修改後需重啟程式生效。</value>
   </data>
   <data name="Settings_DirHint" xml:space="preserve">
     <value>各對話方塊的預設開啟目錄。留空則使用系統預設位置。</value>
@@ -1103,8 +1103,26 @@
   <data name="Msg_FontSizeTooLargeFormat" xml:space="preserve">
     <value>介面字型大小上限為 {0} 號，再大介面將無法完整顯示，已放棄本次修改。</value>
   </data>
-  <data name="Msg_DBPathSaved" xml:space="preserve">
-    <value>資料庫路徑已儲存，重啟程式後生效。</value>
+  <data name="Msg_DataFolderSaved" xml:space="preserve">
+    <value>資料儲存資料夾已儲存，重啟程式後生效。</value>
+  </data>
+  <data name="Msg_DataFolderRestartAsk" xml:space="preserve">
+    <value>資料儲存資料夾已變更，需要重啟程式才能生效（資料庫、附件與配圖都會切換到新資料夾）。是否立即重啟？</value>
+  </data>
+  <data name="Msg_DataFolderInvalidFormat" xml:space="preserve">
+    <value>該資料夾無法使用：{0}</value>
+  </data>
+  <data name="Msg_DataFolderEmpty" xml:space="preserve">
+    <value>請填寫資料儲存資料夾路徑。</value>
+  </data>
+  <data name="Msg_DataFolderCopyAsk" xml:space="preserve">
+    <value>新資料夾裡還沒有資料庫。是否把目前資料（資料庫 / 附件 / 配圖）複製過去？選擇「否」則在新資料夾裡從空資料開始。</value>
+  </data>
+  <data name="Msg_DataFolderCopiedFormat" xml:space="preserve">
+    <value>資料複製完成，共 {0} 個檔案，重啟程式後生效。</value>
+  </data>
+  <data name="Msg_DataFolderCopyFailedFormat" xml:space="preserve">
+    <value>資料複製未全部完成：{0}</value>
   </data>
   <data name="Msg_AddSubmitted" xml:space="preserve">
     <value>新增請求已提交審核，待審核員通過後生效。</value>
@@ -1821,8 +1839,8 @@
   <data name="Dlg_SelectDir" xml:space="preserve">
     <value>選擇目錄</value>
   </data>
-  <data name="Dlg_SelectDBDir" xml:space="preserve">
-    <value>選擇資料庫儲存目錄</value>
+  <data name="Dlg_SelectDataFolder" xml:space="preserve">
+    <value>選擇資料儲存資料夾</value>
   </data>
   <data name="Dlg_SelectPlanFile" xml:space="preserve">
     <value>選擇計劃表檔案(ORT Test Schedule)</value>

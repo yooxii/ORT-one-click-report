@@ -4,9 +4,11 @@ using ORT一键报告.Plans.ViewModels;
 using ORT一键报告.Reports.ViewModels;
 using ORT一键报告.Reports.Views;
 using ORT一键报告.Services;
+using ORT一键报告.Utils;
 using ORT一键报告.ViewModels;
 using System;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Windows;
 using WPFLocalizeExtension.Engine;
@@ -106,6 +108,21 @@ namespace ORT一键报告
 
                 ServiceProvider = services.BuildServiceProvider();
 
+                // 数据库/附件/配图都在「数据文件夹」里（可在设置中改到远程共享）：
+                // 先确认它可用，不可用时给出可操作的提示（而不是让程序带着半个数据库往下跑）
+                try
+                {
+                    ServiceProvider.GetRequiredService<DatabaseService>();
+                }
+                catch (DataFolderUnavailableException ex)
+                {
+                    logger.Fatal(ex, "数据文件夹不可用，程序无法启动");
+                    _ = MessageBox.Show(ex.Message, LanguageService.Get("Cap_Error"),
+                        MessageBoxButton.OK, MessageBoxImage.Error);
+                    Shutdown(1);
+                    return;
+                }
+
                 // 历史脏数据修正：早期版本会把计划表里的 Excel 公式原文（客户栏的
                 // IF(ISBLANK(...),"",VLOOKUP(...)) 之类）写进数据库，启动时统一改写为 #N/A
                 try
@@ -133,6 +150,32 @@ namespace ORT一键报告
         /// </summary>
         private static readonly DependencyProperty FlashGuardProperty =
             DependencyProperty.RegisterAttached("FlashGuard", typeof(bool), typeof(App), new PropertyMetadata(false));
+
+        /// <summary>
+        /// 一键重启：启动一个新的程序实例并退出当前实例（用于"数据文件夹"这类需重启才生效的设置）
+        /// </summary>
+        public static void RestartApplication()
+        {
+            try
+            {
+                string exe = System.Reflection.Assembly.GetEntryAssembly()?.Location
+                    ?? System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName;
+                if (!string.IsNullOrEmpty(exe) && File.Exists(exe))
+                {
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = exe,
+                        WorkingDirectory = AppDomain.CurrentDomain.BaseDirectory,
+                        UseShellExecute = true
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Warn(ex, "重启程序失败");
+            }
+            Current.Shutdown();
+        }
 
         /// <summary>
         /// 首帧渲染完成后恢复不透明（配合开窗防闪处理；只订阅一次，触发后即解除）

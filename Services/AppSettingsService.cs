@@ -1,6 +1,7 @@
 using Newtonsoft.Json;
 using NLog;
 using ORT一键报告.Models;
+using ORT一键报告.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -51,19 +52,9 @@ namespace ORT一键报告.Services
         private readonly DatabaseService _db;
 
         /// <summary>
-        /// 本地设置文件（程序目录 Data 下）：数据库路径/ATE数据路径/EMI数据路径
+        /// 本地设置文件（程序目录 Data 下）：数据文件夹 / ATE·EMI 数据路径 / 本机登录 cookie / 列布局
         /// </summary>
-        public static string LocalSettingsFile => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data", "local_settings.json");
-
-        /// <summary>
-        /// 旧版本地设置文件名（仅数据库路径），用于一次性迁移
-        /// </summary>
-        private static string LegacyLocalFile => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data", "db_path.json");
-
-        /// <summary>
-        /// 本地设置缓存
-        /// </summary>
-        private Dictionary<string, string> _local = [];
+        public static string LocalSettingsFile => LocalSettingsStore.FilePath;
 
         /// <summary>
         /// 当前设置（内存中，数据库部分）
@@ -78,99 +69,60 @@ namespace ORT一键报告.Services
         public AppSettingsService(DatabaseService db)
         {
             _db = db;
-            LoadLocal();
             Load();
         }
 
-        /* ###############################  本地设置文件（数据库路径/ATE/EMI）  ################################ */
+        /* ###############################  本机设置（数据文件夹 / ATE / EMI / 登录 / 列布局）  ################################ */
 
         /// <summary>
-        /// 加载本地设置文件；兼容迁移旧版 db_path.json
+        /// 数据文件夹（数据库中配置的原始值；未配置返回 null）
         /// </summary>
-        private void LoadLocal()
+        public string GetDataFolder() => LocalSettingsStore.Read().DataFolder;
+
+        /// <summary>
+        /// 实际使用的数据文件夹：已配置则用它（规范化后），否则用程序目录\Data
+        /// </summary>
+        public string GetEffectiveDataFolder()
+        {
+            string configured = FolderUtil.Normalize(GetDataFolder());
+            return string.IsNullOrEmpty(configured)
+                ? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data")
+                : configured;
+        }
+
+        /// <summary>
+        /// 保存数据文件夹（重启后生效）
+        /// </summary>
+        public void SetDataFolder(string folder)
+            => LocalSettingsStore.Update(s => s.DataFolder = FolderUtil.Normalize(folder));
+
+        /// <summary>
+        /// 解析数据文件夹：供 DatabaseService 初始化时调用（静态方法，避免依赖注入循环）
+        /// </summary>
+        public static string ResolveDataFolder()
         {
             try
             {
-                if (File.Exists(LocalSettingsFile))
+                string configured = FolderUtil.Normalize(LocalSettingsStore.Read().DataFolder);
+                if (!string.IsNullOrEmpty(configured))
                 {
-                    _local = JsonConvert.DeserializeObject<Dictionary<string, string>>(File.ReadAllText(LocalSettingsFile)) ?? [];
-                }
-                else if (File.Exists(LegacyLocalFile))
-                {
-                    // 一次性迁移旧文件
-                    _local = JsonConvert.DeserializeObject<Dictionary<string, string>>(File.ReadAllText(LegacyLocalFile)) ?? [];
-                    SaveLocal();
-                    File.Delete(LegacyLocalFile);
-                }
-                else
-                {
-                    _local = [];
+                    return configured;
                 }
             }
             catch (Exception ex)
             {
-                _logger.Warn($"读取本地设置文件失败: {ex.Message}");
-                _local = [];
+                _resolveLogger.Warn($"读取本机设置里的数据文件夹失败，改用默认目录: {ex.Message}");
             }
+            return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data");
         }
 
-        private void SaveLocal()
-        {
-            try
-            {
-                Directory.CreateDirectory(Path.GetDirectoryName(LocalSettingsFile));
-                File.WriteAllText(LocalSettingsFile, JsonConvert.SerializeObject(_local, Formatting.Indented));
-            }
-            catch (Exception ex)
-            {
-                _logger.Error(ex, "保存本地设置文件失败");
-            }
-        }
+        private static readonly Logger _resolveLogger = LogManager.GetCurrentClassLogger();
 
-        private string GetLocal(string key)
-            => _local.TryGetValue(key, out string value) && !string.IsNullOrWhiteSpace(value) ? value : null;
+        public string GetAteDataPath() => LocalSettingsStore.Read().AteDataPath;
+        public string GetEmiDataPath() => LocalSettingsStore.Read().EmiDataPath;
 
-        private void SetLocal(string key, string value)
-        {
-            _local[key] = value ?? "";
-            SaveLocal();
-        }
-
-        /// <summary>
-        /// 解析数据库文件路径：优先读取本地设置；未设置或无效时使用默认路径。
-        /// 供 DatabaseService 初始化时调用（静态方法，避免依赖注入循环）。
-        /// </summary>
-        public static string ResolveDbPath()
-        {
-            string defaultPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data", "ort_plans.db");
-            try
-            {
-                string file = File.Exists(LocalSettingsFile) ? LocalSettingsFile
-                    : File.Exists(LegacyLocalFile) ? LegacyLocalFile : null;
-                if (file != null)
-                {
-                    string dir = JsonConvert.DeserializeObject<Dictionary<string, string>>(File.ReadAllText(file))?["DatabasePath"];
-                    if (!string.IsNullOrWhiteSpace(dir))
-                    {
-                        Directory.CreateDirectory(dir);
-                        return Path.Combine(dir, "ort_plans.db");
-                    }
-                }
-            }
-            catch
-            {
-                // 文件损坏时回退默认路径
-            }
-            return defaultPath;
-        }
-
-        public string GetDatabasePath() => GetLocal("DatabasePath");
-        public string GetAteDataPath() => GetLocal("AteDataPath");
-        public string GetEmiDataPath() => GetLocal("EmiDataPath");
-
-        public void SetDatabasePath(string dir) => SetLocal("DatabasePath", dir);
-        public void SetAteDataPath(string dir) => SetLocal("AteDataPath", dir);
-        public void SetEmiDataPath(string dir) => SetLocal("EmiDataPath", dir);
+        public void SetAteDataPath(string dir) => LocalSettingsStore.Update(s => s.AteDataPath = dir);
+        public void SetEmiDataPath(string dir) => LocalSettingsStore.Update(s => s.EmiDataPath = dir);
 
         /* ###############################  数据库设置（app_settings 表）  ################################ */
 
@@ -415,12 +367,20 @@ namespace ORT一键报告.Services
         }
 
         /// <summary>
-        /// 将数据库中旧版路径键迁移到本地设置文件，迁移后删除数据库键
+        /// 将数据库中旧版路径键迁移到本机设置文件，迁移后删除数据库键
         /// </summary>
-        private void MigrateLocalKeys(Dictionary<string, string> values, string dbKey, string localKey)        {
-            if (values.TryGetValue(dbKey, out string value) && !string.IsNullOrWhiteSpace(value) && GetLocal(localKey) == null)
+        private void MigrateLocalKeys(Dictionary<string, string> values, string dbKey, string localKey)
+        {
+            if (values.TryGetValue(dbKey, out string value) && !string.IsNullOrWhiteSpace(value))
             {
-                SetLocal(localKey, value);
+                if (localKey == "AteDataPath" && string.IsNullOrWhiteSpace(GetAteDataPath()))
+                {
+                    SetAteDataPath(value);
+                }
+                else if (localKey == "EmiDataPath" && string.IsNullOrWhiteSpace(GetEmiDataPath()))
+                {
+                    SetEmiDataPath(value);
+                }
             }
             if (values.ContainsKey(dbKey))
             {

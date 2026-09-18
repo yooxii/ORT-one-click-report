@@ -35,7 +35,7 @@
                     <TreeViewItem Header="{lex:Loc Settings_Path}" IsExpanded="True" Tag="sec_paths">
                         <TreeViewItem Header="{lex:Loc Settings_ATEPath}" Tag="sec_ate"/>
                         <TreeViewItem Header="{lex:Loc Settings_EMIPath}" Tag="sec_emi"/>
-                        <TreeViewItem Header="{lex:Loc Settings_DBPath}" Tag="sec_dbpath"/>
+                        <TreeViewItem Header="{lex:Loc Settings_DataFolder}" Tag="sec_dbpath"/>
                         <TreeViewItem Header="{lex:Loc Settings_PlanPath}" Tag="sec_schedule"/>
                         <TreeViewItem Header="{lex:Loc Settings_RequisitionPath}" Tag="sec_requisition"/>
                         <TreeViewItem Header="{lex:Loc Settings_ReportPath}" Tag="sec_report"/>
@@ -226,16 +226,16 @@
 
                 <Border x:Name="sec_dbpath" Padding="0,10">
                     <StackPanel>
-                        <TextBlock Text="{lex:Loc Settings_DBPath}" FontSize="16" FontWeight="SemiBold"/>
-                        <TextBlock Text="{lex:Loc Settings_DBPathHint}" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,8" TextWrapping="Wrap"/>
+                        <TextBlock Text="{lex:Loc Settings_DataFolder}" FontSize="16" FontWeight="SemiBold"/>
+                        <TextBlock Text="{lex:Loc Settings_DataFolderHint}" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,8" TextWrapping="Wrap"/>
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition/>
                                 <ColumnDefinition Width="8"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <TextBox x:Name="txt_dbpath" VerticalContentAlignment="Center"/>
-                            <Button x:Name="btn_dbpathBrowse" Content="{lex:Loc Common_BrowseEllipsis}" Grid.Column="2" Padding="6,3" Click="Btn_DbPathBrowse_Click"/>
+                            <TextBox x:Name="txt_dataFolder" VerticalContentAlignment="Center"/>
+                            <Button x:Name="btn_dataFolderBrowse" Content="{lex:Loc Common_BrowseEllipsis}" Grid.Column="2" Padding="6,3" Click="Btn_DataFolderBrowse_Click"/>
                         </Grid>
                     </StackPanel>
                 </Border>
