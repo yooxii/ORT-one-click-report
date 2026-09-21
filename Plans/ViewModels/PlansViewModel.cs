@@ -123,6 +123,46 @@ namespace ORT一键报告.Plans.ViewModels
         /// </summary>
         public IReadOnlyDictionary<string, ColumnFilter> PlanFilters => _planFilters;
 
+        /* ---------- 计划表状况统计（搜索栏右侧显示，随搜索与列筛选变化） ---------- */
+
+        private int _ongoingCount;
+        /// <summary>当前可见（已过搜索与列筛选）的计划里「测试中」的条数</summary>
+        public int OngoingCount { get => _ongoingCount; private set => SetProperty(ref _ongoingCount, value); }
+
+        private int _pendingCount;
+        /// <summary>当前可见的计划里「预排测试」的条数</summary>
+        public int PendingCount { get => _pendingCount; private set => SetProperty(ref _pendingCount, value); }
+
+        private int _closedCount;
+        /// <summary>当前可见的计划里「已结案」的条数</summary>
+        public int ClosedCount { get => _closedCount; private set => SetProperty(ref _closedCount, value); }
+
+        /// <summary>
+        /// 刷新状况统计：只统计当前搜索与列筛选后仍然可见的计划（与表格所见一致）
+        /// </summary>
+        public void UpdateStatusCounts()
+        {
+            int ongoing = 0, pending = 0, closed = 0;
+            foreach (Plan plan in PlansView.OfType<Plan>())
+            {
+                switch (PlanStatusKind.Of(plan.Status))
+                {
+                    case PlanStatusKind.Ongoing:
+                        ongoing++;
+                        break;
+                    case PlanStatusKind.Pending:
+                        pending++;
+                        break;
+                    case PlanStatusKind.Closed:
+                        closed++;
+                        break;
+                }
+            }
+            OngoingCount = ongoing;
+            PendingCount = pending;
+            ClosedCount = closed;
+        }
+
         /// <summary>
         /// 领退表当前生效的列筛选
         /// </summary>
@@ -332,6 +372,7 @@ namespace ORT一键报告.Plans.ViewModels
             if (planTable)
             {
                 PlansView.Refresh();
+                UpdateStatusCounts();
             }
             else
             {
@@ -414,6 +455,7 @@ namespace ORT一键报告.Plans.ViewModels
                 // 同一个搜索框：领退表与计划表一起刷新
                 PlansView.Refresh();
                 RequisitionsView.Refresh();
+                UpdateStatusCounts();
             };
 
             // 报告扫描进度订阅：服务层事件已切回 UI 线程，这里直接刷属性
@@ -580,6 +622,7 @@ namespace ORT一键报告.Plans.ViewModels
                 }
                 PlansView.Refresh();
                 RequisitionsView.Refresh();
+                UpdateStatusCounts();
                 OnPropertyChanged(nameof(HasPendingChanges));
                 OnPropertyChanged(nameof(PendingText));
                 StatusMessage = string.Format(LanguageService.Get("Plans_StatusCount"), Requisitions.Count, Plans.Count);
@@ -750,6 +793,7 @@ namespace ORT一键报告.Plans.ViewModels
                     _planOriginals[plan.Id] = ClonePlan(plan);
                 }
                 PlansView.Refresh();
+                UpdateStatusCounts();
                 OnPropertyChanged(nameof(HasPendingChanges));
                 OnPropertyChanged(nameof(PendingText));
             }
@@ -919,6 +963,7 @@ namespace ORT一键报告.Plans.ViewModels
         {
             OnPropertyChanged(nameof(HasPendingChanges));
             OnPropertyChanged(nameof(PendingText));
+            UpdateStatusCounts();
             CommandManager.InvalidateRequerySuggested();
         }
 

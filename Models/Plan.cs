@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using FreeSql.DataAnnotations;
 
 namespace ORT一键报告.Models
@@ -108,7 +108,26 @@ namespace ORT一键报告.Models
         /// 完成狀況/Status（Close/Ongoing/Pending）
         /// </summary>
         [Column(StringLength = 32, IsNullable = true)]
-        public string Status { get => _status; set => SetProperty(ref _status, value); }
+        public string Status
+        {
+            get => _status;
+            set
+            {
+                // 状况列按归类配色、搜索栏按归类统计：值一变就通知归类也跟着变
+                if (SetProperty(ref _status, value))
+                {
+                    OnPropertyChanged(nameof(StatusKind));
+                }
+            }
+        }
+
+        /// <summary>
+        /// 状况归类（ongoing/pending/closed，认不出的写法为空）：
+        /// 由 <see cref="Status"/> 现算，仅用于界面配色与统计，不参与数据库存储与快照对比
+        /// </summary>
+        [Column(IsIgnore = true)]
+        [Newtonsoft.Json.JsonIgnore]
+        public string StatusKind => ORT一键报告.Utils.PlanStatusKind.Of(_status);
 
         private string _reportStatus;
         /// <summary>

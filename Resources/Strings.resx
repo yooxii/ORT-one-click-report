@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -2388,4 +2388,16 @@
   <data name="Login_GuestButton" xml:space="preserve"><value>游客登录</value></data>
   <data name="Login_GuestButtonHint" xml:space="preserve"><value>不验证账号，以游客身份进入（仅可浏览，无编辑/审核/管理权限）</value></data>
   <data name="Login_ExitButton" xml:space="preserve"><value>退出</value></data>
+  <data name="Plans_StatusOngoing" xml:space="preserve">
+    <value>进行中</value>
+  </data>
+  <data name="Plans_StatusPending" xml:space="preserve">
+    <value>预排测试</value>
+  </data>
+  <data name="Plans_StatusClosed" xml:space="preserve">
+    <value>已结案</value>
+  </data>
+  <data name="Plans_StatusSummaryHint" xml:space="preserve">
+    <value>计划表状况统计：按当前搜索与列筛选后可见的记录统计（进行中 / 预排测试 / 已结案）</value>
+  </data>
 </root>

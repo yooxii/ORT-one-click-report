@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -2388,4 +2388,16 @@ Build the plan index now (compress repeated text into shared templates)?</value>
   <data name="Login_GuestButton" xml:space="preserve"><value>Continue as Guest</value></data>
   <data name="Login_GuestButtonHint" xml:space="preserve"><value>Enter as a guest without account verification (view only; no edit/review/admin permissions)</value></data>
   <data name="Login_ExitButton" xml:space="preserve"><value>Exit</value></data>
+  <data name="Plans_StatusOngoing" xml:space="preserve">
+    <value>Ongoing</value>
+  </data>
+  <data name="Plans_StatusPending" xml:space="preserve">
+    <value>Pending</value>
+  </data>
+  <data name="Plans_StatusClosed" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="Plans_StatusSummaryHint" xml:space="preserve">
+    <value>Plan status counts for the rows currently visible after search and column filters (Ongoing / Pending / Close)</value>
+  </data>
 </root>

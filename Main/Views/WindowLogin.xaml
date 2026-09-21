@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:lex="http://wpflocalizeextension.codeplex.com"
         mc:Ignorable="d"
-        Title="{lex:Loc WindowLogin_Title}" Height="300" Width="400" ResizeMode="NoResize"
+        Title="{lex:Loc WindowLogin_Title}" Height="320" Width="400" ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner">
 
     <Grid Margin="20">

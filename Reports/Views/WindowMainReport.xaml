@@ -33,16 +33,15 @@
                 <MenuItem Header="{lex:Loc Report_TemplateMenu}" Click="MenuItem_ReportTemplate_Click"/>
             </MenuItem>
             <MenuItem Header="{lex:Loc Report_ViewMenu}">
-                <MenuItem Header="{lex:Loc Report_ViewLog}" Click="MenuItem_ViewLog_Click"/>
-                <Separator/>
                 <MenuItem x:Name="menu_tab_thermalshock" Header="{lex:Loc Report_ThermalShockTab}" IsCheckable="True" Click="Menu_TabToggle_Click"/>
                 <MenuItem x:Name="menu_tab_burnin" Header="{lex:Loc Report_BurnInTab}" IsCheckable="True" Click="Menu_TabToggle_Click"/>
                 <MenuItem x:Name="menu_tab_emi" Header="{lex:Loc Report_EMITab}" IsCheckable="True" Click="Menu_TabToggle_Click"/>
             </MenuItem>
+            <MenuItem Header="{lex:Loc Report_ViewLog}" Click="MenuItem_ViewLog_Click"/>
         </Menu>
         <Grid Grid.Row="1">
             <Grid.RowDefinitions>
-                <RowDefinition Height="35" />
+                <RowDefinition Height="auto" />
                 <RowDefinition />
             </Grid.RowDefinitions>
             <Grid>

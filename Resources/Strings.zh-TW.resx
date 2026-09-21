@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -2388,4 +2388,16 @@
   <data name="Login_GuestButton" xml:space="preserve"><value>遊客登入</value></data>
   <data name="Login_GuestButtonHint" xml:space="preserve"><value>不驗證帳號，以遊客身份進入（僅可瀏覽，無編輯/審核/管理權限）</value></data>
   <data name="Login_ExitButton" xml:space="preserve"><value>離開</value></data>
+  <data name="Plans_StatusOngoing" xml:space="preserve">
+    <value>進行中</value>
+  </data>
+  <data name="Plans_StatusPending" xml:space="preserve">
+    <value>預排測試</value>
+  </data>
+  <data name="Plans_StatusClosed" xml:space="preserve">
+    <value>已結案</value>
+  </data>
+  <data name="Plans_StatusSummaryHint" xml:space="preserve">
+    <value>計劃表狀況統計：依目前搜尋與欄篩選後可見的記錄統計（進行中 / 預排測試 / 已結案）</value>
+  </data>
 </root>

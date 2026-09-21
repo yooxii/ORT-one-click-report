@@ -46,6 +46,28 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
+        <!-- 状况列单元格：按状况归类上色（进行中黄 / 预排红 / 已结案绿）；
+             选中触发器放在最后，保证选中的单元格仍显示选中色（触发器后声明者生效） -->
+        <Style x:Key="StatusCell" TargetType="DataGridCell" BasedOn="{StaticResource FullCell}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding StatusKind}" Value="ongoing">
+                    <Setter Property="Background" Value="{DynamicResource StatusOngoingBgBrush}"/>
+                    <Setter Property="Foreground" Value="{DynamicResource StatusOngoingBrush}"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding StatusKind}" Value="pending">
+                    <Setter Property="Background" Value="{DynamicResource StatusPendingBgBrush}"/>
+                    <Setter Property="Foreground" Value="{DynamicResource StatusPendingBrush}"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding StatusKind}" Value="closed">
+                    <Setter Property="Background" Value="{DynamicResource StatusClosedBgBrush}"/>
+                    <Setter Property="Foreground" Value="{DynamicResource StatusClosedBrush}"/>
+                </DataTrigger>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource TableCellSelectedBrush}"/>
+                    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
         <!--筛选条件标签：领退表与计划表共用（删除命令会自行判断条件属于哪张表）-->
     </Window.Resources>
 
@@ -71,8 +93,6 @@
             <MenuItem Header="{lex:Loc Menu_Export}">
                 <MenuItem Header="{lex:Loc Plans_ExportRequisition}" Command="{Binding ExportRequisitionCommand}"/>
                 <MenuItem Header="{lex:Loc Plans_ExportPlan}" Command="{Binding ExportScheduleCommand}"/>
-                <Separator/>
-                <MenuItem Header="{lex:Loc Plans_ReturnTransfer}" Click="Btn_ReturnLine_Click"/>
             </MenuItem>
             <MenuItem x:Name="menu_window_sort" Header="{lex:Loc Common_Sort}" SubmenuOpened="Menu_Sort_SubmenuOpened"/>
             <MenuItem Header="{lex:Loc MainWindow_Menu_Tools}">
@@ -82,6 +102,8 @@
                           ToolTip="{lex:Loc Plans_ToolTip_RefreshReports}"/>
                 <MenuItem Header="{lex:Loc Plans_Menu_PlanIndex}" Click="Menu_PlanIndex_Click"
                           ToolTip="{lex:Loc PlanIndex_ToolTip_Build}"/>
+                <Separator/>
+                <MenuItem Header="{lex:Loc Plans_ReturnTransfer}" Click="Btn_ReturnLine_Click"/>
             </MenuItem>
             <MenuItem Header="{lex:Loc Common_View}">
                 <MenuItem x:Name="menu_view_toolbar" Header="{lex:Loc Menu_Toolbar}" IsCheckable="True" Click="Menu_View_Toggle_Click"/>
@@ -122,9 +144,28 @@
         <StackPanel x:Name="panel_search" Grid.Row="2" Margin="0,5,0,0">
             <DockPanel>
                 <Label Content="{lex:Loc Common_Search}" VerticalContentAlignment="Center"/>
-                <TextBlock DockPanel.Dock="Right" Text="{lex:Loc Plans_SearchHint}" VerticalAlignment="Center"
-                           Foreground="{DynamicResource TextSecondaryBrush}" Margin="10,0,0,0"
-                           TextTrimming="CharacterEllipsis" ToolTip="{lex:Loc Plans_SearchHint}"/>
+                <!--搜索框右侧：计划表状况统计（按当前搜索与列筛选后可见的记录统计，配色与状况列一致）-->
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0"
+                            ToolTip="{lex:Loc Plans_StatusSummaryHint}">
+                    <Border Background="{DynamicResource StatusOngoingBgBrush}" CornerRadius="{DynamicResource CornerRadiusSmall}"
+                            Padding="8,1" Margin="0,0,6,0">
+                        <TextBlock Foreground="{DynamicResource StatusOngoingBrush}">
+                            <Run Text="{lex:Loc Plans_StatusOngoing}"/><Run Text=" "/><Run Text="{Binding OngoingCount}" FontWeight="Bold"/>
+                        </TextBlock>
+                    </Border>
+                    <Border Background="{DynamicResource StatusPendingBgBrush}" CornerRadius="{DynamicResource CornerRadiusSmall}"
+                            Padding="8,1" Margin="0,0,6,0">
+                        <TextBlock Foreground="{DynamicResource StatusPendingBrush}">
+                            <Run Text="{lex:Loc Plans_StatusPending}"/><Run Text=" "/><Run Text="{Binding PendingCount}" FontWeight="Bold"/>
+                        </TextBlock>
+                    </Border>
+                    <Border Background="{DynamicResource StatusClosedBgBrush}" CornerRadius="{DynamicResource CornerRadiusSmall}"
+                            Padding="8,1">
+                        <TextBlock Foreground="{DynamicResource StatusClosedBrush}">
+                            <Run Text="{lex:Loc Plans_StatusClosed}"/><Run Text=" "/><Run Text="{Binding ClosedCount}" FontWeight="Bold"/>
+                        </TextBlock>
+                    </Border>
+                </StackPanel>
                 <TextBox x:Name="txt_search" MinWidth="200" Margin="0,0,0,3" VerticalContentAlignment="Center"
                          Text="{Binding SearchKeyword, UpdateSourceTrigger=PropertyChanged}"
                          ToolTip="{lex:Loc Plans_SearchHint}"/>
@@ -420,7 +461,8 @@
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellEditingTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTemplateColumn Header="{lex:Loc Plans_Status}" Width="75" SortMemberPath="Status">
+                        <DataGridTemplateColumn Header="{lex:Loc Plans_Status}" Width="75" SortMemberPath="Status"
+                                                CellStyle="{StaticResource StatusCell}">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <TextBlock Text="{Binding Status}" Style="{StaticResource CenterText}"/>

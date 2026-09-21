@@ -63,6 +63,13 @@
     <SolidColorBrush x:Key="StatusWarnBgBrush" Color="#FF2E2010"/>
     <SolidColorBrush x:Key="StatusErrorBrush" Color="#FFF44336"/>
     <SolidColorBrush x:Key="StatusErrorBgBrush" Color="#FF2E1512"/>
+    <!-- 计划状况列配色：进行中（黄）/ 预排测试（红）/ 已结案（绿）；深色方案用暗底亮字 -->
+    <SolidColorBrush x:Key="StatusOngoingBrush" Color="#FFFFD54F"/>
+    <SolidColorBrush x:Key="StatusOngoingBgBrush" Color="#FF3A331A"/>
+    <SolidColorBrush x:Key="StatusPendingBrush" Color="#FFEF9A9A"/>
+    <SolidColorBrush x:Key="StatusPendingBgBrush" Color="#FF3A1F1F"/>
+    <SolidColorBrush x:Key="StatusClosedBrush" Color="#FFA5D6A7"/>
+    <SolidColorBrush x:Key="StatusClosedBgBrush" Color="#FF17301B"/>
 
     <!-- 菜单 -->
     <SolidColorBrush x:Key="MenuBackgroundBrush" Color="#FF12122A"/>

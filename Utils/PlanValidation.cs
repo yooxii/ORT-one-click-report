@@ -5,6 +5,48 @@ using System.Text.RegularExpressions;
 namespace ORT一键报告.Utils
 {
     /// <summary>
+    /// 计划状况归类：把库里的状况文本（Ongoing / Close / Pending，历史上也有 Closed 等写法）
+    /// 归成三类，供计划表状况列配色与搜索栏状况统计共用。
+    /// </summary>
+    public static class PlanStatusKind
+    {
+        /// <summary>测试中</summary>
+        public const string Ongoing = "ongoing";
+
+        /// <summary>预排测试（未开始）</summary>
+        public const string Pending = "pending";
+
+        /// <summary>已结案</summary>
+        public const string Closed = "closed";
+
+        /// <summary>
+        /// 归类状况文本；认不出（空值或自定义写法）返回空字符串，调用方按"不配色/不统计"处理。
+        /// 判定不区分大小写，且 Close / Closed / 结案 都算已结案。
+        /// </summary>
+        public static string Of(string status)
+        {
+            if (string.IsNullOrWhiteSpace(status))
+            {
+                return "";
+            }
+            string text = status.Trim().ToLowerInvariant();
+            if (text.Contains("ongoing") || text.Contains("进行中") || text.Contains("進行中") || text.Contains("測試中") || text.Contains("测试中"))
+            {
+                return Ongoing;
+            }
+            if (text.Contains("pending") || text.Contains("待测") || text.Contains("待測") || text.Contains("預排") || text.Contains("预排"))
+            {
+                return Pending;
+            }
+            if (text.Contains("close") || text.Contains("结案") || text.Contains("結案") || text.Contains("已完成"))
+            {
+                return Closed;
+            }
+            return "";
+        }
+    }
+
+    /// <summary>
     /// 计划数据编辑校验：指定列的格式限制与字典约束
     /// </summary>
     public static class PlanValidation
