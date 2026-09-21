@@ -20,3 +20,4 @@
 - 构建：`MSBuild .\ORT一键报告.csproj /p:Configuration=Debug /p:SignManifests=false /p:GenerateManifests=false /v:minimal /nologo /t:Rebuild`（清单签名在受限环境会失败，与代码无关）。
 - 重建 `bin\Debug\*` 前先确认没有 `ORT一键报告.exe` 在运行，否则 `SQLite.Interop.dll` 被占用。
 - 数据库为 SQLite + FreeSql（`UseAutoSyncStructure(true)`），新增实体列会自动迁移。
+- 发布包自带更新日志：csproj 里已把根目录 `更新日志.md` 登记为 `CopyToOutputDirectory=PreserveNewest`，生成时自动复制到 `bin\Debug\`（Release 同理）。发布前先写完 `更新日志.md` 再生成，并用文件哈希核对输出目录里的日志与根目录一致；不要移除这条 csproj 登记。

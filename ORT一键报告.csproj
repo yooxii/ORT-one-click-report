@@ -509,6 +509,10 @@
     <None Include="Templates\**\*.*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <!--更新日志随生成一起复制到输出目录：发布包自带一份更新日志，改完根目录的更新日志.md 重新生成即同步-->
+    <None Include="更新日志.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
