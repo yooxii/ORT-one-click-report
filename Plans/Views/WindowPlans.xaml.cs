@@ -71,7 +71,13 @@ namespace ORT一键报告.Plans.Views
                 // 已有报告的记录：入口改成「查看报告模板」（打开报告文件夹里的报告文件）
                 UpdateTemplateMenuItem();
             };
-            Closing += (s, e) => SaveColumnState();
+            Closing += (s, e) =>
+            {
+                SaveColumnState();
+                // 退订对单例报告扫描服务的订阅，避免旧 ViewModel 被长期引用
+                _vm.ReportScanCompleted -= OnReportScanCompleted;
+                _vm.DetachScanEvents();
+            };
             // 报告文件夹扫描完成后，提示用户建立计划索引（每个窗口实例只提示一次）
             _vm.ReportScanCompleted += OnReportScanCompleted;
         }
@@ -410,7 +416,7 @@ namespace ORT一键报告.Plans.Views
 
         /// <summary>计划表下拉列（浏览时只显示文本，双击编辑才出现下拉框）</summary>
         private static readonly System.Collections.Generic.HashSet<string> PlanComboColumns =
-            new() { "Product", "Customer", "Stage", "TestItem", "Status" };
+            new() { "Product", "Customer", "Stage", "TestItem", "Status", "ReportStatus" };
 
         /// <summary>下拉编辑开始时的快照（行、属性、原值），用于结束时判断是否修改并提示</summary>
         private (Plan item, string prop, string original)? _planComboEditSnapshot;
@@ -999,7 +1005,8 @@ namespace ORT一键报告.Plans.Views
         }
 
         /// <summary>
-        /// 工具菜单/工具栏：建立计划索引（后台执行，可在其他客户端断点继续）
+        /// 工具菜单/工具栏：建立计划索引（后台执行，可在其他客户端断点继续）。
+        /// 走高耗时任务协调器：若报告扫描/一键报告正在跑，先中断并等其结束再启动。
         /// </summary>
         private async void Menu_PlanIndex_Click(object sender, RoutedEventArgs e)
         {
@@ -1017,11 +1024,22 @@ namespace ORT一键报告.Plans.Views
                     ToastService.Show(LanguageService.Get("PlanIndex_NoRoot"), ToastType.Warning);
                     return;
                 }
-                PlanIndexRunResult result = await indexService.RunAsync(root,
-                    App.ServiceProvider.GetRequiredService<IPermissionService>().CurrentUser);
-                ToastService.Show(string.IsNullOrWhiteSpace(result.Message)
-                    ? LanguageService.Get("PlanIndex_Msg_OtherClient")
-                    : result.Message, result.Started ? ToastType.Info : ToastType.Warning);
+                HighCostTaskCoordinator coordinator = App.ServiceProvider.GetRequiredService<HighCostTaskCoordinator>();
+                string user = App.ServiceProvider.GetRequiredService<IPermissionService>().CurrentUser;
+                PlanIndexRunResult result = null;
+                await coordinator.RequestStartAsync(LanguageService.Get("PlanIndex_Build"), async ct =>
+                {
+                    // 计划索引自身有落库的断点继续机制，这里仅在其执行期间持有协调器占用；
+                    // 用户点「停止」或别的任务要抢占时，通过 indexService.RequestStop 让它收尾
+                    using System.Threading.CancellationTokenRegistration registration = ct.Token.Register(indexService.RequestStop);
+                    result = await indexService.RunAsync(root, user);
+                });
+                if (result != null)
+                {
+                    ToastService.Show(string.IsNullOrWhiteSpace(result.Message)
+                        ? LanguageService.Get("PlanIndex_Msg_OtherClient")
+                        : result.Message, result.Started ? ToastType.Info : ToastType.Warning);
+                }
             }
             catch (Exception ex)
             {
@@ -1229,6 +1247,7 @@ namespace ORT一键报告.Plans.Views
             nameof(Plan.StartDate) => p.StartDate?.ToString("yyyy/M/d"),
             nameof(Plan.EndDate) => p.EndDate?.ToString("yyyy/M/d"),
             nameof(Plan.Status) => p.Status,
+            nameof(Plan.ReportStatus) => p.ReportStatus,
             nameof(Plan.Remark) => p.Remark,
             _ => null
         };
@@ -1280,6 +1299,7 @@ namespace ORT一键报告.Plans.Views
                 case nameof(Plan.StartDate): p.StartDate = ParseDate(value); break;
                 case nameof(Plan.EndDate): p.EndDate = ParseDate(value); break;
                 case nameof(Plan.Status): p.Status = value; break;
+                case nameof(Plan.ReportStatus): p.ReportStatus = value; break;
                 case nameof(Plan.Remark): p.Remark = value; break;
             }
             return _vm.ValidateField(field switch

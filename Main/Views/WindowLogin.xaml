@@ -44,7 +44,9 @@
 
         <StackPanel Grid.Row="4" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right">
             <Button Content="{lex:Loc WindowLogin_Button_Login}" Width="90" Click="Btn_Login_Click" IsDefault="True"/>
-            <Button Content="{lex:Loc WindowLogin_Button_Cancel}" Width="90" Margin="10,0,0,0" Click="Btn_Cancel_Click" IsCancel="True"/>
+            <Button Content="{lex:Loc Login_GuestButton}" Width="90" Margin="10,0,0,0" Click="Btn_Guest_Click"
+                    ToolTip="{lex:Loc Login_GuestButtonHint}"/>
+            <Button Content="{lex:Loc Login_ExitButton}" Width="90" Margin="10,0,0,0" Click="Btn_Cancel_Click" IsCancel="True"/>
         </StackPanel>
     </Grid>
 </Window>

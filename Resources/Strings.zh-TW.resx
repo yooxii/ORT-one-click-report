@@ -2369,4 +2369,23 @@
   <data name="Plans_Msg_TemplateFileMissing" xml:space="preserve"><value>報告資料夾裡沒有找到報告檔案：{0}</value></data>
   <data name="Dlg_PickReportFile" xml:space="preserve"><value>選擇要查看的報告檔案</value></data>
   <data name="Dlg_PickReportFileHint" xml:space="preserve"><value>報告資料夾裡有多個檔案，請選擇要開啟的那一份：{0}</value></data>
+  <data name="Plans_ReportStatus" xml:space="preserve"><value>報告狀態</value></data>
+  <data name="Plans_ReportStatusHint" xml:space="preserve"><value>掃描報告資料夾時按 TestStatus 表自動判定（已完成/進行中）；手動選「無要求」後掃描不再覆蓋該記錄。</value></data>
+  <data name="ReportScan_TaskName" xml:space="preserve"><value>報告掃描</value></data>
+  <data name="ReportScan_ProgressFormat" xml:space="preserve"><value>正在掃描報告資料夾 {0}/{1}：{2}</value></data>
+  <data name="ReportScan_Interrupted" xml:space="preserve"><value>報告掃描已中斷</value></data>
+  <data name="ReportScan_Stop" xml:space="preserve"><value>停止掃描</value></data>
+  <data name="ReportScan_SettingsTitle" xml:space="preserve"><value>報告掃描</value></data>
+  <data name="ReportScan_SettingsHint" xml:space="preserve"><value>掃描報告資料夾會匹配報告夾、並按報告概覽的 TestStatus 表判定各計劃的「報告狀態」。該任務耗時較長，與計劃索引、一鍵報告互斥；可手動觸發，也可在電腦閒置一段時間後背景靜默執行。</value></data>
+  <data name="ReportScan_AutoLabel" xml:space="preserve"><value>閒置時自動掃描報告資料夾</value></data>
+  <data name="ReportScan_IdleSecondsLabel" xml:space="preserve"><value>閒置多少秒後開始</value></data>
+  <data name="ReportScan_IdleSecondsHint" xml:space="preserve"><value>閒置秒數至少 10 秒（預設 300 秒）。</value></data>
+  <data name="Interrupt_WaitTitle" xml:space="preserve"><value>正在中斷</value></data>
+  <data name="Interrupt_WaitMessageFormat" xml:space="preserve"><value>正在中斷「{0}」，等目前報告夾讀取完成後繼續…</value></data>
+  <data name="Interrupt_WaitHint" xml:space="preserve"><value>為保證資料完整，目前正在處理的報告夾讀完才會停下，請稍候。</value></data>
+  <data name="MainWindow_Button_User" xml:space="preserve"><value>使用者</value></data>
+  <data name="MainWindow_ToolTip_User" xml:space="preserve"><value>使用者中心與登入/登出</value></data>
+  <data name="Login_GuestButton" xml:space="preserve"><value>遊客登入</value></data>
+  <data name="Login_GuestButtonHint" xml:space="preserve"><value>不驗證帳號，以遊客身份進入（僅可瀏覽，無編輯/審核/管理權限）</value></data>
+  <data name="Login_ExitButton" xml:space="preserve"><value>離開</value></data>
 </root>

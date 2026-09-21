@@ -143,6 +143,11 @@
     <Compile Include="Services\TestPlanService.cs" />
     <Compile Include="Services\PlanIndexService.cs" />
     <Compile Include="Services\PlanIndexScheduler.cs" />
+    <Compile Include="Services\ReportStatusReader.cs" />
+    <Compile Include="Services\ReportScanService.cs" />
+    <Compile Include="Services\ReportScanScheduler.cs" />
+    <Compile Include="Services\HighCostTaskCoordinator.cs" />
+    <Compile Include="Models\ReportStatusKind.cs" />
     <Compile Include="Services\ReportTemplateService.cs" />
     <Compile Include="Utils\DataGridRowDrag.cs" />
     <Compile Include="Admin\Views\UserControlTestPlans.xaml.cs">
@@ -170,6 +175,9 @@
     </Compile>
     <Compile Include="Main\Views\WindowLogin.xaml.cs">
       <DependentUpon>WindowLogin.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Main\Views\WindowInterruptWait.xaml.cs">
+      <DependentUpon>WindowInterruptWait.xaml</DependentUpon>
     </Compile>
     <Compile Include="Admin\Views\WindowAdmin.xaml.cs">
       <DependentUpon>WindowAdmin.xaml</DependentUpon>
@@ -421,6 +429,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Main\Views\WindowLogin.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Main\Views\WindowInterruptWait.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

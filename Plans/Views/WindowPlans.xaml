@@ -435,6 +435,23 @@
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellEditingTemplate>
                         </DataGridTemplateColumn>
+                        <!--报告状态：扫描报告文件夹时按 TestStatus 表自动写入（已完成/进行中）；用户可手工改为「无要求」锁定--> 
+                        <DataGridTemplateColumn Header="{lex:Loc Plans_ReportStatus}" Width="80" SortMemberPath="ReportStatus">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding ReportStatus}" Style="{StaticResource CenterText}"
+                                               ToolTip="{lex:Loc Plans_ReportStatusHint}"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                            <DataGridTemplateColumn.CellEditingTemplate>
+                                <DataTemplate>
+                                    <ComboBox ItemsSource="{Binding DataContext.ReportStatusOptions, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                              SelectedValue="{Binding ReportStatus, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                                              VerticalContentAlignment="Center"
+                                              ToolTip="{lex:Loc Plans_ReportStatusHint}"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellEditingTemplate>
+                        </DataGridTemplateColumn>
                         <DataGridTextColumn Header="{lex:Loc Admin_Remark}" Binding="{Binding Remark, UpdateSourceTrigger=PropertyChanged}" Width="150" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
                     </DataGrid.Columns>
                 </DataGrid>
@@ -442,10 +459,24 @@
         </TabControl>
 
         <StatusBar Grid.Row="4">
-            <StatusBarItem Content="{Binding StatusMessage}"/>
+            <StatusBarItem>
+                <TextBlock Text="{Binding StatusMessage}" TextTrimming="CharacterEllipsis" MaxWidth="420"/>
+            </StatusBarItem>
             <Separator/>
             <StatusBarItem>
                 <TextBlock Text="{Binding PendingText}" Foreground="{DynamicResource StatusWarnBrush}" FontWeight="Bold"/>
+            </StatusBarItem>
+            <!--右下角：报告扫描进度（仅扫描中/被中断时可见）--> 
+            <StatusBarItem HorizontalAlignment="Right">
+                <StackPanel Orientation="Horizontal"
+                            Visibility="{Binding ScanProgressVisible, Converter={StaticResource BoolToVis}}">
+                    <TextBlock Text="{Binding ScanProgressText}" VerticalAlignment="Center" Margin="0,0,8,0"
+                               TextTrimming="CharacterEllipsis" MaxWidth="360"/>
+                    <ProgressBar Width="120" Height="12" Minimum="0"
+                                 Maximum="{Binding ScanTotal}" Value="{Binding ScanProcessed}"/>
+                    <Button Content="{lex:Loc ReportScan_Stop}" Command="{Binding StopScanCommand}"
+                            Margin="8,0,0,0" Padding="8,1"/>
+                </StackPanel>
             </StatusBarItem>
         </StatusBar>
     </Grid>

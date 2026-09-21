@@ -59,7 +59,7 @@
                     <ColumnDefinition/>
                 </Grid.ColumnDefinitions>
                 <Grid.RowDefinitions>
-                    <RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/>
+                    <RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/>
                 </Grid.RowDefinitions>
                 <Label Content="{lex:Loc Plans_Owner}"/>
                 <TextBox x:Name="txt_owner" Grid.Column="1" Margin="3" ToolTip="{lex:Loc PlanEdit_TestItemHint}"/>
@@ -67,8 +67,11 @@
                 <TextBox x:Name="txt_testPeriod" Grid.Row="1" Grid.Column="1" Margin="3" ToolTip="{lex:Loc PlanEdit_TestItemHint}"/>
                 <Label Content="{lex:Loc PlanEdit_EndDate}" Grid.Row="2"/>
                 <DatePicker x:Name="dp_endDate" Grid.Row="2" Grid.Column="1" Margin="3" ToolTip="{lex:Loc PlanEdit_EndDateHint}"/>
-                <Label Content="{lex:Loc PlanEdit_Remark}" Grid.Row="3"/>
-                <TextBox x:Name="txt_remark" Grid.Row="3" Grid.Column="1" Margin="3"
+                <Label Content="{lex:Loc Plans_ReportStatus}" Grid.Row="3"/>
+                <ComboBox x:Name="cb_reportStatus" Grid.Row="3" Grid.Column="1" Margin="3" VerticalContentAlignment="Center"
+                          ToolTip="{lex:Loc Plans_ReportStatusHint}"/>
+                <Label Content="{lex:Loc PlanEdit_Remark}" Grid.Row="4"/>
+                <TextBox x:Name="txt_remark" Grid.Row="4" Grid.Column="1" Margin="3"
                          TextWrapping="WrapWithOverflow" AcceptsReturn="True" Height="50" VerticalScrollBarVisibility="Auto"/>
             </Grid>
         </GroupBox>

@@ -59,6 +59,8 @@ namespace ORT一键报告.Plans.ViewModels
         private readonly ReviewService _reviewService;
         private readonly AdminService _adminService;
         private readonly AppSettingsService _appSettings;
+        private readonly ReportScanService _reportScan;
+        private readonly HighCostTaskCoordinator _coordinator;
 
         /// <summary>
         /// 报告链接缓存：工作编号 → 报告夹信息（扫描自报告路径）
@@ -206,6 +208,11 @@ namespace ORT一键报告.Plans.ViewModels
         /// 状况固定枚举
         /// </summary>
         public List<string> CatalogStatuses { get; } = [.. PlanValidation.ValidStatuses];
+
+        /// <summary>
+        /// 报告状态可选项（已完成 / 进行中 / 无要求）
+        /// </summary>
+        public List<string> ReportStatusOptions { get; } = [.. ReportStatusKind.All];
 
         private readonly DispatcherTimer _searchTimer;
         private string _searchKeyword;
@@ -380,7 +387,8 @@ namespace ORT一键报告.Plans.ViewModels
         }
 
         public PlansViewModel(DatabaseService db, PlanExcelService excelService, IPathService pathService,
-            IPermissionService permission, ReviewService reviewService, AdminService adminService, AppSettingsService appSettings)
+            IPermissionService permission, ReviewService reviewService, AdminService adminService, AppSettingsService appSettings,
+            ReportScanService reportScan, HighCostTaskCoordinator coordinator)
         {
             _db = db;
             _excelService = excelService;
@@ -389,6 +397,8 @@ namespace ORT一键报告.Plans.ViewModels
             _reviewService = reviewService;
             _adminService = adminService;
             _appSettings = appSettings;
+            _reportScan = reportScan;
+            _coordinator = coordinator;
 
             PlansView = CollectionViewSource.GetDefaultView(Plans);
             PlansView.Filter = PlanFilter;
@@ -406,7 +416,22 @@ namespace ORT一键报告.Plans.ViewModels
                 RequisitionsView.Refresh();
             };
 
+            // 报告扫描进度订阅：服务层事件已切回 UI 线程，这里直接刷属性
+            _reportScan.Changed += OnReportScanChanged;
+            _reportScan.ScanCompleted += OnReportScanCompletedInternal;
+
             Refresh();
+        }
+
+        /// <summary>
+        /// 解除对单例 ReportScanService 事件的订阅（窗口关闭时调用）。
+        /// PlansViewModel 是 Transient，ReportScanService 是 Singleton；不退订会造成
+        /// 旧 ViewModel 被单例事件长期引用（泄露），且扫描回调会在多个旧实例上重复触发。
+        /// </summary>
+        public void DetachScanEvents()
+        {
+            _reportScan.Changed -= OnReportScanChanged;
+            _reportScan.ScanCompleted -= OnReportScanCompletedInternal;
         }
 
         /* ###############################  排序（菜单驱动）  ################################ */
@@ -443,12 +468,12 @@ namespace ORT一键报告.Plans.ViewModels
         public ICommand RefreshCommand => _refreshCommand ??= new RelayCommand(RefreshAndRescan);
 
         /// <summary>
-        /// 刷新：重新加载数据 + 重新遍历报告文件夹（后台）
+        /// 刷新：重新加载数据（不再连带扫描报告文件夹——扫描已改为独立的高耗时任务，
+        /// 由用户手动触发或闲置自动触发）
         /// </summary>
         private void RefreshAndRescan()
         {
             Refresh();
-            StartReportScan();
         }
 
         private RelayCommand _exportRequisitionCommand;
@@ -543,14 +568,11 @@ namespace ORT一键报告.Plans.ViewModels
                 }
 
                 LoadCatalogs();
-                // 打开窗口仅从数据库加载报告夹扫描结果（不重新遍历文件系统，提速）
+                // 打开窗口仅从数据库加载报告夹扫描结果（不重新遍历文件系统，提速）；
+                // 扫描改为独立的高耗时任务，由用户手动触发或闲置自动触发（见 ReportScanScheduler），
+                // 不再在打开领退与计划窗口时同步执行
                 LoadReportLinksFromDb();
                 UpdatePlanReportFlags();
-                if (_reportLinks.Count == 0 && _appSettings.ReportDir != null && Plans.Count > 0)
-                {
-                    // 首次尚无扫描结果时后台扫描一次
-                    StartReportScan();
-                }
                 // 计划表快照在报告标记（HasReportLink 已 JsonIgnore，不参与对比）加载后捕获
                 foreach (Plan plan in Plans)
                 {
@@ -633,11 +655,6 @@ namespace ORT一键报告.Plans.ViewModels
         }
 
         /// <summary>
-        /// 扫描序号：防止多次刷新时旧扫描结果覆盖新结果；异步扫描避免阻塞窗口打开。
-        /// </summary>
-        private int _scanSeq;
-
-        /// <summary>
         /// 报告文件夹扫描完成（参数为匹配到的报告夹数量）。界面据此提示用户建立计划索引。
         /// </summary>
         public event Action<int> ReportScanCompleted;
@@ -645,124 +662,106 @@ namespace ORT一键报告.Plans.ViewModels
         /// <summary>本次扫描的完成回调（手动更新报告文件夹时用来提示结果）</summary>
         private Action<int> _scanCallback;
 
+        /* ###############################  报告扫描进度（状态栏绑定）  ################################ */
+
+        private bool _scanProgressVisible;
+        /// <summary>状态栏扫描进度区是否可见（正在扫描或被中断时可见）</summary>
+        public bool ScanProgressVisible { get => _scanProgressVisible; set => SetProperty(ref _scanProgressVisible, value); }
+
+        private string _scanProgressText;
+        /// <summary>状态栏扫描进度文本（如「正在扫描报告文件夹 12/80：FSF050-9TAG …」）</summary>
+        public string ScanProgressText { get => _scanProgressText; set => SetProperty(ref _scanProgressText, value); }
+
+        private int _scanTotal;
+        public int ScanTotal { get => _scanTotal; set => SetProperty(ref _scanTotal, value); }
+
+        private int _scanProcessed;
+        public int ScanProcessed { get => _scanProcessed; set => SetProperty(ref _scanProcessed, value); }
+
+        private RelayCommand _stopScanCommand;
+        /// <summary>停止扫描（发取消信号，当前报告夹读完再停）</summary>
+        public ICommand StopScanCommand => _stopScanCommand ??= new RelayCommand(
+            () => _coordinator.RequestInterruptCurrent(),
+            () => _reportScan.IsRunning);
+
         /// <summary>
-        /// 手动更新报告文件夹：重新扫描报告根目录，刷新计划表的"报告"标记。
-        /// 新生成的报告模板文件夹、或在别处新增的报告夹，用这个入口立刻生效（不必重启程序）。
+        /// 手动触发报告扫描（走协调器，与计划索引/一键报告互斥）。
         /// </summary>
         /// <param name="completed">扫描完成后的回调（参数为匹配到的报告夹数量）</param>
         public void RequestReportScan(Action<int> completed = null)
         {
             _scanCallback = completed;
-            StartReportScan();
+            _ = _coordinator.RequestStartAsync(LanguageService.Get("ReportScan_TaskName"),
+                cts => _reportScan.RunAsync(cts.Token));
         }
 
         /// <summary>
-        /// 后台遍历报告路径，按工作编号匹配报告文件夹并保存到 report_links 表。
-        /// 报告夹结构：文件夹名包含工作编号，内含 Report 子文件夹与一个 Excel 报告概览文件。
+        /// 扫描进度变化（服务层已切回 UI 线程）：刷新状态栏绑定属性
         /// </summary>
-        private void StartReportScan()
+        private void OnReportScanChanged()
         {
-            string root = _appSettings.ReportDir;
-            List<string> jobNos = Plans
-                .Where(p => !string.IsNullOrWhiteSpace(p.JobNo))
-                .Select(p => p.JobNo)
-                .Distinct()
-                .ToList();
-            if (root == null || jobNos.Count == 0)
+            ScanProgressVisible = _reportScan.IsRunning || _reportScan.WasInterrupted;
+            ScanTotal = Math.Max(_reportScan.Total, 1);
+            ScanProcessed = Math.Min(_reportScan.Processed, ScanTotal);
+            ScanProgressText = _reportScan.IsRunning
+                ? string.Format(LanguageService.Get("ReportScan_ProgressFormat"),
+                    _reportScan.Processed, _reportScan.Total, _reportScan.CurrentFolder ?? "")
+                : (_reportScan.WasInterrupted
+                    ? LanguageService.Get("ReportScan_Interrupted")
+                    : "");
+            _stopScanCommand?.RaiseCanExecuteChanged();
+            // 被中断后稍作停留再隐藏，让用户看到「已中断」反馈
+            if (!_reportScan.IsRunning && _reportScan.WasInterrupted)
             {
-                UpdatePlanReportFlags();
-                Action<int> empty = _scanCallback;
-                _scanCallback = null;
-                empty?.Invoke(0);
-                return;
-            }
-            int seq = ++_scanSeq;
-            System.Threading.Tasks.Task.Run(() =>
-            {
-                try
+                DispatcherTimer hideTimer = new() { Interval = TimeSpan.FromSeconds(3) };
+                hideTimer.Tick += (s, e) =>
                 {
-                    List<ReportLink> found = ScanReportLinksCore(root, jobNos);
-                    Application.Current?.Dispatcher.Invoke(() =>
+                    hideTimer.Stop();
+                    if (!_reportScan.IsRunning)
                     {
-                        if (seq != _scanSeq)
-                        {
-                            return;
-                        }
-                        // 记录到数据库（全量刷新）
-                        _db.FreeSql.Delete<ReportLink>().Where("1=1").ExecuteAffrows();
-                        if (found.Count > 0)
-                        {
-                            _db.FreeSql.Insert(found).ExecuteAffrows();
-                        }
-                        _reportLinks.Clear();
-                        foreach (ReportLink link in found)
-                        {
-                            _reportLinks[link.JobNo] = link;
-                        }
-                        UpdatePlanReportFlags();
-                        PlansView.Refresh();
-                        _logger.Info($"报告扫描完成: {root} 下匹配 {found.Count} 个报告夹");
-                        // 扫描完成后提示用户建立计划索引（界面侧决定是否提示、提示一次）
-                        ReportScanCompleted?.Invoke(found.Count);
-                        Action<int> callback = _scanCallback;
-                        _scanCallback = null;
-                        callback?.Invoke(found.Count);
-                    });
-                }
-                catch (Exception ex)
-                {
-                    _logger.Warn($"报告扫描失败: {ex.Message}");
-                }
-            });
+                        ScanProgressVisible = false;
+                    }
+                };
+                hideTimer.Start();
+            }
         }
 
         /// <summary>
-        /// 报告夹目录扫描核心逻辑（纯文件系统操作，可在后台线程执行）
+        /// 扫描完成（服务层已切回 UI 线程）：重载 report_links 缓存与计划表报告标记，
+        /// 并重新拉取 plans（ReportStatus 可能被扫描改写）
         /// </summary>
-        private static List<ReportLink> ScanReportLinksCore(string root, List<string> jobNos)
+        private void OnReportScanCompletedInternal(int matchedCount)
         {
-            List<ReportLink> found = [];
-            HashSet<string> matched = [];
-            foreach (string dir in EnumerateDirs(root, 4))
+            try
             {
-                string name = Path.GetFileName(dir);
-                string job = jobNos.FirstOrDefault(j => !matched.Contains(j) && name.IndexOf(j, StringComparison.OrdinalIgnoreCase) >= 0);
-                if (job == null)
+                LoadReportLinksFromDb();
+                // ReportStatus 被扫描写回了数据库，重新拉取 plans 以刷新表格显示
+                List<Plan> plans = _db.FreeSql.Select<Plan>().OrderByDescending(p => p.Id).ToList();
+                Plans.Clear();
+                foreach (Plan plan in plans)
                 {
-                    continue;
+                    Plans.Add(plan);
                 }
-                string reportSub;
-                string overview;
-                try
+                UpdatePlanReportFlags();
+                // 计划表快照同步更新（扫描写回的 ReportStatus 不算用户未提交修改）
+                _planOriginals.Clear();
+                foreach (Plan plan in Plans)
                 {
-                    reportSub = Directory.GetDirectories(dir)
-                        .FirstOrDefault(d => Path.GetFileName(d).Equals("Report", StringComparison.OrdinalIgnoreCase));
-                    overview = Directory.GetFiles(dir, "*.xls*")
-                        .OrderByDescending(f => f.EndsWith(".xlsx", StringComparison.OrdinalIgnoreCase))
-                        .FirstOrDefault();
+                    _planOriginals[plan.Id] = ClonePlan(plan);
                 }
-                catch
-                {
-                    continue;
-                }
-                if (reportSub == null || overview == null)
-                {
-                    continue;
-                }
-                matched.Add(job);
-                found.Add(new ReportLink
-                {
-                    JobNo = job,
-                    ReportDir = reportSub,
-                    OverviewFile = overview,
-                    UpdatedAt = DateTime.Now
-                });
-                if (matched.Count == jobNos.Count)
-                {
-                    break; // 全部匹配完成，提前结束扫描
-                }
+                PlansView.Refresh();
+                OnPropertyChanged(nameof(HasPendingChanges));
+                OnPropertyChanged(nameof(PendingText));
             }
-            return found;
+            catch (Exception ex)
+            {
+                _logger.Warn($"扫描完成后刷新计划表失败: {ex.Message}");
+            }
+            // 转发给界面（提示建立计划索引等）与手动触发的回调
+            ReportScanCompleted?.Invoke(matchedCount);
+            Action<int> callback = _scanCallback;
+            _scanCallback = null;
+            callback?.Invoke(matchedCount);
         }
 
         /// <summary>
@@ -773,34 +772,6 @@ namespace ORT一键报告.Plans.ViewModels
             foreach (Plan plan in Plans)
             {
                 plan.HasReportLink = !string.IsNullOrWhiteSpace(plan.JobNo) && _reportLinks.ContainsKey(plan.JobNo);
-            }
-        }
-
-        /// <summary>
-        /// 递归枚举子目录（限制深度，避免过深目录树）
-        /// </summary>
-        private static IEnumerable<string> EnumerateDirs(string root, int depth)
-        {
-            if (depth < 0)
-            {
-                yield break;
-            }
-            string[] dirs;
-            try
-            {
-                dirs = Directory.GetDirectories(root);
-            }
-            catch
-            {
-                yield break;
-            }
-            foreach (string dir in dirs)
-            {
-                yield return dir;
-                foreach (string sub in EnumerateDirs(dir, depth - 1))
-                {
-                    yield return sub;
-                }
             }
         }
 
@@ -960,32 +931,29 @@ namespace ORT一键报告.Plans.ViewModels
                 StatusMessage = LanguageService.Get("Plans_NoAddPermission");
                 return;
             }
-            Views.WindowRequisitionEdit editWindow = new(_db, _permission, _adminService, _excelService, null)
+            Views.WindowRequisitionEdit editWindow = new(_db, _permission, _adminService, _excelService, null);
+            // 非模态：保存后通过 Saved 事件回调处理暂存/提审，窗口打开期间主界面仍可操作
+            editWindow.Saved += (reqResult, planResult, editId) =>
             {
+                if (NeedsReview)
+                {
+                    _reviewService.SubmitPlanRequest("新增", planResult, null, _permission.CurrentUser);
+                    _reviewService.SubmitRequisitionRequest("新增", reqResult, null, _permission.CurrentUser);
+                    StatusMessage = LanguageService.Get("Plans_AddSubmitted");
+                    _ = System.Windows.MessageBox.Show(LocalizationHelper.Get("Msg_AddSubmitted"), LanguageService.Get("Cap_SubmitSuccess"));
+                }
+                else
+                {
+                    // 暂存到内存（需点“提交保存”才写库）
+                    _pendingReqAdded.Add(reqResult);
+                    _pendingPlanAdded.Add(planResult);
+                    Requisitions.Insert(0, reqResult);
+                    Plans.Insert(0, planResult);
+                    NotifyPendingChanged();
+                    StatusMessage = PendingText;
+                }
             };
-            if (editWindow.ShowDialog() != true)
-            {
-                return;
-            }
-            Requisition reqResult = editWindow.RequisitionResult;
-            Plan planResult = editWindow.PlanResult;
-            if (NeedsReview)
-            {
-                _reviewService.SubmitPlanRequest("新增", planResult, null, _permission.CurrentUser);
-                _reviewService.SubmitRequisitionRequest("新增", reqResult, null, _permission.CurrentUser);
-                StatusMessage = LanguageService.Get("Plans_AddSubmitted");
-                _ = System.Windows.MessageBox.Show(LocalizationHelper.Get("Msg_AddSubmitted"), LanguageService.Get("Cap_SubmitSuccess"));
-            }
-            else
-            {
-                // 暂存到内存（需点“提交保存”才写库）
-                _pendingReqAdded.Add(reqResult);
-                _pendingPlanAdded.Add(planResult);
-                Requisitions.Insert(0, reqResult);
-                Plans.Insert(0, planResult);
-                NotifyPendingChanged();
-                StatusMessage = PendingText;
-            }
+            editWindow.Show();
         }
 
         private void AddPlan()
@@ -995,28 +963,25 @@ namespace ORT一键报告.Plans.ViewModels
                 StatusMessage = LanguageService.Get("Plans_NoAddPermission");
                 return;
             }
-            Views.WindowPlanDirectEdit editWindow = new(_db, _permission, _adminService, _excelService, null)
+            Views.WindowPlanDirectEdit editWindow = new(_db, _permission, _adminService, _excelService, null);
+            editWindow.Saved += (planResult, editId) =>
             {
+                if (NeedsReview)
+                {
+                    _reviewService.SubmitPlanRequest("新增", planResult, null, _permission.CurrentUser);
+                    StatusMessage = LanguageService.Get("Plans_AddSubmitted");
+                    _ = System.Windows.MessageBox.Show(LocalizationHelper.Get("Msg_AddSubmitted"), LanguageService.Get("Cap_SubmitSuccess"));
+                }
+                else
+                {
+                    // 暂存到内存（需点“提交保存”才写库）
+                    _pendingPlanAdded.Add(planResult);
+                    Plans.Insert(0, planResult);
+                    NotifyPendingChanged();
+                    StatusMessage = PendingText;
+                }
             };
-            if (editWindow.ShowDialog() != true)
-            {
-                return;
-            }
-            Plan planResult = editWindow.PlanResult;
-            if (NeedsReview)
-            {
-                _reviewService.SubmitPlanRequest("新增", planResult, null, _permission.CurrentUser);
-                StatusMessage = LanguageService.Get("Plans_AddSubmitted");
-                _ = System.Windows.MessageBox.Show(LocalizationHelper.Get("Msg_AddSubmitted"), LanguageService.Get("Cap_SubmitSuccess"));
-            }
-            else
-            {
-                // 暂存到内存（需点“提交保存”才写库）
-                _pendingPlanAdded.Add(planResult);
-                Plans.Insert(0, planResult);
-                NotifyPendingChanged();
-                StatusMessage = PendingText;
-            }
+            editWindow.Show();
         }
 
         private void EditRequisition()
@@ -1025,39 +990,38 @@ namespace ORT一键报告.Plans.ViewModels
             {
                 return;
             }
-            Views.WindowRequisitionEdit editWindow = new(_db, _permission, _adminService, _excelService, SelectedRequisition)
+            Requisition target = SelectedRequisition;
+            Views.WindowRequisitionEdit editWindow = new(_db, _permission, _adminService, _excelService, target);
+            editWindow.Saved += (reqResult, planResult, editId) =>
             {
-            };
-            if (editWindow.ShowDialog() != true)
-            {
-                return;
-            }
-            if (NeedsReview)
-            {
-                _reviewService.SubmitRequisitionRequest("编辑", editWindow.RequisitionResult, SelectedRequisition.Id, _permission.CurrentUser);
-                if (editWindow.PlanResult != null)
+                if (NeedsReview)
                 {
-                    _reviewService.SubmitPlanRequest("编辑", editWindow.PlanResult, editWindow.PlanResult.Id, _permission.CurrentUser);
-                }
-                StatusMessage = LanguageService.Get("Plans_EditSubmitted");
-                _ = System.Windows.MessageBox.Show(LocalizationHelper.Get("Msg_EditSubmitted"), LanguageService.Get("Cap_SubmitSuccess"));
-            }
-            else
-            {
-                // 暂存到内存：把对话框结果复制回集合中的对象（快照对比将识别为修改）
-                CopyRequisitionFields(editWindow.RequisitionResult, SelectedRequisition);
-                if (editWindow.PlanResult != null)
-                {
-                    // 同步暂存关联计划的修改（按 Id 找到集合内对象）
-                    Plan existingPlan = Plans.FirstOrDefault(p => p.Id == editWindow.PlanResult.Id);
-                    if (existingPlan != null)
+                    _reviewService.SubmitRequisitionRequest("编辑", reqResult, target.Id, _permission.CurrentUser);
+                    if (planResult != null)
                     {
-                        CopyPlanFields(editWindow.PlanResult, existingPlan);
+                        _reviewService.SubmitPlanRequest("编辑", planResult, planResult.Id, _permission.CurrentUser);
                     }
+                    StatusMessage = LanguageService.Get("Plans_EditSubmitted");
+                    _ = System.Windows.MessageBox.Show(LocalizationHelper.Get("Msg_EditSubmitted"), LanguageService.Get("Cap_SubmitSuccess"));
                 }
-                NotifyPendingChanged();
-                StatusMessage = PendingText;
-            }
+                else
+                {
+                    // 暂存到内存：把对话框结果复制回集合中的对象（快照对比将识别为修改）
+                    CopyRequisitionFields(reqResult, target);
+                    if (planResult != null)
+                    {
+                        // 同步暂存关联计划的修改（按 Id 找到集合内对象）
+                        Plan existingPlan = Plans.FirstOrDefault(p => p.Id == planResult.Id);
+                        if (existingPlan != null)
+                        {
+                            CopyPlanFields(planResult, existingPlan);
+                        }
+                    }
+                    NotifyPendingChanged();
+                    StatusMessage = PendingText;
+                }
+            };
+            editWindow.Show();
         }
 
         private void EditPlan()
@@ -1066,26 +1030,25 @@ namespace ORT一键报告.Plans.ViewModels
             {
                 return;
             }
-            Views.WindowPlanDirectEdit editWindow = new(_db, _permission, _adminService, _excelService, SelectedPlan)
+            Plan target = SelectedPlan;
+            Views.WindowPlanDirectEdit editWindow = new(_db, _permission, _adminService, _excelService, target);
+            editWindow.Saved += (planResult, editId) =>
             {
+                if (NeedsReview)
+                {
+                    _reviewService.SubmitPlanRequest("编辑", planResult, target.Id, _permission.CurrentUser);
+                    StatusMessage = LanguageService.Get("Plans_EditSubmitted");
+                    _ = System.Windows.MessageBox.Show(LocalizationHelper.Get("Msg_EditSubmitted"), LanguageService.Get("Cap_SubmitSuccess"));
+                }
+                else
+                {
+                    // 暂存到内存：把对话框结果复制回集合中的对象（快照对比将识别为修改）
+                    CopyPlanFields(planResult, target);
+                    NotifyPendingChanged();
+                    StatusMessage = PendingText;
+                }
             };
-            if (editWindow.ShowDialog() != true)
-            {
-                return;
-            }
-            if (NeedsReview)
-            {
-                _reviewService.SubmitPlanRequest("编辑", editWindow.PlanResult, SelectedPlan.Id, _permission.CurrentUser);
-                StatusMessage = LanguageService.Get("Plans_EditSubmitted");
-                _ = System.Windows.MessageBox.Show(LocalizationHelper.Get("Msg_EditSubmitted"), LanguageService.Get("Cap_SubmitSuccess"));
-            }
-            else
-            {
-                // 暂存到内存：把对话框结果复制回集合中的对象（快照对比将识别为修改）
-                CopyPlanFields(editWindow.PlanResult, SelectedPlan);
-                NotifyPendingChanged();
-                StatusMessage = PendingText;
-            }
+            editWindow.Show();
         }
 
         /// <summary>
@@ -1131,6 +1094,7 @@ namespace ORT一键报告.Plans.ViewModels
             to.StartDate = from.StartDate;
             to.EndDate = from.EndDate;
             to.Status = from.Status;
+            to.ReportStatus = from.ReportStatus;
             to.Remark = from.Remark;
             to.UpdatedBy = from.UpdatedBy;
             to.UpdatedAt = from.UpdatedAt;

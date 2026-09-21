@@ -25,13 +25,6 @@
                           ToolTip="{lex:Loc MainWindow_ToolTip_ReportTemplate}"/>
             </MenuItem>
             <MenuItem Header="{lex:Loc MainWindow_Menu_Settings}" Click="MenuItem_Settings_Click"/>
-            <!--用户：用户中心（个人资料/密码）与登录/注销-->
-            <MenuItem Header="{lex:Loc MainWindow_Menu_User}">
-                <MenuItem Header="{lex:Loc MainWindow_Menu_UserCenter}" Click="MenuItem_UserCenter_Click"
-                          ToolTip="{lex:Loc MainWindow_Menu_UserCenterHint}"/>
-                <Separator/>
-                <MenuItem x:Name="menu_account" Header="{lex:Loc MainWindow_Menu_Account}" Click="MenuItem_Login_Click"/>
-            </MenuItem>
             <MenuItem Header="{lex:Loc MainWindow_Menu_Logout}" Click="MenuItem_Quit_Click"/>
         </Menu>
         <Grid Grid.Row="1" Margin="0">
@@ -49,7 +42,19 @@
                 <Button x:Name="btn_admin" Content="{lex:Loc MainWindow_Button_Admin}" Style="{StaticResource PrimaryButton}" FontSize="26" FontWeight="Bold" Click="Button_Admin_Click"
                         Margin="0,0,0,14" ToolTip="{lex:Loc MainWindow_ToolTip_Admin}"/>
                 <Button x:Name="btn_review" Content="{lex:Loc MainWindow_Button_Review}" Style="{StaticResource PrimaryButton}" FontSize="26" FontWeight="Bold" Click="Button_Review_Click"
-                        ToolTip="{lex:Loc MainWindow_ToolTip_Review}"/>
+                        Margin="0,0,0,14" ToolTip="{lex:Loc MainWindow_ToolTip_Review}"/>
+                <!--用户：用户中心（个人资料/密码）与登录/注销；点击弹出菜单-->
+                <Button x:Name="btn_user" Content="{lex:Loc MainWindow_Button_User}" Style="{StaticResource PrimaryButton}" FontSize="26" FontWeight="Bold" Click="Button_User_Click"
+                        ToolTip="{lex:Loc MainWindow_ToolTip_User}">
+                    <Button.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem x:Name="menu_user_center" Header="{lex:Loc MainWindow_Menu_UserCenter}" Click="MenuItem_UserCenter_Click"
+                                      ToolTip="{lex:Loc MainWindow_Menu_UserCenterHint}"/>
+                            <Separator/>
+                            <MenuItem x:Name="menu_account" Header="{lex:Loc MainWindow_Menu_Account}" Click="MenuItem_Login_Click"/>
+                        </ContextMenu>
+                    </Button.ContextMenu>
+                </Button>
             </StackPanel>
         </Grid>
 

@@ -45,6 +45,12 @@ namespace ORT一键报告.Plans.Views
         /// </summary>
         public Plan PlanResult { get; private set; }
 
+        /// <summary>
+        /// 保存成功事件（非模态窗口用）：参数为 (领退结果, 计划结果, 编辑目标Id)。
+        /// 调用方订阅后处理暂存/提审逻辑，窗口自身只负责构造结果并关闭。
+        /// </summary>
+        public event Action<Requisition, Plan, long> Saved;
+
         public WindowRequisitionEdit(DatabaseService db, IPermissionService permission, AdminService admin,
             PlanExcelService excelService, Requisition editTarget = null)
         {
@@ -60,6 +66,7 @@ namespace ORT一键报告.Plans.Views
             // 字典初始化
             cb_testItem.ItemsSource = _admin.GetTestItems().Select(t => t.Name).ToList();
             cb_stage.ItemsSource = _admin.GetStages().Select(s => s.Name).ToList();
+            cb_reportStatus.ItemsSource = Models.ReportStatusKind.All.ToList();
 
             // 开始时间默认与领用日期联动
             dp_reqDate.SelectedDateChanged += (s, e) =>
@@ -101,6 +108,7 @@ namespace ORT一键报告.Plans.Views
             }
             SetCombo(cb_testItem, _associatedPlan.TestItem);
             SetCombo(cb_stage, _associatedPlan.Stage);
+            SetCombo(cb_reportStatus, _associatedPlan.ReportStatus);
             dp_startDate.SelectedDate = _associatedPlan.StartDate;
             txt_jobNo.Text = _associatedPlan.JobNo;
             txt_sampleSize.Text = _associatedPlan.SampleSize;
@@ -429,7 +437,7 @@ namespace ORT一键报告.Plans.Views
             }
 
             RequisitionResult = req;
-
+        
             // 新增：同步构造计划记录；编辑：构造关联计划的修改结果（若找到关联计划）
             if (_editTarget == null)
             {
@@ -447,6 +455,7 @@ namespace ORT一键报告.Plans.Views
                     TestPeriod = string.IsNullOrWhiteSpace(txt_testPeriod.Text) ? null : txt_testPeriod.Text.Trim(),
                     EndDate = dp_endDate.SelectedDate,
                     Status = "Ongoing",
+                    ReportStatus = cb_reportStatus.SelectedItem as string,
                     CreatedBy = _permission.CurrentUser,
                     CreatedAt = DateTime.Now,
                     UpdatedBy = _permission.CurrentUser,
@@ -473,18 +482,20 @@ namespace ORT一键报告.Plans.Views
                 plan.TestPeriod = string.IsNullOrWhiteSpace(txt_testPeriod.Text) ? null : txt_testPeriod.Text.Trim();
                 plan.EndDate = dp_endDate.SelectedDate;
                 plan.ModelName = req.ModelName;
+                plan.ReportStatus = cb_reportStatus.SelectedItem as string;
                 plan.UpdatedBy = _permission.CurrentUser;
                 plan.UpdatedAt = DateTime.Now;
                 PlanResult = plan;
             }
-
-            // 只构造结果，不写数据库；由调用方决定暂存/提审
-            DialogResult = true;
+        
+            // 非模态窗口：触发 Saved 事件后关闭，由调用方处理暂存/提审
+            Saved?.Invoke(RequisitionResult, PlanResult, _editTarget?.Id ?? 0);
+            Close();
         }
-
+        
         private void Btn_Cancel_Click(object sender, RoutedEventArgs e)
         {
-            DialogResult = false;
+            Close();
         }
 
         private string SaveSnFile(string sourcePath, string key, string modelName)

@@ -161,6 +161,8 @@ namespace ORT一键报告
             menu_account.Header = _auth.CurrentUser == null
                 ? LanguageService.Get("Main_Login")
                 : LanguageService.Get("Main_Logout");
+            // 用户中心仅登录后可用（游客无个人资料可管理）
+            menu_user_center.IsEnabled = _auth.CurrentUser != null;
             txt_user_identity.Text = string.Format(LanguageService.Get("Main_IdentityFormat"), _auth.CurrentDisplayName);
             btn_report.IsEnabled = _permission.Can("report.use");
             btn_admin.IsEnabled = _permission.Can("admin.manage");
@@ -171,6 +173,18 @@ namespace ORT一键报告
 
             // 权限变化时关闭当前无权限访问的子窗口
             CloseUnauthorizedWindows();
+        }
+
+        /// <summary>
+        /// 「用户」按钮：点击弹出上下文菜单（用户中心 / 登录-注销）
+        /// </summary>
+        private void Button_User_Click(object sender, RoutedEventArgs e)
+        {
+            if (btn_user.ContextMenu != null)
+            {
+                btn_user.ContextMenu.PlacementTarget = btn_user;
+                btn_user.ContextMenu.IsOpen = true;
+            }
         }
 
         /// <summary>

@@ -2369,4 +2369,23 @@ Build the plan index now (compress repeated text into shared templates)?</value>
   <data name="Plans_Msg_TemplateFileMissing" xml:space="preserve"><value>No report file found in the report folder: {0}</value></data>
   <data name="Dlg_PickReportFile" xml:space="preserve"><value>Choose the report file to open</value></data>
   <data name="Dlg_PickReportFileHint" xml:space="preserve"><value>The report folder has several files; choose the one to open: {0}</value></data>
+  <data name="Plans_ReportStatus" xml:space="preserve"><value>Report Status</value></data>
+  <data name="Plans_ReportStatusHint" xml:space="preserve"><value>Determined automatically from the TestStatus sheet when scanning report folders (Complete/In Progress); once you manually pick "Not Required", scanning no longer overwrites that record.</value></data>
+  <data name="ReportScan_TaskName" xml:space="preserve"><value>Report Scan</value></data>
+  <data name="ReportScan_ProgressFormat" xml:space="preserve"><value>Scanning report folders {0}/{1}: {2}</value></data>
+  <data name="ReportScan_Interrupted" xml:space="preserve"><value>Report scan interrupted</value></data>
+  <data name="ReportScan_Stop" xml:space="preserve"><value>Stop Scan</value></data>
+  <data name="ReportScan_SettingsTitle" xml:space="preserve"><value>Report Scan</value></data>
+  <data name="ReportScan_SettingsHint" xml:space="preserve"><value>Scanning report folders matches report directories and determines each plan's "Report Status" from the overview's TestStatus sheet. This is a long-running task, mutually exclusive with Plan Index and One-Click Report; trigger it manually, or let it run silently in the background after the computer has been idle for a while.</value></data>
+  <data name="ReportScan_AutoLabel" xml:space="preserve"><value>Auto-scan report folders when idle</value></data>
+  <data name="ReportScan_IdleSecondsLabel" xml:space="preserve"><value>Idle seconds before start</value></data>
+  <data name="ReportScan_IdleSecondsHint" xml:space="preserve"><value>Idle seconds must be at least 10 (default 300).</value></data>
+  <data name="Interrupt_WaitTitle" xml:space="preserve"><value>Interrupting</value></data>
+  <data name="Interrupt_WaitMessageFormat" xml:space="preserve"><value>Interrupting "{0}"; continuing after the current report folder finishes reading…</value></data>
+  <data name="Interrupt_WaitHint" xml:space="preserve"><value>To keep data intact, the report folder currently being processed must finish reading before it stops. Please wait.</value></data>
+  <data name="MainWindow_Button_User" xml:space="preserve"><value>User</value></data>
+  <data name="MainWindow_ToolTip_User" xml:space="preserve"><value>User center and login/logout</value></data>
+  <data name="Login_GuestButton" xml:space="preserve"><value>Continue as Guest</value></data>
+  <data name="Login_GuestButtonHint" xml:space="preserve"><value>Enter as a guest without account verification (view only; no edit/review/admin permissions)</value></data>
+  <data name="Login_ExitButton" xml:space="preserve"><value>Exit</value></data>
 </root>

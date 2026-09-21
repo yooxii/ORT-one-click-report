@@ -278,37 +278,44 @@ namespace ORT一键报告.Reports.Views
 
         private async void DoReport_Click(object sender, RoutedEventArgs e)
         {
-            PopupWindow popup = PopupWindow.ShowBusy(LanguageService.Get("Msg_PleaseWait"), this);
             if (sender is not Button btn)
             {
                 return;
             }
+            // 一键报告读取/生成属于高耗时任务：走协调器，若报告扫描/计划索引正在跑，
+            // 先中断并弹「正在中断」等待窗，等其收尾后再开始，避免两者同时读磁盘/数据库
+            HighCostTaskCoordinator coordinator = App.ServiceProvider.GetRequiredService<HighCostTaskCoordinator>();
             btn.IsEnabled = false;
-
+            PopupWindow popup = null;
             try
             {
-                string ReportName = MainVM.ReportPath;
-                if (string.IsNullOrWhiteSpace(ReportName) || !File.Exists(ReportName))
+                await coordinator.RequestStartAsync(LanguageService.Get("MainWindow_Button_Report"), async ct =>
                 {
-                    throw new FileNotFoundException("报告概览文件不存在");
-                }
-                await MainVM.ReadInfoFromOverview(ReportName);
-                _logger.Info("报告概览读取完成");
+                    // 进入协调器占用后再弹「请稍候」（中断等待窗已在协调器内部处理）
+                    popup = PopupWindow.ShowBusy(LanguageService.Get("Msg_PleaseWait"), this);
+                    string ReportName = MainVM.ReportPath;
+                    if (string.IsNullOrWhiteSpace(ReportName) || !File.Exists(ReportName))
+                    {
+                        throw new FileNotFoundException("报告概览文件不存在");
+                    }
+                    await MainVM.ReadInfoFromOverview(ReportName);
+                    _logger.Info("报告概览读取完成");
 
-                // 仅对已打开的 Tab 执行读取与填充
-                foreach ((TabItem _, UserControl page) in _tabs.Values)
-                {
-                    if (page is BaseReportPage basePage)
+                    // 仅对已打开的 Tab 执行读取与填充
+                    foreach ((TabItem _, UserControl page) in _tabs.Values)
                     {
-                        basePage.ReadReportHeader();
-                        basePage.SetReportResultData();
+                        if (page is BaseReportPage basePage)
+                        {
+                            basePage.ReadReportHeader();
+                            basePage.SetReportResultData();
+                        }
+                        else if (page is EMIReportPage emiPage)
+                        {
+                            emiPage.ReadReportHeader();
+                        }
                     }
-                    else if (page is EMIReportPage emiPage)
-                    {
-                        emiPage.ReadReportHeader();
-                    }
-                }
-                _logger.Info("表头数据已呈现至窗口");
+                    _logger.Info("表头数据已呈现至窗口");
+                });
             }
             catch (FileNotFoundException ex)
             {
@@ -322,7 +329,7 @@ namespace ORT一键报告.Reports.Views
             }
             finally
             {
-                popup.Close();
+                popup?.Close();
                 btn.IsEnabled = true;
             }
         }

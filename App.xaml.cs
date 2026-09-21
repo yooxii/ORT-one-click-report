@@ -93,6 +93,10 @@ namespace ORT一键报告
                 services.AddSingleton<TestPlanService>();
                 services.AddSingleton<PlanIndexService>();
                 services.AddSingleton<PlanIndexScheduler>();
+                services.AddSingleton<ReportStatusReader>();
+                services.AddSingleton<ReportScanService>();
+                services.AddSingleton<ReportScanScheduler>();
+                services.AddSingleton<HighCostTaskCoordinator>();
 
                 // ViewModels
                 services.AddTransient<MainViewModel>();
@@ -146,6 +150,33 @@ namespace ORT一键报告
                 catch (Exception ex)
                 {
                     logger.Warn(ex, "启动时修正公式文本脏数据失败");
+                }
+
+                // 登录入口前置：先决定身份（登录 / 游客 / 退出），再打开主界面。
+                // 原「取消」语义改为「退出程序」；新增「游客登录」以 CurrentUser=null 进入。
+                Main.Views.WindowLogin login = new();
+                bool? loginResult = login.ShowDialog();
+                if (loginResult != true && !login.IsGuestMode)
+                {
+                    // 用户点了「退出」：不打开主窗口，直接结束
+                    logger.Info("用户在登录窗口选择退出，程序关闭");
+                    Shutdown(0);
+                    return;
+                }
+                logger.Info(loginResult == true ? "登录成功，打开主界面" : "以游客身份进入主界面");
+
+                // 手动创建主窗口（App.xaml 已去掉 StartupUri，以便登录前置）
+                MainWindow mainWindow = new();
+                mainWindow.Show();
+
+                // 主窗口显示后启动闲置报告扫描调度（与计划索引调度并列）
+                try
+                {
+                    ServiceProvider.GetRequiredService<ReportScanScheduler>().Start();
+                }
+                catch (Exception ex)
+                {
+                    logger.Warn($"启动闲置报告扫描失败: {ex.Message}");
                 }
             }
             catch (Exception ex)

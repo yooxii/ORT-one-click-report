@@ -44,6 +44,7 @@
                         <TreeViewItem Header="{lex:Loc Settings_MailTemplates}" Tag="sec_mail_template"/>
                     </TreeViewItem>
                     <TreeViewItem Header="{lex:Loc PlanIndex_Settings_Title}" Tag="sec_planindex"/>
+                    <TreeViewItem Header="{lex:Loc ReportScan_SettingsTitle}" Tag="sec_reportscan"/>
                 </TreeView>
             </DockPanel>
         </Border>
@@ -443,6 +444,22 @@
                             <TextBox x:Name="txt_planIndexIdle" Width="70" VerticalContentAlignment="Center" Margin="4,0,0,0"/>
                         </StackPanel>
                         <TextBlock Text="{lex:Loc PlanIndex_Settings_IdleHint}" Foreground="{DynamicResource TextSecondaryBrush}"
+                                   TextWrapping="Wrap" Margin="0,4,0,0"/>
+                    </StackPanel>
+                </Border>
+
+                <!--报告扫描（空闲自动执行 + 报告状态判定）；仅管理员可见-->
+                <Border x:Name="sec_reportscan" Padding="0,10">
+                    <StackPanel>
+                        <TextBlock Text="{lex:Loc ReportScan_SettingsTitle}" FontSize="16" FontWeight="SemiBold"/>
+                        <TextBlock Text="{lex:Loc ReportScan_SettingsHint}" Foreground="{DynamicResource TextSecondaryBrush}"
+                                   TextWrapping="Wrap" Margin="0,2,0,8"/>
+                        <CheckBox x:Name="chk_reportScanAuto" Content="{lex:Loc ReportScan_AutoLabel}" Margin="0,2,0,8"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                            <Label Content="{lex:Loc ReportScan_IdleSecondsLabel}" VerticalContentAlignment="Center"/>
+                            <TextBox x:Name="txt_reportScanIdle" Width="70" VerticalContentAlignment="Center" Margin="4,0,0,0"/>
+                        </StackPanel>
+                        <TextBlock Text="{lex:Loc ReportScan_IdleSecondsHint}" Foreground="{DynamicResource TextSecondaryBrush}"
                                    TextWrapping="Wrap" Margin="0,4,0,0"/>
                     </StackPanel>
                 </Border>

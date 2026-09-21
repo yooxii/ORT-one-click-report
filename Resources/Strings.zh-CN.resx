@@ -2369,4 +2369,23 @@
   <data name="Plans_Msg_TemplateFileMissing" xml:space="preserve"><value>报告文件夹里没有找到报告文件：{0}</value></data>
   <data name="Dlg_PickReportFile" xml:space="preserve"><value>选择要查看的报告文件</value></data>
   <data name="Dlg_PickReportFileHint" xml:space="preserve"><value>报告文件夹里有多个文件，请选择要打开的那一份：{0}</value></data>
+  <data name="Plans_ReportStatus" xml:space="preserve"><value>报告状态</value></data>
+  <data name="Plans_ReportStatusHint" xml:space="preserve"><value>扫描报告文件夹时按 TestStatus 表自动判定（已完成/进行中）；手工选「无要求」后扫描不再覆盖该记录。</value></data>
+  <data name="ReportScan_TaskName" xml:space="preserve"><value>报告扫描</value></data>
+  <data name="ReportScan_ProgressFormat" xml:space="preserve"><value>正在扫描报告文件夹 {0}/{1}：{2}</value></data>
+  <data name="ReportScan_Interrupted" xml:space="preserve"><value>报告扫描已中断</value></data>
+  <data name="ReportScan_Stop" xml:space="preserve"><value>停止扫描</value></data>
+  <data name="ReportScan_SettingsTitle" xml:space="preserve"><value>报告扫描</value></data>
+  <data name="ReportScan_SettingsHint" xml:space="preserve"><value>扫描报告文件夹会匹配报告夹、并按报告概览的 TestStatus 表判定各计划的「报告状态」。该任务耗时较长，与计划索引、一键报告互斥；可手动触发，也可在电脑闲置一段时间后后台静默执行。</value></data>
+  <data name="ReportScan_AutoLabel" xml:space="preserve"><value>闲置时自动扫描报告文件夹</value></data>
+  <data name="ReportScan_IdleSecondsLabel" xml:space="preserve"><value>闲置多少秒后开始</value></data>
+  <data name="ReportScan_IdleSecondsHint" xml:space="preserve"><value>闲置秒数至少 10 秒（默认 300 秒）。</value></data>
+  <data name="Interrupt_WaitTitle" xml:space="preserve"><value>正在中断</value></data>
+  <data name="Interrupt_WaitMessageFormat" xml:space="preserve"><value>正在中断「{0}」，等当前报告夹读取完成后继续…</value></data>
+  <data name="Interrupt_WaitHint" xml:space="preserve"><value>为保证数据完整，当前正在处理的报告夹读完才会停下，请稍候。</value></data>
+  <data name="MainWindow_Button_User" xml:space="preserve"><value>用户</value></data>
+  <data name="MainWindow_ToolTip_User" xml:space="preserve"><value>用户中心与登录/注销</value></data>
+  <data name="Login_GuestButton" xml:space="preserve"><value>游客登录</value></data>
+  <data name="Login_GuestButtonHint" xml:space="preserve"><value>不验证账号，以游客身份进入（仅可浏览，无编辑/审核/管理权限）</value></data>
+  <data name="Login_ExitButton" xml:space="preserve"><value>退出</value></data>
 </root>

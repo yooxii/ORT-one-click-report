@@ -18,6 +18,13 @@ namespace ORT一键报告.Main.Views
         /// </summary>
         private (string Username, string Password)? _cookie;
 
+        /// <summary>
+        /// 是否以游客身份进入（点了「游客登录」按钮）。
+        /// 用于区分「游客进入」与「退出程序」：两者 DialogResult 都是 false，
+        /// 调用方按该标志决定是打开主窗口还是关闭程序。
+        /// </summary>
+        public bool IsGuestMode { get; private set; }
+
         public WindowLogin()
         {
             InitializeComponent();
@@ -101,6 +108,16 @@ namespace ORT一键报告.Main.Views
 
         private void Btn_Cancel_Click(object sender, RoutedEventArgs e)
         {
+            // 「退出」：不登录也不以游客进入，直接关闭程序（IsGuestMode 保持 false）
+            DialogResult = false;
+        }
+
+        /// <summary>
+        /// 「游客登录」：不验证账号，以游客身份（CurrentUser=null）进入主界面
+        /// </summary>
+        private void Btn_Guest_Click(object sender, RoutedEventArgs e)
+        {
+            IsGuestMode = true;
             DialogResult = false;
         }
     }

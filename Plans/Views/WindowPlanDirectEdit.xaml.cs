@@ -27,6 +27,12 @@ namespace ORT一键报告.Plans.Views
         /// </summary>
         public Plan PlanResult { get; private set; }
 
+        /// <summary>
+        /// 保存成功事件（非模态窗口用）：参数为 (计划结果, 编辑目标Id)。
+        /// 调用方订阅后处理暂存/提审逻辑，窗口自身只负责构造结果并关闭。
+        /// </summary>
+        public event Action<Plan, long> Saved;
+
         public WindowPlanDirectEdit(DatabaseService db, IPermissionService permission, AdminService admin,
             PlanExcelService excelService, Plan editTarget = null)
         {
@@ -41,6 +47,7 @@ namespace ORT一键报告.Plans.Views
 
             cb_testItem.ItemsSource = _admin.GetTestItems().Select(t => t.Name).ToList();
             cb_stage.ItemsSource = _admin.GetStages().Select(s => s.Name).ToList();
+            cb_reportStatus.ItemsSource = Models.ReportStatusKind.All.ToList();
 
             if (editTarget != null)
             {
@@ -54,6 +61,7 @@ namespace ORT一键报告.Plans.Views
         {
             SetCombo(cb_testItem, plan.TestItem);
             SetCombo(cb_stage, plan.Stage);
+            SetCombo(cb_reportStatus, plan.ReportStatus);
             dp_startDate.SelectedDate = plan.StartDate;
             txt_model.Text = plan.ModelName;
             txt_jobNo.Text = plan.JobNo;
@@ -230,19 +238,21 @@ namespace ORT一键报告.Plans.Views
             plan.TestPeriod = string.IsNullOrWhiteSpace(txt_testPeriod.Text) ? null : txt_testPeriod.Text.Trim();
             plan.EndDate = dp_endDate.SelectedDate;
             plan.Status = plan.Status ?? "Ongoing";
+            plan.ReportStatus = cb_reportStatus.SelectedItem as string;
             plan.Remark = txt_remark.Text.Trim();
             plan.UpdatedBy = _permission.CurrentUser;
             plan.UpdatedAt = DateTime.Now;
-
+        
             PlanResult = plan;
-
-            // 只构造结果，不写数据库；由调用方决定暂存/提审
-            DialogResult = true;
+        
+            // 非模态窗口：触发 Saved 事件后关闭，由调用方处理暂存/提审
+            Saved?.Invoke(PlanResult, _editTarget?.Id ?? 0);
+            Close();
         }
-
+        
         private void Btn_Cancel_Click(object sender, RoutedEventArgs e)
         {
-            DialogResult = false;
+            Close();
         }
 
         private static Plan ClonePlan(Plan source)

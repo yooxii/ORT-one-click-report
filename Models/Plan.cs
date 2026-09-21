@@ -110,6 +110,15 @@ namespace ORT一键报告.Models
         [Column(StringLength = 32, IsNullable = true)]
         public string Status { get => _status; set => SetProperty(ref _status, value); }
 
+        private string _reportStatus;
+        /// <summary>
+        /// 报告状态（已完成 / 进行中 / 无要求）：扫描报告文件夹时按 TestStatus 表自动写入；
+        /// 用户手工设为「无要求」后不再被扫描覆盖，改回其他值则下次扫描重新接管。
+        /// null 表示尚未扫描且用户未设置。
+        /// </summary>
+        [Column(StringLength = 16, IsNullable = true)]
+        public string ReportStatus { get => _reportStatus; set => SetProperty(ref _reportStatus, value); }
+
         private string _uploadELab;
         /// <summary>
         /// 上傳系統/Upload e-lab

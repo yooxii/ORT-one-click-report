@@ -107,7 +107,7 @@ namespace ORT一键报告.Main.Views
         /// </summary>
         private void HideAdminOnlySections()
         {
-            foreach (string tag in new[] { "sec_mail", "sec_mail_template", "sec_dbpath", "sec_planindex" })
+            foreach (string tag in new[] { "sec_mail", "sec_mail_template", "sec_dbpath", "sec_planindex", "sec_reportscan" })
             {
                 int index = _sections.FindIndex(section => section.Tag == tag);
                 if (index >= 0)
@@ -138,6 +138,7 @@ namespace ORT一键报告.Main.Views
             _sections.Add(("sec_mail", sec_mail));
             _sections.Add(("sec_mail_template", sec_mail_template));
             _sections.Add(("sec_planindex", sec_planindex));
+            _sections.Add(("sec_reportscan", sec_reportscan));
         }
 
         /// <summary>
@@ -548,6 +549,11 @@ namespace ORT一键报告.Main.Views
             chk_planIndexAuto.IsChecked = _settings.GetBool(PlanIndexScheduler.SettingAutoKey, false);
             txt_planIndexIdle.Text = _settings.GetInt(PlanIndexScheduler.SettingIdleMinutesKey,
                 PlanIndexScheduler.DefaultIdleMinutes).ToString();
+
+            // 报告扫描：空闲自动执行（仅管理员界面可见）
+            chk_reportScanAuto.IsChecked = _settings.GetBool(ReportScanScheduler.SettingAutoKey, true);
+            txt_reportScanIdle.Text = _settings.GetInt(ReportScanScheduler.SettingIdleSecondsKey,
+                ReportScanScheduler.DefaultIdleSeconds).ToString();
         }
 
         /* ###############################  保存/应用/取消  ################################ */
@@ -630,6 +636,16 @@ namespace ORT一键报告.Main.Views
                 }
                 _settings.SetBool(PlanIndexScheduler.SettingAutoKey, chk_planIndexAuto.IsChecked == true);
                 _settings.SetInt(PlanIndexScheduler.SettingIdleMinutesKey, idleMinutes);
+
+                // 报告扫描：空闲自动执行（非管理员界面未载入，不得回写）
+                if (!int.TryParse(txt_reportScanIdle.Text?.Trim(), out int scanIdleSeconds) || scanIdleSeconds < 10)
+                {
+                    _ = MessageBox.Show(LanguageService.Get("ReportScan_IdleSecondsHint"), LanguageService.Get("Cap_Info"));
+                    txt_reportScanIdle.Focus();
+                    return false;
+                }
+                _settings.SetBool(ReportScanScheduler.SettingAutoKey, chk_reportScanAuto.IsChecked == true);
+                _settings.SetInt(ReportScanScheduler.SettingIdleSecondsKey, scanIdleSeconds);
             }
             if (_isAdmin)
             {

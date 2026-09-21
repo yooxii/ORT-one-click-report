@@ -104,6 +104,9 @@
 
                 <Label Content="{lex:Loc ReqEdit_Stage}" Grid.Row="1"/>
                 <ComboBox x:Name="cb_stage" Grid.Row="1" Grid.Column="1" Margin="3" VerticalContentAlignment="Center"/>
+                <Label Content="{lex:Loc Plans_ReportStatus}" Grid.Row="1" Grid.Column="2"/>
+                <ComboBox x:Name="cb_reportStatus" Grid.Row="1" Grid.Column="3" Margin="3" VerticalContentAlignment="Center"
+                          ToolTip="{lex:Loc Plans_ReportStatusHint}"/>
 
                 <Label Content="{lex:Loc PlanEdit_WorkNumber}" Grid.Row="2"/>
                 <TextBox x:Name="txt_jobNo" Grid.Row="2" Grid.Column="1" Margin="3" IsReadOnly="True" ToolTip="{lex:Loc ReqEdit_AutoGenRT}"/>
