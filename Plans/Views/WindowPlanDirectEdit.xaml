@@ -40,7 +40,7 @@
                 <TextBox x:Name="txt_model" Grid.Row="1" Grid.Column="3" Margin="3" TextChanged="Txt_Model_TextChanged"/>
                 
                 <Label Content="{lex:Loc PlanEdit_WorkNumber}" Grid.Row="2"/>
-                <TextBox x:Name="txt_jobNo" Grid.Row="2" Grid.Column="1" Margin="3" IsReadOnly="True"
+                <TextBox x:Name="txt_jobNo" Grid.Row="2" Grid.Column="1" Margin="3"
                          ToolTip="{lex:Loc PlanEdit_WorkNumberHint}"/>
                 <Label Content="{lex:Loc PlanEdit_SampleQty}" Grid.Row="2" Grid.Column="2"/>
                 <TextBox x:Name="txt_sampleSize" Grid.Row="2" Grid.Column="3" Margin="3"/>
@@ -76,9 +76,18 @@
             </Grid>
         </GroupBox>
 
-        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
-            <Button Content="{lex:Loc Common_Save}" Width="90" Height="28" Click="Btn_Save_Click" IsDefault="True"/>
-            <Button Content="{lex:Loc Common_Cancel}" Width="90" Height="28" Margin="10,0,0,0" Click="Btn_Cancel_Click" IsCancel="True"/>
-        </StackPanel>
+        <!--按钮行：左侧必填提示，右侧依次为 保存 / 转为领用（仅新增时） / 取消。
+            不写死按钮高度：主题按钮模板自带 Padding(8,7)，写死 28 会把文字压掉-->
+        <Grid Grid.Row="2" Margin="0,10,0,0">
+            <TextBlock Text="{lex:Loc Common_RequiredHint}" VerticalAlignment="Center" TextWrapping="Wrap"
+                       Foreground="{DynamicResource TextSecondaryBrush}"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="{lex:Loc Common_Save}" Width="90" Click="Btn_Save_Click" IsDefault="True"/>
+                <Button x:Name="btn_convertToRequisition" Content="{lex:Loc PlanEdit_ConvertToRequisition}" Width="110"
+                        Margin="10,0,0,0" Click="Btn_ConvertToRequisition_Click"
+                        ToolTip="{lex:Loc PlanEdit_ConvertToRequisitionHint}"/>
+                <Button Content="{lex:Loc Common_Cancel}" Width="90" Margin="10,0,0,0" Click="Btn_Cancel_Click" IsCancel="True"/>
+            </StackPanel>
+        </Grid>
     </Grid>
 </Window>

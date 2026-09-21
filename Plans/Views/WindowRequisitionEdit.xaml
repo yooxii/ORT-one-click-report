@@ -57,8 +57,8 @@
             </Grid>
         </GroupBox>
 
-        <!--序列号：自定义输入 / 上传文件 二选一-->
-        <GroupBox Header="{lex:Loc ReqEdit_SN}" Grid.Row="1" Margin="0,5,0,0" Padding="5">
+        <!--序列号：自定义输入 / 上传文件 二选一（必填）-->
+        <GroupBox Header="{lex:Loc ReqEdit_SN}" Grid.Row="1" Margin="0,5,0,0" Padding="5">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="auto"/>
@@ -109,7 +109,7 @@
                           ToolTip="{lex:Loc Plans_ReportStatusHint}"/>
 
                 <Label Content="{lex:Loc PlanEdit_WorkNumber}" Grid.Row="2"/>
-                <TextBox x:Name="txt_jobNo" Grid.Row="2" Grid.Column="1" Margin="3" IsReadOnly="True" ToolTip="{lex:Loc ReqEdit_AutoGenRT}"/>
+                <TextBox x:Name="txt_jobNo" Grid.Row="2" Grid.Column="1" Margin="3" ToolTip="{lex:Loc ReqEdit_AutoGenRT}"/>
                 <Label Content="{lex:Loc PlanEdit_SampleQty}" Grid.Row="2" Grid.Column="2"/>
                 <TextBox x:Name="txt_sampleSize" Grid.Row="2" Grid.Column="3" Margin="3" ToolTip="{lex:Loc ReqEdit_QtyHint}"/>
 
@@ -139,9 +139,14 @@
             </Grid>
         </GroupBox>
 
-        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
-            <Button Content="{lex:Loc Common_Save}" Width="90" Height="28" Click="Btn_Save_Click" IsDefault="True"/>
-            <Button Content="{lex:Loc Common_Cancel}" Width="90" Height="28" Margin="10,0,0,0" Click="Btn_Cancel_Click" IsCancel="True"/>
-        </StackPanel>
+        <!--按钮行：左侧必填提示，右侧 保存 / 取消。不写死按钮高度（主题按钮模板自带 Padding(8,7)）-->
+        <Grid Grid.Row="4" Margin="0,10,0,0">
+            <TextBlock Text="{lex:Loc Common_RequiredHint}" VerticalAlignment="Center" TextWrapping="Wrap"
+                       Foreground="{DynamicResource TextSecondaryBrush}"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="{lex:Loc Common_Save}" Width="90" Click="Btn_Save_Click" IsDefault="True"/>
+                <Button Content="{lex:Loc Common_Cancel}" Width="90" Margin="10,0,0,0" Click="Btn_Cancel_Click" IsCancel="True"/>
+            </StackPanel>
+        </Grid>
     </Grid>
 </Window>

@@ -24,7 +24,8 @@
             <RowDefinition Height="auto"/>
         </Grid.RowDefinitions>
 
-        <Label Content="{lex:Loc Admin_TestExperiment}" VerticalContentAlignment="Center"/>
+        <Label Content="{lex:Loc Admin_TestExperiment}" VerticalContentAlignment="Center"
+               Style="{StaticResource RequiredFieldLabel}"/>
         <TextBox x:Name="txt_name" Grid.Column="1" Margin="5" VerticalContentAlignment="Center"/>
 
         <Label Grid.Row="1" Content="{lex:Loc Admin_TestTime}" VerticalContentAlignment="Center"/>
@@ -56,9 +57,14 @@
         <Label Grid.Row="6" Content="{lex:Loc Admin_Remark}" VerticalContentAlignment="Center"/>
         <TextBox x:Name="txt_remark" Grid.Row="6" Grid.Column="1" Margin="5" VerticalContentAlignment="Center"/>
 
-        <StackPanel Grid.Row="7" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
-            <Button Content="{lex:Loc Common_OK}" Width="90" Click="Btn_OK_Click" IsDefault="True"/>
-            <Button Content="{lex:Loc Common_Cancel}" Width="90" Margin="10,0,0,0" Click="Btn_Cancel_Click" IsCancel="True"/>
-        </StackPanel>
+        <!--按钮行：左侧必填提示，右侧 确定 / 取消（不写死按钮高度，避免压掉文字）-->
+        <Grid Grid.Row="7" Grid.ColumnSpan="2" Margin="0,12,0,0">
+            <TextBlock Text="{lex:Loc Common_RequiredHint}" VerticalAlignment="Center" TextWrapping="Wrap"
+                       Foreground="{DynamicResource TextSecondaryBrush}"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="{lex:Loc Common_OK}" Width="90" Click="Btn_OK_Click" IsDefault="True"/>
+                <Button Content="{lex:Loc Common_Cancel}" Width="90" Margin="10,0,0,0" Click="Btn_Cancel_Click" IsCancel="True"/>
+            </StackPanel>
+        </Grid>
     </Grid>
 </Window>

@@ -597,6 +597,12 @@
         <Setter Property="VerticalContentAlignment" Value="Center"/>
     </Style>
 
+    <!-- 必填项标签：文案自带 * 的（如计划/领退表）直接用原文案；
+         文案里没有 * 的（如测试项目的「试验项目」）用这个样式补上，与编辑窗口底部的「带 * 为必填项」提示配套 -->
+    <Style x:Key="RequiredFieldLabel" TargetType="Label" BasedOn="{StaticResource {x:Type Label}}">
+        <Setter Property="ContentStringFormat" Value="{}{0}*"/>
+    </Style>
+
     <!-- ==================== ComboBox ==================== -->
     <Style TargetType="ComboBox">
         <Setter Property="Background" Value="{DynamicResource InputBackgroundBrush}"/>

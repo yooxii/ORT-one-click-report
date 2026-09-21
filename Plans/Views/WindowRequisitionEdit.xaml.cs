@@ -1,6 +1,7 @@
 ﻿using NLog;
 using ORT一键报告.Models;
 using ORT一键报告.Services;
+using ORT一键报告.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -86,6 +87,35 @@ namespace ORT一键报告.Plans.Views
         }
 
         /* ###############################  加载  ################################ */
+
+        /// <summary>
+        /// 用计划表草稿预填（计划表新增窗口的「转为领用」入口用）：
+        /// 领退信息里的机种/领出数量、计划同步区的测试项目/阶段/开始时间/负责人等一并带过来；
+        /// 工作编号不带过来（RT 号由本窗口按领用日期另行生成，也可手动改）。
+        /// </summary>
+        public void PrefillFromPlan(Plan plan)
+        {
+            if (plan == null)
+            {
+                return;
+            }
+            // 先给领用日期，让 UpdateAutoPlan 能按日期生成 RT 工作编号
+            dp_reqDate.SelectedDate = plan.StartDate ?? DateTime.Today;
+            txt_model.Text = plan.ModelName ?? "";
+            txt_outQty.Text = plan.SampleSize ?? "";
+            SetCombo(cb_testItem, plan.TestItem);
+            SetCombo(cb_stage, plan.Stage);
+            SetCombo(cb_reportStatus, plan.ReportStatus);
+            dp_startDate.SelectedDate = plan.StartDate;
+            txt_sampleSize.Text = plan.SampleSize ?? "";
+            txt_product.Text = plan.Product ?? "";
+            txt_customer.Text = plan.Customer ?? "";
+            txt_owner.Text = plan.Owner ?? "";
+            txt_testPeriod.Text = plan.TestPeriod ?? "";
+            dp_endDate.SelectedDate = plan.EndDate;
+            // 机种/测试项目联动补齐产品别、客户别、负责人、结束日期等空字段
+            UpdateAutoPlan();
+        }
 
         /// <summary>
         /// 编辑模式：查找领退记录对应的计划表记录并载入计划同步区。
@@ -441,9 +471,19 @@ namespace ORT一键报告.Plans.Views
             // 新增：同步构造计划记录；编辑：构造关联计划的修改结果（若找到关联计划）
             if (_editTarget == null)
             {
+                // 工作编号：允许手动指定，留空时仍自动生成 RT{年月}{编号}
+                string jobNo = string.IsNullOrWhiteSpace(txt_jobNo.Text)
+                    ? _excelService.GenerateJobNo(req.RequisitionDate ?? DateTime.Today, "RT")
+                    : txt_jobNo.Text.Trim();
+                string jobNoError = PlanValidation.ValidateJobNo(jobNo);
+                if (jobNoError != null)
+                {
+                    _ = MessageBox.Show(jobNoError, LanguageService.Get("Cap_FormatValidationFailed"));
+                    return;
+                }
                 Plan plan = new()
                 {
-                    JobNo = txt_jobNo.Text.Trim(),
+                    JobNo = jobNo,
                     TestItem = cb_testItem.SelectedItem as string,
                     StartDate = dp_startDate.SelectedDate ?? dp_reqDate.SelectedDate,
                     Stage = cb_stage.SelectedItem as string,
@@ -463,7 +503,8 @@ namespace ORT一键报告.Plans.Views
                 };
                 if (_db.FreeSql.Select<Plan>().Where(p => p.JobNo == plan.JobNo).Any())
                 {
-                    _ = MessageBox.Show($"工作編號 [{plan.JobNo}] 已存在", LanguageService.Get("Cap_Info"));
+                    _ = MessageBox.Show(string.Format(LocalizationHelper.Get("Msg_JobNoExistsFormat"), plan.JobNo),
+                        LanguageService.Get("Cap_Info"));
                     return;
                 }
                 PlanResult = plan;

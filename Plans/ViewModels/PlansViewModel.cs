@@ -540,7 +540,7 @@ namespace ORT一键报告.Plans.ViewModels
         /// <summary>
         /// 领退表新增（对话框，含计划表同步必填信息）
         /// </summary>
-        public ICommand AddRequisitionCommand => _addRequisitionCommand ??= new RelayCommand(AddRequisition, () => CanEdit);
+        public ICommand AddRequisitionCommand => _addRequisitionCommand ??= new RelayCommand(() => AddRequisition(), () => CanEdit);
 
         private RelayCommand _addPlanCommand;
         /// <summary>
@@ -969,7 +969,11 @@ namespace ORT一键报告.Plans.ViewModels
 
         /* ###############################  增删改  ################################ */
 
-        private void AddRequisition()
+        /// <summary>
+        /// 领退表新增（对话框，含计划表同步必填信息）。
+        /// prefillPlan 非空时用于「计划表新增 → 转为领用」：把计划表那侧已填的内容带进领退表窗口。
+        /// </summary>
+        private void AddRequisition(Plan prefillPlan = null)
         {
             if (!CanEdit)
             {
@@ -977,6 +981,10 @@ namespace ORT一键报告.Plans.ViewModels
                 return;
             }
             Views.WindowRequisitionEdit editWindow = new(_db, _permission, _adminService, _excelService, null);
+            if (prefillPlan != null)
+            {
+                editWindow.PrefillFromPlan(prefillPlan);
+            }
             // 非模态：保存后通过 Saved 事件回调处理暂存/提审，窗口打开期间主界面仍可操作
             editWindow.Saved += (reqResult, planResult, editId) =>
             {
@@ -1009,6 +1017,9 @@ namespace ORT一键报告.Plans.ViewModels
                 return;
             }
             Views.WindowPlanDirectEdit editWindow = new(_db, _permission, _adminService, _excelService, null);
+            // 「转为领用」：把计划表窗口里填好的内容带进领退表新增窗口，
+            // 保存后由领用流程建立 RT 计划（当前这个 QRT 计划不入库，直接关掉）
+            editWindow.ConvertToRequisitionRequested += planDraft => AddRequisition(planDraft);
             editWindow.Saved += (planResult, editId) =>
             {
                 if (NeedsReview)

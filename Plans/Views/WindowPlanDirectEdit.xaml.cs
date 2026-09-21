@@ -33,6 +33,12 @@ namespace ORT一键报告.Plans.Views
         /// </summary>
         public event Action<Plan, long> Saved;
 
+        /// <summary>
+        /// 「转为领用」事件（仅新增时可用）：参数为当前界面内容组成的计划草稿。
+        /// 由调用方打开「领退表新增」并把这些值带过去，最终由领用流程建立 RT 计划。
+        /// </summary>
+        public event Action<Plan> ConvertToRequisitionRequested;
+
         public WindowPlanDirectEdit(DatabaseService db, IPermissionService permission, AdminService admin,
             PlanExcelService excelService, Plan editTarget = null)
         {
@@ -44,6 +50,8 @@ namespace ORT一键报告.Plans.Views
             _editTarget = editTarget;
 
             Title = editTarget == null ? "计划表新增（非领用）" : "计划表编辑";
+            // 「转为领用」只在新增时有意义（编辑时已有记录，改走领用要走领退表编辑）
+            btn_convertToRequisition.Visibility = editTarget == null ? Visibility.Visible : Visibility.Collapsed;
 
             cb_testItem.ItemsSource = _admin.GetTestItems().Select(t => t.Name).ToList();
             cb_stage.ItemsSource = _admin.GetStages().Select(s => s.Name).ToList();
@@ -178,36 +186,13 @@ namespace ORT一键报告.Plans.Views
 
         private void Btn_Save_Click(object sender, RoutedEventArgs e)
         {
-            // 必填校验
-            if (cb_testItem.SelectedItem == null)
+            if (!ValidateRequired(requireRemark: true))
             {
-                _ = MessageBox.Show(LocalizationHelper.Get("Msg_SelectTestItem"), LanguageService.Get("Cap_Info"));
-                return;
-            }
-            if (dp_startDate.SelectedDate == null)
-            {
-                _ = MessageBox.Show(LocalizationHelper.Get("Msg_FillStartTime"), LanguageService.Get("Cap_Info"));
-                return;
-            }
-            if (cb_stage.SelectedItem == null)
-            {
-                _ = MessageBox.Show(LocalizationHelper.Get("Msg_SelectStage"), LanguageService.Get("Cap_Info"));
-                return;
-            }
-            if (string.IsNullOrWhiteSpace(txt_model.Text))
-            {
-                _ = MessageBox.Show(LocalizationHelper.Get("Msg_FillModelName"), LanguageService.Get("Cap_Info"));
-                return;
-            }
-            if (string.IsNullOrWhiteSpace(txt_remark.Text))
-            {
-                _ = MessageBox.Show(LocalizationHelper.Get("Msg_FillRemark"), LanguageService.Get("Cap_Info"));
                 return;
             }
 
-            string jobNo = _editTarget == null
-                ? _excelService.GenerateJobNo(dp_startDate.SelectedDate.Value, "QRT")
-                : txt_jobNo.Text.Trim();
+            // 工作编号：允许手动指定，留空时仍自动生成 QRT{年月}{编号}
+            string jobNo = ResolveJobNo();
 
             // 工作编号格式与唯一性校验
             string jobNoError = PlanValidation.ValidateJobNo(jobNo);
@@ -219,10 +204,77 @@ namespace ORT一键报告.Plans.Views
             long selfId = _editTarget?.Id ?? 0;
             if (_db.FreeSql.Select<Plan>().Where(p => p.JobNo == jobNo && p.Id != selfId).Any())
             {
-                _ = MessageBox.Show($"工作編號 [{jobNo}] 已存在", LanguageService.Get("Cap_Info"));
+                _ = MessageBox.Show(string.Format(LocalizationHelper.Get("Msg_JobNoExistsFormat"), jobNo), LanguageService.Get("Cap_Info"));
                 return;
             }
 
+            PlanResult = BuildPlanFromInputs(jobNo);
+
+            // 非模态窗口：触发 Saved 事件后关闭，由调用方处理暂存/提审
+            Saved?.Invoke(PlanResult, _editTarget?.Id ?? 0);
+            Close();
+        }
+
+        /// <summary>
+        /// 「转为领用」：把当前填写内容交给调用方，由它打开「领退表新增」并带上这些值
+        /// （领退表那边有自己的必填项，这里只校验计划侧的必要信息，备注不强制）
+        /// </summary>
+        private void Btn_ConvertToRequisition_Click(object sender, RoutedEventArgs e)
+        {
+            if (!ValidateRequired(requireRemark: false))
+            {
+                return;
+            }
+            ConvertToRequisitionRequested?.Invoke(BuildPlanFromInputs(ResolveJobNo()));
+            Close();
+        }
+
+        /// <summary>
+        /// 必填校验（与标签上的 * 对应）：测试项目/开始时间/阶段/机种名，保存时备注也算必填
+        /// </summary>
+        private bool ValidateRequired(bool requireRemark)
+        {
+            if (cb_testItem.SelectedItem == null)
+            {
+                _ = MessageBox.Show(LocalizationHelper.Get("Msg_SelectTestItem"), LanguageService.Get("Cap_Info"));
+                return false;
+            }
+            if (dp_startDate.SelectedDate == null)
+            {
+                _ = MessageBox.Show(LocalizationHelper.Get("Msg_FillStartTime"), LanguageService.Get("Cap_Info"));
+                return false;
+            }
+            if (cb_stage.SelectedItem == null)
+            {
+                _ = MessageBox.Show(LocalizationHelper.Get("Msg_SelectStage"), LanguageService.Get("Cap_Info"));
+                return false;
+            }
+            if (string.IsNullOrWhiteSpace(txt_model.Text))
+            {
+                _ = MessageBox.Show(LocalizationHelper.Get("Msg_FillModelName"), LanguageService.Get("Cap_Info"));
+                return false;
+            }
+            if (requireRemark && string.IsNullOrWhiteSpace(txt_remark.Text))
+            {
+                _ = MessageBox.Show(LocalizationHelper.Get("Msg_FillRemark"), LanguageService.Get("Cap_Info"));
+                return false;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// 工作编号：手动填了就用填的，留空则按开始日期自动生成 QRT{年月}{编号}
+        /// </summary>
+        private string ResolveJobNo()
+            => string.IsNullOrWhiteSpace(txt_jobNo.Text)
+                ? _excelService.GenerateJobNo(dp_startDate.SelectedDate ?? DateTime.Today, "QRT")
+                : txt_jobNo.Text.Trim();
+
+        /// <summary>
+        /// 把界面上的内容组装成计划记录（新增建一条、编辑在副本上改，保留 Id 与创建信息）
+        /// </summary>
+        private Plan BuildPlanFromInputs(string jobNo)
+        {
             Plan plan = _editTarget == null
                 ? new Plan { CreatedBy = _permission.CurrentUser, CreatedAt = DateTime.Now }
                 : ClonePlan(_editTarget);
@@ -239,15 +291,10 @@ namespace ORT一键报告.Plans.Views
             plan.EndDate = dp_endDate.SelectedDate;
             plan.Status = plan.Status ?? "Ongoing";
             plan.ReportStatus = cb_reportStatus.SelectedItem as string;
-            plan.Remark = txt_remark.Text.Trim();
+            plan.Remark = string.IsNullOrWhiteSpace(txt_remark.Text) ? null : txt_remark.Text.Trim();
             plan.UpdatedBy = _permission.CurrentUser;
             plan.UpdatedAt = DateTime.Now;
-        
-            PlanResult = plan;
-        
-            // 非模态窗口：触发 Saved 事件后关闭，由调用方处理暂存/提审
-            Saved?.Invoke(PlanResult, _editTarget?.Id ?? 0);
-            Close();
+            return plan;
         }
         
         private void Btn_Cancel_Click(object sender, RoutedEventArgs e)

@@ -978,7 +978,7 @@
     <value>自动生成</value>
   </data>
   <data name="ReqEdit_AutoGenRT" xml:space="preserve">
-    <value>自动生成 RT{当前年月}{编号}</value>
+    <value>默认自动生成 RT{当前年月}{编号}，可手动修改</value>
   </data>
   <data name="ReqEdit_AutoGenRTAH" xml:space="preserve">
     <value>自动生成 RTAH{当前年月}{编号}</value>
@@ -996,7 +996,7 @@
     <value>工作编号</value>
   </data>
   <data name="PlanEdit_WorkNumberHint" xml:space="preserve">
-    <value>自动生成 QRT{当前年月}{编号}（非领用计划）</value>
+    <value>默认自动生成 QRT{当前年月}{编号}（非领用计划），可手动修改</value>
   </data>
   <data name="PlanEdit_TestItem" xml:space="preserve">
     <value>测试项目*</value>
@@ -2399,5 +2399,17 @@
   </data>
   <data name="Plans_StatusSummaryHint" xml:space="preserve">
     <value>计划表状况统计：按当前搜索与列筛选后可见的记录统计（进行中 / 预排测试 / 已结案）</value>
+  </data>
+  <data name="Common_RequiredHint" xml:space="preserve">
+    <value>带 * 为必填项</value>
+  </data>
+  <data name="PlanEdit_ConvertToRequisition" xml:space="preserve">
+    <value>转为领用</value>
+  </data>
+  <data name="PlanEdit_ConvertToRequisitionHint" xml:space="preserve">
+    <value>这份计划其实要走领用：打开领退表新增并带入已填内容</value>
+  </data>
+  <data name="Msg_JobNoExistsFormat" xml:space="preserve">
+    <value>工作编号 [{0}] 已存在</value>
   </data>
 </root>

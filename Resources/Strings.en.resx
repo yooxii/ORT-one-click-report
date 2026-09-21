@@ -978,7 +978,7 @@
     <value>Auto Generate</value>
   </data>
   <data name="ReqEdit_AutoGenRT" xml:space="preserve">
-    <value>Auto generate RT{YYYYMM}{No}</value>
+    <value>Auto-generated as RT{year}{month}{no}; editable</value>
   </data>
   <data name="ReqEdit_AutoGenRTAH" xml:space="preserve">
     <value>Auto generate RTAH{YYYYMM}{No}</value>
@@ -996,7 +996,7 @@
     <value>Work Number</value>
   </data>
   <data name="PlanEdit_WorkNumberHint" xml:space="preserve">
-    <value>Auto generate QRT{YYYYMM}{No} (non-requisition)</value>
+    <value>Auto-generated as QRT{year}{month}{no} for non-requisition plans; editable</value>
   </data>
   <data name="PlanEdit_TestItem" xml:space="preserve">
     <value>Test Item*</value>
@@ -2399,5 +2399,17 @@ Build the plan index now (compress repeated text into shared templates)?</value>
   </data>
   <data name="Plans_StatusSummaryHint" xml:space="preserve">
     <value>Plan status counts for the rows currently visible after search and column filters (Ongoing / Pending / Close)</value>
+  </data>
+  <data name="Common_RequiredHint" xml:space="preserve">
+    <value>Fields marked * are required</value>
+  </data>
+  <data name="PlanEdit_ConvertToRequisition" xml:space="preserve">
+    <value>Convert to Requisition</value>
+  </data>
+  <data name="PlanEdit_ConvertToRequisitionHint" xml:space="preserve">
+    <value>Open the requisition form prefilled with what you entered here</value>
+  </data>
+  <data name="Msg_JobNoExistsFormat" xml:space="preserve">
+    <value>Job number [{0}] already exists</value>
   </data>
 </root>
