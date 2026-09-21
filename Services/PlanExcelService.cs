@@ -382,28 +382,66 @@ namespace ORT一键报告.Services
         /* ###############################  自动编号  ################################ */
 
         /// <summary>
-        /// 生成回线RT工令：RTAH{当前年月}{编号}，编号为当月第多少个回线工令（两位数字）
+        /// 生成回线RT工令：RTAH{当前年月}{编号}，编号为当月已有回线工令末尾序号的最大值 + 1（至少两位数字）。
+        /// 用 MAX+1 而不是 COUNT+1，避免删除历史工令后产生重号。
         /// </summary>
         public string GenerateReturnRtOrder(DateTime date)
         {
             string ym = date.ToString("yyMM");
-            int count = (int)_db.FreeSql.Select<Requisition>()
-                .Where(r => r.ReturnRtOrder != null && r.ReturnRtOrder.StartsWith("RTAH" + ym))
-                .Count();
-            return $"RTAH{ym}{count + 1:D2}";
+            int maxSeq = MaxTrailingSequence(
+                _db.FreeSql.Select<Requisition>()
+                    .Where(r => r.ReturnRtOrder != null && r.ReturnRtOrder.StartsWith("RTAH" + ym))
+                    .ToList(r => r.ReturnRtOrder),
+                @"^RTAH" + Regex.Escape(ym) + @"(\d+)$");
+            return $"RTAH{ym}{FormatSequence(maxSeq + 1)}";
         }
 
         /// <summary>
-        /// 生成工作编号：{prefix}{当前年月}{编号}，编号为当月第多少个工作编号（两位数字）
+        /// 生成工作编号：{prefix}{当前年月}{编号}，编号为当月已有工作编号末尾序号的最大值 + 1（至少两位数字）。
+        /// RT 与 QRT 共享同一个月度序号（例如已有 RT260921、QRT260922 时，下一笔无论前缀是 RT 还是 QRT 都是 23），
+        /// 因此两种前缀的记录一起参与取最大序号；用 MAX+1 而不是 COUNT+1，避免删除历史记录后产生重号。
         /// </summary>
         public string GenerateJobNo(DateTime date, string prefix)
         {
             string ym = date.ToString("yyMM");
-            int count = (int)_db.FreeSql.Select<Plan>()
-                .Where(p => p.JobNo != null && p.JobNo.StartsWith(prefix + ym))
-                .Count();
-            return $"{prefix}{ym}{count + 1:D2}";
+            string usePrefix = string.IsNullOrWhiteSpace(prefix) ? "RT" : prefix.Trim().ToUpperInvariant();
+            // 只按年月粗过滤（RT/QRT 共享同一个月度序号），再用严格正则提取末尾序号
+            int maxSeq = MaxTrailingSequence(
+                _db.FreeSql.Select<Plan>()
+                    .Where(p => p.JobNo != null
+                             && (p.JobNo.StartsWith("RT" + ym) || p.JobNo.StartsWith("QRT" + ym)))
+                    .ToList(p => p.JobNo),
+                @"^(?:QRT|RT)" + Regex.Escape(ym) + @"(\d+)$");
+            return $"{usePrefix}{ym}{FormatSequence(maxSeq + 1)}";
         }
+
+        /// <summary>
+        /// 从一组编号里按正则取出末尾序号的最大值（不匹配/无法解析的都跳过）
+        /// </summary>
+        private static int MaxTrailingSequence(IEnumerable<string> values, string pattern)
+        {
+            Regex regex = new(pattern, RegexOptions.IgnoreCase);
+            int max = 0;
+            foreach (string value in values)
+            {
+                if (string.IsNullOrWhiteSpace(value))
+                {
+                    continue;
+                }
+                Match m = regex.Match(value.Trim());
+                if (m.Success && int.TryParse(m.Groups[1].Value, out int seq) && seq > max)
+                {
+                    max = seq;
+                }
+            }
+            return max;
+        }
+
+        /// <summary>
+        /// 序号格式化：≤ 99 时补到两位（“最后两位 = 当月第几笔”的读法），
+        /// ≥ 100 时按实际位数展开（避免被两位截断后与已有编号重号）
+        /// </summary>
+        private static string FormatSequence(int seq) => seq >= 100 ? seq.ToString() : seq.ToString("D2");
 
         /* ###############################  功能函数  ################################ */
 
