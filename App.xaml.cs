@@ -31,6 +31,12 @@ namespace ORT一键报告
             {
                 base.OnStartup(e);
 
+                // 登录前置后，启动阶段唯一的窗口是登录窗口：若保持 WPF 默认的
+                // ShutdownMode.OnLastWindowClose，登录窗口一关闭（登录成功 / 游客进入 / 直接关掉）
+                // 就会被当成"最后一个窗口关闭"而结束整个程序 —— 主界面根本来不及显示。
+                // 这里改为显式退出，只在三处主动 Shutdown：用户登录窗口选退出、数据文件夹不可用、主窗口关闭。
+                ShutdownMode = ShutdownMode.OnExplicitShutdown;
+
                 // Excel 读写统一使用 NPOI（Apache-2.0，无需任何许可调用/无写入署名）；
                 // OLE 附件嵌入由 Utils/ExcelOleEmbedder 走 Excel COM 完成。
 
@@ -167,6 +173,8 @@ namespace ORT一键报告
 
                 // 手动创建主窗口（App.xaml 已去掉 StartupUri，以便登录前置）
                 MainWindow mainWindow = new();
+                // 显式登记为主窗口：任务栏、Toast 定位与 Owner 归属都依赖它（登录窗口是启动阶段的临时窗口）
+                MainWindow = mainWindow;
                 mainWindow.Show();
 
                 // 主窗口显示后启动闲置报告扫描调度（与计划索引调度并列）

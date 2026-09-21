@@ -10,6 +10,10 @@
 *.userosscache
 *.sln.docstates
 
+# 程序运行时写在当前目录的本机设置（语言/主题）：不同人跑的位置不同，不该入库
+current_language.txt
+current_theme.txt
+
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 
