@@ -7,6 +7,12 @@
 - 只有本轮**没有任何文件改动**时才跳过，并在回复中写一行「本轮无文件变更，未提交」。
 - 用户明确要求「不要提交 / 不要推送」时不执行。
 
+## 每轮对话收尾：更新内容与更新日志（按需）
+
+- 每轮有文件改动，先加载 skill `update-log`（`.dsh/skills/update-log/SKILL.md`）把本轮改动总结成「更新内容」。
+- 当用户声明「这是一次版本更新」，或该轮改动大到足以当作一次更新（跨多模块、有面向用户的新功能/行为变化等，判定标准见该 skill）时，在**根目录 `修改记录.md`** 追加一节更新日志：正序追加，最新小节在文件末尾，同日并入末尾小节，不改写历史条目。
+- 顺序固定：先写更新日志 → 再走上面的 `git-commit-sync`，让日志进入同一个 commit。
+
 ## 构建与验证
 
 - 构建：`MSBuild .\ORT一键报告.csproj /p:Configuration=Debug /p:SignManifests=false /p:GenerateManifests=false /v:minimal /nologo /t:Rebuild`（清单签名在受限环境会失败，与代码无关）。
