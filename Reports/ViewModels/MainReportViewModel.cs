@@ -60,13 +60,14 @@ namespace ORT一键报告.Reports.ViewModels
                 return;
             }
             string _title = Path.GetFileName(Path.GetDirectoryName(ReportPath));
+            string productName = LanguageService.Get("App_ReportTitle");
             try
             {
-                Title = _title.Split(' ')[0] + " " + _title.Split('_')[1] + " ORT一键报告";
+                Title = _title.Split(' ')[0] + " " + _title.Split('_')[1] + " " + productName;
             }
             catch
             {
-                Title = " ORT一键报告";
+                Title = " " + productName;
             }
             // 数据源重构：按文件夹名称中的机种名称、RT工作编号等信息从领退和计划中匹配记录
             MatchPlanFromFolderName(_title);

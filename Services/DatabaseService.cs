@@ -22,50 +22,95 @@ namespace ORT一键报告.Services
         /// <summary>
         /// 设置里配置的数据文件夹（可能是 UNC 路径；实际使用的见 <see cref="DataDir"/>）
         /// </summary>
-        public string ConfiguredDataFolder { get; }
+        public string ConfiguredDataFolder { get; private set; }
 
         /// <summary>
         /// 数据根目录（实际使用：UNC 路径会被映射成网络驱动器后的盘符路径）
         /// </summary>
-        public string DataDir { get; }
+        public string DataDir { get; private set; }
 
         /// <summary>
         /// 数据库文件完整路径
         /// </summary>
-        public string DbPath { get; }
+        public string DbPath { get; private set; }
 
         /// <summary>
         /// 附件（OLE提取文件/上传的SN文件）目录
         /// </summary>
-        public string OleDir { get; }
+        public string OleDir { get; private set; }
 
         /// <summary>
         /// 计划索引抽出的测试项目配图目录（随数据库一起走，多客户端共用）
         /// </summary>
-        public string PlanImagesDir { get; }
+        public string PlanImagesDir { get; private set; }
 
         /// <summary>
         /// 数据文件夹是否在网络上（UNC 或映射的网络驱动器）
         /// </summary>
-        public bool IsNetworkFolder { get; }
+        public bool IsNetworkFolder { get; private set; }
 
         /// <summary>
         /// FreeSql 实例
         /// </summary>
-        public IFreeSql FreeSql { get; }
+        public IFreeSql FreeSql { get; private set; }
+
+        /// <summary>
+        /// 是否已回退到程序目录下的默认 Data 文件夹（配置路径启动失败时才会为 true，仅本次运行生效）
+        /// </summary>
+        public bool IsUsingFallbackDataFolder { get; private set; }
+
+        /// <summary>
+        /// 回退到默认数据文件夹的原因（即配置路径初始化失败时抛出的错误信息，未回退时为 null）
+        /// </summary>
+        public string FallbackReason { get; private set; }
+
+        /// <summary>
+        /// 程序目录下的默认数据文件夹（本机设置未配置或配置路径启动失败时使用）
+        /// </summary>
+        public static string DefaultDataFolder => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data");
 
         public DatabaseService()
         {
             // 数据文件夹可在设置中修改（保存在程序目录的本机设置文件里，重启生效）
-            ConfiguredDataFolder = AppSettingsService.ResolveDataFolder();
+            string configured = AppSettingsService.ResolveDataFolder();
+            ConfiguredDataFolder = configured;
+
+            try
+            {
+                InitializeDataFolder(configured);
+            }
+            catch (DataFolderUnavailableException ex)
+            {
+                // 配置路径启动失败：若配置值就是默认 Data，直接抛（避免死循环重试）；
+                // 否则释放首次尝试可能已建立的 FreeSql 连接，改用程序目录下的默认 Data 重试一次。
+                // 回退只对本次运行生效，不写回 local_settings.json——网络共享临时不可达时不应把用户配置清掉。
+                DisposeFreeSqlQuietly();
+                string normalizedConfigured = FolderUtil.Normalize(configured);
+                string normalizedDefault = FolderUtil.Normalize(DefaultDataFolder);
+                if (string.Equals(normalizedConfigured, normalizedDefault, StringComparison.OrdinalIgnoreCase))
+                {
+                    throw;
+                }
+                _logger.Warn(ex, $"数据文件夹「{configured}」启动失败，回退到默认数据文件夹「{DefaultDataFolder}」");
+                IsUsingFallbackDataFolder = true;
+                FallbackReason = ex.Message;
+                InitializeDataFolder(DefaultDataFolder);
+            }
+        }
+
+        /// <summary>
+        /// 按指定文件夹初始化数据目录与 FreeSql 实例；失败时抛出 <see cref="DataFolderUnavailableException"/>。
+        /// </summary>
+        private void InitializeDataFolder(string folder)
+        {
             // SQLite 打不开 UNC 路径的库文件（unable to open database file），
             // 所以填 UNC 时先自动映射成网络驱动器，再用盘符路径访问
-            if (NetworkDriveMapper.IsUncPath(ConfiguredDataFolder))
+            if (NetworkDriveMapper.IsUncPath(folder))
             {
-                if (!NetworkDriveMapper.TryMap(ConfiguredDataFolder, out string mappedFolder, out string mapError))
+                if (!NetworkDriveMapper.TryMap(folder, out string mappedFolder, out string mapError))
                 {
                     throw new DataFolderUnavailableException(
-                        $"数据文件夹是网络路径（{ConfiguredDataFolder}），SQLite 不能直接使用 UNC 路径，" +
+                        $"数据文件夹是网络路径（{folder}），SQLite 不能直接使用 UNC 路径，" +
                         $"自动映射为网络驱动器也失败了：{mapError}{Environment.NewLine}{Environment.NewLine}" +
                         "请先手工把共享映射成盘符，例如在命令行执行：" + Environment.NewLine +
                         "    net use Z: \\\\服务器\\共享 /persistent:yes" + Environment.NewLine +
@@ -75,14 +120,14 @@ namespace ORT一键报告.Services
             }
             else
             {
-                DataDir = ConfiguredDataFolder;
+                DataDir = folder;
             }
             if (!FolderUtil.TryPrepare(DataDir, out string error))
             {
                 throw new DataFolderUnavailableException(
                     $"数据文件夹不可用：{error}{Environment.NewLine}{Environment.NewLine}" +
                     "请检查该文件夹是否存在、是否有读写权限（网络共享请确认能访问），" +
-                    $"或修改程序目录下 Data\\local_settings.json 里的 DataFolder（当前值：{ConfiguredDataFolder}）。");
+                    $"或修改程序目录下 Data\\local_settings.json 里的 DataFolder（当前值：{folder}）。");
             }
             IsNetworkFolder = FolderUtil.IsNetworkPath(DataDir);
             DbPath = Path.Combine(DataDir, "ort_plans.db");
@@ -108,7 +153,30 @@ namespace ORT一键报告.Services
             VerifyOpenable();
             ConfigureJournal();
             MigrateLegacyPlansToRequisitions();
-            _logger.Info($"数据库初始化完成: {DbPath}（数据文件夹: {DataDir}{(IsNetworkFolder ? "，网络共享" : "")}，日志模式: {CurrentJournalMode() ?? "未知"}）");
+            _logger.Info($"数据库初始化完成: {DbPath}（数据文件夹: {DataDir}{(IsNetworkFolder ? "，网络共享" : "")}，日志模式: {CurrentJournalMode() ?? "未知"}{(IsUsingFallbackDataFolder ? "，已回退到默认目录" : "")}）");
+        }
+
+        /// <summary>
+        /// 释放首次尝试建立的 FreeSql 连接（回退前调用，避免遗留未释放的连接池）
+        /// </summary>
+        private void DisposeFreeSqlQuietly()
+        {
+            if (FreeSql == null)
+            {
+                return;
+            }
+            try
+            {
+                FreeSql.Dispose();
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn($"释放回退前的数据库连接失败: {ex.Message}");
+            }
+            finally
+            {
+                FreeSql = null;
+            }
         }
 
         /// <summary>

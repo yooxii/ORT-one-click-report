@@ -1828,10 +1828,24 @@ Comment: {2}</value>
 {0}</value>
   </data>
   <data name="App_MainTitle" xml:space="preserve">
-    <value>ORT Management System</value>
+    <value>ORT Lab Management System</value>
   </data>
   <data name="App_ReportTitle" xml:space="preserve">
-    <value>ORT One-Click Report</value>
+    <value>ORT Lab Management System</value>
+  </data>
+  <data name="Db_FallbackToDefaultTitle" xml:space="preserve">
+    <value>Data Folder Fallback</value>
+  </data>
+  <data name="Db_FallbackToDefaultFormat" xml:space="preserve">
+    <value>The configured data folder failed to initialize, so the program has temporarily fallen back to the default data folder next to the executable.
+
+Configured: {0}
+Fallback: {1}
+
+Failure reason:
+{2}
+
+This fallback does not change your settings. Please fix the path under "Settings → Data Folder" and restart; if you no longer need that path, clear it there to keep using the default folder.</value>
   </data>
   <data name="Dlg_SelectATEData" xml:space="preserve">
     <value>Select ATE Data</value>

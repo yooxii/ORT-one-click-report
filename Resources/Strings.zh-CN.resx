@@ -1828,10 +1828,24 @@
 {0}</value>
   </data>
   <data name="App_MainTitle" xml:space="preserve">
-    <value>ORT管理系统</value>
+    <value>ORT实验室管理系统</value>
   </data>
   <data name="App_ReportTitle" xml:space="preserve">
-    <value>ORT一键报告</value>
+    <value>ORT实验室管理系统</value>
+  </data>
+  <data name="Db_FallbackToDefaultTitle" xml:space="preserve">
+    <value>数据文件夹回退</value>
+  </data>
+  <data name="Db_FallbackToDefaultFormat" xml:space="preserve">
+    <value>配置的数据文件夹启动失败，已临时回退到程序默认数据文件夹。
+
+配置路径：{0}
+回退路径：{1}
+
+失败原因：
+{2}
+
+本次回退不会修改设置，请在「设置 → 数据文件夹」里修正路径后重启；如果确认不再使用该路径，也可在那里清空以长期改用默认文件夹。</value>
   </data>
   <data name="Dlg_SelectATEData" xml:space="preserve">
     <value>选择ATE数据</value>

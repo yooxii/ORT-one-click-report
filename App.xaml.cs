@@ -26,7 +26,7 @@ namespace ORT一键报告
 
         protected override void OnStartup(StartupEventArgs e)
         {
-            logger.Info("ORT一键报告程序启动");
+            logger.Info("ORT实验室管理系统程序启动");
             try
             {
                 base.OnStartup(e);
@@ -109,10 +109,20 @@ namespace ORT一键报告
                 ServiceProvider = services.BuildServiceProvider();
 
                 // 数据库/附件/配图都在「数据文件夹」里（可在设置中改到远程共享）：
-                // 先确认它可用，不可用时给出可操作的提示（而不是让程序带着半个数据库往下跑）
+                // 先确认它可用；配置路径启动失败时 DatabaseService 会自动回退到程序目录下的默认 Data 文件夹，
+                // 连默认目录也不可用时才报致命错误退出（避免程序带着半个数据库往下跑）
                 try
                 {
-                    ServiceProvider.GetRequiredService<DatabaseService>();
+                    DatabaseService db = ServiceProvider.GetRequiredService<DatabaseService>();
+                    if (db.IsUsingFallbackDataFolder)
+                    {
+                        logger.Warn($"已回退到默认数据文件夹: {db.DataDir}（原配置路径: {db.ConfiguredDataFolder}）");
+                        _ = MessageBox.Show(
+                            string.Format(LanguageService.Get("Db_FallbackToDefaultFormat"),
+                                db.ConfiguredDataFolder, db.DataDir, db.FallbackReason),
+                            LanguageService.Get("Db_FallbackToDefaultTitle"),
+                            MessageBoxButton.OK, MessageBoxImage.Warning);
+                    }
                 }
                 catch (DataFolderUnavailableException ex)
                 {
