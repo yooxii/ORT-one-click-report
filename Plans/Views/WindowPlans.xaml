@@ -150,19 +150,19 @@
                     <Border Background="{DynamicResource StatusOngoingBgBrush}" CornerRadius="{DynamicResource CornerRadiusSmall}"
                             Padding="8,1" Margin="0,0,6,0">
                         <TextBlock Foreground="{DynamicResource StatusOngoingBrush}">
-                            <Run Text="{lex:Loc Plans_StatusOngoing}"/><Run Text=" "/><Run Text="{Binding OngoingCount}" FontWeight="Bold"/>
+                            <Run Text="{lex:Loc Plans_StatusOngoing}"/><Run Text=" "/><Run Text="{Binding OngoingCount, Mode=OneWay}" FontWeight="Bold"/>
                         </TextBlock>
                     </Border>
                     <Border Background="{DynamicResource StatusPendingBgBrush}" CornerRadius="{DynamicResource CornerRadiusSmall}"
                             Padding="8,1" Margin="0,0,6,0">
                         <TextBlock Foreground="{DynamicResource StatusPendingBrush}">
-                            <Run Text="{lex:Loc Plans_StatusPending}"/><Run Text=" "/><Run Text="{Binding PendingCount}" FontWeight="Bold"/>
+                            <Run Text="{lex:Loc Plans_StatusPending}"/><Run Text=" "/><Run Text="{Binding PendingCount, Mode=OneWay}" FontWeight="Bold"/>
                         </TextBlock>
                     </Border>
                     <Border Background="{DynamicResource StatusClosedBgBrush}" CornerRadius="{DynamicResource CornerRadiusSmall}"
                             Padding="8,1">
                         <TextBlock Foreground="{DynamicResource StatusClosedBrush}">
-                            <Run Text="{lex:Loc Plans_StatusClosed}"/><Run Text=" "/><Run Text="{Binding ClosedCount}" FontWeight="Bold"/>
+                            <Run Text="{lex:Loc Plans_StatusClosed}"/><Run Text=" "/><Run Text="{Binding ClosedCount, Mode=OneWay}" FontWeight="Bold"/>
                         </TextBlock>
                     </Border>
                 </StackPanel>
