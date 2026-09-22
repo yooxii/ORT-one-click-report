@@ -2484,4 +2484,13 @@
   <data name="Msg_NoAssociatedPlan" xml:space="preserve">
     <value>這筆領退記錄沒有找到對應的計劃表記錄，無法同步更新計劃；如需建立計劃請用「計劃表新增」</value>
   </data>
+  <data name="Menu_FilterEmpty" xml:space="preserve">
+    <value>（空白）</value>
+  </data>
+  <data name="Menu_FilterGroupFormat" xml:space="preserve">
+    <value>{0}…（{1}）</value>
+  </data>
+  <data name="Menu_FilterSelectGroupFormat" xml:space="preserve">
+    <value>全選本組（{0} 項）</value>
+  </data>
 </root>

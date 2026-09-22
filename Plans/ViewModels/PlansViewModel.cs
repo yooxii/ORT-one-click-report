@@ -291,13 +291,13 @@ namespace ORT一键报告.Plans.ViewModels
         public bool HasFilters(bool planTable) => (planTable ? _planFilters : _reqFilters).Values.Any(f => f.IsActive);
 
         /// <summary>
-        /// 某列的去重取值（按表格显示文本，日期为 yyyy/M/d；数字/日期按数值排序）
+        /// 某列的去重取值（按表格显示文本，日期为 yyyy/M/d；数字/日期按数值排序）。
+        /// 空/null 单元格也作为一项返回（值为 ""，界面显示为「（空白）」，排在最前），便于筛选空值行。
         /// </summary>
         public List<string> GetColumnValues(bool planTable, string property)
         {
             IEnumerable<object> rows = planTable ? Plans.Cast<object>() : Requisitions.Cast<object>();
             List<string> values = rows.Select(r => FormatValue(r, property))
-                .Where(v => !string.IsNullOrWhiteSpace(v))
                 .Distinct(StringComparer.Ordinal)
                 .ToList();
             values.Sort(CompareValues);
@@ -398,12 +398,14 @@ namespace ORT一键报告.Plans.ViewModels
                     PropertyCache[key] = info;
                 }
                 object value = info?.GetValue(row);
-                return value switch
+                string text = value switch
                 {
                     null => "",
                     DateTime date => date.ToString("yyyy/M/d"),
                     _ => value.ToString()
                 };
+                // 空白（空格/制表符等）也视为空值，与 null/空串一起归入「（空白）」筛选项
+                return string.IsNullOrWhiteSpace(text) ? "" : text;
             }
             catch
             {

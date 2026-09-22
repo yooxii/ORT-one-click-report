@@ -2484,4 +2484,13 @@ Build the plan index now (compress repeated text into shared templates)?</value>
   <data name="Msg_NoAssociatedPlan" xml:space="preserve">
     <value>No linked plan row was found for this requisition, so plan sync is not possible; use Add Plan instead</value>
   </data>
+  <data name="Menu_FilterEmpty" xml:space="preserve">
+    <value>(blank)</value>
+  </data>
+  <data name="Menu_FilterGroupFormat" xml:space="preserve">
+    <value>{0}… ({1})</value>
+  </data>
+  <data name="Menu_FilterSelectGroupFormat" xml:space="preserve">
+    <value>Select this group ({0})</value>
+  </data>
 </root>

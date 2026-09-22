@@ -154,7 +154,7 @@ namespace ORT一键报告.Plans.Views
         /// <summary>筛选项超过这个数量时，在筛选菜单里显示搜索框</summary>
         private const int FilterSearchThreshold = 10;
 
-        /// <summary>带搜索框时最多创建的可选值项（搜索可在其中查找，避免一次性建上千个菜单项）</summary>
+        /// <summary>搜索用平铺项最多创建多少个（超大表时的保护上限；分组树本身另有每层上限）</summary>
         private const int MaxSearchableFilterValues = 1000;
 
         /// <summary>已筛选列的列头样式（加粗+主题色，作为 Excel 漏斗的替代提示）</summary>
@@ -225,53 +225,40 @@ namespace ORT一键报告.Plans.Views
                 bool allIncluded = filter == null || !filter.IsActive;
                 filterRoot.Items.Add(new Separator());
 
-                // 值多时提供搜索框：空查询只显示前 MaxHeaderFilterValues 项（保持菜单不过长），
-                // 输入关键字后在全部候选中筛选（可搜到前 200 项之外的取值）
-                bool withSearch = values.Count > FilterSearchThreshold;
-                List<(MenuItem Item, string Value)> valueItems = [];
-                int created = 0;
-                int createLimit = withSearch ? MaxSearchableFilterValues : MaxHeaderFilterValues;
-                foreach (string value in values)
+                // 空/null 单元格也作为一项列出（显示为「（空白）」），排在最前
+                List<MenuItem> browseItems = [];
+                if (values.Contains(""))
                 {
-                    if (created++ >= createLimit)
-                    {
-                        filterRoot.Items.Add(new MenuItem
-                        {
-                            Header = string.Format(LanguageService.Get("Menu_FilterMoreFormat"), createLimit),
-                            IsEnabled = false
-                        });
-                        break;
-                    }
-                    MenuItem valueItem = new()
-                    {
-                        Header = value,
-                        IsCheckable = true,
-                        IsChecked = allIncluded || filter.Selected.Contains(value)
-                    };
-                    string captured = value;
-                    valueItem.Click += (s, args) =>
-                    {
-                        List<string> selected = allIncluded ? [.. values] : [.. filter.Selected];
-                        if (valueItem.IsChecked)
-                        {
-                            if (!selected.Contains(captured))
-                            {
-                                selected.Add(captured);
-                            }
-                        }
-                        else
-                        {
-                            selected.Remove(captured);
-                        }
-                        ApplyColumnFilter(isPlan, property, label, values, selected);
-                    };
-                    filterRoot.Items.Add(valueItem);
-                    valueItems.Add((valueItem, value));
+                    MenuItem emptyItem = MakeFilterValueItem("", LanguageService.Get("Menu_FilterEmpty"),
+                        isPlan, property, label, values, filter, allIncluded);
+                    filterRoot.Items.Add(emptyItem);
+                    browseItems.Add(emptyItem);
                 }
 
-                if (withSearch)
+                // 非空值按"开头相同"分组：有共同前缀的收进一组（显示数量、默认折叠），零散值平铺
+                List<string> nonEmpty = values.Where(v => v != "").ToList();
+                AddFilterEntries(filterRoot.Items, BuildFilterEntries(nonEmpty),
+                    isPlan, property, label, values, filter, allIncluded, browseItems);
+
+                // 值多时提供搜索框：空查询显示分组树（默认折叠），输入关键字后切换为平铺匹配列表
+                if (values.Count > FilterSearchThreshold)
                 {
-                    AddFilterSearchBox(filterRoot, valueItems);
+                    List<(MenuItem Item, string Value)> valueItems = [];
+                    int flatCreated = 0;
+                    foreach (string value in values)
+                    {
+                        if (flatCreated++ >= MaxSearchableFilterValues)
+                        {
+                            break;   // 超大表保护：搜索项数量封顶
+                        }
+                        MenuItem flat = MakeFilterValueItem(value,
+                            value == "" ? LanguageService.Get("Menu_FilterEmpty") : value,
+                            isPlan, property, label, values, filter, allIncluded);
+                        flat.Visibility = Visibility.Collapsed;
+                        filterRoot.Items.Add(flat);
+                        valueItems.Add((flat, value));
+                    }
+                    AddFilterSearchBox(filterRoot, browseItems, valueItems);
                 }
             }
             menu.Items.Add(filterRoot);
@@ -299,12 +286,241 @@ namespace ORT一键报告.Plans.Views
         }
 
         /// <summary>
-        /// 在筛选菜单里插入搜索框（筛选项多时使用）：输入关键字即时过滤候选值；
-        /// 空查询时仍只显示前 MaxHeaderFilterValues 项，输入后可在全部候选（最多 MaxSearchableFilterValues 项）里查找。
+        /// 创建一个可勾选的筛选项（单个值）；value 为比较用的实际值（空值为 ""），display 为菜单显示文本
+        /// </summary>
+        private MenuItem MakeFilterValueItem(string value, string display,
+            bool isPlan, string property, string label, List<string> values, ColumnFilter filter, bool allIncluded)
+        {
+            MenuItem valueItem = new()
+            {
+                Header = display,
+                IsCheckable = true,
+                IsChecked = allIncluded || filter.Selected.Contains(value)
+            };
+            string captured = value;
+            valueItem.Click += (s, args) =>
+            {
+                List<string> selected = allIncluded ? [.. values] : [.. filter.Selected];
+                if (valueItem.IsChecked)
+                {
+                    if (!selected.Contains(captured))
+                    {
+                        selected.Add(captured);
+                    }
+                }
+                else
+                {
+                    selected.Remove(captured);
+                }
+                ApplyColumnFilter(isPlan, property, label, values, selected);
+            };
+            return valueItem;
+        }
+
+        /* ---------------- 筛选值按共同前缀分组 ---------------- */
+
+        /// <summary>筛选菜单的一个条目：要么是一组（Group），要么是单个值（Value）</summary>
+        private sealed class FilterEntry
+        {
+            public FilterGroup Group;
+            public string Value;
+        }
+
+        /// <summary>一组取值：共同前缀 + 组内取值数 + 子条目（可再嵌套子组）</summary>
+        private sealed class FilterGroup
+        {
+            public string Prefix;
+            public int Count;
+            public List<FilterEntry> Items = [];
+        }
+
+        /// <summary>前缀树节点</summary>
+        private sealed class PrefixNode
+        {
+            public Dictionary<char, PrefixNode> Children = [];
+            public bool IsValue;
+            public string Value;
+            public int LeafCount;
+        }
+
+        /// <summary>
+        /// 把取值按"开头相同"构建分组层级：插入前缀树后压缩单孩子链，
+        /// 组内取值数 ≥ 2 的显示为一组（共同前缀 + 数量），零散值平铺。
+        /// </summary>
+        private static List<FilterEntry> BuildFilterEntries(IReadOnlyList<string> values)
+        {
+            PrefixNode root = new();
+            foreach (string value in values)
+            {
+                PrefixNode node = root;
+                foreach (char c in value)
+                {
+                    if (!node.Children.TryGetValue(c, out PrefixNode next))
+                    {
+                        next = new PrefixNode();
+                        node.Children[c] = next;
+                    }
+                    node = next;
+                    node.LeafCount++;
+                }
+                node.IsValue = true;
+                node.Value = value;
+            }
+            return EmitLevel(root.Children, "");
+        }
+
+        /// <summary>
+        /// 递归输出某一层级的条目：链式单孩子且自身不是完整值时继续拉长公共前缀；
+        /// 取值数够一组的收成 FilterGroup（默认折叠、显示数量），否则零散值平铺到该层。
+        /// </summary>
+        private static List<FilterEntry> EmitLevel(Dictionary<char, PrefixNode> children, string prefix)
+        {
+            List<FilterEntry> level = [];
+            foreach (KeyValuePair<char, PrefixNode> kv in children.OrderBy(kv => kv.Key))
+            {
+                string childPrefix = prefix + kv.Key;
+                PrefixNode node = kv.Value;
+                // 链式合并：只有一个孩子且自身不是完整值时，把公共前缀拉长
+                while (node.Children.Count == 1 && !node.IsValue)
+                {
+                    KeyValuePair<char, PrefixNode> only = node.Children.First();
+                    childPrefix += only.Key;
+                    node = only.Value;
+                }
+                if (node.LeafCount >= 2)
+                {
+                    FilterGroup group = new() { Prefix = childPrefix, Count = node.LeafCount };
+                    if (node.IsValue)
+                    {
+                        // 恰好等于共同前缀的那个值，列在组内最前
+                        group.Items.Add(new FilterEntry { Value = node.Value });
+                    }
+                    group.Items.AddRange(EmitLevel(node.Children, childPrefix));
+                    level.Add(new FilterEntry { Group = group });
+                }
+                else
+                {
+                    CollectLeafValues(node, level);
+                }
+            }
+            return level;
+        }
+
+        private static void CollectLeafValues(PrefixNode node, List<FilterEntry> output)
+        {
+            if (node.IsValue)
+            {
+                output.Add(new FilterEntry { Value = node.Value });
+            }
+            foreach (KeyValuePair<char, PrefixNode> kv in node.Children.OrderBy(kv => kv.Key))
+            {
+                CollectLeafValues(kv.Value, output);
+            }
+        }
+
+        /// <summary>
+        /// 把分组条目写进筛选菜单（递归处理嵌套组）：值项可勾选；
+        /// 组默认折叠、标题为「共同前缀…（数量）」，组内第一项是「全选本组」开关（一次勾选/取消整组）。
+        /// 所有写进菜单的项都登记到 browseItems（搜索时整体隐藏）。
+        /// </summary>
+        private void AddFilterEntries(ItemCollection parentItems, List<FilterEntry> entries,
+            bool isPlan, string property, string label, List<string> values, ColumnFilter filter, bool allIncluded,
+            List<MenuItem> browseItems)
+        {
+            int created = 0;
+            foreach (FilterEntry entry in entries)
+            {
+                if (created++ >= MaxHeaderFilterValues)
+                {
+                    MenuItem more = new()
+                    {
+                        Header = string.Format(LanguageService.Get("Menu_FilterMoreFormat"), MaxHeaderFilterValues),
+                        IsEnabled = false
+                    };
+                    parentItems.Add(more);
+                    browseItems.Add(more);
+                    break;
+                }
+                if (entry.Group is FilterGroup group)
+                {
+                    MenuItem groupItem = new()
+                    {
+                        Header = string.Format(LanguageService.Get("Menu_FilterGroupFormat"), group.Prefix, group.Count)
+                    };
+                    // 「全选本组」开关：当前整组都包含时显示勾选，点击即在 全选/全不选 间切换
+                    List<string> groupValues = CollectGroupValues(group);
+                    MenuItem selectGroup = new()
+                    {
+                        Header = string.Format(LanguageService.Get("Menu_FilterSelectGroupFormat"), group.Count),
+                        IsCheckable = true,
+                        IsChecked = allIncluded || groupValues.All(filter.Selected.Contains)
+                    };
+                    selectGroup.Click += (s, args) =>
+                    {
+                        List<string> selected = allIncluded ? [.. values] : [.. filter.Selected];
+                        if (selectGroup.IsChecked)
+                        {
+                            foreach (string v in groupValues)
+                            {
+                                if (!selected.Contains(v))
+                                {
+                                    selected.Add(v);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            selected.RemoveAll(groupValues.Contains);
+                        }
+                        ApplyColumnFilter(isPlan, property, label, values, selected);
+                    };
+                    groupItem.Items.Add(selectGroup);
+                    groupItem.Items.Add(new Separator());
+                    AddFilterEntries(groupItem.Items, group.Items,
+                        isPlan, property, label, values, filter, allIncluded, browseItems);
+                    parentItems.Add(groupItem);
+                    browseItems.Add(groupItem);
+                }
+                else
+                {
+                    MenuItem valueItem = MakeFilterValueItem(entry.Value, entry.Value,
+                        isPlan, property, label, values, filter, allIncluded);
+                    parentItems.Add(valueItem);
+                    browseItems.Add(valueItem);
+                }
+            }
+        }
+
+        /// <summary>取一组下的全部取值（含嵌套子组）</summary>
+        private static List<string> CollectGroupValues(FilterGroup group)
+        {
+            List<string> result = [];
+            void Walk(FilterGroup g)
+            {
+                foreach (FilterEntry entry in g.Items)
+                {
+                    if (entry.Group is FilterGroup child)
+                    {
+                        Walk(child);
+                    }
+                    else if (entry.Value != null)
+                    {
+                        result.Add(entry.Value);
+                    }
+                }
+            }
+            Walk(group);
+            return result;
+        }
+
+        /// <summary>
+        /// 在筛选菜单里插入搜索框（筛选项多时使用）：空查询显示分组树（默认折叠），
+        /// 输入关键字后隐藏分组树、改为平铺显示匹配的取值（可搜到分组里的任意取值）。
         /// 说明：TextBox 放在 MenuItem 的 Header 里，宿主要设 StaysOpenOnClick 且不可聚焦，
         /// 并在子菜单打开时把焦点交给输入框，否则键盘输入会被菜单当成导航。
         /// </summary>
-        private void AddFilterSearchBox(MenuItem filterRoot, List<(MenuItem Item, string Value)> valueItems)
+        private void AddFilterSearchBox(MenuItem filterRoot, List<MenuItem> browseItems,
+            List<(MenuItem Item, string Value)> valueItems)
         {
             TextBox search = new()
             {
@@ -350,20 +566,24 @@ namespace ORT一键报告.Plans.Views
             {
                 string query = search.Text?.Trim() ?? "";
                 hint.Visibility = search.Text.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
-                int visible = 0;
-                for (int i = 0; i < valueItems.Count; i++)
+                bool searching = query.Length > 0;
+                // 空查询：显示分组树；有关键字：隐藏分组树，平铺显示匹配项
+                foreach (MenuItem item in browseItems)
                 {
-                    (MenuItem item, string value) = valueItems[i];
-                    bool match = query.Length > 0
-                        ? value?.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0
-                        : i < MaxHeaderFilterValues;
+                    item.Visibility = searching ? Visibility.Collapsed : Visibility.Visible;
+                }
+                int visible = 0;
+                foreach ((MenuItem item, string value) in valueItems)
+                {
+                    bool match = searching && value != null
+                        && value.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0;
                     item.Visibility = match ? Visibility.Visible : Visibility.Collapsed;
                     if (match)
                     {
                         visible++;
                     }
                 }
-                noMatch.Visibility = visible == 0 ? Visibility.Visible : Visibility.Collapsed;
+                noMatch.Visibility = searching && visible == 0 ? Visibility.Visible : Visibility.Collapsed;
             }
 
             search.TextChanged += (s, args) => ApplySearch();
