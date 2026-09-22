@@ -2493,4 +2493,10 @@
   <data name="Menu_FilterSelectGroupFormat" xml:space="preserve">
     <value>全选本组（{0} 项）</value>
   </data>
+  <data name="Menu_FilterGroupHint" xml:space="preserve">
+    <value>点击展开/收起这一组</value>
+  </data>
+  <data name="Menu_FilterSelectGroupHint" xml:space="preserve">
+    <value>一次勾选/取消本组全部取值</value>
+  </data>
 </root>

@@ -2493,4 +2493,10 @@ Build the plan index now (compress repeated text into shared templates)?</value>
   <data name="Menu_FilterSelectGroupFormat" xml:space="preserve">
     <value>Select this group ({0})</value>
   </data>
+  <data name="Menu_FilterGroupHint" xml:space="preserve">
+    <value>Click to expand/collapse this group</value>
+  </data>
+  <data name="Menu_FilterSelectGroupHint" xml:space="preserve">
+    <value>Check/uncheck every value in this group</value>
+  </data>
 </root>
