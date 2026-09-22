@@ -972,16 +972,10 @@
     <value>Auto-fill from Work Order, modifiable</value>
   </data>
   <data name="ReqEdit_PlanSync" xml:space="preserve">
-    <value>Plan sync info * (sync new plan when adding return)</value>
-  </data>
-  <data name="ReqEdit_AutoGen" xml:space="preserve">
-    <value>Auto Generate</value>
+    <value>Plan sync info (expanded = also create a plan row, collapsed = returns only)</value>
   </data>
   <data name="ReqEdit_AutoGenRT" xml:space="preserve">
-    <value>Auto-generated as RT{year}{month}{no}; editable</value>
-  </data>
-  <data name="ReqEdit_AutoGenRTAH" xml:space="preserve">
-    <value>Auto generate RTAH{YYYYMM}{No}</value>
+    <value>Generated as RT{year}{month}{no} when empty; click the Work Number label to regenerate from the current date</value>
   </data>
   <data name="ReqEdit_CustomInput" xml:space="preserve">
     <value>Custom Input</value>
@@ -996,7 +990,7 @@
     <value>Work Number</value>
   </data>
   <data name="PlanEdit_WorkNumberHint" xml:space="preserve">
-    <value>Auto-generated as QRT{year}{month}{no} for non-requisition plans; editable</value>
+    <value>Generated as QRT{year}{month}{no} from the start date; editable; click the label to regenerate</value>
   </data>
   <data name="PlanEdit_TestItem" xml:space="preserve">
     <value>Test Item*</value>
@@ -2411,5 +2405,83 @@ Build the plan index now (compress repeated text into shared templates)?</value>
   </data>
   <data name="Msg_JobNoExistsFormat" xml:space="preserve">
     <value>Job number [{0}] already exists</value>
+  </data>
+  <data name="PlanEdit_RefreshJobNoHint" xml:space="preserve">
+    <value>Click the Work Number label to regenerate it from the current date</value>
+  </data>
+  <data name="PlanEdit_RefreshRtHint" xml:space="preserve">
+    <value>Click the Return RT Order label to generate it from the requisition date (no longer automatic)</value>
+  </data>
+  <data name="ReqEdit_NeedReturn" xml:space="preserve">
+    <value>Return required</value>
+  </data>
+  <data name="ReqEdit_NoReturnHint" xml:space="preserve">
+    <value>Unchecked means no return needed (Return RT Order stays empty)</value>
+  </data>
+  <data name="ReqEdit_PlanSyncRequired" xml:space="preserve">
+    <value>Plan sync info expanded: every field below is required</value>
+  </data>
+  <data name="Msg_SnDuplicateFormat" xml:space="preserve">
+    <value>Duplicate serial numbers: {0}. Re-enter? (Yes = go back and fix, No = save anyway)</value>
+  </data>
+  <data name="Msg_SnDuplicateInInput" xml:space="preserve">
+    <value>duplicated in this input</value>
+  </data>
+  <data name="Msg_SnDuplicateInDbFormat" xml:space="preserve">
+    <value>already in requisition [{0}]</value>
+  </data>
+  <data name="Msg_NeedReturnOrder" xml:space="preserve">
+    <value>Return is required: fill in the Return RT Order (or click its label to generate)</value>
+  </data>
+  <data name="Msg_FillReturnDate" xml:space="preserve">
+    <value>Select the return date</value>
+  </data>
+  <data name="Msg_FillStockInNo" xml:space="preserve">
+    <value>Fill in the stock-in document no.</value>
+  </data>
+  <data name="Msg_FillStockInQty" xml:space="preserve">
+    <value>Fill in the stock-in quantity</value>
+  </data>
+  <data name="Msg_FillStockInDate" xml:space="preserve">
+    <value>Select the stock-in date</value>
+  </data>
+  <data name="Plans_Menu_ReturnLine" xml:space="preserve">
+    <value>Return</value>
+  </data>
+  <data name="Plans_Menu_StockIn" xml:space="preserve">
+    <value>Stock In</value>
+  </data>
+  <data name="Plans_Msg_SelectRequisition" xml:space="preserve">
+    <value>Select a returns row first</value>
+  </data>
+  <data name="Plans_Msg_NoEditPermission" xml:space="preserve">
+    <value>No edit permission</value>
+  </data>
+  <data name="Plans_Msg_ReturnAppliedFormat" xml:space="preserve">
+    <value>Return date set to {0} (staged; submit to save)</value>
+  </data>
+  <data name="Plans_Msg_StockInAppliedFormat" xml:space="preserve">
+    <value>Stock-in set to {0} (staged; submit to save)</value>
+  </data>
+  <data name="Plans_Msg_AddRequisitionNoPlan" xml:space="preserve">
+    <value>Requisition staged (no plan row created)</value>
+  </data>
+  <data name="ReqReturn_Title" xml:space="preserve">
+    <value>Return Registration</value>
+  </data>
+  <data name="ReqStockIn_Title" xml:space="preserve">
+    <value>Stock-In Registration</value>
+  </data>
+  <data name="ReqReturn_Hint" xml:space="preserve">
+    <value>Click Return to write the date above into this record's return date</value>
+  </data>
+  <data name="ReqStockIn_Hint" xml:space="preserve">
+    <value>Click Stock In to write the document/qty/date into this record</value>
+  </data>
+  <data name="Common_CopyHint" xml:space="preserve">
+    <value>Selectable, copy with Ctrl+C</value>
+  </data>
+  <data name="Msg_NoAssociatedPlan" xml:space="preserve">
+    <value>No linked plan row was found for this requisition, so plan sync is not possible; use Add Plan instead</value>
   </data>
 </root>

@@ -1,0 +1,76 @@
+<Window x:Class="ORT一键报告.Plans.Views.WindowRequisitionStockIn" Background="{DynamicResource WindowBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:lex="http://wpflocalizeextension.codeplex.com"
+        mc:Ignorable="d"
+        Title="{lex:Loc ReqStockIn_Title}" Width="520" SizeToContent="Height" ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner">
+
+    <Grid Margin="15">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="110"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="auto"/>
+        </Grid.RowDefinitions>
+
+        <!--机种名称/领用单据/序列号/工令/线别：只读展示，内容可选中复制（Ctrl+C）-->
+        <Label Content="{lex:Loc Plans_ModelNameTC}" VerticalContentAlignment="Center"/>
+        <TextBox x:Name="txt_model" Grid.Column="1" Margin="5" IsReadOnly="True" BorderThickness="0"
+                 Background="Transparent" ToolTip="{lex:Loc Common_CopyHint}"/>
+
+        <Label Grid.Row="1" Content="{lex:Loc Plans_RequisitionDocNo}" VerticalContentAlignment="Center"/>
+        <TextBox x:Name="txt_reqNo" Grid.Row="1" Grid.Column="1" Margin="5" IsReadOnly="True" BorderThickness="0"
+                 Background="Transparent" ToolTip="{lex:Loc Common_CopyHint}"/>
+
+        <Label Grid.Row="2" Content="{lex:Loc Plans_SN}" VerticalAlignment="Top" VerticalContentAlignment="Center"/>
+        <TextBox x:Name="txt_sn" Grid.Row="2" Grid.Column="1" Margin="5" IsReadOnly="True" BorderThickness="0"
+                 Background="Transparent" TextWrapping="Wrap" AcceptsReturn="True" MinLines="1" MaxLines="6"
+                 VerticalScrollBarVisibility="Auto" VerticalContentAlignment="Top" ToolTip="{lex:Loc Common_CopyHint}"/>
+
+        <Label Grid.Row="3" Content="{lex:Loc Plans_WorkOrder}" VerticalContentAlignment="Center"/>
+        <TextBox x:Name="txt_workOrder" Grid.Row="3" Grid.Column="1" Margin="5" IsReadOnly="True" BorderThickness="0"
+                 Background="Transparent" ToolTip="{lex:Loc Common_CopyHint}"/>
+
+        <Label Grid.Row="4" Content="{lex:Loc Plans_Line}" VerticalContentAlignment="Center"/>
+        <TextBox x:Name="txt_line" Grid.Row="4" Grid.Column="1" Margin="5" IsReadOnly="True" BorderThickness="0"
+                 Background="Transparent" ToolTip="{lex:Loc Common_CopyHint}"/>
+
+        <TextBlock Grid.Row="5" Grid.ColumnSpan="2" Margin="0,6,0,0" TextWrapping="Wrap"
+                   Foreground="{DynamicResource TextSecondaryBrush}" Text="{lex:Loc ReqStockIn_Hint}"/>
+
+        <!--入库信息：点「入库」写入该条领退记录-->
+        <Label Grid.Row="6" Content="{lex:Loc Plans_StockInNo}" VerticalContentAlignment="Center"
+               Style="{StaticResource RequiredFieldLabel}"/>
+        <TextBox x:Name="txt_stockInNo" Grid.Row="6" Grid.Column="1" Margin="5" VerticalContentAlignment="Center"/>
+
+        <Label Grid.Row="7" Content="{lex:Loc Plans_StockInQty}" VerticalContentAlignment="Center"
+               Style="{StaticResource RequiredFieldLabel}"/>
+        <TextBox x:Name="txt_stockInQty" Grid.Row="7" Grid.Column="1" Margin="5" VerticalContentAlignment="Center"/>
+
+        <Label Grid.Row="8" Content="{lex:Loc Plans_StockInDate}" VerticalContentAlignment="Center"
+               Style="{StaticResource RequiredFieldLabel}"/>
+        <DatePicker x:Name="dp_stockInDate" Grid.Row="8" Grid.Column="1" Margin="5" VerticalContentAlignment="Center"/>
+
+        <Grid Grid.Row="9" Grid.ColumnSpan="2" Margin="0,12,0,0">
+            <TextBlock Text="{lex:Loc Common_RequiredHint}" VerticalAlignment="Center" TextWrapping="Wrap"
+                       Foreground="{DynamicResource TextSecondaryBrush}"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="{lex:Loc Plans_Menu_StockIn}" Width="90" Click="Btn_StockIn_Click" IsDefault="True"/>
+                <Button Content="{lex:Loc Common_Cancel}" Width="90" Margin="10,0,0,0" Click="Btn_Cancel_Click" IsCancel="True"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>

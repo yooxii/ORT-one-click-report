@@ -1,4 +1,4 @@
-﻿<Window x:Class="ORT一键报告.Plans.Views.WindowPlanDirectEdit" Background="{DynamicResource WindowBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}"
+<Window x:Class="ORT一键报告.Plans.Views.WindowPlanDirectEdit" Background="{DynamicResource WindowBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -39,7 +39,9 @@
                 <Label Content="{lex:Loc ReqEdit_ModelName}" Grid.Row="1" Grid.Column="2"/>
                 <TextBox x:Name="txt_model" Grid.Row="1" Grid.Column="3" Margin="3" TextChanged="Txt_Model_TextChanged"/>
                 
-                <Label Content="{lex:Loc PlanEdit_WorkNumber}" Grid.Row="2"/>
+                <!--工作编号标签可点击：按当前开始日期重新生成（改过日期后用它刷新）-->
+                <Label Content="{lex:Loc PlanEdit_WorkNumber}" Grid.Row="2" Background="Transparent" Cursor="Hand"
+                       ToolTip="{lex:Loc PlanEdit_RefreshJobNoHint}" MouseLeftButtonUp="Lbl_JobNo_Click"/>
                 <TextBox x:Name="txt_jobNo" Grid.Row="2" Grid.Column="1" Margin="3"
                          ToolTip="{lex:Loc PlanEdit_WorkNumberHint}"/>
                 <Label Content="{lex:Loc PlanEdit_SampleQty}" Grid.Row="2" Grid.Column="2"/>

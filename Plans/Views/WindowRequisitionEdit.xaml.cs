@@ -1,4 +1,4 @@
-﻿using NLog;
+using NLog;
 using ORT一键报告.Models;
 using ORT一键报告.Services;
 using ORT一键报告.Utils;
@@ -37,6 +37,13 @@ namespace ORT一键报告.Plans.Views
         private string _uploadedSnFile;
 
         /// <summary>
+        /// 最近一次由程序生成的工作编号 / 回线RT工令：
+        /// 改日期时若字段内容还是它（用户没手动改过）就跟着刷新，手动改过的不覆盖
+        /// </summary>
+        private string _autoJobNo;
+        private string _autoReturnRt;
+
+        /// <summary>
         /// 构造的领退记录结果（由调用方处理：暂存或提审）
         /// </summary>
         public Requisition RequisitionResult { get; private set; }
@@ -69,21 +76,46 @@ namespace ORT一键报告.Plans.Views
             cb_stage.ItemsSource = _admin.GetStages().Select(s => s.Name).ToList();
             cb_reportStatus.ItemsSource = Models.ReportStatusKind.All.ToList();
 
-            // 开始时间默认与领用日期联动
-            dp_reqDate.SelectedDateChanged += (s, e) =>
-            {
-                if (dp_startDate != null && dp_reqDate.SelectedDate != null && _editTarget == null)
-                {
-                    dp_startDate.SelectedDate = dp_reqDate.SelectedDate;
-                    UpdateAutoPlan();
-                }
-            };
+            // 回线RT工令：默认「无需回线」——不勾选时留空并禁用输入
+            ApplyNeedReturnState();
+
+            // 领用日期变化：开始时间跟着走；工作编号/回线RT工令还是自动生成的那个（没手动改过）就一起刷新
+            dp_reqDate.SelectedDateChanged += (s, e) => OnReqDateChanged();
 
             if (editTarget != null)
             {
                 LoadFromRequisition(editTarget);
                 LoadAssociatedPlan(editTarget);
             }
+        }
+
+        /// <summary>
+        /// 领用日期变化后的联动：开始时间默认跟随；工作编号（及需要回线时的回线RT工令）跟着日期刷新，
+        /// 修复「日期填错更正后编号还是旧的」
+        /// </summary>
+        private void OnReqDateChanged()
+        {
+            if (dp_reqDate.SelectedDate is not DateTime reqDate)
+            {
+                return;
+            }
+            if (_editTarget == null && dp_startDate != null && dp_reqDate.SelectedDate != null)
+            {
+                // 新增时开始时间默认与领用日期一致（与原有行为一致）
+                dp_startDate.SelectedDate = dp_reqDate.SelectedDate;
+            }
+            // 编号未手动改过 → 跟着新日期重新生成
+            if (_autoJobNo != null && txt_jobNo != null
+                && string.Equals(txt_jobNo.Text?.Trim(), _autoJobNo, StringComparison.Ordinal))
+            {
+                RegenerateJobNo(false);
+            }
+            if (_autoReturnRt != null && txt_returnRt != null
+                && string.Equals(txt_returnRt.Text?.Trim(), _autoReturnRt, StringComparison.Ordinal))
+            {
+                RegenerateReturnRt(false);
+            }
+            UpdateAutoPlan();
         }
 
         /* ###############################  加载  ################################ */
@@ -101,6 +133,8 @@ namespace ORT一键报告.Plans.Views
             }
             // 先给领用日期，让 UpdateAutoPlan 能按日期生成 RT 工作编号
             dp_reqDate.SelectedDate = plan.StartDate ?? DateTime.Today;
+            // 从计划表「转为领用」过来的：计划表同步信息已经填好了，直接展开（展开=同步建立计划表记录）
+            exp_planSync.IsExpanded = true;
             txt_model.Text = plan.ModelName ?? "";
             txt_outQty.Text = plan.SampleSize ?? "";
             SetCombo(cb_testItem, plan.TestItem);
@@ -136,6 +170,8 @@ namespace ORT一键报告.Plans.Views
             {
                 return;
             }
+            // 找到关联计划：展开「计划表同步信息」（展开=同步更新该计划记录）
+            exp_planSync.IsExpanded = true;
             SetCombo(cb_testItem, _associatedPlan.TestItem);
             SetCombo(cb_stage, _associatedPlan.Stage);
             SetCombo(cb_reportStatus, _associatedPlan.ReportStatus);
@@ -173,12 +209,10 @@ namespace ORT一键报告.Plans.Views
             txt_workOrder.Text = req.WorkOrder;
             txt_dc.Text = req.DC;
             txt_lineNo.Text = req.LineNo;
-            if (req.ReturnRtOrder != null)
-            {
-                chk_genReturnRt.IsChecked = false;
-                txt_returnRt.Text = req.ReturnRtOrder;
-                txt_returnRt.IsReadOnly = false;
-            }
+            // 回线RT工令：有值即视为「需要回线」（勾选并把值显示出来），没有就留空=无需回线
+            chk_needReturn.IsChecked = !string.IsNullOrWhiteSpace(req.ReturnRtOrder);
+            txt_returnRt.Text = req.ReturnRtOrder ?? "";
+            ApplyNeedReturnState();
             if (!string.IsNullOrWhiteSpace(req.SnFilePath))
             {
                 rb_snFile.IsChecked = true;
@@ -218,13 +252,57 @@ namespace ORT一键报告.Plans.Views
         }
 
         /// <summary>
-        /// 刷新回线RT工令（自动生成时）
+        /// 生成工作编号 RT{年月}{编号}，并记住这个自动生成的值（改日期时据此判断是否跟随刷新）；
+        /// force=true 时（点标签）日期缺失会给出提示
         /// </summary>
-        private void UpdateReturnRt()
+        private void RegenerateJobNo(bool force)
         {
-            if (chk_genReturnRt.IsChecked == true && dp_reqDate.SelectedDate is DateTime dt)
+            if (dp_reqDate.SelectedDate is not DateTime dt)
             {
-                txt_returnRt.Text = _excelService.GenerateReturnRtOrder(dt);
+                if (force)
+                {
+                    _ = MessageBox.Show(LocalizationHelper.Get("Msg_FillReqDate"), LanguageService.Get("Cap_Info"));
+                }
+                return;
+            }
+            txt_jobNo.Text = _excelService.GenerateJobNo(dt, "RT");
+            _autoJobNo = txt_jobNo.Text.Trim();
+        }
+
+        /// <summary>
+        /// 生成回线RT工令 RTAH{年月}{编号}：点「回线RT工令」标签时按领用日期生成（已取消自动生成）；
+        /// 点标签即视为需要回线，会一并勾上「需要回线」
+        /// </summary>
+        private void RegenerateReturnRt(bool force)
+        {
+            if (dp_reqDate.SelectedDate is not DateTime dt)
+            {
+                _ = MessageBox.Show(LocalizationHelper.Get("Msg_FillReqDate"), LanguageService.Get("Cap_Info"));
+                return;
+            }
+            if (force && chk_needReturn.IsChecked != true)
+            {
+                chk_needReturn.IsChecked = true;
+            }
+            txt_returnRt.Text = _excelService.GenerateReturnRtOrder(dt);
+            _autoReturnRt = txt_returnRt.Text.Trim();
+        }
+
+        /// <summary>
+        /// 「需要回线」勾选状态落到回线RT工令输入框：不勾选=无需回线（留空并禁用）
+        /// </summary>
+        private void ApplyNeedReturnState()
+        {
+            if (txt_returnRt == null || chk_needReturn == null)
+            {
+                return;
+            }
+            bool need = chk_needReturn.IsChecked == true;
+            txt_returnRt.IsEnabled = need;
+            if (!need)
+            {
+                txt_returnRt.Text = "";
+                _autoReturnRt = null;
             }
         }
 
@@ -246,7 +324,7 @@ namespace ORT一键报告.Plans.Views
                 }
                 if (string.IsNullOrWhiteSpace(txt_jobNo.Text))
                 {
-                    txt_jobNo.Text = _excelService.GenerateJobNo(reqDate, "RT");
+                    RegenerateJobNo(false);
                 }
                 if (string.IsNullOrWhiteSpace(txt_sampleSize.Text))
                 {
@@ -330,24 +408,36 @@ namespace ORT一键报告.Plans.Views
             }
         }
 
-        private void Chk_GenReturnRt_Changed(object sender, RoutedEventArgs e)
+        /// <summary>
+        /// 「需要回线」勾选变化：勾上就允许填写回线RT工令（并聚焦），取消就清空表示无需回线
+        /// </summary>
+        private void Chk_NeedReturn_Changed(object sender, RoutedEventArgs e)
         {
-            if (chk_genReturnRt == null || txt_returnRt == null)
+            ApplyNeedReturnState();
+            if (chk_needReturn.IsChecked == true && string.IsNullOrWhiteSpace(txt_returnRt.Text))
             {
-                return;
+                txt_returnRt.Focus();
             }
-            if (chk_genReturnRt.IsChecked == true)
+        }
+
+        /// <summary>
+        /// 点「工作编号」标签：按当前领用日期重新生成（日期填错更正后用它刷新）
+        /// </summary>
+        private void Lbl_JobNo_Click(object sender, System.Windows.Input.MouseButtonEventArgs e) => RegenerateJobNo(true);
+
+        /// <summary>
+        /// 点「回线RT工令」标签：按当前领用日期生成回线RT工令（不再自动生成）
+        /// </summary>
+        private void Lbl_ReturnRt_Click(object sender, System.Windows.Input.MouseButtonEventArgs e) => RegenerateReturnRt(true);
+
+        /// <summary>
+        /// 「计划表同步信息」展开时补齐计划侧能自动带的字段（只填空字段，不覆盖已填内容）
+        /// </summary>
+        private void Exp_PlanSync_Toggled(object sender, RoutedEventArgs e)
+        {
+            if (exp_planSync?.IsExpanded == true)
             {
-                txt_returnRt.IsReadOnly = true;
-                UpdateReturnRt();
-            }
-            else
-            {
-                txt_returnRt.IsReadOnly = false;
-                if (string.IsNullOrWhiteSpace(txt_returnRt.Text))
-                {
-                    txt_returnRt.Focus();
-                }
+                UpdateAutoPlan();
             }
         }
 
@@ -403,9 +493,28 @@ namespace ORT一键报告.Plans.Views
                 _ = MessageBox.Show(LocalizationHelper.Get("Msg_SelectSNFile"), LanguageService.Get("Cap_Info"));
                 return;
             }
-            // 计划表同步必填（仅新增时）
-            if (_editTarget == null)
+            // 自定义序列号：提交时按「每行一个」检查重复，有重复先问用户要不要重新输入
+            if (rb_snInput.IsChecked == true && !ConfirmDuplicateSn())
             {
+                txt_sn.Focus();
+                return;
+            }
+            // 回线：勾了「需要回线」就必须有回线RT工令；不勾选则留空表示无需回线
+            if (chk_needReturn.IsChecked == true && string.IsNullOrWhiteSpace(txt_returnRt.Text))
+            {
+                _ = MessageBox.Show(LocalizationHelper.Get("Msg_NeedReturnOrder"), LanguageService.Get("Cap_Info"));
+                return;
+            }
+            // 计划表同步信息：展开=同步（建立/更新计划表记录，下列字段必填），折叠=只登记领退信息
+            bool syncPlan = exp_planSync.IsExpanded;
+            string jobNo = null;
+            if (syncPlan)
+            {
+                if (_editTarget != null && _associatedPlan == null)
+                {
+                    _ = MessageBox.Show(LocalizationHelper.Get("Msg_NoAssociatedPlan"), LanguageService.Get("Cap_Info"));
+                    return;
+                }
                 if (cb_testItem.SelectedItem == null)
                 {
                     _ = MessageBox.Show(LocalizationHelper.Get("Msg_SelectTestItem"), LanguageService.Get("Cap_Info"));
@@ -414,6 +523,23 @@ namespace ORT一键报告.Plans.Views
                 if (cb_stage.SelectedItem == null)
                 {
                     _ = MessageBox.Show(LocalizationHelper.Get("Msg_SelectStage"), LanguageService.Get("Cap_Info"));
+                    return;
+                }
+                // 工作编号：允许手动指定，留空时按领用日期自动生成 RT{年月}{编号}
+                jobNo = string.IsNullOrWhiteSpace(txt_jobNo.Text)
+                    ? _excelService.GenerateJobNo(dp_reqDate.SelectedDate ?? DateTime.Today, "RT")
+                    : txt_jobNo.Text.Trim();
+                string jobNoError = PlanValidation.ValidateJobNo(jobNo);
+                if (jobNoError != null)
+                {
+                    _ = MessageBox.Show(jobNoError, LanguageService.Get("Cap_FormatValidationFailed"));
+                    return;
+                }
+                long planId = _associatedPlan?.Id ?? 0;
+                if (_db.FreeSql.Select<Plan>().Where(p => p.JobNo == jobNo && p.Id != planId).Any())
+                {
+                    _ = MessageBox.Show(string.Format(LocalizationHelper.Get("Msg_JobNoExistsFormat"), jobNo),
+                        LanguageService.Get("Cap_Info"));
                     return;
                 }
             }
@@ -467,68 +593,39 @@ namespace ORT一键报告.Plans.Views
             }
 
             RequisitionResult = req;
-        
-            // 新增：同步构造计划记录；编辑：构造关联计划的修改结果（若找到关联计划）
-            if (_editTarget == null)
+
+            // 计划表同步：展开才构造/更新计划记录（新增建立 / 编辑更新关联计划）；折叠时 PlanResult=null，
+            // 调用方只暂存领退记录，不再顺带建立计划表记录
+            if (!syncPlan)
             {
-                // 工作编号：允许手动指定，留空时仍自动生成 RT{年月}{编号}
-                string jobNo = string.IsNullOrWhiteSpace(txt_jobNo.Text)
-                    ? _excelService.GenerateJobNo(req.RequisitionDate ?? DateTime.Today, "RT")
-                    : txt_jobNo.Text.Trim();
-                string jobNoError = PlanValidation.ValidateJobNo(jobNo);
-                if (jobNoError != null)
-                {
-                    _ = MessageBox.Show(jobNoError, LanguageService.Get("Cap_FormatValidationFailed"));
-                    return;
-                }
-                Plan plan = new()
-                {
-                    JobNo = jobNo,
-                    TestItem = cb_testItem.SelectedItem as string,
-                    StartDate = dp_startDate.SelectedDate ?? dp_reqDate.SelectedDate,
-                    Stage = cb_stage.SelectedItem as string,
-                    SampleSize = string.IsNullOrWhiteSpace(txt_sampleSize.Text) ? req.OutQty : txt_sampleSize.Text.Trim(),
-                    ModelName = req.ModelName,
-                    Product = string.IsNullOrWhiteSpace(txt_product.Text) ? null : txt_product.Text.Trim(),
-                    Customer = string.IsNullOrWhiteSpace(txt_customer.Text) ? null : txt_customer.Text.Trim(),
-                    Owner = string.IsNullOrWhiteSpace(txt_owner.Text) ? null : txt_owner.Text.Trim(),
-                    TestPeriod = string.IsNullOrWhiteSpace(txt_testPeriod.Text) ? null : txt_testPeriod.Text.Trim(),
-                    EndDate = dp_endDate.SelectedDate,
-                    Status = "Ongoing",
-                    ReportStatus = cb_reportStatus.SelectedItem as string,
-                    CreatedBy = _permission.CurrentUser,
-                    CreatedAt = DateTime.Now,
-                    UpdatedBy = _permission.CurrentUser,
-                    UpdatedAt = DateTime.Now
-                };
-                if (_db.FreeSql.Select<Plan>().Where(p => p.JobNo == plan.JobNo).Any())
-                {
-                    _ = MessageBox.Show(string.Format(LocalizationHelper.Get("Msg_JobNoExistsFormat"), plan.JobNo),
-                        LanguageService.Get("Cap_Info"));
-                    return;
-                }
-                PlanResult = plan;
+                PlanResult = null;
             }
-            else if (_associatedPlan != null)
+            else
             {
-                // 编辑关联计划（保持 Id/JobNo/创建信息）
-                Plan plan = ClonePlan(_associatedPlan);
+                Plan plan = _associatedPlan != null
+                    ? ClonePlan(_associatedPlan)   // 编辑关联计划：保持 Id/创建信息
+                    : new Plan { CreatedBy = _permission.CurrentUser, CreatedAt = DateTime.Now };
+                plan.JobNo = jobNo;
                 plan.TestItem = cb_testItem.SelectedItem as string;
-                plan.StartDate = dp_startDate.SelectedDate;
+                plan.StartDate = dp_startDate.SelectedDate ?? dp_reqDate.SelectedDate;
                 plan.Stage = cb_stage.SelectedItem as string;
-                plan.SampleSize = string.IsNullOrWhiteSpace(txt_sampleSize.Text) ? null : txt_sampleSize.Text.Trim();
+                // 样品数留空时：新增按领出数量兜底；编辑保持原值（不把原有空值改成领出数量）
+                plan.SampleSize = string.IsNullOrWhiteSpace(txt_sampleSize.Text)
+                    ? (_editTarget == null ? req.OutQty : null)
+                    : txt_sampleSize.Text.Trim();
+                plan.ModelName = req.ModelName;
                 plan.Product = string.IsNullOrWhiteSpace(txt_product.Text) ? null : txt_product.Text.Trim();
                 plan.Customer = string.IsNullOrWhiteSpace(txt_customer.Text) ? null : txt_customer.Text.Trim();
                 plan.Owner = string.IsNullOrWhiteSpace(txt_owner.Text) ? null : txt_owner.Text.Trim();
                 plan.TestPeriod = string.IsNullOrWhiteSpace(txt_testPeriod.Text) ? null : txt_testPeriod.Text.Trim();
                 plan.EndDate = dp_endDate.SelectedDate;
-                plan.ModelName = req.ModelName;
+                plan.Status = plan.Status ?? "Ongoing";
                 plan.ReportStatus = cb_reportStatus.SelectedItem as string;
                 plan.UpdatedBy = _permission.CurrentUser;
                 plan.UpdatedAt = DateTime.Now;
                 PlanResult = plan;
             }
-        
+
             // 非模态窗口：触发 Saved 事件后关闭，由调用方处理暂存/提审
             Saved?.Invoke(RequisitionResult, PlanResult, _editTarget?.Id ?? 0);
             Close();
@@ -537,6 +634,81 @@ namespace ORT一键报告.Plans.Views
         private void Btn_Cancel_Click(object sender, RoutedEventArgs e)
         {
             Close();
+        }
+
+        /* ###############################  序列号重复检查  ################################ */
+
+        /// <summary>
+        /// 自定义序列号提交前的重复检查：按「每行一个序列号」拆分，
+        /// 既查本次输入内部的重号，也查领退记录里已有的序列号（编辑时排除本记录）。
+        /// 有重复时弹窗询问，返回 false 表示用户选择「重新输入」（不保存）。
+        /// </summary>
+        private bool ConfirmDuplicateSn()
+        {
+            List<string> problems = FindDuplicateSnProblems();
+            if (problems.Count == 0)
+            {
+                return true;
+            }
+            MessageBoxResult choice = MessageBox.Show(
+                string.Format(LocalizationHelper.Get("Msg_SnDuplicateFormat"), string.Join("；", problems)),
+                LanguageService.Get("Cap_Info"), MessageBoxButton.YesNo, MessageBoxImage.Warning);
+            return choice != MessageBoxResult.Yes;   // 「是」= 重新输入（放弃本次保存）
+        }
+
+        /// <summary>
+        /// 找出重复的序列号（描述文本列表）：本次输入内的重号 + 领退记录里已有的序列号。
+        /// 空列表表示没有重复。
+        /// </summary>
+        private List<string> FindDuplicateSnProblems()
+        {
+            List<string> sns = ParseSnLines(txt_sn.Text);
+            List<string> problems = [];
+            if (sns.Count == 0)
+            {
+                return problems;
+            }
+
+            foreach (string sn in sns.GroupBy(s => s, StringComparer.OrdinalIgnoreCase)
+                                     .Where(g => g.Count() > 1)
+                                     .Select(g => g.Key))
+            {
+                problems.Add($"{sn}（{LocalizationHelper.Get("Msg_SnDuplicateInInput")}）");
+            }
+
+            // 已有领退记录里的序列号（序列号 → 领料单据号）
+            Dictionary<string, string> existing = new(StringComparer.OrdinalIgnoreCase);
+            long selfId = _editTarget?.Id ?? 0;
+            foreach (Requisition other in _db.FreeSql.Select<Requisition>().Where(r => r.Id != selfId && r.SN != null).ToList())
+            {
+                foreach (string sn in ParseSnLines(other.SN))
+                {
+                    if (!existing.ContainsKey(sn))
+                    {
+                        existing[sn] = other.RequisitionNo ?? "";
+                    }
+                }
+            }
+            foreach (string sn in sns.Where(existing.ContainsKey).Distinct(StringComparer.OrdinalIgnoreCase))
+            {
+                problems.Add($"{sn}（{string.Format(LocalizationHelper.Get("Msg_SnDuplicateInDbFormat"), existing[sn])}）");
+            }
+            return problems;
+        }
+
+        /// <summary>
+        /// 把自定义序列号输入拆成一行一个（去空行与首尾空白）
+        /// </summary>
+        private static List<string> ParseSnLines(string snText)
+        {
+            if (string.IsNullOrWhiteSpace(snText))
+            {
+                return [];
+            }
+            return snText.Split(['\n', '\r'], StringSplitOptions.RemoveEmptyEntries)
+                .Select(s => s.Trim())
+                .Where(s => s.Length > 0)
+                .ToList();
         }
 
         private string SaveSnFile(string sourcePath, string key, string modelName)

@@ -663,6 +663,82 @@ namespace ORT一键报告.Plans.Views
             }
         }
 
+        /* ###############################  右键菜单：回线 / 入库（仅领退表）  ################################ */
+
+        /// <summary>右键命中的领退记录（优先当前单元格所在行，其次选中行）</summary>
+        private Requisition CurrentRequisition
+            => (dg_requisitions.CurrentCell.Item as Requisition) ?? dg_requisitions.SelectedItem as Requisition;
+
+        /// <summary>
+        /// 右键「回线」：打开回线登记窗口，确认后把日期写入该条领退记录的回线日期。
+        /// 只改内存里的记录（暂存），点「提交保存」时才入库并写变更日志。
+        /// </summary>
+        private void Menu_RequisitionReturn_Click(object sender, RoutedEventArgs e)
+        {
+            Requisition req = CurrentRequisition;
+            if (!CanApplyInlineEdit(req))
+            {
+                return;
+            }
+            WindowRequisitionReturn window = new(req) { Owner = this };
+            if (window.ShowDialog() != true)
+            {
+                return;
+            }
+            _vm.SelectedRequisition = req;
+            req.ReturnDate = window.ReturnDate;
+            _vm.NotifyPendingChanged();
+            _vm.StatusMessage = string.Format(LanguageService.Get("Plans_Msg_ReturnAppliedFormat"),
+                window.ReturnDate.ToString("yyyy/M/d"));
+            _logger.Info($"回线登记：{req.RequisitionNo} 回线日期={window.ReturnDate:yyyy/M/d}");
+        }
+
+        /// <summary>
+        /// 右键「入库」：打开入库登记窗口，确认后把入库单据/数量/日期写入该条领退记录（同样走暂存）。
+        /// </summary>
+        private void Menu_RequisitionStockIn_Click(object sender, RoutedEventArgs e)
+        {
+            Requisition req = CurrentRequisition;
+            if (!CanApplyInlineEdit(req))
+            {
+                return;
+            }
+            // S/N 为附件形式时展示文件名/路径，便于确认是哪一笔
+            string snText = !string.IsNullOrWhiteSpace(req.SN) ? req.SN : req.SnFilePath;
+            WindowRequisitionStockIn window = new(req, snText) { Owner = this };
+            if (window.ShowDialog() != true)
+            {
+                return;
+            }
+            _vm.SelectedRequisition = req;
+            req.StockInNo = window.StockInNo;
+            req.StockInQty = window.StockInQty;
+            req.StockInDate = window.StockInDate;
+            _vm.NotifyPendingChanged();
+            _vm.StatusMessage = string.Format(LanguageService.Get("Plans_Msg_StockInAppliedFormat"),
+                $"{window.StockInNo} / {window.StockInQty} / {window.StockInDate:yyyy/M/d}");
+            _logger.Info($"入库登记：{req.RequisitionNo} 单号={window.StockInNo} 数量={window.StockInQty} 日期={window.StockInDate:yyyy/M/d}");
+        }
+
+        /// <summary>
+        /// 回线/入库这类"直接改表格记录"的操作要先有表格编辑权限（与单元格编辑、删除一致），
+        /// 并已选中一条记录；不满足时给出提示并返回 false
+        /// </summary>
+        private bool CanApplyInlineEdit(Requisition req)
+        {
+            if (req == null)
+            {
+                _ = MessageBox.Show(LanguageService.Get("Plans_Msg_SelectRequisition"), LanguageService.Get("Cap_Info"));
+                return false;
+            }
+            if (!_vm.CanGridEdit)
+            {
+                _ = MessageBox.Show(LanguageService.Get("Plans_Msg_NoEditPermission"), LanguageService.Get("Cap_Info"));
+                return false;
+            }
+            return true;
+        }
+
         /* ###############################  右键菜单：报告对应  ################################ */
 
         private Plan CurrentPlan => (dg_plans.CurrentCell.Item as Plan) ?? dg_plans.SelectedItem as Plan;

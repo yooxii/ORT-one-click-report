@@ -1,4 +1,4 @@
-﻿using NLog;
+using NLog;
 using ORT一键报告.Models;
 using ORT一键报告.Services;
 using ORT一键报告.Utils;
@@ -21,6 +21,11 @@ namespace ORT一键报告.Plans.Views
         private readonly AdminService _admin;
         private readonly PlanExcelService _excelService;
         private readonly Plan _editTarget;
+
+        /// <summary>
+        /// 最近一次由程序生成的工作编号：改日期时若编号还是它（用户没改过）就跟着刷新，手动改过的不覆盖
+        /// </summary>
+        private string _autoJobNo;
 
         /// <summary>
         /// 构造的计划记录结果（由调用方处理：暂存或提审）
@@ -167,12 +172,37 @@ namespace ORT一键报告.Plans.Views
             {
                 return;
             }
-            // 新增时自动生成工作编号 QRT{年月}{编号}
-            if (_editTarget == null && dp_startDate.SelectedDate is DateTime start && string.IsNullOrWhiteSpace(txt_jobNo.Text))
+            // 新增时自动生成工作编号 QRT{年月}{编号}；改过日期后若编号还是自动生成的那个
+            // （用户没手动改过）就跟着刷新，避免「日期更正了、编号还是旧的」
+            bool untouched = _autoJobNo != null && string.Equals(txt_jobNo.Text?.Trim(), _autoJobNo, StringComparison.Ordinal);
+            if (dp_startDate.SelectedDate is DateTime start
+                && ((_editTarget == null && string.IsNullOrWhiteSpace(txt_jobNo.Text)) || untouched))
             {
-                txt_jobNo.Text = _excelService.GenerateJobNo(start, "QRT");
+                GenerateJobNo(start);
             }
             UpdateAutoPlan();
+        }
+
+        /// <summary>
+        /// 按给定开始日期生成工作编号 QRT{年月}{编号}，并记下这个自动生成的值
+        /// </summary>
+        private void GenerateJobNo(DateTime start)
+        {
+            txt_jobNo.Text = _excelService.GenerateJobNo(start, "QRT");
+            _autoJobNo = txt_jobNo.Text.Trim();
+        }
+
+        /// <summary>
+        /// 点击「工作编号」标签：按当前开始日期重新生成（日期填错过时用它刷新）
+        /// </summary>
+        private void Lbl_JobNo_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            if (dp_startDate.SelectedDate is not DateTime start)
+            {
+                _ = MessageBox.Show(LocalizationHelper.Get("Msg_FillStartTime"), LanguageService.Get("Cap_Info"));
+                return;
+            }
+            GenerateJobNo(start);
         }
 
         private void Txt_Model_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)

@@ -210,6 +210,12 @@
     <Compile Include="Plans\Views\WindowPlanDirectEdit.xaml.cs">
       <DependentUpon>WindowPlanDirectEdit.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Plans\Views\WindowRequisitionReturn.xaml.cs">
+      <DependentUpon>WindowRequisitionReturn.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Plans\Views\WindowRequisitionStockIn.xaml.cs">
+      <DependentUpon>WindowRequisitionStockIn.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Utils\SmartTableExtractor.cs" />
     <Compile Include="Reports\ViewModels\BaseReportPageViewModel.cs" />
     <Compile Include="Reports\ViewModels\EMIReportViewModel.cs" />
@@ -421,6 +427,14 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Plans\Views\WindowPlanDirectEdit.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Plans\Views\WindowRequisitionReturn.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Plans\Views\WindowRequisitionStockIn.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

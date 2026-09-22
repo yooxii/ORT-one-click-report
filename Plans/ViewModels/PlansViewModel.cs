@@ -988,9 +988,13 @@ namespace ORT一键报告.Plans.ViewModels
             // 非模态：保存后通过 Saved 事件回调处理暂存/提审，窗口打开期间主界面仍可操作
             editWindow.Saved += (reqResult, planResult, editId) =>
             {
+                // 计划表同步信息折叠时 planResult 为空：只登记领退记录，不同步建立计划表记录
                 if (NeedsReview)
                 {
-                    _reviewService.SubmitPlanRequest("新增", planResult, null, _permission.CurrentUser);
+                    if (planResult != null)
+                    {
+                        _reviewService.SubmitPlanRequest("新增", planResult, null, _permission.CurrentUser);
+                    }
                     _reviewService.SubmitRequisitionRequest("新增", reqResult, null, _permission.CurrentUser);
                     StatusMessage = LanguageService.Get("Plans_AddSubmitted");
                     _ = System.Windows.MessageBox.Show(LocalizationHelper.Get("Msg_AddSubmitted"), LanguageService.Get("Cap_SubmitSuccess"));
@@ -999,11 +1003,16 @@ namespace ORT一键报告.Plans.ViewModels
                 {
                     // 暂存到内存（需点“提交保存”才写库）
                     _pendingReqAdded.Add(reqResult);
-                    _pendingPlanAdded.Add(planResult);
                     Requisitions.Insert(0, reqResult);
-                    Plans.Insert(0, planResult);
+                    if (planResult != null)
+                    {
+                        _pendingPlanAdded.Add(planResult);
+                        Plans.Insert(0, planResult);
+                    }
                     NotifyPendingChanged();
-                    StatusMessage = PendingText;
+                    StatusMessage = planResult == null
+                        ? LanguageService.Get("Plans_Msg_AddRequisitionNoPlan")
+                        : PendingText;
                 }
             };
             editWindow.Show();
@@ -1303,6 +1312,10 @@ namespace ORT一键报告.Plans.ViewModels
 
                 foreach (Plan plan in _pendingPlanAdded)
                 {
+                    if (plan == null)
+                    {
+                        continue;
+                    }
                     if (string.IsNullOrWhiteSpace(plan.JobNo))
                     {
                         StatusMessage = "存在未填写工作編號的计划空行，请补充或删除后再提交";

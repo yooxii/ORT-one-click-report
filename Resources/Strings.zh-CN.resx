@@ -972,16 +972,10 @@
     <value>根据Work Order自动补全，可手动修改</value>
   </data>
   <data name="ReqEdit_PlanSync" xml:space="preserve">
-    <value>计划表同步信息 *（领退新增时同步新增计划）</value>
-  </data>
-  <data name="ReqEdit_AutoGen" xml:space="preserve">
-    <value>自动生成</value>
+    <value>计划表同步信息（展开=同时建立计划表记录，折叠=只登记领退信息）</value>
   </data>
   <data name="ReqEdit_AutoGenRT" xml:space="preserve">
-    <value>默认自动生成 RT{当前年月}{编号}，可手动修改</value>
-  </data>
-  <data name="ReqEdit_AutoGenRTAH" xml:space="preserve">
-    <value>自动生成 RTAH{当前年月}{编号}</value>
+    <value>留空按领用日期生成 RT{当前年月}{编号}；点「工作编号」标签可按当前日期重新生成</value>
   </data>
   <data name="ReqEdit_CustomInput" xml:space="preserve">
     <value>自定义输入</value>
@@ -996,7 +990,7 @@
     <value>工作编号</value>
   </data>
   <data name="PlanEdit_WorkNumberHint" xml:space="preserve">
-    <value>默认自动生成 QRT{当前年月}{编号}（非领用计划），可手动修改</value>
+    <value>默认按开始日期生成 QRT{当前年月}{编号}（非领用计划），可手动修改；点标签可按当前日期重新生成</value>
   </data>
   <data name="PlanEdit_TestItem" xml:space="preserve">
     <value>测试项目*</value>
@@ -2411,5 +2405,83 @@
   </data>
   <data name="Msg_JobNoExistsFormat" xml:space="preserve">
     <value>工作编号 [{0}] 已存在</value>
+  </data>
+  <data name="PlanEdit_RefreshJobNoHint" xml:space="preserve">
+    <value>点击「工作编号」标签可按当前日期重新生成（改过日期后用它刷新）</value>
+  </data>
+  <data name="PlanEdit_RefreshRtHint" xml:space="preserve">
+    <value>点击「回线RT工令」标签按领用日期生成（已取消自动生成）</value>
+  </data>
+  <data name="ReqEdit_NeedReturn" xml:space="preserve">
+    <value>需要回线</value>
+  </data>
+  <data name="ReqEdit_NoReturnHint" xml:space="preserve">
+    <value>不勾选表示无需回线（回线RT工令留空）</value>
+  </data>
+  <data name="ReqEdit_PlanSyncRequired" xml:space="preserve">
+    <value>已展开「计划表同步信息」，下列字段均为必填</value>
+  </data>
+  <data name="Msg_SnDuplicateFormat" xml:space="preserve">
+    <value>序列号存在重复：{0}。是否重新输入？（是=返回修改，否=继续保存）</value>
+  </data>
+  <data name="Msg_SnDuplicateInInput" xml:space="preserve">
+    <value>本次输入内重复</value>
+  </data>
+  <data name="Msg_SnDuplicateInDbFormat" xml:space="preserve">
+    <value>已存在于领退记录 [{0}]</value>
+  </data>
+  <data name="Msg_NeedReturnOrder" xml:space="preserve">
+    <value>已勾选「需要回线」，请填写回线RT工令（或点击该标签生成）</value>
+  </data>
+  <data name="Msg_FillReturnDate" xml:space="preserve">
+    <value>请选择回线日期</value>
+  </data>
+  <data name="Msg_FillStockInNo" xml:space="preserve">
+    <value>请填写入库单据</value>
+  </data>
+  <data name="Msg_FillStockInQty" xml:space="preserve">
+    <value>请填写入库数量</value>
+  </data>
+  <data name="Msg_FillStockInDate" xml:space="preserve">
+    <value>请选择入库日期</value>
+  </data>
+  <data name="Plans_Menu_ReturnLine" xml:space="preserve">
+    <value>回线</value>
+  </data>
+  <data name="Plans_Menu_StockIn" xml:space="preserve">
+    <value>入库</value>
+  </data>
+  <data name="Plans_Msg_SelectRequisition" xml:space="preserve">
+    <value>请先在领退表选择一条记录</value>
+  </data>
+  <data name="Plans_Msg_NoEditPermission" xml:space="preserve">
+    <value>无编辑权限</value>
+  </data>
+  <data name="Plans_Msg_ReturnAppliedFormat" xml:space="preserve">
+    <value>已填写回线日期 {0}（暂存，点「提交保存」后生效）</value>
+  </data>
+  <data name="Plans_Msg_StockInAppliedFormat" xml:space="preserve">
+    <value>已填写入库：{0}（暂存，点「提交保存」后生效）</value>
+  </data>
+  <data name="Plans_Msg_AddRequisitionNoPlan" xml:space="preserve">
+    <value>已暂存领用记录（未建立计划表记录）</value>
+  </data>
+  <data name="ReqReturn_Title" xml:space="preserve">
+    <value>回线登记</value>
+  </data>
+  <data name="ReqStockIn_Title" xml:space="preserve">
+    <value>入库登记</value>
+  </data>
+  <data name="ReqReturn_Hint" xml:space="preserve">
+    <value>点「回线」把上面的日期写入这条领退记录的回线日期</value>
+  </data>
+  <data name="ReqStockIn_Hint" xml:space="preserve">
+    <value>点「入库」把单据/数量/日期写入这条领退记录</value>
+  </data>
+  <data name="Common_CopyHint" xml:space="preserve">
+    <value>可选中复制（Ctrl+C）</value>
+  </data>
+  <data name="Msg_NoAssociatedPlan" xml:space="preserve">
+    <value>这条领退记录没有找到对应的计划表记录，无法同步更新计划；如需建立计划请用「计划表新增」</value>
   </data>
 </root>

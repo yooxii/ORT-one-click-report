@@ -195,6 +195,12 @@
                             <MenuItem Header="{lex:Loc Plans_EditDialog}" Click="Menu_EditRequisition_Click"/>
                             <MenuItem Header="{lex:Loc Plans_MarkDelete}" Click="Menu_DeleteRequisition_Click"/>
                             <Separator/>
+                            <!--回线/入库：只在领退表右键菜单里（写入该条记录，需点「提交保存」才入库）-->
+                            <MenuItem Header="{lex:Loc Plans_Menu_ReturnLine}" Click="Menu_RequisitionReturn_Click"
+                                      ToolTip="{lex:Loc ReqReturn_Hint}"/>
+                            <MenuItem Header="{lex:Loc Plans_Menu_StockIn}" Click="Menu_RequisitionStockIn_Click"
+                                      ToolTip="{lex:Loc ReqStockIn_Hint}"/>
+                            <Separator/>
                             <MenuItem Header="{lex:Loc Common_CopyRow}" Click="Menu_CopyReqRow_Click"/>
                             <MenuItem Header="{lex:Loc Common_CopyCell}" Click="Menu_CopyReqCell_Click"/>
                             <MenuItem Header="{lex:Loc Common_Paste}" Click="Menu_PasteReq_Click"/>
