@@ -972,7 +972,7 @@
     <value>根据Work Order自动补全，可手动修改</value>
   </data>
   <data name="ReqEdit_PlanSync" xml:space="preserve">
-    <value>计划表同步信息（展开=同时建立计划表记录，折叠=只登记领退信息）</value>
+    <value>计划表同步信息（含负责人/试验时间/结束日期；展开=同时建立计划表记录，折叠=只登记领退信息）</value>
   </data>
   <data name="ReqEdit_AutoGenRT" xml:space="preserve">
     <value>留空按领用日期生成 RT{当前年月}{编号}；点「工作编号」标签可按当前日期重新生成</value>
@@ -2419,7 +2419,7 @@
     <value>不勾选表示无需回线（回线RT工令留空）</value>
   </data>
   <data name="ReqEdit_PlanSyncRequired" xml:space="preserve">
-    <value>已展开「计划表同步信息」，下列字段均为必填</value>
+    <value>已展开「计划表同步信息」，下列字段（含「其他」）均为必填</value>
   </data>
   <data name="Msg_SnDuplicateFormat" xml:space="preserve">
     <value>序列号存在重复：{0}。是否重新输入？（是=返回修改，否=继续保存）</value>
@@ -2490,13 +2490,7 @@
   <data name="Menu_FilterGroupFormat" xml:space="preserve">
     <value>{0}…（{1}）</value>
   </data>
-  <data name="Menu_FilterSelectGroupFormat" xml:space="preserve">
-    <value>全选本组（{0} 项）</value>
-  </data>
   <data name="Menu_FilterGroupHint" xml:space="preserve">
-    <value>点击展开/收起这一组</value>
-  </data>
-  <data name="Menu_FilterSelectGroupHint" xml:space="preserve">
-    <value>一次勾选/取消本组全部取值</value>
+    <value>点击展开/收起这一组，同时勾选/取消本组全部取值</value>
   </data>
 </root>

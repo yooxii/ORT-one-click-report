@@ -222,22 +222,25 @@ namespace ORT一键报告.Plans.Views
                 bool allIncluded = filter == null || !filter.IsActive;
                 filterRoot.Items.Add(new Separator());
 
-                // 空/null 单元格也作为一项列出（显示为「（空白）」），排在最前
-                List<MenuItem> browseExtras = [];
-                if (values.Contains(""))
-                {
-                    MenuItem emptyItem = MakeFilterValueItem("", LanguageService.Get("Menu_FilterEmpty"),
-                        0, isPlan, property, label, values, filter, allIncluded);
-                    filterRoot.Items.Add(emptyItem);
-                    browseExtras.Add(emptyItem);
-                }
-
                 // 非空值按「开头相同」逐段多级合并，全部平铺成同一级菜单项、用缩进体现层级
                 // （分组行点击展开/收起；不用嵌套子菜单，弹出菜单里的多级子菜单点不开）
                 List<string> nonEmpty = values.Where(v => v != "").ToList();
                 string tableKey = isPlan ? "plan" : "req";
                 List<FilterRow> rows = BuildFilterRows(nonEmpty, tableKey, property);
-                AddFilterRowItems(filterRoot, rows, isPlan, property, label, values, filter, allIncluded);
+                // 任一筛选项变化后，所有分组行的勾选显示都需要重算（组内全选中才打勾）
+                Action afterApply = () => RefreshGroupCheckStates(rows, isPlan, property);
+
+                // 空/null 单元格也作为一项列出（显示为「（空白）」），排在最前
+                List<MenuItem> browseExtras = [];
+                if (values.Contains(""))
+                {
+                    MenuItem emptyItem = MakeFilterValueItem("", LanguageService.Get("Menu_FilterEmpty"),
+                        0, isPlan, property, label, values, filter, allIncluded, afterApply);
+                    filterRoot.Items.Add(emptyItem);
+                    browseExtras.Add(emptyItem);
+                }
+
+                AddFilterRowItems(filterRoot, rows, isPlan, property, label, values, filter, allIncluded, afterApply);
 
                 // 值多时提供搜索框：空查询显示分组树（默认折叠），输入关键字后切换为平铺匹配列表
                 if (values.Count > FilterSearchThreshold)
@@ -252,7 +255,7 @@ namespace ORT一键报告.Plans.Views
                         }
                         MenuItem flat = MakeFilterValueItem(value,
                             value == "" ? LanguageService.Get("Menu_FilterEmpty") : value,
-                            0, isPlan, property, label, values, filter, allIncluded);
+                            0, isPlan, property, label, values, filter, allIncluded, afterApply);
                         flat.Visibility = Visibility.Collapsed;
                         filterRoot.Items.Add(flat);
                         valueItems.Add((flat, value));
@@ -291,9 +294,11 @@ namespace ORT一键报告.Plans.Views
         /// <summary>
         /// 创建一个可勾选的筛选项（单个值）；value 为比较用的实际值（空值为 ""），display 为菜单显示文本；
         /// depth 为缩进层级（分组树里的取值行用）。点击后菜单保持打开，方便连续勾选多个值。
+        /// afterApply 在筛选应用完后回调（用来刷新分组行的勾选显示）。
         /// </summary>
         private MenuItem MakeFilterValueItem(string value, string display, int depth,
-            bool isPlan, string property, string label, List<string> values, ColumnFilter filter, bool allIncluded)
+            bool isPlan, string property, string label, List<string> values, ColumnFilter filter, bool allIncluded,
+            Action afterApply = null)
         {
             MenuItem valueItem = new()
             {
@@ -319,6 +324,7 @@ namespace ORT一键报告.Plans.Views
                     selected.Remove(captured);
                 }
                 ApplyColumnFilter(isPlan, property, label, values, selected);
+                afterApply?.Invoke();
             };
             return valueItem;
         }
@@ -332,10 +338,12 @@ namespace ORT一键报告.Plans.Views
         private readonly HashSet<string> _expandedFilterGroups = new(StringComparer.Ordinal);
 
         /// <summary>
-        /// 把筛选树的行写成菜单项（深度优先平铺），分组行的子行紧跟其后、靠缩进区分层级
+        /// 把筛选树的行写成菜单项（深度优先平铺），分组行的子行紧跟其后、靠缩进区分层级。
+        /// 分组行本身可勾选（一次点击 = 切换展开/收起 + 整组勾选/取消），不再单独占一行「全选本组」。
         /// </summary>
         private void AddFilterRowItems(MenuItem filterRoot, List<FilterRow> rows,
-            bool isPlan, string property, string label, List<string> values, ColumnFilter filter, bool allIncluded)
+            bool isPlan, string property, string label, List<string> values, ColumnFilter filter, bool allIncluded,
+            Action afterApply)
         {
             int created = 0;
             foreach (FilterRow row in rows)
@@ -351,49 +359,14 @@ namespace ORT一键报告.Plans.Views
                 }
                 if (row.IsGroup)
                 {
-                    row.Item = MakeFilterGroupItem(row, rows);
+                    row.Item = MakeFilterGroupItem(row, rows, isPlan, property, label, values, filter, allIncluded, afterApply);
                     row.Item.Tag = row.Depth;   // 标记为分组树的行（便于区分搜索用的平铺项）
                     filterRoot.Items.Add(row.Item);
-                }
-                else if (row.IsSelectAll)
-                {
-                    List<string> groupValues = row.Values;
-                    MenuItem selectAll = new()
-                    {
-                        Header = string.Format(LanguageService.Get("Menu_FilterSelectGroupFormat"), row.Count),
-                        IsCheckable = true,
-                        IsChecked = allIncluded || groupValues.All(filter.Selected.Contains),
-                        StaysOpenOnClick = true,
-                        Padding = new Thickness(8 + row.Depth * 14, 5, 8, 5),
-                        Tag = row.Depth,
-                        ToolTip = LanguageService.Get("Menu_FilterSelectGroupHint")
-                    };
-                    selectAll.Click += (s, args) =>
-                    {
-                        List<string> selected = allIncluded ? [.. values] : [.. filter.Selected];
-                        if (selectAll.IsChecked)
-                        {
-                            foreach (string v in groupValues)
-                            {
-                                if (!selected.Contains(v))
-                                {
-                                    selected.Add(v);
-                                }
-                            }
-                        }
-                        else
-                        {
-                            selected.RemoveAll(groupValues.Contains);
-                        }
-                        ApplyColumnFilter(isPlan, property, label, values, selected);
-                    };
-                    row.Item = selectAll;
-                    filterRoot.Items.Add(selectAll);
                 }
                 else
                 {
                     row.Item = MakeFilterValueItem(row.Value, row.Value, row.Depth,
-                        isPlan, property, label, values, filter, allIncluded);
+                        isPlan, property, label, values, filter, allIncluded, afterApply);
                     row.Item.Tag = row.Depth;   // 标记为分组树的行
                     filterRoot.Items.Add(row.Item);
                 }
@@ -402,23 +375,50 @@ namespace ORT一键报告.Plans.Views
         }
 
         /// <summary>
-        /// 建一个分组行：点击即展开/收起（菜单保持打开），标题带 ▶/▼ 与数量
+        /// 建一个分组行：本身可勾选，一次点击同时完成两件事：切换展开/收起 + 整组勾选/取消。
+        /// IsChecked 反映「组内是否全部被选中」（部分选中时显示为未勾选，避免 WPF MenuItem 不支持真三态的局限）。
         /// </summary>
-        private MenuItem MakeFilterGroupItem(FilterRow row, List<FilterRow> rows)
+        private MenuItem MakeFilterGroupItem(FilterRow row, List<FilterRow> rows,
+            bool isPlan, string property, string label, List<string> values, ColumnFilter filter, bool allIncluded,
+            Action afterApply)
         {
             MenuItem item = new()
             {
-                IsCheckable = false,
+                IsCheckable = true,
+                IsChecked = allIncluded || row.Values.All(v => filter.Selected.Contains(v)),
                 StaysOpenOnClick = true,
                 Padding = new Thickness(8 + row.Depth * 14, 5, 8, 5),
                 ToolTip = LanguageService.Get("Menu_FilterGroupHint")
             };
             item.Click += (s, args) =>
             {
+                // 1) 切换展开/收起（WPF 已在 Click 前翻转 IsChecked）
                 if (!_expandedFilterGroups.Remove(row.Key))
                 {
                     _expandedFilterGroups.Add(row.Key);
                 }
+                // 2) 根据新 IsChecked 应用整组选择（用实时的 filter 而非构造时捕获的那一份，
+                //    避免用户先点过取值行后分组行拿到的是陈旧选中集）
+                ColumnFilter currentFilter = _vm.GetColumnFilter(isPlan, property);
+                bool currentAllIncluded = currentFilter == null || !currentFilter.IsActive;
+                List<string> selected = currentAllIncluded ? [.. values] : [.. currentFilter.Selected];
+                if (item.IsChecked)
+                {
+                    foreach (string v in row.Values)
+                    {
+                        if (!selected.Contains(v))
+                        {
+                            selected.Add(v);
+                        }
+                    }
+                }
+                else
+                {
+                    selected.RemoveAll(row.Values.Contains);
+                }
+                ApplyColumnFilter(isPlan, property, label, values, selected);
+                // 3) 刷新所有分组行（含祖先）的勾选显示与树可见性
+                afterApply?.Invoke();
                 RefreshFilterRows(rows);
             };
             SetFilterGroupHeader(item, row);
@@ -435,7 +435,7 @@ namespace ORT一键报告.Plans.Views
 
         /// <summary>
         /// 按展开状态刷新整体可见性：某一行只有在它的所有祖先分组都展开时才可见；
-        /// 「全选本组」行跟随其所属分组
+        /// 分组行同时刷新标题文本（▶/▼ + 前缀 + 数量）。
         /// </summary>
         private void RefreshFilterRows(List<FilterRow> rows)
         {
@@ -453,6 +453,23 @@ namespace ORT一键报告.Plans.Views
             }
         }
 
+        /// <summary>
+        /// 任一筛选项变化后重算所有分组行的勾选显示：
+        /// IsChecked = 组内全部取值都在当前选中集里（部分选中时显示为未勾选）。
+        /// </summary>
+        private void RefreshGroupCheckStates(List<FilterRow> rows, bool isPlan, string property)
+        {
+            ColumnFilter filter = _vm.GetColumnFilter(isPlan, property);
+            bool allIncluded = filter == null || !filter.IsActive;
+            foreach (FilterRow row in rows)
+            {
+                if (row.IsGroup && row.Item != null)
+                {
+                    row.Item.IsChecked = allIncluded || row.Values.All(v => filter.Selected.Contains(v));
+                }
+            }
+        }
+
         /// <summary>祖先分组都处于展开状态时该行可见</summary>
         private bool Visible(List<string> ancestorKeys)
             => ancestorKeys.All(_expandedFilterGroups.Contains);
@@ -467,6 +484,12 @@ namespace ORT一键报告.Plans.Views
         private const int FilterGroupSegment = 2;
 
         /// <summary>
+        /// 分组合并阈值：某个节点下的取值个数超过这个数才产生分组行，
+        /// 否则直接把整棵子树的取值平铺在同一级——避免层层点开只有一两个子项的空组。
+        /// </summary>
+        private const int FilterGroupMergeThreshold = 10;
+
+        /// <summary>
         /// 分组/展开状态：一个分组下最多平铺的行数（超出只提示，靠搜索查找）
         /// </summary>
         private const int MaxFilterRows = 1000;
@@ -474,7 +497,7 @@ namespace ORT一键报告.Plans.Views
         /// <summary>
         /// 「筛选」菜单里的一行。所有层级都平铺成同一级菜单项、用左侧缩进体现层次
         /// （不再用嵌套子菜单——多级子菜单在弹出菜单里点不开），
-        /// 分组行点击即展开/收起，取值行点击即勾选。
+        /// 分组行本身可勾选（一次点击 = 展开/收起 + 整组勾选/取消），取值行点击即勾选。
         /// </summary>
         private sealed class FilterRow
         {
@@ -493,16 +516,13 @@ namespace ORT一键报告.Plans.Views
             /// <summary>是否是分组行</summary>
             public bool IsGroup;
 
-            /// <summary>是否是分组行下的「全选本组」行</summary>
-            public bool IsSelectAll;
-
-            /// <summary>所属分组链的 key（取值行/「全选本组」行用来判断可见性；分组行为其祖先分组的 key）</summary>
+            /// <summary>所属分组链的 key（取值行用来判断可见性；分组行为其祖先分组的 key）</summary>
             public List<string> AncestorKeys = [];
 
             /// <summary>分组行展开状态的 key（表|列|前缀）</summary>
             public string Key;
 
-            /// <summary>该分组下的全部取值（「全选本组」用）</summary>
+            /// <summary>该分组下的全部取值（整组勾选/取消用）</summary>
             public List<string> Values = [];
 
             /// <summary>对应的菜单项</summary>
@@ -611,41 +631,59 @@ namespace ORT一键报告.Plans.Views
         }
 
         /// <summary>
-        /// 把一个节点写成行（分组行 + 该组下的「全选本组」行 + 子行，深度优先）。
-        /// 分组行本身没有子菜单项，展开/收起靠切换子行的可见性。
+        /// 把一个节点写成行（深度优先平铺）：
+        /// • 叶子节点 → 一条取值行；
+        /// • 非叶且 <see cref="FilterGroupMergeThreshold"/> 以下 → 把整棵子树的取值平铺到当前层级（不产生分组行）；
+        /// • 非叶且超阈值 → 产生分组行（本身可勾选），再对每个子节点递归。
         /// </summary>
         private static void AddNodeRows(List<FilterRow> rows, FilterNode node, int depth,
             List<string> ancestors, string tableKey, string property)
         {
-            bool isGroup = node.Children.Count > 0;
+            // 叶子节点：单取值分支，这一行就是取值行
+            if (node.Children.Count == 0)
+            {
+                rows.Add(new FilterRow
+                {
+                    Prefix = node.Prefix,
+                    Value = node.Prefix,
+                    Count = node.Count,
+                    Depth = depth,
+                    IsGroup = false,
+                    AncestorKeys = [.. ancestors]
+                });
+                return;
+            }
+
+            // 非叶但子项不超阈值：不包分组行，直接把子树里的取值全部平铺到当前层级
+            if (node.Count <= FilterGroupMergeThreshold)
+            {
+                foreach (string value in CollectNodeValues(node))
+                {
+                    rows.Add(new FilterRow
+                    {
+                        Prefix = value,
+                        Value = value,
+                        Count = 1,
+                        Depth = depth,
+                        IsGroup = false,
+                        AncestorKeys = [.. ancestors]
+                    });
+                }
+                return;
+            }
+
+            // 非叶且超阈值：产生分组行（本身可勾选），子节点递归到 depth+1
             FilterRow row = new()
             {
                 Prefix = node.Prefix,
                 Count = node.Count,
                 Depth = depth,
-                IsGroup = isGroup,
-                AncestorKeys = [.. ancestors]
+                IsGroup = true,
+                AncestorKeys = [.. ancestors],
+                Key = $"{tableKey}|{property}|{node.Prefix}",
+                Values = CollectNodeValues(node)
             };
-            if (!isGroup)
-            {
-                row.Value = node.Prefix;   // 单取值分支：这一行就是取值行
-                rows.Add(row);
-                return;
-            }
-            row.Key = $"{tableKey}|{property}|{node.Prefix}";
-            row.Values = CollectNodeValues(node);
             rows.Add(row);
-
-            // 组内第一行：全选本组
-            rows.Add(new FilterRow
-            {
-                IsSelectAll = true,
-                Prefix = node.Prefix,
-                Count = node.Count,
-                Depth = depth + 1,
-                Values = row.Values,
-                AncestorKeys = [.. ancestors, row.Key]
-            });
 
             List<string> childAncestors = [.. ancestors, row.Key];
             foreach (FilterNode child in node.Children)

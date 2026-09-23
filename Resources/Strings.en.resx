@@ -972,7 +972,7 @@
     <value>Auto-fill from Work Order, modifiable</value>
   </data>
   <data name="ReqEdit_PlanSync" xml:space="preserve">
-    <value>Plan sync info (expanded = also create a plan row, collapsed = returns only)</value>
+    <value>Plan sync info (incl. owner / test time / end date; expanded = also create a plan row, collapsed = returns only)</value>
   </data>
   <data name="ReqEdit_AutoGenRT" xml:space="preserve">
     <value>Generated as RT{year}{month}{no} when empty; click the Work Number label to regenerate from the current date</value>
@@ -2419,7 +2419,7 @@ Build the plan index now (compress repeated text into shared templates)?</value>
     <value>Unchecked means no return needed (Return RT Order stays empty)</value>
   </data>
   <data name="ReqEdit_PlanSyncRequired" xml:space="preserve">
-    <value>Plan sync info expanded: every field below is required</value>
+    <value>Plan sync info expanded: every field below (including "Other") is required</value>
   </data>
   <data name="Msg_SnDuplicateFormat" xml:space="preserve">
     <value>Duplicate serial numbers: {0}. Re-enter? (Yes = go back and fix, No = save anyway)</value>
@@ -2490,13 +2490,7 @@ Build the plan index now (compress repeated text into shared templates)?</value>
   <data name="Menu_FilterGroupFormat" xml:space="preserve">
     <value>{0}… ({1})</value>
   </data>
-  <data name="Menu_FilterSelectGroupFormat" xml:space="preserve">
-    <value>Select this group ({0})</value>
-  </data>
   <data name="Menu_FilterGroupHint" xml:space="preserve">
-    <value>Click to expand/collapse this group</value>
-  </data>
-  <data name="Menu_FilterSelectGroupHint" xml:space="preserve">
-    <value>Check/uncheck every value in this group</value>
+    <value>Click to expand/collapse this group and check/uncheck every value in it</value>
   </data>
 </root>

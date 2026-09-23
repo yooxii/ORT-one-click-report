@@ -45,7 +45,8 @@ namespace ORT一键报告.Plans.Views
         public event Action<Plan> ConvertToRequisitionRequested;
 
         public WindowPlanDirectEdit(DatabaseService db, IPermissionService permission, AdminService admin,
-            PlanExcelService excelService, Plan editTarget = null)
+            PlanExcelService excelService, Plan editTarget = null,
+            string defaultTestItem = null, string defaultStage = null)
         {
             InitializeComponent();
             _db = db;
@@ -65,6 +66,13 @@ namespace ORT一键报告.Plans.Views
             if (editTarget != null)
             {
                 LoadFromPlan(editTarget);
+            }
+            else
+            {
+                // 新增时默认预选调用方传入的测试项目/阶段（当前计划表里用得最多的一项）；
+                // 计划表为空时为 (null, null)，SetCombo 会把选中项置 null（保持未选）。
+                SetCombo(cb_testItem, defaultTestItem);
+                SetCombo(cb_stage, defaultStage);
             }
         }
 

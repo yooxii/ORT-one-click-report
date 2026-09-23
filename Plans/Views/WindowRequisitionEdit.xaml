@@ -14,7 +14,6 @@
             <RowDefinition Height="auto"/>
             <RowDefinition Height="auto"/>
             <RowDefinition Height="auto"/>
-            <RowDefinition Height="auto"/>
         </Grid.RowDefinitions>
 
         <!--领退信息（必填项带*）-->
@@ -61,7 +60,8 @@
         </GroupBox>
 
         <!--序列号：自定义输入 / 上传文件 二选一（必填）-->
-        <GroupBox Header="{lex:Loc ReqEdit_SN}" Grid.Row="1" Margin="0,5,0,0" Padding="5">
+        <GroupBox Header="{lex:Loc ReqEdit_SN}" Grid.Row="1" Margin="0,5,0,0" Padding="5"
+>
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="auto"/>
@@ -87,70 +87,76 @@
             </Grid>
         </GroupBox>
 
-        <!--计划表同步信息：折叠=不同步（只登记领退信息）；展开=同时建立/更新计划表记录，下列字段必填-->
+        <!--计划表同步信息：折叠=不同步（只登记领退信息）；展开=同时建立/更新计划表记录，下列字段必填。
+            「其他」的负责人/试验时间/结束日期也一并放在里面，折叠时一起隐藏。-->
         <Expander x:Name="exp_planSync" Grid.Row="2" Margin="0,5,0,0" IsExpanded="False"
                   Header="{lex:Loc ReqEdit_PlanSync}" Expanded="Exp_PlanSync_Toggled" Collapsed="Exp_PlanSync_Toggled">
-        <GroupBox Padding="5">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="100"/>
-                    <ColumnDefinition/>
-                    <ColumnDefinition Width="100"/>
-                    <ColumnDefinition/>
-                </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                    <RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/>
-                </Grid.RowDefinitions>
-                <Label Content="{lex:Loc PlanEdit_TestItem}"/>
-                <ComboBox x:Name="cb_testItem" Grid.Column="1" Margin="3" VerticalContentAlignment="Center"
-                          SelectionChanged="Cb_TestItem_SelectionChanged"/>
-                <Label Content="{lex:Loc PlanEdit_StartTime}" Grid.Column="2"/>
-                <DatePicker x:Name="dp_startDate" Grid.Column="3" Margin="3" VerticalContentAlignment="Center"/>
+            <StackPanel>
+                <GroupBox Padding="5">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="100"/>
+                            <ColumnDefinition/>
+                            <ColumnDefinition Width="100"/>
+                            <ColumnDefinition/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/>
+                        </Grid.RowDefinitions>
+                        <Label Content="{lex:Loc PlanEdit_TestItem}"/>
+                        <ComboBox x:Name="cb_testItem" Grid.Column="1" Margin="3" VerticalContentAlignment="Center"
+                                  SelectionChanged="Cb_TestItem_SelectionChanged"/>
+                        <Label Content="{lex:Loc PlanEdit_StartTime}" Grid.Column="2"/>
+                        <DatePicker x:Name="dp_startDate" Grid.Column="3" Margin="3" VerticalContentAlignment="Center"/>
 
-                <Label Content="{lex:Loc ReqEdit_Stage}" Grid.Row="1"/>
-                <ComboBox x:Name="cb_stage" Grid.Row="1" Grid.Column="1" Margin="3" VerticalContentAlignment="Center"/>
-                <Label Content="{lex:Loc Plans_ReportStatus}" Grid.Row="1" Grid.Column="2"/>
-                <ComboBox x:Name="cb_reportStatus" Grid.Row="1" Grid.Column="3" Margin="3" VerticalContentAlignment="Center"
-                          ToolTip="{lex:Loc Plans_ReportStatusHint}"/>
+                        <Label Content="{lex:Loc ReqEdit_Stage}" Grid.Row="1"/>
+                        <ComboBox x:Name="cb_stage" Grid.Row="1" Grid.Column="1" Margin="3" VerticalContentAlignment="Center"/>
+                        <Label Content="{lex:Loc Plans_ReportStatus}" Grid.Row="1" Grid.Column="2"/>
+                        <ComboBox x:Name="cb_reportStatus" Grid.Row="1" Grid.Column="3" Margin="3" VerticalContentAlignment="Center"
+                                  ToolTip="{lex:Loc Plans_ReportStatusHint}"/>
 
-                <Label Content="{lex:Loc PlanEdit_WorkNumber}" Grid.Row="2" Background="Transparent" Cursor="Hand"
-                       ToolTip="{lex:Loc PlanEdit_RefreshJobNoHint}" MouseLeftButtonUp="Lbl_JobNo_Click"/>
-                <TextBox x:Name="txt_jobNo" Grid.Row="2" Grid.Column="1" Margin="3" ToolTip="{lex:Loc ReqEdit_AutoGenRT}"/>
-                <Label Content="{lex:Loc PlanEdit_SampleQty}" Grid.Row="2" Grid.Column="2"/>
-                <TextBox x:Name="txt_sampleSize" Grid.Row="2" Grid.Column="3" Margin="3" ToolTip="{lex:Loc ReqEdit_QtyHint}"/>
+                        <Label Content="{lex:Loc PlanEdit_WorkNumber}" Grid.Row="2" Background="Transparent" Cursor="Hand"
+                               ToolTip="{lex:Loc PlanEdit_RefreshJobNoHint}" MouseLeftButtonUp="Lbl_JobNo_Click"/>
+                        <TextBox x:Name="txt_jobNo" Grid.Row="2" Grid.Column="1" Margin="3" ToolTip="{lex:Loc ReqEdit_AutoGenRT}"/>
+                        <Label Content="{lex:Loc PlanEdit_SampleQty}" Grid.Row="2" Grid.Column="2"/>
+                        <TextBox x:Name="txt_sampleSize" Grid.Row="2" Grid.Column="3" Margin="3" ToolTip="{lex:Loc ReqEdit_QtyHint}"/>
 
-                <Label Content="{lex:Loc Plans_ProductType}" Grid.Row="3"/>
-                <TextBox x:Name="txt_product" Grid.Row="3" Grid.Column="1" Margin="3" ToolTip="{lex:Loc ReqEdit_ModelNameHint}"/>
-                <Label Content="{lex:Loc PlanEdit_Customer}" Grid.Row="3" Grid.Column="2"/>
-                <TextBox x:Name="txt_customer" Grid.Row="3" Grid.Column="3" Margin="3" ToolTip="{lex:Loc ReqEdit_ModelNameHint}"/>
+                        <Label Content="{lex:Loc Plans_ProductType}" Grid.Row="3"/>
+                        <TextBox x:Name="txt_product" Grid.Row="3" Grid.Column="1" Margin="3" ToolTip="{lex:Loc ReqEdit_ModelNameHint}"/>
+                        <Label Content="{lex:Loc PlanEdit_Customer}" Grid.Row="3" Grid.Column="2"/>
+                        <TextBox x:Name="txt_customer" Grid.Row="3" Grid.Column="3" Margin="3" ToolTip="{lex:Loc ReqEdit_ModelNameHint}"/>
 
-                <TextBlock Grid.Row="4" Grid.ColumnSpan="4" Margin="3,6,3,0" TextWrapping="Wrap"
-                           Foreground="{DynamicResource TextSecondaryBrush}" Text="{lex:Loc ReqEdit_PlanSyncRequired}"/>
-            </Grid>
-        </GroupBox>
+                        <TextBlock Grid.Row="4" Grid.ColumnSpan="4" Margin="3,6,3,0" TextWrapping="Wrap"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" Text="{lex:Loc ReqEdit_PlanSyncRequired}"/>
+                    </Grid>
+                </GroupBox>
+
+                <!--其他：负责人 / 试验时间 / 结束日期，已并入「计划表同步信息」折叠区（只在同步计划时才需要填）-->
+                <GroupBox Header="{lex:Loc PlanEdit_Other}" Margin="0,5,0,0" Padding="5">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="100"/>
+                            <ColumnDefinition/>
+                            <ColumnDefinition Width="100"/>
+                            <ColumnDefinition/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition/><RowDefinition/>
+                        </Grid.RowDefinitions>
+                        <Label Content="{lex:Loc Plans_Owner}"/>
+                        <TextBox x:Name="txt_owner" Grid.Column="1" Margin="3" ToolTip="{lex:Loc PlanEdit_TestItemHint}"/>
+                        <Label Content="{lex:Loc Admin_TestTime}" Grid.Column="2"/>
+                        <TextBox x:Name="txt_testPeriod" Grid.Column="3" Margin="3" ToolTip="{lex:Loc PlanEdit_TestItemHint}"/>
+
+                        <Label Content="{lex:Loc PlanEdit_EndDate}" Grid.Row="1"/>
+                        <DatePicker x:Name="dp_endDate" Grid.Row="1" Grid.Column="1" Margin="3" ToolTip="{lex:Loc PlanEdit_EndDateHint}"/>
+                    </Grid>
+                </GroupBox>
+            </StackPanel>
         </Expander>
 
-        <!--其他-->
-        <GroupBox Header="{lex:Loc PlanEdit_Other}" Grid.Row="3" Margin="0,5,0,0" Padding="5">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="100"/>
-                    <ColumnDefinition/>
-                </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                    <RowDefinition/><RowDefinition/><RowDefinition/>
-                </Grid.RowDefinitions>
-                <Label Content="{lex:Loc Plans_Owner}"/>
-                <TextBox x:Name="txt_owner" Grid.Column="1" Margin="3" ToolTip="{lex:Loc PlanEdit_TestItemHint}"/>
-                <Label Content="{lex:Loc Admin_TestTime}" Grid.Row="1"/>
-                <TextBox x:Name="txt_testPeriod" Grid.Row="1" Grid.Column="1" Margin="3" ToolTip="{lex:Loc PlanEdit_TestItemHint}"/>
-                <Label Content="{lex:Loc PlanEdit_EndDate}" Grid.Row="2"/>
-                <DatePicker x:Name="dp_endDate" Grid.Row="2" Grid.Column="1" Margin="3" ToolTip="{lex:Loc PlanEdit_EndDateHint}"/>
-            </Grid>
-        </GroupBox>
-
         <!--按钮行：左侧必填提示，右侧 保存 / 取消。不写死按钮高度（主题按钮模板自带 Padding(8,7)）-->
-        <Grid Grid.Row="4" Margin="0,10,0,0">
+        <Grid Grid.Row="3" Margin="0,10,0,0">
             <TextBlock Text="{lex:Loc Common_RequiredHint}" VerticalAlignment="Center" TextWrapping="Wrap"
                        Foreground="{DynamicResource TextSecondaryBrush}"/>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">

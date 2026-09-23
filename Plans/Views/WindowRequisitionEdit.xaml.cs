@@ -60,7 +60,8 @@ namespace ORT一键报告.Plans.Views
         public event Action<Requisition, Plan, long> Saved;
 
         public WindowRequisitionEdit(DatabaseService db, IPermissionService permission, AdminService admin,
-            PlanExcelService excelService, Requisition editTarget = null)
+            PlanExcelService excelService, Requisition editTarget = null,
+            string defaultTestItem = null, string defaultStage = null)
         {
             InitializeComponent();
             _db = db;
@@ -75,6 +76,15 @@ namespace ORT一键报告.Plans.Views
             cb_testItem.ItemsSource = _admin.GetTestItems().Select(t => t.Name).ToList();
             cb_stage.ItemsSource = _admin.GetStages().Select(s => s.Name).ToList();
             cb_reportStatus.ItemsSource = Models.ReportStatusKind.All.ToList();
+
+            // 新增时默认预选调用方传入的测试项目/阶段（当前计划表里用得最多的一项）；
+            // 编辑时不预选（由 LoadFromRequisition / LoadAssociatedPlan 带入原值），
+            // 「转为领用」路径由随后的 PrefillFromPlan 覆盖（调用方那边传 (null, null) 不会走到这里）。
+            if (editTarget == null)
+            {
+                SetCombo(cb_testItem, defaultTestItem);
+                SetCombo(cb_stage, defaultStage);
+            }
 
             // 回线RT工令：默认「无需回线」——不勾选时留空并禁用输入
             ApplyNeedReturnState();

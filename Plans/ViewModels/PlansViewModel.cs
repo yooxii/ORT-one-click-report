@@ -254,6 +254,26 @@ namespace ORT一键报告.Plans.ViewModels
         /// </summary>
         public List<string> ReportStatusOptions { get; } = [.. ReportStatusKind.All];
 
+        /* ###############################  新增默认值  ################################ */
+
+        /// <summary>
+        /// 新增领退/新增计划时「测试项目」「阶段」的默认预选：取当前计划表里出现最多的一项。
+        /// 计划表为空时返回 (null, null)，两个下拉框保持未选。
+        /// </summary>
+        public (string TestItem, string Stage) GetMostUsedPlanDefaults()
+            => (MostUsed(Plans, p => p.TestItem), MostUsed(Plans, p => p.Stage));
+
+        /// <summary>按出现次数取众数，次数相同时按字典序确保结果稳定。</summary>
+        private static string MostUsed(IEnumerable<Plan> plans, Func<Plan, string> selector)
+            => plans?.Select(selector)
+                .Where(v => !string.IsNullOrWhiteSpace(v))
+                .Select(v => v.Trim())
+                .GroupBy(v => v, StringComparer.Ordinal)
+                .OrderByDescending(g => g.Count())
+                .ThenBy(g => g.Key, StringComparer.Ordinal)
+                .Select(g => g.Key)
+                .FirstOrDefault();
+
         private readonly DispatcherTimer _searchTimer;
         private string _searchKeyword;
         /// <summary>
@@ -982,7 +1002,11 @@ namespace ORT一键报告.Plans.ViewModels
                 StatusMessage = LanguageService.Get("Plans_NoAddPermission");
                 return;
             }
-            Views.WindowRequisitionEdit editWindow = new(_db, _permission, _adminService, _excelService, null);
+            // 非「转为领用」时默认预选当前计划表里用得最多的测试项目与阶段；
+            // 「转为领用」路径由下面的 PrefillFromPlan 直接带入计划的值，不需要默认值覆盖。
+            (string testItem, string stage) = prefillPlan == null ? GetMostUsedPlanDefaults() : (null, null);
+            Views.WindowRequisitionEdit editWindow = new(_db, _permission, _adminService, _excelService,
+                null, testItem, stage);
             if (prefillPlan != null)
             {
                 editWindow.PrefillFromPlan(prefillPlan);
@@ -1027,7 +1051,10 @@ namespace ORT一键报告.Plans.ViewModels
                 StatusMessage = LanguageService.Get("Plans_NoAddPermission");
                 return;
             }
-            Views.WindowPlanDirectEdit editWindow = new(_db, _permission, _adminService, _excelService, null);
+            // 默认预选当前计划表里用得最多的测试项目与阶段（计划表为空时不预选）
+            (string testItem, string stage) = GetMostUsedPlanDefaults();
+            Views.WindowPlanDirectEdit editWindow = new(_db, _permission, _adminService, _excelService,
+                null, testItem, stage);
             // 「转为领用」：把计划表窗口里填好的内容带进领退表新增窗口，
             // 保存后由领用流程建立 RT 计划（当前这个 QRT 计划不入库，直接关掉）
             editWindow.ConvertToRequisitionRequested += planDraft => AddRequisition(planDraft);
