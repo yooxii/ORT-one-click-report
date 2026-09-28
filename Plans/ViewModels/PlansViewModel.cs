@@ -1198,6 +1198,7 @@ namespace ORT一键报告.Plans.ViewModels
             to.RequisitionNo = from.RequisitionNo;
             to.ModelName = from.ModelName;
             to.OutQty = from.OutQty;
+            to.Disposition = from.Disposition;
             to.SN = from.SN;
             to.SnFilePath = from.SnFilePath;
             to.Rev = from.Rev;

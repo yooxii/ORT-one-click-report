@@ -46,6 +46,14 @@ namespace ORT一键报告.Models
         [Column(StringLength = 32, IsNullable = true)]
         public string OutQty { get => _outQty; set => SetProperty(ref _outQty, value); }
 
+        private string _disposition;
+        /// <summary>
+        /// 單體去向（入库 / 报废，二选一）：领退表新增/编辑时必选；
+        /// 报废→走报废分支、入库→走回线入库分支（流程查看据此标出计划走的分支）
+        /// </summary>
+        [Column(StringLength = 16, IsNullable = true)]
+        public string Disposition { get => _disposition; set => SetProperty(ref _disposition, value); }
+
         private string _sn;
         /// <summary>
         /// S/N（必填，字符串或附件形式）

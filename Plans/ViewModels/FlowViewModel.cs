@@ -109,6 +109,8 @@ namespace ORT一键报告.Plans.ViewModels
         /// <summary>
         /// 一般流程：單體領用+新增計劃 → 新建報告模板/進行試驗（可调换顺序）→ 完成報告 →
         /// （報廢）報廢前審核→報廢 或（入庫）回線→入庫 → 結案。
+        /// 分支状态：报废/入库操作已登记→走此分支；都未登记时按「单体去向」（领取登记必填）
+        /// 标出计划走的分支。
         /// </summary>
         /// <param name="req">领退记录（计划侧入口找不到领用记录时为 null）</param>
         /// <param name="plan">关联计划记录（领退侧入口找不到计划时为 null）</param>
@@ -164,6 +166,18 @@ namespace ORT一键报告.Plans.ViewModels
             bool stockInDone = req != null && (req.StockInDate != null || !string.IsNullOrWhiteSpace(req.StockInNo));
             ApplyBranchState(scrapBranch, scrapDone, stockInDone && !scrapDone);
             ApplyBranchState(stockInBranch, stockInDone, scrapDone && !stockInDone);
+            // 去向（入库/报废二选一，领取登记时必填）在操作尚未登记时标出计划走的分支
+            if (req != null && !scrapDone && !stockInDone)
+            {
+                if (req.Disposition == RequisitionDispositionKind.Scrap)
+                {
+                    scrapBranch.StateText = L("Flow_Branch_Planned");
+                }
+                else if (req.Disposition == RequisitionDispositionKind.StockIn)
+                {
+                    stockInBranch.StateText = L("Flow_Branch_Planned");
+                }
+            }
             if (scrapDone && stockInDone)
             {
                 vm.FooterNote = L("Flow_WarnBothBranches") + Environment.NewLine + vm.FooterNote;

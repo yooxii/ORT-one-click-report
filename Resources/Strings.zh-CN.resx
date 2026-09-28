@@ -2850,4 +2850,19 @@
   <data name="Flow_WarnClosedWithoutUnitReturn" xml:space="preserve">
     <value>注意：计划已结案，但尚未登记单体归还，请核对流程数据</value>
   </data>
+  <data name="Plans_Disposition" xml:space="preserve">
+    <value>单体去向</value>
+  </data>
+  <data name="ReqEdit_Disposition" xml:space="preserve">
+    <value>单体去向*</value>
+  </data>
+  <data name="ReqEdit_DispositionHint" xml:space="preserve">
+    <value>「入库」= 测试后回线并入库；「报废」= 测试后报废（整笔只走一条分支）；流程查看会据此标出计划走的分支</value>
+  </data>
+  <data name="Msg_SelectDisposition" xml:space="preserve">
+    <value>请选择单体去向（入库 / 报废）</value>
+  </data>
+  <data name="Flow_Branch_Planned" xml:space="preserve">
+    <value>计划走此分支</value>
+  </data>
 </root>

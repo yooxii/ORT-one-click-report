@@ -26,7 +26,7 @@
                     <ColumnDefinition/>
                 </Grid.ColumnDefinitions>
                 <Grid.RowDefinitions>
-                    <RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/>
+                    <RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/>
                 </Grid.RowDefinitions>
                 <Label Content="{lex:Loc ReqEdit_DateTC}"/>
                 <DatePicker x:Name="dp_reqDate" Grid.Column="1" Margin="3" VerticalContentAlignment="Center"/>
@@ -56,6 +56,11 @@
                           Unchecked="Chk_NeedReturn_Changed" ToolTip="{lex:Loc ReqEdit_NoReturnHint}"/>
                 <TextBox x:Name="txt_returnRt" Grid.Row="4" Grid.Column="3" Margin="3"
                          ToolTip="{lex:Loc PlanEdit_RefreshRtHint}"/>
+
+                <!--单体去向：入库/报废二选一（必填，决定测试后走哪条终态分支）-->
+                <Label Content="{lex:Loc ReqEdit_Disposition}" Grid.Row="5"/>
+                <ComboBox x:Name="cb_disposition" Grid.Row="5" Grid.Column="1" Margin="3" VerticalContentAlignment="Center"
+                          ToolTip="{lex:Loc ReqEdit_DispositionHint}"/>
             </Grid>
         </GroupBox>
 

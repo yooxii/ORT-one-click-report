@@ -32,7 +32,7 @@ namespace ORT一键报告.Services
         [
             "領用\n日期", "領料單据號", "機種名稱", "領出\n數量", "S/N", "D/C",
             "REV.", "Work Order", "回綫 RT 工令", "回線\n數量", "線別", "回線\n日期",
-            "入庫退料\n單据號", "入庫\n數量", "入庫日期", "報廢\n單据號", "報廢\n數量", "報廢日期", "备注"
+            "入庫退料\n單据號", "入庫\n數量", "入庫日期", "報廢\n單据號", "報廢\n數量", "報廢日期", "單體\n去向", "备注"
         ];
 
         private static readonly string[] ScheduleHeaders =
@@ -132,6 +132,11 @@ namespace ORT一键报告.Services
                     plan.ScrapNo = Cell(ws, r, map, "報廢單据號");
                     plan.ScrapQty = Cell(ws, r, map, "報廢數量");
                     plan.ScrapDate = ParseAnyDate(Cell(ws, r, map, "報廢日期"), year);
+                    // 单体去向：旧文件没有此列时保持库里原值（缺列不覆盖，避免把已登记的去向清空）
+                    if (HasColumn(map, "單體去向"))
+                    {
+                        plan.Disposition = Cell(ws, r, map, "單體去向");
+                    }
                     plan.Remark = Cell(ws, r, map, "备注");
 
                     // 该行存在嵌入的 OLE 对象（SN清单文件）时提取保存
@@ -286,7 +291,8 @@ namespace ORT一键报告.Services
                     ExcelNpoi.SetCell(ws, r, 17, plan.ScrapNo);
                     ExcelNpoi.SetCell(ws, r, 18, plan.ScrapQty);
                     ExcelNpoi.SetCell(ws, r, 19, plan.ScrapDate);
-                    ExcelNpoi.SetCell(ws, r, 20, plan.Remark);
+                    ExcelNpoi.SetCell(ws, r, 20, plan.Disposition);
+                    ExcelNpoi.SetCell(ws, r, 21, plan.Remark);
 
                     // SN文件存在时以OLE对象形式嵌回S/N列，尽量还原原表形态
                     // （NPOI 只负责写数据，OLE 嵌入在保存后由 Excel COM 统一完成）
@@ -502,6 +508,16 @@ namespace ORT一键报告.Services
                 }
             }
             return null;
+        }
+
+        /// <summary>
+        /// 表头里是否存在包含指定关键字的列（导入时区分「文件里没有这一列」与「该行为空」，
+        /// 缺列时跳过赋值、保留库里已有值）
+        /// </summary>
+        private static bool HasColumn(Dictionary<string, int> map, string headerKey)
+        {
+            string normKey = Norm(headerKey);
+            return map.Keys.Any(k => k.Contains(normKey));
         }
 
         /// <summary>公式文本脏数据的占位值（与 Excel 里 VLOOKUP 取不到值时的显示一致）</summary>

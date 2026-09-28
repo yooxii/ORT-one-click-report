@@ -247,6 +247,8 @@
                         <DataGridTextColumn Header="{lex:Loc Plans_RequisitionDocNo}" Binding="{Binding RequisitionNo, UpdateSourceTrigger=PropertyChanged}" Width="110" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
                         <DataGridTextColumn Header="{lex:Loc Plans_ModelNameTC}" Binding="{Binding ModelName, UpdateSourceTrigger=PropertyChanged}" Width="130" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
                         <DataGridTextColumn Header="{lex:Loc Plans_IssueQty}" Binding="{Binding OutQty, UpdateSourceTrigger=PropertyChanged}" Width="70" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
+                        <!--单体去向（入库/报废）：编辑/新增窗口必填，表内只读展示-->
+                        <DataGridTextColumn Header="{lex:Loc Plans_Disposition}" Binding="{Binding Disposition}" IsReadOnly="True" Width="80" ElementStyle="{StaticResource CenterText}"/>
                         <DataGridTemplateColumn Header="{lex:Loc Plans_SN}" Width="170" SortMemberPath="SN">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>

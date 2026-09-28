@@ -13,7 +13,7 @@ namespace ORT一键报告.Plans.Views
 {
     /// <summary>
     /// WindowRequisitionEdit.xaml 的交互逻辑：领退表新增/编辑。
-    /// 必填：領用日期/領料單据號/機種名稱/領出數量/S-N/REV./Work Order；
+    /// 必填：領用日期/領料單据號/機種名稱/領出數量/單體去向（入库/报废）/S-N/REV./Work Order；
     /// 自动补全：D/C、線別、回线RT工令（可选）、计划表同步信息（测试项目/开始时间/阶段/工作编号/样品数/产品别/客户别/试验时间/负责人/结束日期）。
     /// 本对话框只构造结果，不写数据库；由调用方决定暂存或提审。
     /// </summary>
@@ -76,6 +76,7 @@ namespace ORT一键报告.Plans.Views
             cb_testItem.ItemsSource = _admin.GetTestItems().Select(t => t.Name).ToList();
             cb_stage.ItemsSource = _admin.GetStages().Select(s => s.Name).ToList();
             cb_reportStatus.ItemsSource = Models.ReportStatusKind.All.ToList();
+            cb_disposition.ItemsSource = Models.RequisitionDispositionKind.All.ToList();
 
             // 新增时默认预选调用方传入的测试项目/阶段（当前计划表里用得最多的一项）；
             // 编辑时不预选（由 LoadFromRequisition / LoadAssociatedPlan 带入原值），
@@ -219,6 +220,8 @@ namespace ORT一键报告.Plans.Views
             txt_workOrder.Text = req.WorkOrder;
             txt_dc.Text = req.DC;
             txt_lineNo.Text = req.LineNo;
+            // 单体去向：入库/报废（旧记录可能为空，保存时按必填校验拦截）
+            SetCombo(cb_disposition, req.Disposition);
             // 回线RT工令：有值即视为「需要回线」（勾选并把值显示出来），没有就留空=无需回线
             chk_needReturn.IsChecked = !string.IsNullOrWhiteSpace(req.ReturnRtOrder);
             txt_returnRt.Text = req.ReturnRtOrder ?? "";
@@ -515,6 +518,13 @@ namespace ORT一键报告.Plans.Views
                 _ = MessageBox.Show(LocalizationHelper.Get("Msg_NeedReturnOrder"), LanguageService.Get("Cap_Info"));
                 return;
             }
+            // 单体去向（入库/报废二选一）：新增与编辑都必须选择
+            if (cb_disposition.SelectedItem == null)
+            {
+                _ = MessageBox.Show(LocalizationHelper.Get("Msg_SelectDisposition"), LanguageService.Get("Cap_Info"));
+                cb_disposition.Focus();
+                return;
+            }
             // 计划表同步信息：展开=同步（建立/更新计划表记录，下列字段必填），折叠=只登记领退信息
             bool syncPlan = exp_planSync.IsExpanded;
             string jobNo = null;
@@ -574,6 +584,7 @@ namespace ORT一键报告.Plans.Views
             req.WorkOrder = txt_workOrder.Text.Trim();
             req.DC = txt_dc.Text.Trim();
             req.LineNo = txt_lineNo.Text.Trim();
+            req.Disposition = cb_disposition.SelectedItem as string;
             req.ReturnRtOrder = string.IsNullOrWhiteSpace(txt_returnRt.Text) ? null : txt_returnRt.Text.Trim();
             req.UpdatedBy = _permission.CurrentUser;
             req.UpdatedAt = DateTime.Now;

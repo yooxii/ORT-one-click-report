@@ -148,6 +148,7 @@
     <Compile Include="Services\ReportScanScheduler.cs" />
     <Compile Include="Services\HighCostTaskCoordinator.cs" />
     <Compile Include="Models\ReportStatusKind.cs" />
+    <Compile Include="Models\RequisitionDispositionKind.cs" />
     <Compile Include="Services\ReportTemplateService.cs" />
     <Compile Include="Utils\DataGridRowDrag.cs" />
     <Compile Include="Admin\Views\UserControlTestPlans.xaml.cs">

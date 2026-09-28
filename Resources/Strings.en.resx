@@ -2850,4 +2850,19 @@ Build the plan index now (compress repeated text into shared templates)?</value>
   <data name="Flow_WarnClosedWithoutUnitReturn" xml:space="preserve">
     <value>Note: the plan is closed, but the unit return is not registered; please verify the flow data</value>
   </data>
+  <data name="Plans_Disposition" xml:space="preserve">
+    <value>Disposition</value>
+  </data>
+  <data name="ReqEdit_Disposition" xml:space="preserve">
+    <value>Disposition*</value>
+  </data>
+  <data name="ReqEdit_DispositionHint" xml:space="preserve">
+    <value>"Stock-in" = return to line and stock in after testing; "Scrap" = scrap after testing (one branch per record); the flow view marks the planned branch accordingly</value>
+  </data>
+  <data name="Msg_SelectDisposition" xml:space="preserve">
+    <value>Please select the disposition (stock-in / scrap)</value>
+  </data>
+  <data name="Flow_Branch_Planned" xml:space="preserve">
+    <value>Planned for this branch</value>
+  </data>
 </root>
