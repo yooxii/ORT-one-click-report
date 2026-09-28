@@ -1176,6 +1176,129 @@ namespace ORT一键报告.Plans.Views
             return true;
         }
 
+        /* ###############################  右键菜单：报废登记 / 查看流程  ################################ */
+
+        /// <summary>
+        /// 右键「报废登记」：打开报废登记窗口（必须提供序列号清单并与领用清单完全核对，
+        /// 异常不能继续）。技术员及以上把报废字段写入记录（暂存，“提交保存”后生效）；
+        /// 普通用户克隆记录填入报废字段后提交审核（审核通过时由 ReviewService 写回）。
+        /// </summary>
+        private void Menu_RequisitionScrap_Click(object sender, RoutedEventArgs e)
+        {
+            Requisition req = CurrentRequisition;
+            if (req == null)
+            {
+                _ = MessageBox.Show(LanguageService.Get("Plans_Msg_SelectRequisition"), LanguageService.Get("Cap_Info"));
+                return;
+            }
+            if (!_vm.CanEdit)
+            {
+                _ = MessageBox.Show(LanguageService.Get("Plans_Msg_NoEditPermission"), LanguageService.Get("Cap_Info"));
+                return;
+            }
+            // 整笔单一去向（报废/入库二选一）：已登记入库再报废先二次确认
+            if (req.StockInDate != null
+                && MessageBox.Show(LanguageService.Get("Msg_ScrapAfterStockIn"), LanguageService.Get("Cap_Info"),
+                    MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+            {
+                return;
+            }
+            bool needsReview = _vm.NeedsReview;
+            if (needsReview && req.Id <= 0)
+            {
+                _ = MessageBox.Show(LanguageService.Get("Msg_SaveBeforeScrapReview"), LanguageService.Get("Cap_Info"));
+                return;
+            }
+            string snText = !string.IsNullOrWhiteSpace(req.SN) ? req.SN : req.SnFilePath;
+            WindowRequisitionScrap window = new(App.ServiceProvider.GetRequiredService<DatabaseService>(), req, needsReview, snText)
+            {
+                Owner = this
+            };
+            if (window.ShowDialog() != true)
+            {
+                return;
+            }
+            _vm.SelectedRequisition = req;
+            if (needsReview)
+            {
+                // 普通用户：克隆记录填入报废字段后提交审核（报废物料清单随 payload 一起流转）
+                Requisition payload = CloneRequisition(req);
+                payload.ScrapNo = window.ScrapNo;
+                payload.ScrapQty = window.ScrapQty;
+                payload.ScrapDate = window.ScrapDate;
+                payload.ScrapSnText = window.ScrapSnText;
+                payload.ScrapSnFilePath = window.ScrapSnFilePath;
+                App.ServiceProvider.GetRequiredService<ReviewService>()
+                    .SubmitRequisitionRequest("报废", payload, req.Id,
+                        App.ServiceProvider.GetRequiredService<IPermissionService>().CurrentUser);
+                _vm.StatusMessage = LanguageService.Get("Plans_Msg_ScrapSubmitted");
+                _ = MessageBox.Show(LocalizationHelper.Get("Msg_ScrapSubmitted"), LanguageService.Get("Cap_SubmitSuccess"));
+            }
+            else
+            {
+                req.ScrapNo = window.ScrapNo;
+                req.ScrapQty = window.ScrapQty;
+                req.ScrapDate = window.ScrapDate;
+                req.ScrapSnText = window.ScrapSnText;
+                req.ScrapSnFilePath = window.ScrapSnFilePath;
+                _vm.NotifyPendingChanged();
+                _vm.StatusMessage = string.Format(LanguageService.Get("Plans_Msg_ScrapAppliedFormat"),
+                    window.ScrapQty, window.ScrapDate.ToString("yyyy/M/d"), window.ScrapSnCount);
+                _logger.Info($"报废登记：{req.RequisitionNo} 数量={window.ScrapQty} 日期={window.ScrapDate:yyyy/M/d} 序列号={window.ScrapSnCount}个");
+            }
+        }
+
+        /// <summary>
+        /// 右键「查看流程」（领退表）：一般流程，关联计划/报告夹/报废审核请求一并带上
+        /// </summary>
+        private void Menu_ViewReqFlow_Click(object sender, RoutedEventArgs e)
+        {
+            Requisition req = CurrentRequisition;
+            if (req == null)
+            {
+                _ = MessageBox.Show(LanguageService.Get("Plans_Msg_SelectRequisition"), LanguageService.Get("Cap_Info"));
+                return;
+            }
+            Plan plan = _vm.FindPlanForRequisition(req);
+            FlowViewModel flow = FlowViewModel.BuildGeneral(req, plan,
+                plan == null ? null : _vm.FindReportLink(plan.JobNo),
+                _vm.FindLatestScrapRequest(req.Id),
+                App.ServiceProvider.GetRequiredService<DatabaseService>().ResolveAttachmentPath);
+            new WindowFlow(flow) { Owner = this }.ShowDialog();
+        }
+
+        /// <summary>
+        /// 右键「查看流程」（计划表）：QRT 前缀走其他部门申请测试流程；RT 反查领用记录后走一般流程
+        /// </summary>
+        private void Menu_ViewPlanFlow_Click(object sender, RoutedEventArgs e)
+        {
+            Plan plan = CurrentPlan;
+            if (plan == null)
+            {
+                _ = MessageBox.Show(LanguageService.Get("Plans_Msg_TemplateSelectPlan"), LanguageService.Get("Cap_Info"));
+                return;
+            }
+            FlowViewModel flow;
+            if ((plan.JobNo ?? "").StartsWith("QRT", StringComparison.OrdinalIgnoreCase))
+            {
+                flow = FlowViewModel.BuildExternalTest(plan);
+            }
+            else
+            {
+                Requisition req = _vm.FindRequisitionForPlan(plan);
+                flow = FlowViewModel.BuildGeneral(req, plan,
+                    _vm.FindReportLink(plan.JobNo),
+                    _vm.FindLatestScrapRequest(req?.Id ?? 0),
+                    App.ServiceProvider.GetRequiredService<DatabaseService>().ResolveAttachmentPath);
+            }
+            new WindowFlow(flow) { Owner = this }.ShowDialog();
+        }
+
+        /// <summary>克隆领退记录（报废提审 payload 用）</summary>
+        private static Requisition CloneRequisition(Requisition source)
+            => Newtonsoft.Json.JsonConvert.DeserializeObject<Requisition>(
+                Newtonsoft.Json.JsonConvert.SerializeObject(source));
+
         /* ###############################  右键菜单：报告对应  ################################ */
 
         private Plan CurrentPlan => (dg_plans.CurrentCell.Item as Plan) ?? dg_plans.SelectedItem as Plan;

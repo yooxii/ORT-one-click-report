@@ -200,6 +200,11 @@
                                       ToolTip="{lex:Loc ReqReturn_Hint}"/>
                             <MenuItem Header="{lex:Loc Plans_Menu_StockIn}" Click="Menu_RequisitionStockIn_Click"
                                       ToolTip="{lex:Loc ReqStockIn_Hint}"/>
+                            <MenuItem Header="{lex:Loc Plans_Menu_Scrap}" Click="Menu_RequisitionScrap_Click"
+                                      ToolTip="{lex:Loc ReqScrap_Hint}"/>
+                            <Separator/>
+                            <MenuItem Header="{lex:Loc Plans_Menu_ViewFlow}" Click="Menu_ViewReqFlow_Click"
+                                      ToolTip="{lex:Loc Plans_ToolTip_ViewFlow}"/>
                             <Separator/>
                             <MenuItem Header="{lex:Loc Common_CopyRow}" Click="Menu_CopyReqRow_Click"/>
                             <MenuItem Header="{lex:Loc Common_CopyCell}" Click="Menu_CopyReqCell_Click"/>
@@ -297,6 +302,20 @@
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellEditingTemplate>
                         </DataGridTemplateColumn>
+                        <DataGridTextColumn Header="{lex:Loc Plans_ScrapNo}" Binding="{Binding ScrapNo, UpdateSourceTrigger=PropertyChanged}" Width="110" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
+                        <DataGridTextColumn Header="{lex:Loc Plans_ScrapQty}" Binding="{Binding ScrapQty, UpdateSourceTrigger=PropertyChanged}" Width="65" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
+                        <DataGridTemplateColumn Header="{lex:Loc Plans_ScrapDate}" Width="90" SortMemberPath="ScrapDate">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding ScrapDate, StringFormat={}{0:yyyy/M/d}}" Style="{StaticResource CenterText}"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                            <DataGridTemplateColumn.CellEditingTemplate>
+                                <DataTemplate>
+                                    <DatePicker SelectedDate="{Binding ScrapDate, UpdateSourceTrigger=PropertyChanged}"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellEditingTemplate>
+                        </DataGridTemplateColumn>
                         <DataGridTextColumn Header="{lex:Loc Admin_Remark}" Binding="{Binding Remark, UpdateSourceTrigger=PropertyChanged}" Width="140" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
                     </DataGrid.Columns>
                 </DataGrid>
@@ -328,6 +347,9 @@
                             <MenuItem Header="{lex:Loc Plans_OpenOverview}" Click="Menu_OpenReportOverview_Click" ToolTip="{lex:Loc Plans_ToolTip_OpenOverview}"/>
                             <MenuItem Header="{lex:Loc Plans_OpenMainReport}" Click="Menu_OpenMainReport_Click" ToolTip="{lex:Loc Plans_ToolTip_OpenMainReport}"/>
                             <MenuItem x:Name="menu_buildTemplate" Header="{lex:Loc Plans_Menu_BuildTemplate}" Click="Menu_BuildReportTemplate_Click" ToolTip="{lex:Loc Plans_ToolTip_BuildTemplate}"/>
+                            <Separator/>
+                            <MenuItem Header="{lex:Loc Plans_Menu_ViewFlow}" Click="Menu_ViewPlanFlow_Click"
+                                      ToolTip="{lex:Loc Plans_ToolTip_ViewFlow}"/>
                             <Separator/>
                             <MenuItem Header="{lex:Loc Common_CopyRow}" Click="Menu_CopyPlanRow_Click"/>
                             <MenuItem Header="{lex:Loc Common_CopyCell}" Click="Menu_CopyPlanCell_Click"/>

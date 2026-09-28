@@ -32,7 +32,7 @@ namespace ORT一键报告.Services
         [
             "領用\n日期", "領料單据號", "機種名稱", "領出\n數量", "S/N", "D/C",
             "REV.", "Work Order", "回綫 RT 工令", "回線\n數量", "線別", "回線\n日期",
-            "入庫退料\n單据號", "入庫\n數量", "入庫日期", "备注"
+            "入庫退料\n單据號", "入庫\n數量", "入庫日期", "報廢\n單据號", "報廢\n數量", "報廢日期", "备注"
         ];
 
         private static readonly string[] ScheduleHeaders =
@@ -128,6 +128,10 @@ namespace ORT一键报告.Services
                     plan.StockInNo = Cell(ws, r, map, "入庫退料單据號");
                     plan.StockInQty = Cell(ws, r, map, "入庫數量");
                     plan.StockInDate = ParseAnyDate(Cell(ws, r, map, "入庫日期"), year);
+                    // 报废列：旧文件没有这些列时 Cell 返回 null，不影响导入
+                    plan.ScrapNo = Cell(ws, r, map, "報廢單据號");
+                    plan.ScrapQty = Cell(ws, r, map, "報廢數量");
+                    plan.ScrapDate = ParseAnyDate(Cell(ws, r, map, "報廢日期"), year);
                     plan.Remark = Cell(ws, r, map, "备注");
 
                     // 该行存在嵌入的 OLE 对象（SN清单文件）时提取保存
@@ -279,7 +283,10 @@ namespace ORT一键报告.Services
                     ExcelNpoi.SetCell(ws, r, 14, plan.StockInNo);
                     ExcelNpoi.SetCell(ws, r, 15, plan.StockInQty);
                     ExcelNpoi.SetCell(ws, r, 16, plan.StockInDate);
-                    ExcelNpoi.SetCell(ws, r, 17, plan.Remark);
+                    ExcelNpoi.SetCell(ws, r, 17, plan.ScrapNo);
+                    ExcelNpoi.SetCell(ws, r, 18, plan.ScrapQty);
+                    ExcelNpoi.SetCell(ws, r, 19, plan.ScrapDate);
+                    ExcelNpoi.SetCell(ws, r, 20, plan.Remark);
 
                     // SN文件存在时以OLE对象形式嵌回S/N列，尽量还原原表形态
                     // （NPOI 只负责写数据，OLE 嵌入在保存后由 Excel COM 统一完成）

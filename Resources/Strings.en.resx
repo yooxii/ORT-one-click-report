@@ -2493,4 +2493,325 @@ Build the plan index now (compress repeated text into shared templates)?</value>
   <data name="Menu_FilterGroupHint" xml:space="preserve">
     <value>Click to expand/collapse this group and check/uncheck every value in it</value>
   </data>
+  <data name="ReqScrap_Title" xml:space="preserve">
+    <value>Scrap Registration</value>
+  </data>
+  <data name="ReqScrap_SnGroup" xml:space="preserve">
+    <value>Scrap Serial Number List (Required)</value>
+  </data>
+  <data name="ReqScrap_SnInputMode" xml:space="preserve">
+    <value>Type in</value>
+  </data>
+  <data name="ReqScrap_SnFileMode" xml:space="preserve">
+    <value>Upload file</value>
+  </data>
+  <data name="ReqScrap_SnPasteHint" xml:space="preserve">
+    <value>One serial number per line (comma / semicolon / tab also accepted)</value>
+  </data>
+  <data name="ReqScrap_SnFileSpec" xml:space="preserve">
+    <value>File format: xls/xlsx/xlsm/csv/txt; the serial number column is auto-detected (all unique values sharing a common substring); one per row, first row may be a header, other columns are ignored</value>
+  </data>
+  <data name="ReqScrap_No" xml:space="preserve">
+    <value>Scrap Doc No.</value>
+  </data>
+  <data name="ReqScrap_Qty" xml:space="preserve">
+    <value>Scrap Qty</value>
+  </data>
+  <data name="ReqScrap_Date" xml:space="preserve">
+    <value>Scrap Date</value>
+  </data>
+  <data name="ReqScrap_Btn" xml:space="preserve">
+    <value>Scrap</value>
+  </data>
+  <data name="ReqScrap_Hint" xml:space="preserve">
+    <value>Click "Scrap" to write the S/N list, quantity and date into this record (takes effect after Save)</value>
+  </data>
+  <data name="ReqScrap_HintReview" xml:space="preserve">
+    <value>Click "Scrap" to submit the scrap request (with the S/N list); effective after approval</value>
+  </data>
+  <data name="ReqScrap_SnReqInfoFormat" xml:space="preserve">
+    <value>Requisition S/N count: {0} (source: {1})</value>
+  </data>
+  <data name="ReqScrap_SnFromFileFormat" xml:space="preserve">
+    <value>attachment {0}</value>
+  </data>
+  <data name="ReqScrap_SnFromText" xml:space="preserve">
+    <value>manual input</value>
+  </data>
+  <data name="Msg_FillScrapQty" xml:space="preserve">
+    <value>Please fill in the scrap quantity</value>
+  </data>
+  <data name="Msg_FillScrapDate" xml:space="preserve">
+    <value>Please select the scrap date</value>
+  </data>
+  <data name="Msg_SelectScrapSnFile" xml:space="preserve">
+    <value>Please select the scrap S/N file</value>
+  </data>
+  <data name="Msg_ScrapSnExtractFailedFormat" xml:space="preserve">
+    <value>Cannot parse the S/N file: {0}</value>
+  </data>
+  <data name="Msg_FillScrapSn" xml:space="preserve">
+    <value>Please fill in or upload the scrap S/N list</value>
+  </data>
+  <data name="Cap_ScrapSnCheckTitle" xml:space="preserve">
+    <value>S/N Check</value>
+  </data>
+  <data name="Msg_ScrapSnReqUnavailable" xml:space="preserve">
+    <value>The requisition has no usable S/N list; cannot verify, scrap cannot proceed</value>
+  </data>
+  <data name="Msg_ScrapSnCheckHeader" xml:space="preserve">
+    <value>S/N check failed, scrap cannot proceed:</value>
+  </data>
+  <data name="Msg_ScrapSnCheckNotIn" xml:space="preserve">
+    <value>Not in the requisition list ({0}):</value>
+  </data>
+  <data name="Msg_ScrapSnCheckMissing" xml:space="preserve">
+    <value>Missing from the scrap list ({0}):</value>
+  </data>
+  <data name="Msg_ScrapSnCheckDuplicate" xml:space="preserve">
+    <value>Duplicates in the list ({0}):</value>
+  </data>
+  <data name="Msg_ScrapSnDuplicateItemFormat" xml:space="preserve">
+    <value>{0} (x{1})</value>
+  </data>
+  <data name="Msg_ScrapSnCheckMoreFormat" xml:space="preserve">
+    <value>... {0} in total</value>
+  </data>
+  <data name="Plans_Menu_Scrap" xml:space="preserve">
+    <value>Scrap</value>
+  </data>
+  <data name="Plans_Menu_ViewFlow" xml:space="preserve">
+    <value>View Workflow</value>
+  </data>
+  <data name="Plans_ToolTip_ViewFlow" xml:space="preserve">
+    <value>View the workflow progress of this record (derived from registered data)</value>
+  </data>
+  <data name="Plans_ScrapNo" xml:space="preserve">
+    <value>Scrap Doc No.</value>
+  </data>
+  <data name="Plans_ScrapQty" xml:space="preserve">
+    <value>Scrap Qty</value>
+  </data>
+  <data name="Plans_ScrapDate" xml:space="preserve">
+    <value>Scrap Date</value>
+  </data>
+  <data name="Msg_ScrapAfterStockIn" xml:space="preserve">
+    <value>This record has been stocked in; scrap and stock-in are mutually exclusive. Scrap anyway?</value>
+  </data>
+  <data name="Msg_SaveBeforeScrapReview" xml:space="preserve">
+    <value>Save the requisition record first, then submit the scrap request</value>
+  </data>
+  <data name="Plans_Msg_ScrapSubmitted" xml:space="preserve">
+    <value>Scrap request submitted for review</value>
+  </data>
+  <data name="Msg_ScrapSubmitted" xml:space="preserve">
+    <value>Scrap request submitted; effective after approval</value>
+  </data>
+  <data name="Plans_Msg_ScrapAppliedFormat" xml:space="preserve">
+    <value>Scrap filled: qty {0}, date {1}, {2} S/Ns (staged; effective after Save)</value>
+  </data>
+  <data name="Flow_Title" xml:space="preserve">
+    <value>Workflow</value>
+  </data>
+  <data name="Flow_TypeGeneral" xml:space="preserve">
+    <value>General process (requisition)</value>
+  </data>
+  <data name="Flow_TypeExternal" xml:space="preserve">
+    <value>Test request process (other departments)</value>
+  </data>
+  <data name="Flow_SubtitleReqFormat" xml:space="preserve">
+    <value>Model {0} · Requisition No. {1}</value>
+  </data>
+  <data name="Flow_SubtitlePlanFormat" xml:space="preserve">
+    <value>Job No {0} · Model {1}</value>
+  </data>
+  <data name="Flow_State_Done" xml:space="preserve">
+    <value>Done</value>
+  </data>
+  <data name="Flow_State_Current" xml:space="preserve">
+    <value>In progress</value>
+  </data>
+  <data name="Flow_State_Waiting" xml:space="preserve">
+    <value>Not reached</value>
+  </data>
+  <data name="Flow_State_Skipped" xml:space="preserve">
+    <value>N/A</value>
+  </data>
+  <data name="Flow_State_Rejected" xml:space="preserve">
+    <value>Rejected</value>
+  </data>
+  <data name="Flow_CurrentFormat" xml:space="preserve">
+    <value>Current: {0}</value>
+  </data>
+  <data name="Flow_CurrentNone" xml:space="preserve">
+    <value>No node in progress</value>
+  </data>
+  <data name="Flow_CurrentAllDone" xml:space="preserve">
+    <value>All nodes completed</value>
+  </data>
+  <data name="Flow_FooterNote" xml:space="preserve">
+    <value>The workflow status is derived from registered data and report scans, for reference only</value>
+  </data>
+  <data name="Flow_WarnBothBranches" xml:space="preserve">
+    <value>Warning: both scrap and stock-in are registered (only one branch should be taken); please verify the data</value>
+  </data>
+  <data name="Flow_Step_Requisition" xml:space="preserve">
+    <value>Requisition</value>
+  </data>
+  <data name="Flow_Step_Plan" xml:space="preserve">
+    <value>Plan created</value>
+  </data>
+  <data name="Flow_Step_Template" xml:space="preserve">
+    <value>Report template</value>
+  </data>
+  <data name="Flow_Step_Test" xml:space="preserve">
+    <value>Testing</value>
+  </data>
+  <data name="Flow_Step_Report" xml:space="preserve">
+    <value>Report completed</value>
+  </data>
+  <data name="Flow_Step_ScrapReview" xml:space="preserve">
+    <value>Pre-scrap review</value>
+  </data>
+  <data name="Flow_Step_Scrap" xml:space="preserve">
+    <value>Scrap</value>
+  </data>
+  <data name="Flow_Step_ReturnLine" xml:space="preserve">
+    <value>Return to line</value>
+  </data>
+  <data name="Flow_Step_StockIn" xml:space="preserve">
+    <value>Stock-in</value>
+  </data>
+  <data name="Flow_Step_Close" xml:space="preserve">
+    <value>Closed</value>
+  </data>
+  <data name="Flow_Step_Register" xml:space="preserve">
+    <value>Registration</value>
+  </data>
+  <data name="Flow_Step_TestExt" xml:space="preserve">
+    <value>Testing</value>
+  </data>
+  <data name="Flow_Step_ReportOptional" xml:space="preserve">
+    <value>Report (if required)</value>
+  </data>
+  <data name="Flow_Branch_Scrap" xml:space="preserve">
+    <value>Scrap branch</value>
+  </data>
+  <data name="Flow_Branch_StockIn" xml:space="preserve">
+    <value>Return &amp; stock-in branch</value>
+  </data>
+  <data name="Flow_Branch_Taken" xml:space="preserve">
+    <value>Taken</value>
+  </data>
+  <data name="Flow_Branch_NotTaken" xml:space="preserve">
+    <value>Not taken</value>
+  </data>
+  <data name="Flow_Branch_Undecided" xml:space="preserve">
+    <value>Undecided</value>
+  </data>
+  <data name="Flow_Ev_RequisitionFormat" xml:space="preserve">
+    <value>Requisition No. {0} · Date {1:yyyy/M/d}</value>
+  </data>
+  <data name="Flow_Ev_NoRequisition" xml:space="preserve">
+    <value>No linked requisition found (matched by Return RT / WorkOrder / model+date)</value>
+  </data>
+  <data name="Flow_Ev_PlanFormat" xml:space="preserve">
+    <value>Job No {0}</value>
+  </data>
+  <data name="Flow_Ev_NoPlan" xml:space="preserve">
+    <value>No linked plan found</value>
+  </data>
+  <data name="Flow_Ev_TemplateFolderFormat" xml:space="preserve">
+    <value>Report folder: {0}</value>
+  </data>
+  <data name="Flow_Ev_TemplateMissing" xml:space="preserve">
+    <value>Report template/folder not created yet</value>
+  </data>
+  <data name="Flow_Ev_TestDone" xml:space="preserve">
+    <value>Test data complete (report scan)</value>
+  </data>
+  <data name="Flow_Ev_TestOngoing" xml:space="preserve">
+    <value>Test data found, testing in progress</value>
+  </data>
+  <data name="Flow_Ev_TestNoReport" xml:space="preserve">
+    <value>No report required; progress cannot be tracked from reports, derived from plan state</value>
+  </data>
+  <data name="Flow_Ev_TestStartPassedFormat" xml:space="preserve">
+    <value>Start date {0:yyyy/M/d} reached; no test data scanned yet</value>
+  </data>
+  <data name="Flow_Ev_TestStartFutureFormat" xml:space="preserve">
+    <value>Planned start date {0:yyyy/M/d}</value>
+  </data>
+  <data name="Flow_Ev_TestNoStart" xml:space="preserve">
+    <value>No start date, cannot determine</value>
+  </data>
+  <data name="Flow_Ev_PlanStatusFormat" xml:space="preserve">
+    <value>Plan status: {0}</value>
+  </data>
+  <data name="Flow_Ev_ReportComplete" xml:space="preserve">
+    <value>Report completed (report scan)</value>
+  </data>
+  <data name="Flow_Ev_ReportOngoing" xml:space="preserve">
+    <value>Report in progress (report scan)</value>
+  </data>
+  <data name="Flow_Ev_ReportNotRequired" xml:space="preserve">
+    <value>Report not required</value>
+  </data>
+  <data name="Flow_Ev_ReportNotScanned" xml:space="preserve">
+    <value>No report data scanned yet</value>
+  </data>
+  <data name="Flow_Ev_ScrapReviewApprovedFormat" xml:space="preserve">
+    <value>Approved by {0} · {1:yyyy/M/d}</value>
+  </data>
+  <data name="Flow_Ev_ScrapReviewPendingFormat" xml:space="preserve">
+    <value>Pending · reviewer {0} · submitted {1:yyyy/M/d}</value>
+  </data>
+  <data name="Flow_Ev_ScrapReviewRejectedFormat" xml:space="preserve">
+    <value>Rejected: {0}</value>
+  </data>
+  <data name="Flow_Ev_ScrapReviewFree" xml:space="preserve">
+    <value>Registered directly by technician (no review)</value>
+  </data>
+  <data name="Flow_Ev_ScrapReviewWaiting" xml:space="preserve">
+    <value>No scrap request submitted</value>
+  </data>
+  <data name="Flow_Ev_ScrapFormat" xml:space="preserve">
+    <value>Qty {0} · Date {1:yyyy/M/d}</value>
+  </data>
+  <data name="Flow_Ev_ScrapNoFormat" xml:space="preserve">
+    <value> · Doc {0}</value>
+  </data>
+  <data name="Flow_Ev_ScrapSnFormat" xml:space="preserve">
+    <value> · {0} S/Ns (verified)</value>
+  </data>
+  <data name="Flow_Ev_ScrapSnFileFormat" xml:space="preserve">
+    <value> · S/Ns in attachment ({0})</value>
+  </data>
+  <data name="Flow_Link_OpenScrapSn" xml:space="preserve">
+    <value>Open S/N file</value>
+  </data>
+  <data name="Flow_Ev_ReturnDoneFormat" xml:space="preserve">
+    <value>Return RT {0} · Date {1:yyyy/M/d}</value>
+  </data>
+  <data name="Flow_Ev_ReturnPendingFormat" xml:space="preserve">
+    <value>Return required ({0}), not returned yet</value>
+  </data>
+  <data name="Flow_Ev_StockInFormat" xml:space="preserve">
+    <value>Doc {0} · Qty {1} · Date {2:yyyy/M/d}</value>
+  </data>
+  <data name="Flow_Ev_CloseDone" xml:space="preserve">
+    <value>Plan closed</value>
+  </data>
+  <data name="Flow_Ev_CloseWaiting" xml:space="preserve">
+    <value>Plan not closed yet</value>
+  </data>
+  <data name="Flow_Ev_CloseNoPlan" xml:space="preserve">
+    <value>No linked plan, cannot determine closure</value>
+  </data>
+  <data name="Flow_Ev_RegisterFormat" xml:space="preserve">
+    <value>Job No {0} · Model {1} · Registered {2:yyyy/M/d}</value>
+  </data>
+  <data name="Msg_FileNotFoundFormat" xml:space="preserve">
+    <value>File not found: {0}</value>
+  </data>
 </root>

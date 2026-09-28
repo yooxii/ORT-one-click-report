@@ -2493,4 +2493,325 @@
   <data name="Menu_FilterGroupHint" xml:space="preserve">
     <value>点击展开/收起这一组，同时勾选/取消本组全部取值</value>
   </data>
+  <data name="ReqScrap_Title" xml:space="preserve">
+    <value>报废登记</value>
+  </data>
+  <data name="ReqScrap_SnGroup" xml:space="preserve">
+    <value>报废序列号清单（必填）</value>
+  </data>
+  <data name="ReqScrap_SnInputMode" xml:space="preserve">
+    <value>直接输入</value>
+  </data>
+  <data name="ReqScrap_SnFileMode" xml:space="preserve">
+    <value>上传文件</value>
+  </data>
+  <data name="ReqScrap_SnPasteHint" xml:space="preserve">
+    <value>每行一个序列号（也支持逗号/分号/制表符分隔）</value>
+  </data>
+  <data name="ReqScrap_SnFileSpec" xml:space="preserve">
+    <value>文件格式：xls/xlsx/xlsm/csv/txt；序列号列自动识别（同列取值两两不同且都含共同子串）；每行一个，首行可为表头，其余列忽略</value>
+  </data>
+  <data name="ReqScrap_No" xml:space="preserve">
+    <value>报废单据号</value>
+  </data>
+  <data name="ReqScrap_Qty" xml:space="preserve">
+    <value>报废数量</value>
+  </data>
+  <data name="ReqScrap_Date" xml:space="preserve">
+    <value>报废日期</value>
+  </data>
+  <data name="ReqScrap_Btn" xml:space="preserve">
+    <value>报废</value>
+  </data>
+  <data name="ReqScrap_Hint" xml:space="preserve">
+    <value>点「报废」把序列号清单与报废数量/日期写入这条记录（需点「提交保存」生效）</value>
+  </data>
+  <data name="ReqScrap_HintReview" xml:space="preserve">
+    <value>点「报废」提交报废申请（含序列号清单），审核通过后生效</value>
+  </data>
+  <data name="ReqScrap_SnReqInfoFormat" xml:space="preserve">
+    <value>领用记录序列号：{0} 个（来源：{1}）</value>
+  </data>
+  <data name="ReqScrap_SnFromFileFormat" xml:space="preserve">
+    <value>附件 {0}</value>
+  </data>
+  <data name="ReqScrap_SnFromText" xml:space="preserve">
+    <value>手工录入</value>
+  </data>
+  <data name="Msg_FillScrapQty" xml:space="preserve">
+    <value>请填写报废数量</value>
+  </data>
+  <data name="Msg_FillScrapDate" xml:space="preserve">
+    <value>请选择报废日期</value>
+  </data>
+  <data name="Msg_SelectScrapSnFile" xml:space="preserve">
+    <value>请选择报废序列号文件</value>
+  </data>
+  <data name="Msg_ScrapSnExtractFailedFormat" xml:space="preserve">
+    <value>序列号文件无法解析：{0}</value>
+  </data>
+  <data name="Msg_FillScrapSn" xml:space="preserve">
+    <value>请填写或上传报废序列号清单</value>
+  </data>
+  <data name="Cap_ScrapSnCheckTitle" xml:space="preserve">
+    <value>序列号核对</value>
+  </data>
+  <data name="Msg_ScrapSnReqUnavailable" xml:space="preserve">
+    <value>领用记录未登记序列号（或附件无法识别），无法核对，报废不能继续</value>
+  </data>
+  <data name="Msg_ScrapSnCheckHeader" xml:space="preserve">
+    <value>序列号核对未通过，报废不能继续：</value>
+  </data>
+  <data name="Msg_ScrapSnCheckNotIn" xml:space="preserve">
+    <value>不在领用清单（{0}）：</value>
+  </data>
+  <data name="Msg_ScrapSnCheckMissing" xml:space="preserve">
+    <value>领用清单中未出现（漏报废）（{0}）：</value>
+  </data>
+  <data name="Msg_ScrapSnCheckDuplicate" xml:space="preserve">
+    <value>清单内重复（{0}）：</value>
+  </data>
+  <data name="Msg_ScrapSnDuplicateItemFormat" xml:space="preserve">
+    <value>{0}（{1} 次）</value>
+  </data>
+  <data name="Msg_ScrapSnCheckMoreFormat" xml:space="preserve">
+    <value>…等共 {0} 条</value>
+  </data>
+  <data name="Plans_Menu_Scrap" xml:space="preserve">
+    <value>报废</value>
+  </data>
+  <data name="Plans_Menu_ViewFlow" xml:space="preserve">
+    <value>查看流程</value>
+  </data>
+  <data name="Plans_ToolTip_ViewFlow" xml:space="preserve">
+    <value>查看该记录的流程进度（按登记数据自动判定）</value>
+  </data>
+  <data name="Plans_ScrapNo" xml:space="preserve">
+    <value>报废单据号</value>
+  </data>
+  <data name="Plans_ScrapQty" xml:space="preserve">
+    <value>报废数量</value>
+  </data>
+  <data name="Plans_ScrapDate" xml:space="preserve">
+    <value>报废日期</value>
+  </data>
+  <data name="Msg_ScrapAfterStockIn" xml:space="preserve">
+    <value>该记录已登记入库；报废与入库为二选一，确认仍要报废？</value>
+  </data>
+  <data name="Msg_SaveBeforeScrapReview" xml:space="preserve">
+    <value>该领退记录尚未提交保存，请先提交保存后再提交报废申请</value>
+  </data>
+  <data name="Plans_Msg_ScrapSubmitted" xml:space="preserve">
+    <value>报废申请已提交审核</value>
+  </data>
+  <data name="Msg_ScrapSubmitted" xml:space="preserve">
+    <value>报废申请已提交，审核通过后生效</value>
+  </data>
+  <data name="Plans_Msg_ScrapAppliedFormat" xml:space="preserve">
+    <value>已填写报废：数量 {0} · 日期 {1} · 序列号 {2} 个（暂存，点「提交保存」后生效）</value>
+  </data>
+  <data name="Flow_Title" xml:space="preserve">
+    <value>流程查看</value>
+  </data>
+  <data name="Flow_TypeGeneral" xml:space="preserve">
+    <value>一般流程（领用）</value>
+  </data>
+  <data name="Flow_TypeExternal" xml:space="preserve">
+    <value>其他部门申请测试流程</value>
+  </data>
+  <data name="Flow_SubtitleReqFormat" xml:space="preserve">
+    <value>机种 {0} · 领料单据号 {1}</value>
+  </data>
+  <data name="Flow_SubtitlePlanFormat" xml:space="preserve">
+    <value>工作编号 {0} · 机种 {1}</value>
+  </data>
+  <data name="Flow_State_Done" xml:space="preserve">
+    <value>已完成</value>
+  </data>
+  <data name="Flow_State_Current" xml:space="preserve">
+    <value>进行中</value>
+  </data>
+  <data name="Flow_State_Waiting" xml:space="preserve">
+    <value>未到达</value>
+  </data>
+  <data name="Flow_State_Skipped" xml:space="preserve">
+    <value>无需</value>
+  </data>
+  <data name="Flow_State_Rejected" xml:space="preserve">
+    <value>已驳回</value>
+  </data>
+  <data name="Flow_CurrentFormat" xml:space="preserve">
+    <value>当前：{0}</value>
+  </data>
+  <data name="Flow_CurrentNone" xml:space="preserve">
+    <value>暂无进行中的节点</value>
+  </data>
+  <data name="Flow_CurrentAllDone" xml:space="preserve">
+    <value>全部节点已完成</value>
+  </data>
+  <data name="Flow_FooterNote" xml:space="preserve">
+    <value>流程状态按登记数据与报告扫描结果自动判定，仅供参考；如需人工确认请以实际登记为准</value>
+  </data>
+  <data name="Flow_WarnBothBranches" xml:space="preserve">
+    <value>异常：报废与回线入库均有登记（整笔单一去向应只走一条分支），请核对数据</value>
+  </data>
+  <data name="Flow_Step_Requisition" xml:space="preserve">
+    <value>单体领用</value>
+  </data>
+  <data name="Flow_Step_Plan" xml:space="preserve">
+    <value>新增计划</value>
+  </data>
+  <data name="Flow_Step_Template" xml:space="preserve">
+    <value>新建报告模板</value>
+  </data>
+  <data name="Flow_Step_Test" xml:space="preserve">
+    <value>进行试验</value>
+  </data>
+  <data name="Flow_Step_Report" xml:space="preserve">
+    <value>完成报告</value>
+  </data>
+  <data name="Flow_Step_ScrapReview" xml:space="preserve">
+    <value>报废前审核</value>
+  </data>
+  <data name="Flow_Step_Scrap" xml:space="preserve">
+    <value>报废</value>
+  </data>
+  <data name="Flow_Step_ReturnLine" xml:space="preserve">
+    <value>回线</value>
+  </data>
+  <data name="Flow_Step_StockIn" xml:space="preserve">
+    <value>入库</value>
+  </data>
+  <data name="Flow_Step_Close" xml:space="preserve">
+    <value>结案</value>
+  </data>
+  <data name="Flow_Step_Register" xml:space="preserve">
+    <value>登记信息</value>
+  </data>
+  <data name="Flow_Step_TestExt" xml:space="preserve">
+    <value>做测试</value>
+  </data>
+  <data name="Flow_Step_ReportOptional" xml:space="preserve">
+    <value>完成报告（如需要）</value>
+  </data>
+  <data name="Flow_Branch_Scrap" xml:space="preserve">
+    <value>报废分支</value>
+  </data>
+  <data name="Flow_Branch_StockIn" xml:space="preserve">
+    <value>回线入库分支</value>
+  </data>
+  <data name="Flow_Branch_Taken" xml:space="preserve">
+    <value>走此分支</value>
+  </data>
+  <data name="Flow_Branch_NotTaken" xml:space="preserve">
+    <value>未走此分支</value>
+  </data>
+  <data name="Flow_Branch_Undecided" xml:space="preserve">
+    <value>待定</value>
+  </data>
+  <data name="Flow_Ev_RequisitionFormat" xml:space="preserve">
+    <value>领料单据号 {0} · 领用日期 {1:yyyy/M/d}</value>
+  </data>
+  <data name="Flow_Ev_NoRequisition" xml:space="preserve">
+    <value>未找到关联领用记录（按 回线RT工令 / WorkOrder / 机种+日期 匹配）</value>
+  </data>
+  <data name="Flow_Ev_PlanFormat" xml:space="preserve">
+    <value>工作编号 {0}</value>
+  </data>
+  <data name="Flow_Ev_NoPlan" xml:space="preserve">
+    <value>未找到关联计划记录</value>
+  </data>
+  <data name="Flow_Ev_TemplateFolderFormat" xml:space="preserve">
+    <value>报告文件夹：{0}</value>
+  </data>
+  <data name="Flow_Ev_TemplateMissing" xml:space="preserve">
+    <value>尚未建立报告模板/报告文件夹</value>
+  </data>
+  <data name="Flow_Ev_TestDone" xml:space="preserve">
+    <value>报告数据齐全（报告扫描）</value>
+  </data>
+  <data name="Flow_Ev_TestOngoing" xml:space="preserve">
+    <value>扫描到测试数据，测试进行中</value>
+  </data>
+  <data name="Flow_Ev_TestNoReport" xml:space="preserve">
+    <value>无需报告，进度无法从报告跟踪，按计划状态判定</value>
+  </data>
+  <data name="Flow_Ev_TestStartPassedFormat" xml:space="preserve">
+    <value>已到开始日期 {0:yyyy/M/d}，尚未扫描到测试数据</value>
+  </data>
+  <data name="Flow_Ev_TestStartFutureFormat" xml:space="preserve">
+    <value>计划开始日期 {0:yyyy/M/d}</value>
+  </data>
+  <data name="Flow_Ev_TestNoStart" xml:space="preserve">
+    <value>无开始日期，无法判定</value>
+  </data>
+  <data name="Flow_Ev_PlanStatusFormat" xml:space="preserve">
+    <value>计划状态：{0}</value>
+  </data>
+  <data name="Flow_Ev_ReportComplete" xml:space="preserve">
+    <value>报告已完成（报告扫描）</value>
+  </data>
+  <data name="Flow_Ev_ReportOngoing" xml:space="preserve">
+    <value>报告进行中（报告扫描）</value>
+  </data>
+  <data name="Flow_Ev_ReportNotRequired" xml:space="preserve">
+    <value>无需报告</value>
+  </data>
+  <data name="Flow_Ev_ReportNotScanned" xml:space="preserve">
+    <value>尚未扫描到报告数据</value>
+  </data>
+  <data name="Flow_Ev_ScrapReviewApprovedFormat" xml:space="preserve">
+    <value>审核通过：{0} · {1:yyyy/M/d}</value>
+  </data>
+  <data name="Flow_Ev_ScrapReviewPendingFormat" xml:space="preserve">
+    <value>待审核 · 审核人 {0} · 提交于 {1:yyyy/M/d}</value>
+  </data>
+  <data name="Flow_Ev_ScrapReviewRejectedFormat" xml:space="preserve">
+    <value>已驳回：{0}</value>
+  </data>
+  <data name="Flow_Ev_ScrapReviewFree" xml:space="preserve">
+    <value>技术员直接登记（免审）</value>
+  </data>
+  <data name="Flow_Ev_ScrapReviewWaiting" xml:space="preserve">
+    <value>未提交报废申请</value>
+  </data>
+  <data name="Flow_Ev_ScrapFormat" xml:space="preserve">
+    <value>数量 {0} · 日期 {1:yyyy/M/d}</value>
+  </data>
+  <data name="Flow_Ev_ScrapNoFormat" xml:space="preserve">
+    <value> · 单据号 {0}</value>
+  </data>
+  <data name="Flow_Ev_ScrapSnFormat" xml:space="preserve">
+    <value> · 序列号 {0} 个（已核对一致）</value>
+  </data>
+  <data name="Flow_Ev_ScrapSnFileFormat" xml:space="preserve">
+    <value> · 序列号见附件（{0}）</value>
+  </data>
+  <data name="Flow_Link_OpenScrapSn" xml:space="preserve">
+    <value>打开序列号文件</value>
+  </data>
+  <data name="Flow_Ev_ReturnDoneFormat" xml:space="preserve">
+    <value>回线RT工令 {0} · 回线日期 {1:yyyy/M/d}</value>
+  </data>
+  <data name="Flow_Ev_ReturnPendingFormat" xml:space="preserve">
+    <value>需要回线（{0}），尚未回线</value>
+  </data>
+  <data name="Flow_Ev_StockInFormat" xml:space="preserve">
+    <value>单据号 {0} · 数量 {1} · 日期 {2:yyyy/M/d}</value>
+  </data>
+  <data name="Flow_Ev_CloseDone" xml:space="preserve">
+    <value>计划已结案</value>
+  </data>
+  <data name="Flow_Ev_CloseWaiting" xml:space="preserve">
+    <value>计划尚未结案</value>
+  </data>
+  <data name="Flow_Ev_CloseNoPlan" xml:space="preserve">
+    <value>无关联计划，无法判定结案</value>
+  </data>
+  <data name="Flow_Ev_RegisterFormat" xml:space="preserve">
+    <value>工作编号 {0} · 机种 {1} · 登记 {2:yyyy/M/d}</value>
+  </data>
+  <data name="Msg_FileNotFoundFormat" xml:space="preserve">
+    <value>文件不存在：{0}</value>
+  </data>
 </root>

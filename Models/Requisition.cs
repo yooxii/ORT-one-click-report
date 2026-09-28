@@ -130,6 +130,41 @@ namespace ORT一键报告.Models
         [Column(IsNullable = true)]
         public System.DateTime? StockInDate { get => _stockInDate; set => SetProperty(ref _stockInDate, value); }
 
+        private string _scrapNo;
+        /// <summary>
+        /// 報廢單据號（可空）
+        /// </summary>
+        [Column(StringLength = 64, IsNullable = true)]
+        public string ScrapNo { get => _scrapNo; set => SetProperty(ref _scrapNo, value); }
+
+        private string _scrapQty;
+        /// <summary>
+        /// 報廢數量
+        /// </summary>
+        [Column(StringLength = 32, IsNullable = true)]
+        public string ScrapQty { get => _scrapQty; set => SetProperty(ref _scrapQty, value); }
+
+        private System.DateTime? _scrapDate;
+        /// <summary>
+        /// 報廢日期
+        /// </summary>
+        [Column(IsNullable = true)]
+        public System.DateTime? ScrapDate { get => _scrapDate; set => SetProperty(ref _scrapDate, value); }
+
+        private string _scrapSnText;
+        /// <summary>
+        /// 報廢序列號清單（文本模式；与 ScrapSnFilePath 二选一）
+        /// </summary>
+        [Column(DbType = "text", IsNullable = true)]
+        public string ScrapSnText { get => _scrapSnText; set => SetProperty(ref _scrapSnText, value); }
+
+        private string _scrapSnFilePath;
+        /// <summary>
+        /// 報廢序列號文件（文件模式，存 OleDir 相对文件名；与 ScrapSnText 二选一）
+        /// </summary>
+        [Column(StringLength = 512, IsNullable = true)]
+        public string ScrapSnFilePath { get => _scrapSnFilePath; set => SetProperty(ref _scrapSnFilePath, value); }
+
         private string _remark;
         /// <summary>
         /// 备注

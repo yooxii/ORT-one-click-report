@@ -2493,4 +2493,325 @@
   <data name="Menu_FilterGroupHint" xml:space="preserve">
     <value>點擊展開/收起這一組，同時勾選/取消本組全部取值</value>
   </data>
+  <data name="ReqScrap_Title" xml:space="preserve">
+    <value>報廢登記</value>
+  </data>
+  <data name="ReqScrap_SnGroup" xml:space="preserve">
+    <value>報廢序列號清單（必填）</value>
+  </data>
+  <data name="ReqScrap_SnInputMode" xml:space="preserve">
+    <value>直接輸入</value>
+  </data>
+  <data name="ReqScrap_SnFileMode" xml:space="preserve">
+    <value>上傳文件</value>
+  </data>
+  <data name="ReqScrap_SnPasteHint" xml:space="preserve">
+    <value>每行一個序列號（也支持逗號/分號/製表符分隔）</value>
+  </data>
+  <data name="ReqScrap_SnFileSpec" xml:space="preserve">
+    <value>文件格式：xls/xlsx/xlsm/csv/txt；序列號列自動識別（同列取值兩兩不同且都含共同子串）；每行一個，首行可為表頭，其餘列忽略</value>
+  </data>
+  <data name="ReqScrap_No" xml:space="preserve">
+    <value>報廢單據號</value>
+  </data>
+  <data name="ReqScrap_Qty" xml:space="preserve">
+    <value>報廢數量</value>
+  </data>
+  <data name="ReqScrap_Date" xml:space="preserve">
+    <value>報廢日期</value>
+  </data>
+  <data name="ReqScrap_Btn" xml:space="preserve">
+    <value>報廢</value>
+  </data>
+  <data name="ReqScrap_Hint" xml:space="preserve">
+    <value>點「報廢」把序列號清單與報廢數量/日期寫入這條記錄（需點「提交保存」生效）</value>
+  </data>
+  <data name="ReqScrap_HintReview" xml:space="preserve">
+    <value>點「報廢」提交報廢申請（含序列號清單），審核通過後生效</value>
+  </data>
+  <data name="ReqScrap_SnReqInfoFormat" xml:space="preserve">
+    <value>領用記錄序列號：{0} 個（來源：{1}）</value>
+  </data>
+  <data name="ReqScrap_SnFromFileFormat" xml:space="preserve">
+    <value>附件 {0}</value>
+  </data>
+  <data name="ReqScrap_SnFromText" xml:space="preserve">
+    <value>手工錄入</value>
+  </data>
+  <data name="Msg_FillScrapQty" xml:space="preserve">
+    <value>請填寫報廢數量</value>
+  </data>
+  <data name="Msg_FillScrapDate" xml:space="preserve">
+    <value>請選擇報廢日期</value>
+  </data>
+  <data name="Msg_SelectScrapSnFile" xml:space="preserve">
+    <value>請選擇報廢序列號文件</value>
+  </data>
+  <data name="Msg_ScrapSnExtractFailedFormat" xml:space="preserve">
+    <value>序列號文件無法解析：{0}</value>
+  </data>
+  <data name="Msg_FillScrapSn" xml:space="preserve">
+    <value>請填寫或上傳報廢序列號清單</value>
+  </data>
+  <data name="Cap_ScrapSnCheckTitle" xml:space="preserve">
+    <value>序列號核對</value>
+  </data>
+  <data name="Msg_ScrapSnReqUnavailable" xml:space="preserve">
+    <value>領用記錄未登記序列號（或附件無法識別），無法核對，報廢不能繼續</value>
+  </data>
+  <data name="Msg_ScrapSnCheckHeader" xml:space="preserve">
+    <value>序列號核對未通過，報廢不能繼續：</value>
+  </data>
+  <data name="Msg_ScrapSnCheckNotIn" xml:space="preserve">
+    <value>不在領用清單（{0}）：</value>
+  </data>
+  <data name="Msg_ScrapSnCheckMissing" xml:space="preserve">
+    <value>領用清單中未出現（漏報廢）（{0}）：</value>
+  </data>
+  <data name="Msg_ScrapSnCheckDuplicate" xml:space="preserve">
+    <value>清單內重複（{0}）：</value>
+  </data>
+  <data name="Msg_ScrapSnDuplicateItemFormat" xml:space="preserve">
+    <value>{0}（{1} 次）</value>
+  </data>
+  <data name="Msg_ScrapSnCheckMoreFormat" xml:space="preserve">
+    <value>…等共 {0} 條</value>
+  </data>
+  <data name="Plans_Menu_Scrap" xml:space="preserve">
+    <value>報廢</value>
+  </data>
+  <data name="Plans_Menu_ViewFlow" xml:space="preserve">
+    <value>查看流程</value>
+  </data>
+  <data name="Plans_ToolTip_ViewFlow" xml:space="preserve">
+    <value>查看該記錄的流程進度（按登記數據自動判定）</value>
+  </data>
+  <data name="Plans_ScrapNo" xml:space="preserve">
+    <value>報廢單據號</value>
+  </data>
+  <data name="Plans_ScrapQty" xml:space="preserve">
+    <value>報廢數量</value>
+  </data>
+  <data name="Plans_ScrapDate" xml:space="preserve">
+    <value>報廢日期</value>
+  </data>
+  <data name="Msg_ScrapAfterStockIn" xml:space="preserve">
+    <value>該記錄已登記入庫；報廢與入庫為二選一，確認仍要報廢？</value>
+  </data>
+  <data name="Msg_SaveBeforeScrapReview" xml:space="preserve">
+    <value>該領退記錄尚未提交保存，請先提交保存後再提交報廢申請</value>
+  </data>
+  <data name="Plans_Msg_ScrapSubmitted" xml:space="preserve">
+    <value>報廢申請已提交審核</value>
+  </data>
+  <data name="Msg_ScrapSubmitted" xml:space="preserve">
+    <value>報廢申請已提交，審核通過後生效</value>
+  </data>
+  <data name="Plans_Msg_ScrapAppliedFormat" xml:space="preserve">
+    <value>已填寫報廢：數量 {0} · 日期 {1} · 序列號 {2} 個（暫存，點「提交保存」後生效）</value>
+  </data>
+  <data name="Flow_Title" xml:space="preserve">
+    <value>流程查看</value>
+  </data>
+  <data name="Flow_TypeGeneral" xml:space="preserve">
+    <value>一般流程（領用）</value>
+  </data>
+  <data name="Flow_TypeExternal" xml:space="preserve">
+    <value>其他部門申請測試流程</value>
+  </data>
+  <data name="Flow_SubtitleReqFormat" xml:space="preserve">
+    <value>機種 {0} · 領料單據號 {1}</value>
+  </data>
+  <data name="Flow_SubtitlePlanFormat" xml:space="preserve">
+    <value>工作編號 {0} · 機種 {1}</value>
+  </data>
+  <data name="Flow_State_Done" xml:space="preserve">
+    <value>已完成</value>
+  </data>
+  <data name="Flow_State_Current" xml:space="preserve">
+    <value>進行中</value>
+  </data>
+  <data name="Flow_State_Waiting" xml:space="preserve">
+    <value>未到達</value>
+  </data>
+  <data name="Flow_State_Skipped" xml:space="preserve">
+    <value>無需</value>
+  </data>
+  <data name="Flow_State_Rejected" xml:space="preserve">
+    <value>已駁回</value>
+  </data>
+  <data name="Flow_CurrentFormat" xml:space="preserve">
+    <value>當前：{0}</value>
+  </data>
+  <data name="Flow_CurrentNone" xml:space="preserve">
+    <value>暫無進行中的節點</value>
+  </data>
+  <data name="Flow_CurrentAllDone" xml:space="preserve">
+    <value>全部節點已完成</value>
+  </data>
+  <data name="Flow_FooterNote" xml:space="preserve">
+    <value>流程狀態按登記數據與報告掃描結果自動判定，僅供參考；如需人工確認請以實際登記為準</value>
+  </data>
+  <data name="Flow_WarnBothBranches" xml:space="preserve">
+    <value>異常：報廢與回線入庫均有登記（整筆單一去向應只走一條分支），請核對數據</value>
+  </data>
+  <data name="Flow_Step_Requisition" xml:space="preserve">
+    <value>單體領用</value>
+  </data>
+  <data name="Flow_Step_Plan" xml:space="preserve">
+    <value>新增計劃</value>
+  </data>
+  <data name="Flow_Step_Template" xml:space="preserve">
+    <value>新建報告模板</value>
+  </data>
+  <data name="Flow_Step_Test" xml:space="preserve">
+    <value>進行試驗</value>
+  </data>
+  <data name="Flow_Step_Report" xml:space="preserve">
+    <value>完成報告</value>
+  </data>
+  <data name="Flow_Step_ScrapReview" xml:space="preserve">
+    <value>報廢前審核</value>
+  </data>
+  <data name="Flow_Step_Scrap" xml:space="preserve">
+    <value>報廢</value>
+  </data>
+  <data name="Flow_Step_ReturnLine" xml:space="preserve">
+    <value>回線</value>
+  </data>
+  <data name="Flow_Step_StockIn" xml:space="preserve">
+    <value>入庫</value>
+  </data>
+  <data name="Flow_Step_Close" xml:space="preserve">
+    <value>結案</value>
+  </data>
+  <data name="Flow_Step_Register" xml:space="preserve">
+    <value>登記信息</value>
+  </data>
+  <data name="Flow_Step_TestExt" xml:space="preserve">
+    <value>做測試</value>
+  </data>
+  <data name="Flow_Step_ReportOptional" xml:space="preserve">
+    <value>完成報告（如需要）</value>
+  </data>
+  <data name="Flow_Branch_Scrap" xml:space="preserve">
+    <value>報廢分支</value>
+  </data>
+  <data name="Flow_Branch_StockIn" xml:space="preserve">
+    <value>回線入庫分支</value>
+  </data>
+  <data name="Flow_Branch_Taken" xml:space="preserve">
+    <value>走此分支</value>
+  </data>
+  <data name="Flow_Branch_NotTaken" xml:space="preserve">
+    <value>未走此分支</value>
+  </data>
+  <data name="Flow_Branch_Undecided" xml:space="preserve">
+    <value>待定</value>
+  </data>
+  <data name="Flow_Ev_RequisitionFormat" xml:space="preserve">
+    <value>領料單據號 {0} · 領用日期 {1:yyyy/M/d}</value>
+  </data>
+  <data name="Flow_Ev_NoRequisition" xml:space="preserve">
+    <value>未找到關聯領用記錄（按 回線RT工令 / WorkOrder / 機種+日期 匹配）</value>
+  </data>
+  <data name="Flow_Ev_PlanFormat" xml:space="preserve">
+    <value>工作編號 {0}</value>
+  </data>
+  <data name="Flow_Ev_NoPlan" xml:space="preserve">
+    <value>未找到關聯計劃記錄</value>
+  </data>
+  <data name="Flow_Ev_TemplateFolderFormat" xml:space="preserve">
+    <value>報告文件夾：{0}</value>
+  </data>
+  <data name="Flow_Ev_TemplateMissing" xml:space="preserve">
+    <value>尚未建立報告模板/報告文件夾</value>
+  </data>
+  <data name="Flow_Ev_TestDone" xml:space="preserve">
+    <value>報告數據齊全（報告掃描）</value>
+  </data>
+  <data name="Flow_Ev_TestOngoing" xml:space="preserve">
+    <value>掃描到測試數據，測試進行中</value>
+  </data>
+  <data name="Flow_Ev_TestNoReport" xml:space="preserve">
+    <value>無需報告，進度無法從報告跟蹤，按計劃狀態判定</value>
+  </data>
+  <data name="Flow_Ev_TestStartPassedFormat" xml:space="preserve">
+    <value>已到開始日期 {0:yyyy/M/d}，尚未掃描到測試數據</value>
+  </data>
+  <data name="Flow_Ev_TestStartFutureFormat" xml:space="preserve">
+    <value>計劃開始日期 {0:yyyy/M/d}</value>
+  </data>
+  <data name="Flow_Ev_TestNoStart" xml:space="preserve">
+    <value>無開始日期，無法判定</value>
+  </data>
+  <data name="Flow_Ev_PlanStatusFormat" xml:space="preserve">
+    <value>計劃狀態：{0}</value>
+  </data>
+  <data name="Flow_Ev_ReportComplete" xml:space="preserve">
+    <value>報告已完成（報告掃描）</value>
+  </data>
+  <data name="Flow_Ev_ReportOngoing" xml:space="preserve">
+    <value>報告進行中（報告掃描）</value>
+  </data>
+  <data name="Flow_Ev_ReportNotRequired" xml:space="preserve">
+    <value>無需報告</value>
+  </data>
+  <data name="Flow_Ev_ReportNotScanned" xml:space="preserve">
+    <value>尚未掃描到報告數據</value>
+  </data>
+  <data name="Flow_Ev_ScrapReviewApprovedFormat" xml:space="preserve">
+    <value>審核通過：{0} · {1:yyyy/M/d}</value>
+  </data>
+  <data name="Flow_Ev_ScrapReviewPendingFormat" xml:space="preserve">
+    <value>待審核 · 審核人 {0} · 提交於 {1:yyyy/M/d}</value>
+  </data>
+  <data name="Flow_Ev_ScrapReviewRejectedFormat" xml:space="preserve">
+    <value>已駁回：{0}</value>
+  </data>
+  <data name="Flow_Ev_ScrapReviewFree" xml:space="preserve">
+    <value>技術員直接登記（免審）</value>
+  </data>
+  <data name="Flow_Ev_ScrapReviewWaiting" xml:space="preserve">
+    <value>未提交報廢申請</value>
+  </data>
+  <data name="Flow_Ev_ScrapFormat" xml:space="preserve">
+    <value>數量 {0} · 日期 {1:yyyy/M/d}</value>
+  </data>
+  <data name="Flow_Ev_ScrapNoFormat" xml:space="preserve">
+    <value> · 單據號 {0}</value>
+  </data>
+  <data name="Flow_Ev_ScrapSnFormat" xml:space="preserve">
+    <value> · 序列號 {0} 個（已核對一致）</value>
+  </data>
+  <data name="Flow_Ev_ScrapSnFileFormat" xml:space="preserve">
+    <value> · 序列號見附件（{0}）</value>
+  </data>
+  <data name="Flow_Link_OpenScrapSn" xml:space="preserve">
+    <value>打開序列號文件</value>
+  </data>
+  <data name="Flow_Ev_ReturnDoneFormat" xml:space="preserve">
+    <value>回線RT工令 {0} · 回線日期 {1:yyyy/M/d}</value>
+  </data>
+  <data name="Flow_Ev_ReturnPendingFormat" xml:space="preserve">
+    <value>需要回線（{0}），尚未回線</value>
+  </data>
+  <data name="Flow_Ev_StockInFormat" xml:space="preserve">
+    <value>單據號 {0} · 數量 {1} · 日期 {2:yyyy/M/d}</value>
+  </data>
+  <data name="Flow_Ev_CloseDone" xml:space="preserve">
+    <value>計劃已結案</value>
+  </data>
+  <data name="Flow_Ev_CloseWaiting" xml:space="preserve">
+    <value>計劃尚未結案</value>
+  </data>
+  <data name="Flow_Ev_CloseNoPlan" xml:space="preserve">
+    <value>無關聯計劃，無法判定結案</value>
+  </data>
+  <data name="Flow_Ev_RegisterFormat" xml:space="preserve">
+    <value>工作編號 {0} · 機種 {1} · 登記 {2:yyyy/M/d}</value>
+  </data>
+  <data name="Msg_FileNotFoundFormat" xml:space="preserve">
+    <value>文件不存在：{0}</value>
+  </data>
 </root>

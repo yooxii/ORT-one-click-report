@@ -1,8 +1,10 @@
 using Newtonsoft.Json;
 using NLog;
 using ORT一键报告.Models;
+using ORT一键报告.Utils;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace ORT一键报告.Services
@@ -68,6 +70,9 @@ namespace ORT一键报告.Services
             {
                 "新增" => $"新增领退: {payload.ModelName ?? "-"} / {payload.RequisitionNo ?? "-"}",
                 "编辑" => $"编辑领退(Id={targetId}): {payload.ModelName ?? "-"} / {payload.RequisitionNo ?? "-"}",
+                "报废" => $"报废领退(Id={targetId}): {payload.ModelName ?? "-"} / {payload.RequisitionNo ?? "-"} "
+                          + $"数量={payload.ScrapQty ?? "-"} 日期={payload.ScrapDate:yyyy/M/d} "
+                          + (payload.ScrapSnFilePath != null ? "序列号=文件" : $"序列号={payload.ScrapSnText?.Count(c => c == '\n') + 1 ?? 0}个"),
                 _ => $"{action}领退"
             };
             ReviewRequest request = new()
@@ -282,8 +287,69 @@ namespace ORT一键报告.Services
                     _db.FreeSql.Update<Requisition>().SetSource(edited).Where(r => r.Id == edited.Id).ExecuteAffrows();
                     break;
 
+                case "报废":
+                    if (request.TargetId == null)
+                    {
+                        throw new InvalidOperationException("报废请求缺少目标记录Id");
+                    }
+                    Requisition scrap = JsonConvert.DeserializeObject<Requisition>(request.PayloadJson);
+                    // 通过前复核序列号：领用清单中途被改导致与报废清单不一致时阻止（请求保持待审核）
+                    VerifyScrapSnOrThrow(scrap, request.TargetId.Value);
+                    // 只更新报废字段与审计字段，不整行覆盖（提交后领用侧可能又改过其他字段）
+                    _db.FreeSql.Update<Requisition>()
+                        .Set(r => r.ScrapNo, scrap.ScrapNo)
+                        .Set(r => r.ScrapQty, scrap.ScrapQty)
+                        .Set(r => r.ScrapDate, scrap.ScrapDate)
+                        .Set(r => r.ScrapSnText, scrap.ScrapSnText)
+                        .Set(r => r.ScrapSnFilePath, scrap.ScrapSnFilePath)
+                        .Set(r => r.UpdatedBy, request.ReviewerName)
+                        .Set(r => r.UpdatedAt, DateTime.Now)
+                        .Where(r => r.Id == request.TargetId.Value)
+                        .ExecuteAffrows();
+                    break;
+
                 default:
                     throw new NotSupportedException($"暂不支持的操作: {request.Action}");
+            }
+        }
+
+        /// <summary>
+        /// 报废审核通过前的序列号复核：当前领用清单与请求里的报废清单必须完全一致。
+        /// 领用清单或报废清单取不到（未登记/附件无法识别）时跳过复核——提交登记时已校验过。
+        /// </summary>
+        private void VerifyScrapSnOrThrow(Requisition payload, long targetId)
+        {
+            Requisition current = _db.FreeSql.Select<Requisition>().Where(r => r.Id == targetId).First();
+            if (current == null)
+            {
+                throw new InvalidOperationException($"领退记录不存在(Id={targetId})");
+            }
+            List<string> scrapList = SnVerification.ParseText(payload.ScrapSnText);
+            if (scrapList.Count == 0 && !string.IsNullOrWhiteSpace(payload.ScrapSnFilePath))
+            {
+                string scrapFile = _db.ResolveAttachmentPath(payload.ScrapSnFilePath);
+                if (!string.IsNullOrWhiteSpace(scrapFile) && File.Exists(scrapFile))
+                {
+                    try
+                    {
+                        scrapList = SnVerification.ExtractFromFile(scrapFile);
+                    }
+                    catch
+                    {
+                        scrapList = [];
+                    }
+                }
+            }
+            List<string> reqList = SnVerification.ExtractFromRequisition(current.SN, _db.ResolveAttachmentPath(current.SnFilePath));
+            if (reqList.Count == 0 || scrapList.Count == 0)
+            {
+                return; // 无法复核，不阻挡（提交时已校验）
+            }
+            SnVerification.SnCompareResult result = SnVerification.Compare(reqList, scrapList);
+            if (!result.Ok)
+            {
+                throw new InvalidOperationException(
+                    $"序列号复核未通过：当前领用清单（{result.RequisitionCount}个）与报废清单（{result.ScrapCount}个）不一致，请驳回后重新登记");
             }
         }
     }

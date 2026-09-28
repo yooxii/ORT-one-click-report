@@ -198,6 +198,7 @@
     <Compile Include="Services\PermissionService.cs" />
     <Compile Include="Services\PlanExcelService.cs" />
     <Compile Include="Plans\ViewModels\PlansViewModel.cs" />
+    <Compile Include="Plans\ViewModels\FlowViewModel.cs" />
     <Compile Include="Plans\Views\FilterDropDown.xaml.cs">
       <DependentUpon>FilterDropDown.xaml</DependentUpon>
     </Compile>
@@ -216,7 +217,14 @@
     <Compile Include="Plans\Views\WindowRequisitionStockIn.xaml.cs">
       <DependentUpon>WindowRequisitionStockIn.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Plans\Views\WindowRequisitionScrap.xaml.cs">
+      <DependentUpon>WindowRequisitionScrap.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Plans\Views\WindowFlow.xaml.cs">
+      <DependentUpon>WindowFlow.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Utils\SmartTableExtractor.cs" />
+    <Compile Include="Utils\SnVerification.cs" />
     <Compile Include="Reports\ViewModels\BaseReportPageViewModel.cs" />
     <Compile Include="Reports\ViewModels\EMIReportViewModel.cs" />
     <Compile Include="Reports\ViewModels\EMISetupViewModel.cs" />
@@ -435,6 +443,14 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Plans\Views\WindowRequisitionStockIn.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Plans\Views\WindowRequisitionScrap.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Plans\Views\WindowFlow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

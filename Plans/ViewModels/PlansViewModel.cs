@@ -720,6 +720,49 @@ namespace ORT一键报告.Plans.ViewModels
         }
 
         /// <summary>
+        /// 查找领退记录对应的计划记录（查看流程用，与 <see cref="FindRequisitionForPlan"/> 互为反向）。
+        /// 匹配规则：备注含回线RT工令 → 备注含 WorkOrder → 机种相同且领用日期同开始日期。
+        /// </summary>
+        public Plan FindPlanForRequisition(Requisition req)
+        {
+            if (req == null)
+            {
+                return null;
+            }
+            List<Plan> plans = Plans.ToList();
+            return (!string.IsNullOrWhiteSpace(req.ReturnRtOrder)
+                    ? plans.FirstOrDefault(p => p.Remark != null && p.Remark.Contains(req.ReturnRtOrder)) : null)
+                ?? (!string.IsNullOrWhiteSpace(req.WorkOrder)
+                    ? plans.FirstOrDefault(p => p.Remark != null && p.Remark.Contains(req.WorkOrder)) : null)
+                ?? plans.FirstOrDefault(p => p.ModelName == req.ModelName
+                    && p.StartDate != null && req.RequisitionDate != null
+                    && p.StartDate.Value.Date == req.RequisitionDate.Value.Date);
+        }
+
+        /// <summary>
+        /// 取指定领退记录最新的一条报废审核请求（查看流程的「报废前审核」步骤用）；没有则返回 null
+        /// </summary>
+        public ReviewRequest FindLatestScrapRequest(long requisitionId)
+        {
+            if (requisitionId <= 0)
+            {
+                return null;
+            }
+            try
+            {
+                return _db.FreeSql.Select<ReviewRequest>()
+                    .Where(r => r.Type == "领退表单" && r.Action == "报废" && r.TargetId == requisitionId)
+                    .OrderByDescending(r => r.Id)
+                    .First();
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn($"查询报废审核请求失败: {ex.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>
         /// 报告文件夹扫描完成（参数为匹配到的报告夹数量）。界面据此提示用户建立计划索引。
         /// </summary>
         public event Action<int> ReportScanCompleted;
@@ -897,7 +940,8 @@ namespace ORT一键报告.Plans.ViewModels
             string kw = SearchKeyword.Trim();
             return Contains(req.ModelName, kw) || Contains(req.RequisitionNo, kw)
                 || Contains(req.WorkOrder, kw) || Contains(req.ReturnRtOrder, kw)
-                || Contains(req.SN, kw) || Contains(req.StockInNo, kw);
+                || Contains(req.SN, kw) || Contains(req.StockInNo, kw)
+                || Contains(req.ScrapNo, kw);
         }
 
         private static bool Contains(string source, string keyword)
@@ -1166,6 +1210,11 @@ namespace ORT一键报告.Plans.ViewModels
             to.StockInNo = from.StockInNo;
             to.StockInQty = from.StockInQty;
             to.StockInDate = from.StockInDate;
+            to.ScrapNo = from.ScrapNo;
+            to.ScrapQty = from.ScrapQty;
+            to.ScrapDate = from.ScrapDate;
+            to.ScrapSnText = from.ScrapSnText;
+            to.ScrapSnFilePath = from.ScrapSnFilePath;
             to.Remark = from.Remark;
             to.UpdatedBy = from.UpdatedBy;
             to.UpdatedAt = from.UpdatedAt;
