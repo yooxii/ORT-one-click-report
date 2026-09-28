@@ -13,7 +13,7 @@ using System.Windows.Input;
 
 namespace ORT一键报告.Reports.ViewModels
 {
-    public partial class EMISetupViewModel(IPathService service, ReportService reportService) : SettingsViewModel
+    public partial class EMISetupViewModel(IPathService service) : SettingsViewModel
     {
         private readonly IPathService _emiService = service;
 

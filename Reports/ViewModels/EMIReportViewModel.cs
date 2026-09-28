@@ -112,7 +112,7 @@ namespace ORT一键报告.Reports.ViewModels
             _reportService = reportService;
             _appSettings = appSettings;
             ReportHeaderVM = new();
-            EMISetupVM = new(service, reportService);
+            EMISetupVM = new(service);
             EMISetupVM.TemplatePathChanged += (newPath) => TemplatePath = newPath;
         }
 

@@ -375,7 +375,7 @@ namespace ORT一键报告.Admin.Views
                 Name = dialog.ItemName,
                 Period = dialog.Period,
                 Category = dialog.Category,
-                Owner = dialog.Owner,
+                Owner = dialog.OwnerText,
                 Remark = dialog.Remark
             });
             if (error != null)
@@ -407,7 +407,7 @@ namespace ORT一键报告.Admin.Views
                 Name = dialog.ItemName,
                 Period = dialog.Period,
                 Category = dialog.Category,
-                Owner = dialog.Owner,
+                Owner = dialog.OwnerText,
                 Remark = dialog.Remark
             });
             if (error != null)

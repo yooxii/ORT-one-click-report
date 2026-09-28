@@ -11,18 +11,6 @@ using System.Windows;
 namespace ORT一键报告.Services
 {
     /// <summary>
-    /// 报告扫描进度快照（传给 UI 绑定用）
-    /// </summary>
-    public class ReportScanProgress
-    {
-        public int Processed { get; set; }
-        public int Total { get; set; }
-        public string CurrentFolder { get; set; }
-        public bool IsRunning { get; set; }
-        public bool WasInterrupted { get; set; }
-    }
-
-    /// <summary>
     /// 报告扫描服务：遍历报告根目录，按工作编号匹配报告夹，写 report_links 表；
     /// 匹配到的报告夹额外读 TestStatus 表判定报告状态（已完成/进行中），写回 plans.ReportStatus。
     /// 设计为可中断的高耗时任务：每处理完一个报告夹检查一次 CancellationToken，

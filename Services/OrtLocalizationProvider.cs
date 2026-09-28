@@ -32,9 +32,13 @@ namespace ORT一键报告.Services
                 new CultureInfo("en"),
             };
 
+        // 接口要求的事件：本提供程序的文化与资源在运行期固定、无需主动触发，
+        // 保留以满足接口契约（CS0067 抑制，避免构建噪音）
+#pragma warning disable CS0067
         public event ProviderChangedEventHandler ProviderChanged;
         public event ProviderErrorEventHandler ProviderError;
         public event ValueChangedEventHandler ValueChanged;
+#pragma warning restore CS0067
 
         /// <summary>
         /// 返回完全限定的资源键（用于引擎内部缓存与变更通知）

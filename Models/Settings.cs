@@ -12,10 +12,4 @@ namespace ORT一键报告.Models
         public ObservableCollection<SettingItem> Children { get; set; } = new ObservableCollection<SettingItem>();
         public bool IsGroup { get; set; } = false;
     }
-
-    public class SettingSection
-    {
-        public string Name { get; set; }
-        public ObservableCollection<SettingItem> Items { get; set; } = new ObservableCollection<SettingItem>();
-    }
 }

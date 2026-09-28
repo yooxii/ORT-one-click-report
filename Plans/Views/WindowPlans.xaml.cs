@@ -38,6 +38,9 @@ namespace ORT一键报告.Plans.Views
         public WindowPlans()
         {
             InitializeComponent();
+            // 默认窗口更大（两表列多行多，小窗看不到全部内容）：按屏幕工作区收敛，避免小屏/缩放下超出桌面
+            Width = Math.Min(Width, SystemParameters.WorkArea.Width);
+            Height = Math.Min(Height, SystemParameters.WorkArea.Height);
             _vm = App.ServiceProvider.GetRequiredService<PlansViewModel>();
             _appSettings = App.ServiceProvider.GetRequiredService<AppSettingsService>();
             DataContext = _vm;

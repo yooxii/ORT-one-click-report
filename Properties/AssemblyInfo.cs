@@ -53,3 +53,6 @@ using System.Windows;
 // [assembly: AssemblyVersion("1.0.*")]
 [assembly: AssemblyVersion("1.0.2.0")]
 [assembly: AssemblyFileVersion("1.0.2.0")]
+
+// 单元测试工程可访问 internal 成员（如 PlanExcelService.ParseAnyDate）
+[assembly: InternalsVisibleTo("ORT一键报告.Tests")]

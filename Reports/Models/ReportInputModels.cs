@@ -105,11 +105,6 @@ namespace ORT一键报告.Reports.Models
         /// 参与报告的 DOCX 源文件列表（从 EmiDataDir 解析得到）
         /// </summary>
         public List<string> EmiDocxFiles { get; set; } = [];
-
-        /// <summary>
-        /// EMI 被测单元的组合选择（SN/Voltage/Load/LISN）
-        /// </summary>
-        public EMIUnitSelection UnitSelection { get; set; } = new();
     }
 
     /// <summary>
@@ -185,17 +180,6 @@ namespace ORT一键报告.Reports.Models
         public ReportStatus FunAfter { get; set; }
         public ReportStatus HiPot { get; set; }
         public string Comments { get; set; } = "";
-    }
-
-    /// <summary>
-    /// EMI 被测单元的组合选择
-    /// </summary>
-    public class EMIUnitSelection
-    {
-        public List<string> SNs { get; set; } = [];
-        public List<string> Voltages { get; set; } = [];
-        public List<string> Loads { get; set; } = [];
-        public List<string> LISNs { get; set; } = [];
     }
 
     /// <summary>

@@ -23,7 +23,8 @@ namespace ORT一键报告.Admin.Views
         public string ItemName => txt_name.Text?.Trim();
         public string Period => txt_period.Text?.Trim();
         public string Category => cmb_category.Text?.Trim();
-        public string Owner => txt_owner.Text?.Trim();
+        /// <summary>负责人显示文本（避免与 <see cref="Window.Owner"/> 同名隐藏）</summary>
+        public string OwnerText => txt_owner.Text?.Trim();
         public string Remark => txt_remark.Text?.Trim();
 
         /// <param name="title">窗口标题（新增/编辑）</param>

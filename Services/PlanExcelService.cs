@@ -898,8 +898,9 @@ namespace ORT一键报告.Services
 
         /// <summary>
         /// 通用日期解析：支持 "2026/8/18"、"2026-8-18"、"8月7日"（年份推断）等格式，失败返回null
+        /// （internal 供单元测试直接覆盖）
         /// </summary>
-        private static DateTime? ParseAnyDate(string text, int? fallbackYear = null)
+        internal static DateTime? ParseAnyDate(string text, int? fallbackYear = null)
         {
             if (string.IsNullOrWhiteSpace(text))
             {

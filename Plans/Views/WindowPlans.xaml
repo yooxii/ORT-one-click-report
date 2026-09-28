@@ -7,7 +7,7 @@
         xmlns:local="clr-namespace:ORT一键报告.Plans.Views"
         xmlns:sys="clr-namespace:System;assembly=mscorlib"
         mc:Ignorable="d"
-        Title="{lex:Loc Plans_Title}" Height="700" Width="1300" MinHeight="450" MinWidth="900"
+        Title="{lex:Loc Plans_Title}" Height="900" Width="1500" MinHeight="450" MinWidth="900"
         WindowStartupLocation="CenterScreen">
 
     <Window.Resources>

@@ -235,11 +235,9 @@
     <Compile Include="Main\ViewModels\MainSettingsViewModel.cs" />
     <Compile Include="Main\ViewModels\MainViewModel.cs" />
     <Compile Include="Reports\ViewModels\ReportHeaderViewModel.cs" />
-    <Compile Include="Reports\ViewModels\ReportTemplateViewModel.cs" />
     <Compile Include="Main\ViewModels\ReturnLineSingleViewModel.cs" />
     <Compile Include="Main\ViewModels\ReturnLineViewModel.cs" />
     <Compile Include="Main\ViewModels\SettingsViewModel.cs" />
-    <Compile Include="Main\ViewModels\UserViewModel.cs" />
     <Compile Include="Reports\Views\UserControlBaseReportPage.xaml.cs">
       <DependentUpon>UserControlBaseReportPage.xaml</DependentUpon>
     </Compile>
