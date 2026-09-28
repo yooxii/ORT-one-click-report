@@ -2596,7 +2596,7 @@
     <value>报废日期</value>
   </data>
   <data name="Msg_ScrapAfterStockIn" xml:space="preserve">
-    <value>该记录已登记入库；报废与入库为二选一，确认仍要报废？</value>
+    <value>该记录已登记入库；报废与回线入库为二选一、只走一条分支，不能再报废</value>
   </data>
   <data name="Msg_SaveBeforeScrapReview" xml:space="preserve">
     <value>该领退记录尚未提交保存，请先提交保存后再提交报废申请</value>
@@ -2864,5 +2864,32 @@
   </data>
   <data name="Flow_Branch_Planned" xml:space="preserve">
     <value>计划走此分支</value>
+  </data>
+  <data name="Plans_UnitReturn" xml:space="preserve">
+    <value>单体归还</value>
+  </data>
+  <data name="Plans_Menu_GoToPlan" xml:space="preserve">
+    <value>转到计划表</value>
+  </data>
+  <data name="Plans_Menu_GoToReq" xml:space="preserve">
+    <value>转到领退表</value>
+  </data>
+  <data name="Plans_ToolTip_GoToPlan" xml:space="preserve">
+    <value>定位到计划表中对应的记录（按 回线RT工令 / WorkOrder / 机种+日期 匹配；被搜索或筛选隐藏时会先清除）</value>
+  </data>
+  <data name="Plans_ToolTip_GoToReq" xml:space="preserve">
+    <value>定位到领退表中对应的记录（按 回线RT工令 / WorkOrder / 机种+日期 匹配；被搜索或筛选隐藏时会先清除）</value>
+  </data>
+  <data name="Plans_Msg_GoToPlanNotFound" xml:space="preserve">
+    <value>未找到对应的计划表记录（按 回线RT工令 / WorkOrder / 机种+日期 匹配）</value>
+  </data>
+  <data name="Plans_Msg_GoToReqNotFound" xml:space="preserve">
+    <value>未找到对应的领退表记录（按 回线RT工令 / WorkOrder / 机种+日期 匹配）</value>
+  </data>
+  <data name="Msg_StockInAfterScrap" xml:space="preserve">
+    <value>该记录已登记报废；报废与回线入库为二选一、只走一条分支，不能再入库</value>
+  </data>
+  <data name="Msg_StockInNeedReturn" xml:space="preserve">
+    <value>该记录尚未登记回线日期，不能入库（请先右键「回线」登记回线）</value>
   </data>
 </root>

@@ -205,6 +205,9 @@
                             <Separator/>
                             <MenuItem Header="{lex:Loc Plans_Menu_ViewFlow}" Click="Menu_ViewReqFlow_Click"
                                       ToolTip="{lex:Loc Plans_ToolTip_ViewFlow}"/>
+                            <!--转到计划表：按 回线RT工令/WorkOrder/机种+日期 匹配后切 Tab 定位-->
+                            <MenuItem Header="{lex:Loc Plans_Menu_GoToPlan}" Click="Menu_GoToPlan_Click"
+                                      ToolTip="{lex:Loc Plans_ToolTip_GoToPlan}"/>
                             <Separator/>
                             <MenuItem Header="{lex:Loc Common_CopyRow}" Click="Menu_CopyReqRow_Click"/>
                             <MenuItem Header="{lex:Loc Common_CopyCell}" Click="Menu_CopyReqCell_Click"/>
@@ -355,6 +358,9 @@
                             <Separator/>
                             <MenuItem Header="{lex:Loc Plans_Menu_ViewFlow}" Click="Menu_ViewPlanFlow_Click"
                                       ToolTip="{lex:Loc Plans_ToolTip_ViewFlow}"/>
+                            <!--转到领退表：按 回线RT工令/WorkOrder/机种+日期 匹配后切 Tab 定位-->
+                            <MenuItem Header="{lex:Loc Plans_Menu_GoToReq}" Click="Menu_GoToReq_Click"
+                                      ToolTip="{lex:Loc Plans_ToolTip_GoToReq}"/>
                             <Separator/>
                             <MenuItem Header="{lex:Loc Common_CopyRow}" Click="Menu_CopyPlanRow_Click"/>
                             <MenuItem Header="{lex:Loc Common_CopyCell}" Click="Menu_CopyPlanCell_Click"/>
@@ -526,6 +532,15 @@
                                               ToolTip="{lex:Loc Plans_ReportStatusHint}"/>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellEditingTemplate>
+                        </DataGridTemplateColumn>
+                        <!--单体归还（其他部门申请测试流程）：右键「单体归还」登记，只读展示归还日期-->
+                        <DataGridTemplateColumn Header="{lex:Loc Plans_UnitReturn}" Width="90" SortMemberPath="UnitReturnDate">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding UnitReturnDate, StringFormat={}{0:yyyy/M/d}}" Style="{StaticResource CenterText}"
+                                               ToolTip="{lex:Loc Plans_ToolTip_UnitReturn}"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
                         <DataGridTextColumn Header="{lex:Loc Admin_Remark}" Binding="{Binding Remark, UpdateSourceTrigger=PropertyChanged}" Width="150" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
                     </DataGrid.Columns>

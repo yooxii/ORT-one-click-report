@@ -2596,7 +2596,7 @@ Build the plan index now (compress repeated text into shared templates)?</value>
     <value>Scrap Date</value>
   </data>
   <data name="Msg_ScrapAfterStockIn" xml:space="preserve">
-    <value>This record has been stocked in; scrap and stock-in are mutually exclusive. Scrap anyway?</value>
+    <value>This record has been stocked in; scrap and return/stock-in are mutually exclusive (one branch only), cannot scrap</value>
   </data>
   <data name="Msg_SaveBeforeScrapReview" xml:space="preserve">
     <value>Save the requisition record first, then submit the scrap request</value>
@@ -2864,5 +2864,32 @@ Build the plan index now (compress repeated text into shared templates)?</value>
   </data>
   <data name="Flow_Branch_Planned" xml:space="preserve">
     <value>Planned for this branch</value>
+  </data>
+  <data name="Plans_UnitReturn" xml:space="preserve">
+    <value>Unit Return</value>
+  </data>
+  <data name="Plans_Menu_GoToPlan" xml:space="preserve">
+    <value>Go to plan</value>
+  </data>
+  <data name="Plans_Menu_GoToReq" xml:space="preserve">
+    <value>Go to requisition</value>
+  </data>
+  <data name="Plans_ToolTip_GoToPlan" xml:space="preserve">
+    <value>Jump to the matching record in the plan table (matched by Return RT order / WorkOrder / model+date; search and filters are cleared when hidden)</value>
+  </data>
+  <data name="Plans_ToolTip_GoToReq" xml:space="preserve">
+    <value>Jump to the matching record in the requisition table (matched by Return RT order / WorkOrder / model+date; search and filters are cleared when hidden)</value>
+  </data>
+  <data name="Plans_Msg_GoToPlanNotFound" xml:space="preserve">
+    <value>No matching plan record found (matched by Return RT order / WorkOrder / model+date)</value>
+  </data>
+  <data name="Plans_Msg_GoToReqNotFound" xml:space="preserve">
+    <value>No matching requisition record found (matched by Return RT order / WorkOrder / model+date)</value>
+  </data>
+  <data name="Msg_StockInAfterScrap" xml:space="preserve">
+    <value>This record is registered as scrap; scrap and return/stock-in are mutually exclusive (one branch only), cannot stock in</value>
+  </data>
+  <data name="Msg_StockInNeedReturn" xml:space="preserve">
+    <value>No return date is registered yet; register the return (right-click "Return to line") before stock-in</value>
   </data>
 </root>

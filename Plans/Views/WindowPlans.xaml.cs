@@ -1140,6 +1140,17 @@ namespace ORT一键报告.Plans.Views
             {
                 return;
             }
+            // 流程依赖：报废与回线入库是分开的（整笔只走一条分支），且入库须先有回线
+            if (req.ScrapDate != null || !string.IsNullOrWhiteSpace(req.ScrapQty))
+            {
+                _ = MessageBox.Show(LanguageService.Get("Msg_StockInAfterScrap"), LanguageService.Get("Cap_Info"));
+                return;
+            }
+            if (req.ReturnDate == null)
+            {
+                _ = MessageBox.Show(LanguageService.Get("Msg_StockInNeedReturn"), LanguageService.Get("Cap_Info"));
+                return;
+            }
             // S/N 为附件形式时展示文件名/路径，便于确认是哪一笔
             string snText = !string.IsNullOrWhiteSpace(req.SN) ? req.SN : req.SnFilePath;
             WindowRequisitionStockIn window = new(req, snText) { Owner = this };
@@ -1196,11 +1207,10 @@ namespace ORT一键报告.Plans.Views
                 _ = MessageBox.Show(LanguageService.Get("Plans_Msg_NoEditPermission"), LanguageService.Get("Cap_Info"));
                 return;
             }
-            // 整笔单一去向（报废/入库二选一）：已登记入库再报废先二次确认
-            if (req.StockInDate != null
-                && MessageBox.Show(LanguageService.Get("Msg_ScrapAfterStockIn"), LanguageService.Get("Cap_Info"),
-                    MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+            // 流程依赖：报废与回线入库是分开的（整笔只走一条分支），已登记入库不能再报废
+            if (req.StockInDate != null || !string.IsNullOrWhiteSpace(req.StockInNo))
             {
+                _ = MessageBox.Show(LanguageService.Get("Msg_ScrapAfterStockIn"), LanguageService.Get("Cap_Info"));
                 return;
             }
             bool needsReview = _vm.NeedsReview;
@@ -1330,6 +1340,74 @@ namespace ORT一键报告.Plans.Views
             _vm.StatusMessage = string.Format(LanguageService.Get("Plans_Msg_UnitReturnAppliedFormat"),
                 window.UnitReturnDate.ToString("yyyy/M/d"));
             _logger.Info($"单体归还登记：{plan.JobNo} 归还日期={window.UnitReturnDate:yyyy/M/d}");
+        }
+
+        /* ###############################  右键菜单：转到对应记录（领退表 ↔ 计划表）  ################################ */
+
+        /// <summary>
+        /// 右键「转到计划表」（领退表）：按 回线RT工令 / WorkOrder / 机种+日期 匹配对应计划，
+        /// 切到计划表 Tab 并定位选中；目标被当前搜索/列筛选隐藏时先清除再定位。
+        /// </summary>
+        private void Menu_GoToPlan_Click(object sender, RoutedEventArgs e)
+        {
+            Requisition req = CurrentRequisition;
+            if (req == null)
+            {
+                _ = MessageBox.Show(LanguageService.Get("Plans_Msg_SelectRequisition"), LanguageService.Get("Cap_Info"));
+                return;
+            }
+            Plan plan = _vm.FindPlanForRequisition(req);
+            if (plan == null)
+            {
+                _ = MessageBox.Show(LanguageService.Get("Plans_Msg_GoToPlanNotFound"), LanguageService.Get("Cap_Info"));
+                return;
+            }
+            if (!_vm.PlansView.Contains(plan))
+            {
+                // 被当前搜索或列筛选隐藏：显式「转到」应能看到目标，清掉后再定位
+                _vm.SearchKeyword = "";
+                _vm.ClearAllFilters(true);
+                _vm.PlansView.Refresh();
+                _vm.UpdateStatusCounts();
+                RefreshHeaderStyles();
+            }
+            tabs.SelectedIndex = 1;
+            _vm.SelectedPlan = plan;
+            dg_plans.SelectedItem = plan;
+            dg_plans.ScrollIntoView(plan);
+            dg_plans.Focus();
+        }
+
+        /// <summary>
+        /// 右键「转到领退表」（计划表）：按 回线RT工令 / WorkOrder / 机种+日期 匹配对应领退记录，
+        /// 切到领退表 Tab 并定位选中；目标被当前搜索/列筛选隐藏时先清除再定位。
+        /// </summary>
+        private void Menu_GoToReq_Click(object sender, RoutedEventArgs e)
+        {
+            Plan plan = CurrentPlan;
+            if (plan == null)
+            {
+                _ = MessageBox.Show(LanguageService.Get("Plans_Msg_TemplateSelectPlan"), LanguageService.Get("Cap_Info"));
+                return;
+            }
+            Requisition req = _vm.FindRequisitionForPlan(plan);
+            if (req == null)
+            {
+                _ = MessageBox.Show(LanguageService.Get("Plans_Msg_GoToReqNotFound"), LanguageService.Get("Cap_Info"));
+                return;
+            }
+            if (!_vm.RequisitionsView.Contains(req))
+            {
+                _vm.SearchKeyword = "";
+                _vm.ClearAllFilters(false);
+                _vm.RequisitionsView.Refresh();
+                RefreshHeaderStyles();
+            }
+            tabs.SelectedIndex = 0;
+            _vm.SelectedRequisition = req;
+            dg_requisitions.SelectedItem = req;
+            dg_requisitions.ScrollIntoView(req);
+            dg_requisitions.Focus();
         }
 
         /// <summary>克隆领退记录（报废提审 payload 用）</summary>
