@@ -77,7 +77,7 @@ namespace ORT一键报告.Plans.ViewModels
     }
 
     /// <summary>
-    /// 流程查看窗口的展示模型：步骤状态全部从现有登记数据推导（不新增状态字段），
+    /// 流程查看窗口的展示模型：步骤状态全部从登记数据推导（不新增流程状态字段），
     /// 由静态工厂 <see cref="BuildGeneral"/>（一般流程：领用/RT 计划）与
     /// <see cref="BuildExternalTest"/>（其他部门申请测试流程：QRT 计划）构造。
     /// </summary>
@@ -180,7 +180,7 @@ namespace ORT一键报告.Plans.ViewModels
         /* ###############################  工厂：其他部门申请测试流程  ################################ */
 
         /// <summary>
-        /// 其他部门申请测试流程（QRT 计划）：登記信息 → 做測試 →（如需要）完成報告 → 結案
+        /// 其他部门申请测试流程（QRT 计划）：登記信息 → 做測試 →（如需要）完成報告 → 單體歸還 → 結案
         /// </summary>
         public static FlowViewModel BuildExternalTest(Plan plan)
         {
@@ -203,9 +203,18 @@ namespace ORT一键报告.Plans.ViewModels
             // 3 完成報告（如需要）
             vm.Rows.Add(Row(DeriveReportStep(plan, "Flow_Step_ReportOptional")));
 
-            // 4 結案
+            // 4 單體歸還（完成報告後歸還單體、登記歸還日期，才能進入結案）
+            vm.Rows.Add(Row(DeriveUnitReturnStep(plan)));
+
+            // 5 結案
             vm.CloseStep = DeriveCloseStep(plan);
             vm.CurrentText = BuildCurrentText(vm);
+            // 已结案但未登记归还：底部提示核对（归还步骤完成后才应进入结案）
+            if (plan != null && plan.UnitReturnDate == null
+                && PlanStatusKind.Of(plan.Status) == PlanStatusKind.Closed)
+            {
+                vm.FooterNote = L("Flow_WarnClosedWithoutUnitReturn") + Environment.NewLine + vm.FooterNote;
+            }
             return vm;
         }
 
@@ -272,6 +281,28 @@ namespace ORT一键报告.Plans.ViewModels
                 ReportStatusKind.NotRequired => Step(titleKey, FlowState.Skipped, L("Flow_Ev_ReportNotRequired")),
                 _ => Step(titleKey, FlowState.Waiting, L("Flow_Ev_ReportNotScanned"))
             };
+        }
+
+        /// <summary>
+        /// 單體歸還（其他部門申請測試流程）：已登记归还日期→完成（归还日期）；
+        /// 完成报告已完成（或无需报告）但未登记→当前（待归还）；否则未到达
+        /// </summary>
+        private static FlowStepItem DeriveUnitReturnStep(Plan plan)
+        {
+            if (plan == null)
+            {
+                return Step("Flow_Step_UnitReturn", FlowState.Waiting, L("Flow_Ev_NoPlan"));
+            }
+            if (plan.UnitReturnDate != null)
+            {
+                return Step("Flow_Step_UnitReturn", FlowState.Done,
+                    F(L("Flow_Ev_UnitReturnDoneFormat"), plan.UnitReturnDate));
+            }
+            if (plan.ReportStatus == ReportStatusKind.Complete || plan.ReportStatus == ReportStatusKind.NotRequired)
+            {
+                return Step("Flow_Step_UnitReturn", FlowState.Current, L("Flow_Ev_UnitReturnPending"));
+            }
+            return Step("Flow_Step_UnitReturn", FlowState.Waiting, null);
         }
 
         /// <summary>

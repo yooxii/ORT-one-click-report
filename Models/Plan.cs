@@ -145,6 +145,14 @@ namespace ORT一键报告.Models
         [Column(StringLength = 32, IsNullable = true)]
         public string UploadELab { get => _uploadELab; set => SetProperty(ref _uploadELab, value); }
 
+        private System.DateTime? _unitReturnDate;
+        /// <summary>
+        /// 單體歸還日期（其他部門申請測試流程：完成報告後歸還單體，
+        /// 登记此日期后流程查看里的「單體歸還」步骤判定为完成）
+        /// </summary>
+        [Column(IsNullable = true)]
+        public System.DateTime? UnitReturnDate { get => _unitReturnDate; set => SetProperty(ref _unitReturnDate, value); }
+
         /* ------------------ 审计字段 ------------------ */
 
         private string _createdBy;

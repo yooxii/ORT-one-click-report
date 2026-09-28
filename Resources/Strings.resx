@@ -2814,4 +2814,40 @@
   <data name="Msg_FileNotFoundFormat" xml:space="preserve">
     <value>文件不存在：{0}</value>
   </data>
+  <data name="Plans_Menu_UnitReturn" xml:space="preserve">
+    <value>单体归还</value>
+  </data>
+  <data name="Plans_ToolTip_UnitReturn" xml:space="preserve">
+    <value>登记单体归还日期（其他部门申请测试的 QRT 计划；归还完成后才能进入结案）</value>
+  </data>
+  <data name="PlanReturn_Title" xml:space="preserve">
+    <value>单体归还登记</value>
+  </data>
+  <data name="PlanReturn_Date" xml:space="preserve">
+    <value>归还日期</value>
+  </data>
+  <data name="PlanReturn_Hint" xml:space="preserve">
+    <value>确认后把归还日期写入该计划记录（暂存，点「提交保存」后生效）；流程查看里的「单体归还」步骤将显示为已完成</value>
+  </data>
+  <data name="Msg_FillUnitReturnDate" xml:space="preserve">
+    <value>请选择归还日期</value>
+  </data>
+  <data name="Plans_Msg_UnitReturnAppliedFormat" xml:space="preserve">
+    <value>已登记单体归还：归还日期 {0}（暂存，点「提交保存」后生效）</value>
+  </data>
+  <data name="Plans_Msg_UnitReturnNotQrt" xml:space="preserve">
+    <value>该登记仅适用于其他部门申请测试流程（QRT 工作编号）的计划</value>
+  </data>
+  <data name="Flow_Step_UnitReturn" xml:space="preserve">
+    <value>单体归还</value>
+  </data>
+  <data name="Flow_Ev_UnitReturnDoneFormat" xml:space="preserve">
+    <value>归还日期 {0:yyyy/M/d}</value>
+  </data>
+  <data name="Flow_Ev_UnitReturnPending" xml:space="preserve">
+    <value>尚未归还</value>
+  </data>
+  <data name="Flow_WarnClosedWithoutUnitReturn" xml:space="preserve">
+    <value>注意：计划已结案，但尚未登记单体归还，请核对流程数据</value>
+  </data>
 </root>

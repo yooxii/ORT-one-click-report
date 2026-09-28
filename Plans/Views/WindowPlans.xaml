@@ -347,6 +347,9 @@
                             <MenuItem Header="{lex:Loc Plans_OpenOverview}" Click="Menu_OpenReportOverview_Click" ToolTip="{lex:Loc Plans_ToolTip_OpenOverview}"/>
                             <MenuItem Header="{lex:Loc Plans_OpenMainReport}" Click="Menu_OpenMainReport_Click" ToolTip="{lex:Loc Plans_ToolTip_OpenMainReport}"/>
                             <MenuItem x:Name="menu_buildTemplate" Header="{lex:Loc Plans_Menu_BuildTemplate}" Click="Menu_BuildReportTemplate_Click" ToolTip="{lex:Loc Plans_ToolTip_BuildTemplate}"/>
+                            <!--其他部门申请测试（QRT）：登记单体归还日期（完成报告后、结案前）-->
+                            <MenuItem Header="{lex:Loc Plans_Menu_UnitReturn}" Click="Menu_PlanUnitReturn_Click"
+                                      ToolTip="{lex:Loc Plans_ToolTip_UnitReturn}"/>
                             <Separator/>
                             <MenuItem Header="{lex:Loc Plans_Menu_ViewFlow}" Click="Menu_ViewPlanFlow_Click"
                                       ToolTip="{lex:Loc Plans_ToolTip_ViewFlow}"/>

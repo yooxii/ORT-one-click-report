@@ -223,6 +223,9 @@
     <Compile Include="Plans\Views\WindowFlow.xaml.cs">
       <DependentUpon>WindowFlow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Plans\Views\WindowPlanUnitReturn.xaml.cs">
+      <DependentUpon>WindowPlanUnitReturn.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Utils\SmartTableExtractor.cs" />
     <Compile Include="Utils\SnVerification.cs" />
     <Compile Include="Reports\ViewModels\BaseReportPageViewModel.cs" />
@@ -451,6 +454,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Plans\Views\WindowFlow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Plans\Views\WindowPlanUnitReturn.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

@@ -1,0 +1,55 @@
+<Window x:Class="ORT一键报告.Plans.Views.WindowPlanUnitReturn" Background="{DynamicResource WindowBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:lex="http://wpflocalizeextension.codeplex.com"
+        mc:Ignorable="d"
+        Title="{lex:Loc PlanReturn_Title}" Width="470" SizeToContent="Height" ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner">
+
+    <Grid Margin="15">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="110"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="auto"/>
+        </Grid.RowDefinitions>
+
+        <!--工作编号/机种名称/测试项目/样品数：只读展示，内容可选中复制（Ctrl+C）-->
+        <Label Content="{lex:Loc PlanEdit_WorkNumber}" VerticalContentAlignment="Center"/>
+        <TextBox x:Name="txt_jobNo" Grid.Column="1" Margin="5" IsReadOnly="True" BorderThickness="0"
+                 Background="Transparent" ToolTip="{lex:Loc Common_CopyHint}"/>
+
+        <Label Grid.Row="1" Content="{lex:Loc Plans_ModelName}" VerticalContentAlignment="Center"/>
+        <TextBox x:Name="txt_model" Grid.Row="1" Grid.Column="1" Margin="5" IsReadOnly="True" BorderThickness="0"
+                 Background="Transparent" ToolTip="{lex:Loc Common_CopyHint}"/>
+
+        <Label Grid.Row="2" Content="{lex:Loc Plans_TestItem}" VerticalContentAlignment="Center"/>
+        <TextBox x:Name="txt_testItem" Grid.Row="2" Grid.Column="1" Margin="5" IsReadOnly="True" BorderThickness="0"
+                 Background="Transparent" ToolTip="{lex:Loc Common_CopyHint}"/>
+
+        <Label Grid.Row="3" Content="{lex:Loc PlanEdit_SampleQty}" VerticalContentAlignment="Center"/>
+        <TextBox x:Name="txt_sampleSize" Grid.Row="3" Grid.Column="1" Margin="5" IsReadOnly="True" BorderThickness="0"
+                 Background="Transparent" ToolTip="{lex:Loc Common_CopyHint}"/>
+
+        <!--归还日期：默认当前日期（已有登记时沿用，方便修正）；点「单体归还」写入该计划的归还日期-->
+        <Label Grid.Row="4" Content="{lex:Loc PlanReturn_Date}" VerticalContentAlignment="Center"/>
+        <DatePicker x:Name="dp_returnDate" Grid.Row="4" Grid.Column="1" Margin="5" VerticalContentAlignment="Center"/>
+
+        <TextBlock Grid.Row="5" Grid.ColumnSpan="2" Margin="0,6,0,0" TextWrapping="Wrap"
+                   Foreground="{DynamicResource TextSecondaryBrush}" Text="{lex:Loc PlanReturn_Hint}"/>
+
+        <StackPanel Grid.Row="6" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button Content="{lex:Loc Plans_Menu_UnitReturn}" Width="90" Click="Btn_Return_Click" IsDefault="True"/>
+            <Button Content="{lex:Loc Common_Cancel}" Width="90" Margin="10,0,0,0" Click="Btn_Cancel_Click" IsCancel="True"/>
+        </StackPanel>
+    </Grid>
+</Window>

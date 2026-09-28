@@ -1294,6 +1294,44 @@ namespace ORT一键报告.Plans.Views
             new WindowFlow(flow) { Owner = this }.ShowDialog();
         }
 
+        /* ###############################  右键菜单：单体归还（其他部门申请测试，QRT）  ################################ */
+
+        /// <summary>
+        /// 右键「单体归还」：仅其他部门申请测试流程（QRT 工作编号）的计划可用。
+        /// 打开归还登记窗口，确认后把归还日期写入该计划记录（暂存，「提交保存」后生效），
+        /// 流程查看里「单体归还」步骤随之判定为已完成。
+        /// </summary>
+        private void Menu_PlanUnitReturn_Click(object sender, RoutedEventArgs e)
+        {
+            Plan plan = CurrentPlan;
+            if (plan == null)
+            {
+                _ = MessageBox.Show(LanguageService.Get("Plans_Msg_TemplateSelectPlan"), LanguageService.Get("Cap_Info"));
+                return;
+            }
+            if (!(plan.JobNo ?? "").StartsWith("QRT", StringComparison.OrdinalIgnoreCase))
+            {
+                _ = MessageBox.Show(LanguageService.Get("Plans_Msg_UnitReturnNotQrt"), LanguageService.Get("Cap_Info"));
+                return;
+            }
+            if (!_vm.CanGridEdit)
+            {
+                _ = MessageBox.Show(LanguageService.Get("Plans_Msg_NoEditPermission"), LanguageService.Get("Cap_Info"));
+                return;
+            }
+            WindowPlanUnitReturn window = new(plan) { Owner = this };
+            if (window.ShowDialog() != true)
+            {
+                return;
+            }
+            _vm.SelectedPlan = plan;
+            plan.UnitReturnDate = window.UnitReturnDate;
+            _vm.NotifyPendingChanged();
+            _vm.StatusMessage = string.Format(LanguageService.Get("Plans_Msg_UnitReturnAppliedFormat"),
+                window.UnitReturnDate.ToString("yyyy/M/d"));
+            _logger.Info($"单体归还登记：{plan.JobNo} 归还日期={window.UnitReturnDate:yyyy/M/d}");
+        }
+
         /// <summary>克隆领退记录（报废提审 payload 用）</summary>
         private static Requisition CloneRequisition(Requisition source)
             => Newtonsoft.Json.JsonConvert.DeserializeObject<Requisition>(
