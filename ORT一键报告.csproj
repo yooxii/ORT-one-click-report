@@ -577,6 +577,7 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Resources\ORTicon256_2.ico" />
+    <Resource Include="Resources\acbel.png" />
   </ItemGroup>
   <ItemGroup>
     <COMReference Include="Microsoft.Office.Core">

@@ -164,6 +164,9 @@ namespace ORT一键报告
             // 用户中心仅登录后可用（游客无个人资料可管理）
             menu_user_center.IsEnabled = _auth.CurrentUser != null;
             txt_user_identity.Text = string.Format(LanguageService.Get("Main_IdentityFormat"), _auth.CurrentDisplayName);
+            // 程序名下方的版本号：取程序集版本（随生成自动更新，不写死）
+            System.Version ver = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+            txt_version.Text = string.Format(LanguageService.Get("Main_VersionFormat"), ver?.ToString(3) ?? "-");
             btn_report.IsEnabled = _permission.Can("report.use");
             btn_admin.IsEnabled = _permission.Can("admin.manage");
             btn_review.IsEnabled = _permission.Can("review.view");

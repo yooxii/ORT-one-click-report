@@ -1310,6 +1310,9 @@
   <data name="Changelog_LoadFailedFormat" xml:space="preserve">
     <value>Failed to load the changelog: {0}</value>
   </data>
+  <data name="Main_VersionFormat" xml:space="preserve">
+    <value>Version {0}</value>
+  </data>
   <data name="MainWindow_Button_Report" xml:space="preserve">
     <value>One-Click Report</value>
   </data>

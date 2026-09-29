@@ -1310,6 +1310,9 @@
   <data name="Changelog_LoadFailedFormat" xml:space="preserve">
     <value>加载更新日志失败：{0}</value>
   </data>
+  <data name="Main_VersionFormat" xml:space="preserve">
+    <value>版本 {0}</value>
+  </data>
   <data name="MainWindow_Button_Report" xml:space="preserve">
     <value>一键报告</value>
   </data>
