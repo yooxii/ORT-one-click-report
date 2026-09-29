@@ -2393,6 +2393,8 @@ namespace ORT一键报告.Plans.Views
             {
                 return;
             }
+            // 解析保存的布局：列名 →（可见性, 显示序号）；隐藏列保存的序号是 -1
+            Dictionary<string, (bool Visible, int Order)> saved = new();
             foreach (string key in keys)
             {
                 string[] parts = key.Split('|');
@@ -2400,15 +2402,36 @@ namespace ORT一键报告.Plans.Views
                 {
                     continue;
                 }
-                DataGridColumn column = grid.Columns.FirstOrDefault(c => (c.Header?.ToString() ?? "?") == parts[2]);
-                if (column == null)
+                _ = int.TryParse(parts[0], out int order);
+                saved[parts[2]] = (parts[1] == "V", order);
+            }
+
+            // 1) 先只恢复可见性：保存过的列按其记录设置，新增列（保存里没有）保持默认可见。
+            //    折叠列由 WPF 自动把 DisplayIndex 置为 -1——绝不能手动给列写 DisplayIndex = -1，
+            //    否则该列会在下次测量（例如首次切到本页签）时触发 DataGrid 的
+            //    ArgumentOutOfRangeException（ValidateDisplayIndex 不接受 -1）。
+            foreach (DataGridColumn column in grid.Columns)
+            {
+                if (saved.TryGetValue(column.Header?.ToString() ?? "?", out (bool Visible, int Order) s))
                 {
-                    continue;
+                    column.Visibility = s.Visible ? Visibility.Visible : Visibility.Collapsed;
                 }
-                column.Visibility = parts[1] == "V" ? Visibility.Visible : Visibility.Collapsed;
-                if (int.TryParse(parts[0], out int displayIndex))
+            }
+
+            // 2) 再为所有「可见列」重排 DisplayIndex：保存过的按原显示序号、新增列排在后面，
+            //    连续升序赋值，确保可见列序号是 0..可见列数-1（无空洞、无重复、无 -1）。
+            //    这一步同时纠正了旧布局序号与升级后列集合错位的问题。
+            List<DataGridColumn> visible = grid.Columns
+                .Where(c => c.Visibility == Visibility.Visible)
+                .OrderBy(c => saved.TryGetValue(c.Header?.ToString() ?? "?", out (bool Visible, int Order) s) && s.Order >= 0
+                    ? s.Order
+                    : int.MaxValue)
+                .ToList();
+            for (int i = 0; i < visible.Count; i++)
+            {
+                if (visible[i].DisplayIndex != i)
                 {
-                    column.DisplayIndex = Math.Min(displayIndex, grid.Columns.Count - 1);
+                    visible[i].DisplayIndex = i;
                 }
             }
         }
