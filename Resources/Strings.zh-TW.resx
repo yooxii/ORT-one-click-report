@@ -1292,6 +1292,24 @@
   <data name="MainWindow_Menu_Logout" xml:space="preserve">
     <value>退出</value>
   </data>
+  <data name="MainWindow_Menu_Help" xml:space="preserve">
+    <value>說明</value>
+  </data>
+  <data name="MainWindow_Menu_Changelog" xml:space="preserve">
+    <value>更新日誌</value>
+  </data>
+  <data name="Changelog_Title" xml:space="preserve">
+    <value>更新日誌</value>
+  </data>
+  <data name="Changelog_FileNotFoundFormat" xml:space="preserve">
+    <value>未找到更新日誌檔案：{0}</value>
+  </data>
+  <data name="Changelog_Empty" xml:space="preserve">
+    <value>更新日誌暫無內容</value>
+  </data>
+  <data name="Changelog_LoadFailedFormat" xml:space="preserve">
+    <value>載入更新日誌失敗：{0}</value>
+  </data>
   <data name="MainWindow_Button_Report" xml:space="preserve">
     <value>一鍵報告</value>
   </data>

@@ -1,0 +1,29 @@
+<Window x:Class="ORT一键报告.Main.Views.WindowChangelog" Background="{DynamicResource WindowBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:lex="http://wpflocalizeextension.codeplex.com"
+        xmlns:mdx="clr-namespace:MdXaml;assembly=MdXaml"
+        mc:Ignorable="d"
+        Title="{lex:Loc Changelog_Title}" Height="680" Width="820" MinHeight="420" MinWidth="560"
+        WindowStartupLocation="CenterOwner">
+
+    <Grid Margin="12">
+        <!--更新日志用 MdXaml 渲染成 FlowDocument。MdXaml 默认样式给标题写死了黑色文字、
+            行内代码写死深蓝，因此固定放在浅色“纸张”上，保证任意主题（含深色）下都清晰可读-->
+        <Border Background="#FFFFFFFF" BorderBrush="{DynamicResource BorderSubtleBrush}"
+                BorderThickness="1" CornerRadius="4" Padding="6">
+            <Grid>
+                <mdx:MarkdownScrollViewer x:Name="md_viewer"
+                                          Background="Transparent" Foreground="#FF1A1A1A"
+                                          IsToolBarVisible="False"
+                                          VerticalScrollBarVisibility="Auto"
+                                          HorizontalScrollBarVisibility="Disabled"/>
+                <!--读取失败 / 无内容时的提示（覆盖在纸张上）-->
+                <TextBlock x:Name="txt_message" Visibility="Collapsed" TextWrapping="Wrap"
+                           Foreground="#FFB00020" Margin="14" VerticalAlignment="Top"/>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

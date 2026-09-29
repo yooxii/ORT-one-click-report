@@ -16,8 +16,12 @@
             <RowDefinition Height="auto"/>
         </Grid.RowDefinitions>
         <Menu>
-            <MenuItem Header="{lex:Loc MainWindow_Menu_ViewLog}" Click="MenuItem_ViewLog_Click"/>
             <MenuItem Header="{lex:Loc MainWindow_Menu_Settings}" Click="MenuItem_Settings_Click"/>
+            <!--帮助：查看日志、更新日志-->
+            <MenuItem Header="{lex:Loc MainWindow_Menu_Help}">
+                <MenuItem Header="{lex:Loc MainWindow_Menu_ViewLog}" Click="MenuItem_ViewLog_Click"/>
+                <MenuItem Header="{lex:Loc MainWindow_Menu_Changelog}" Click="MenuItem_Changelog_Click"/>
+            </MenuItem>
             <MenuItem Header="{lex:Loc MainWindow_Menu_Logout}" Click="MenuItem_Quit_Click"/>
         </Menu>
         <Grid Grid.Row="1" Margin="0">

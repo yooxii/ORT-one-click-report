@@ -346,6 +346,23 @@ namespace ORT一键报告
         }
 
         /// <summary>
+        /// 帮助→更新日志：只读展示随程序发布的「更新日志.md」（已打开则聚焦，不重复打开）
+        /// </summary>
+        private void MenuItem_Changelog_Click(object sender, RoutedEventArgs e)
+        {
+            foreach (Window w in Application.Current.Windows)
+            {
+                if (w is WindowChangelog existing)
+                {
+                    existing.Activate();
+                    return;
+                }
+            }
+            WindowChangelog window = new();
+            window.Show();
+        }
+
+        /// <summary>
         /// 工具菜单：报告模板工具（由机种测试计划直接生成报告模板）
         /// </summary>
         private void MenuItem_ReportTemplate_Click(object sender, RoutedEventArgs e)

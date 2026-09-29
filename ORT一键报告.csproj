@@ -303,6 +303,9 @@
     <Compile Include="Main\Views\WindowLog.xaml.cs">
       <DependentUpon>WindowLog.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Main\Views\WindowChangelog.xaml.cs">
+      <DependentUpon>WindowChangelog.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Reports\Views\UserControlDataGrid.xaml.cs">
       <DependentUpon>UserControlDataGrid.xaml</DependentUpon>
     </Compile>
@@ -425,6 +428,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Main\Views\WindowLog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Main\Views\WindowChangelog.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -648,6 +655,9 @@
     </PackageReference>
     <PackageReference Include="System.Text.Json">
       <Version>10.0.10</Version>
+    </PackageReference>
+    <PackageReference Include="MdXaml">
+      <Version>1.27.0</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup />
