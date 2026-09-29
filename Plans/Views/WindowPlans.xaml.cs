@@ -2366,7 +2366,12 @@ namespace ORT一键报告.Plans.Views
             string order = column.DisplayIndex.ToString("D3");
             string visible = column.Visibility == Visibility.Visible ? "V" : "H";
             string name = column.Header?.ToString() ?? "?";
-            return $"{order}|{visible}|{name}";
+            // 列宽：只记「绝对像素宽」（XAML 固定宽或用户拖动改过的宽）；星号/自动列留空，恢复时保持其自适应。
+            // 宽度追加在末尾，旧的三段式记录（order|visible|name）仍能解析（向后兼容）。
+            string width = column.Width.IsAbsolute
+                ? ((int)Math.Round(column.Width.Value)).ToString(System.Globalization.CultureInfo.InvariantCulture)
+                : "";
+            return $"{order}|{visible}|{name}|{width}";
         }
 
         private void RestoreColumnState()
@@ -2393,8 +2398,9 @@ namespace ORT一键报告.Plans.Views
             {
                 return;
             }
-            // 解析保存的布局：列名 →（可见性, 显示序号）；隐藏列保存的序号是 -1
-            Dictionary<string, (bool Visible, int Order)> saved = new();
+            // 解析保存的布局：列名 →（可见性, 显示序号, 列宽）；隐藏列保存的序号是 -1，列宽缺省为 0（表示不设置）。
+            // 兼容旧的三段式记录（无列宽）。
+            Dictionary<string, (bool Visible, int Order, double Width)> saved = new();
             foreach (string key in keys)
             {
                 string[] parts = key.Split('|');
@@ -2403,18 +2409,25 @@ namespace ORT一键报告.Plans.Views
                     continue;
                 }
                 _ = int.TryParse(parts[0], out int order);
-                saved[parts[2]] = (parts[1] == "V", order);
+                double width = parts.Length >= 4
+                    && double.TryParse(parts[3], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double w)
+                    ? w : 0;
+                saved[parts[2]] = (parts[1] == "V", order, width);
             }
 
-            // 1) 先只恢复可见性：保存过的列按其记录设置，新增列（保存里没有）保持默认可见。
+            // 1) 先恢复可见性与列宽：保存过的列按其记录设置，新增列（保存里没有）保持默认。
             //    折叠列由 WPF 自动把 DisplayIndex 置为 -1——绝不能手动给列写 DisplayIndex = -1，
             //    否则该列会在下次测量（例如首次切到本页签）时触发 DataGrid 的
             //    ArgumentOutOfRangeException（ValidateDisplayIndex 不接受 -1）。
             foreach (DataGridColumn column in grid.Columns)
             {
-                if (saved.TryGetValue(column.Header?.ToString() ?? "?", out (bool Visible, int Order) s))
+                if (saved.TryGetValue(column.Header?.ToString() ?? "?", out (bool Visible, int Order, double Width) s))
                 {
                     column.Visibility = s.Visible ? Visibility.Visible : Visibility.Collapsed;
+                    if (s.Width > 0)
+                    {
+                        column.Width = new DataGridLength(s.Width);
+                    }
                 }
             }
 
@@ -2423,7 +2436,7 @@ namespace ORT一键报告.Plans.Views
             //    这一步同时纠正了旧布局序号与升级后列集合错位的问题。
             List<DataGridColumn> visible = grid.Columns
                 .Where(c => c.Visibility == Visibility.Visible)
-                .OrderBy(c => saved.TryGetValue(c.Header?.ToString() ?? "?", out (bool Visible, int Order) s) && s.Order >= 0
+                .OrderBy(c => saved.TryGetValue(c.Header?.ToString() ?? "?", out (bool Visible, int Order, double Width) s) && s.Order >= 0
                     ? s.Order
                     : int.MaxValue)
                 .ToList();

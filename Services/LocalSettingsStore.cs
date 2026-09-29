@@ -144,7 +144,7 @@ namespace ORT一键报告.Services
             }
         }
 
-        /// <summary>把旧版 auth_cookie.json 里的登录信息搬进本机设置</summary>
+        /// <summary>把旧版 auth_cookie.json 里的登录信息搬进本机设置（随后由 LoginCredentialStore 再迁到用户目录）</summary>
         private static bool ImportLegacyCookie(LocalSettings settings)
         {
             try

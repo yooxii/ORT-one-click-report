@@ -223,12 +223,8 @@ namespace ORT一键报告.Services
             try
             {
                 byte[] encrypted = ProtectedData.Protect(Encoding.UTF8.GetBytes(password), null, DataProtectionScope.CurrentUser);
-                LocalSettingsStore.Update(s =>
-                {
-                    s.LoginUsername = username;
-                    s.LoginPasswordEnc = Convert.ToBase64String(encrypted);
-                    s.LoginExpiry = DateTime.Now + CookieLifetime;
-                });
+                // 凭据存到当前 Windows 用户目录（DPAPI 也是当前用户级），同机多用户各自独立、互不覆盖
+                LoginCredentialStore.Save(username, Convert.ToBase64String(encrypted), DateTime.Now + CookieLifetime);
             }
             catch (Exception ex)
             {
@@ -243,18 +239,18 @@ namespace ORT一键报告.Services
         {
             try
             {
-                LocalSettings local = LocalSettingsStore.Read();
-                if (string.IsNullOrWhiteSpace(local.LoginUsername) || string.IsNullOrWhiteSpace(local.LoginPasswordEnc))
+                LoginCredential cred = LoginCredentialStore.Read();
+                if (cred == null || string.IsNullOrWhiteSpace(cred.Username) || string.IsNullOrWhiteSpace(cred.PasswordEnc))
                 {
                     return null;
                 }
-                if (local.LoginExpiry == null || local.LoginExpiry < DateTime.Now)
+                if (cred.Expiry == null || cred.Expiry < DateTime.Now)
                 {
                     ClearLoginCookie();
                     return null;
                 }
-                byte[] decrypted = ProtectedData.Unprotect(Convert.FromBase64String(local.LoginPasswordEnc), null, DataProtectionScope.CurrentUser);
-                return (local.LoginUsername, Encoding.UTF8.GetString(decrypted));
+                byte[] decrypted = ProtectedData.Unprotect(Convert.FromBase64String(cred.PasswordEnc), null, DataProtectionScope.CurrentUser);
+                return (cred.Username, Encoding.UTF8.GetString(decrypted));
             }
             catch (Exception ex)
             {
@@ -271,8 +267,8 @@ namespace ORT一键报告.Services
         {
             try
             {
-                LocalSettings local = LocalSettingsStore.Read();
-                return local.LoginExpiry != null && local.LoginExpiry >= DateTime.Now ? local.LoginExpiry : null;
+                LoginCredential cred = LoginCredentialStore.Read();
+                return cred?.Expiry != null && cred.Expiry >= DateTime.Now ? cred.Expiry : null;
             }
             catch
             {
@@ -287,12 +283,7 @@ namespace ORT一键报告.Services
         {
             try
             {
-                LocalSettingsStore.Update(s =>
-                {
-                    s.LoginUsername = null;
-                    s.LoginPasswordEnc = null;
-                    s.LoginExpiry = null;
-                });
+                LoginCredentialStore.Clear();
             }
             catch (Exception ex)
             {

@@ -8,7 +8,7 @@ namespace ORT一键报告.Models
     /// 只保存"必须留在本机"的设置项——
     /// 1) 数据文件夹位置（数据库/附件/配图等全部数据都放在那里，可在远程共享上）；
     /// 2) ATE / EMI 源数据路径（各台电脑自己的目录）；
-    /// 3) 本机登录 cookie（用户名 + DPAPI 加密后的密码 + 到期时间）；
+    /// 3)（旧位置遗留、仅用于迁移）登录 cookie 字段——凭据已改存到当前用户目录 %LocalAppData%（见 LoginCredentialStore）；
     /// 4) 计划表列布局。
     /// 其余设置（界面、邮件、业务路径等）随数据库放在数据文件夹里，多台电脑共用。
     /// 反序列化时缺失的项一律保持默认值，因此旧版本文件（或手工精简过的文件）都能读。
@@ -27,13 +27,13 @@ namespace ORT一键报告.Models
         /// <summary>EMI 源数据路径（本机目录）</summary>
         public string EmiDataPath { get; set; }
 
-        /// <summary>本机登录 cookie：用户名</summary>
+        /// <summary>【旧位置遗留、仅用于迁移】登录用户名；凭据已改存用户目录，迁移后为 null</summary>
         public string LoginUsername { get; set; }
 
-        /// <summary>本机登录 cookie：DPAPI（当前 Windows 用户）加密后的密码</summary>
+        /// <summary>【旧位置遗留、仅用于迁移】DPAPI 加密后的登录密码；凭据已改存用户目录，迁移后为 null</summary>
         public string LoginPasswordEnc { get; set; }
 
-        /// <summary>本机登录 cookie：到期时间</summary>
+        /// <summary>【旧位置遗留、仅用于迁移】登录到期时间；凭据已改存用户目录，迁移后为 null</summary>
         public DateTime? LoginExpiry { get; set; }
 
         /// <summary>计划表列布局（"requisitions" / "plans" → 列键列表）</summary>

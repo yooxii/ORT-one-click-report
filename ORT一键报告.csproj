@@ -15,7 +15,7 @@
     <MapFileExtensions>true</MapFileExtensions>
     <PublisherName>Lucas Li%28AcBel ORT%29</PublisherName>
     <ApplicationRevision>0</ApplicationRevision>
-    <ApplicationVersion>0.3.2.%2a</ApplicationVersion>
+    <ApplicationVersion>0.4.0.%2a</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <CreateDesktopShortcut>true</CreateDesktopShortcut>
     <PublishWizardCompleted>true</PublishWizardCompleted>
@@ -156,7 +156,9 @@
     </Compile>
     <Compile Include="Services\AppSettingsService.cs" />
     <Compile Include="Models\LocalSettings.cs" />
+    <Compile Include="Models\LoginCredential.cs" />
     <Compile Include="Services\LocalSettingsStore.cs" />
+    <Compile Include="Services\LoginCredentialStore.cs" />
     <Compile Include="Services\DataFolderMigrator.cs" />
     <Compile Include="Utils\FolderUtil.cs" />
     <Compile Include="Utils\NetworkDriveMapper.cs" />
