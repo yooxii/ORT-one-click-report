@@ -62,6 +62,12 @@ namespace ORT一键报告.Utils
         private static readonly Regex JobNoRegex = new(@"^(QRT|RT)(\d{4})(\d{2,})$", RegexOptions.IgnoreCase);
 
         /// <summary>
+        /// 回线RT工令格式：以 RTAH 开头，之后跟 4 位年月（如 2609），最后是至少两位、从 01 开始的编号。
+        /// 与工作编号一样允许超过两位（当月超过 99 笔时生成器会展开为 3 位）；可以为空（无需回线/报废）。
+        /// </summary>
+        private static readonly Regex ReturnRtOrderRegex = new(@"^RTAH(\d{4})(\d{2,})$", RegexOptions.IgnoreCase);
+
+        /// <summary>
         /// 校验工作编号；合法返回null，否则返回错误描述
         /// </summary>
         public static string ValidateJobNo(string jobNo)
@@ -79,6 +85,28 @@ namespace ORT一键报告.Utils
             if (seq < 1)
             {
                 return "工作编号末尾编号必须从 01 开始";
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// 校验回线RT工令（可以为空，但不能是其他格式）；合法返回null，否则返回错误描述
+        /// </summary>
+        public static string ValidateReturnRtOrder(string order)
+        {
+            if (string.IsNullOrWhiteSpace(order))
+            {
+                return null; // 允许为空：无需回线（报废）时本来就不填
+            }
+            Match m = ReturnRtOrderRegex.Match(order.Trim());
+            if (!m.Success)
+            {
+                return "回线RT工令格式应为：RTAH + 4位年月 + 至少2位编号（如 RTAH260901）";
+            }
+            int seq = int.Parse(m.Groups[2].Value);
+            if (seq < 1)
+            {
+                return "回线RT工令末尾编号必须从 01 开始";
             }
             return null;
         }

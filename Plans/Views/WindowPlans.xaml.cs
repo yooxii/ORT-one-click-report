@@ -76,6 +76,15 @@ namespace ORT一键报告.Plans.Views
             };
             Closing += (s, e) =>
             {
+                // 有未提交的暂存修改时先确认：选「否」留在窗口继续编辑或提交，选「是」丢弃并退出
+                if (_vm.HasPendingChanges
+                    && MessageBox.Show(string.Format(LocalizationHelper.Get("Msg_ExitWithPendingFormat"), _vm.PendingText),
+                        LanguageService.Get("Cap_ExitConfirm"), MessageBoxButton.YesNo, MessageBoxImage.Warning)
+                    != MessageBoxResult.Yes)
+                {
+                    e.Cancel = true;
+                    return;
+                }
                 SaveColumnState();
                 // 退订对单例报告扫描服务的订阅，避免旧 ViewModel 被长期引用
                 _vm.ReportScanCompleted -= OnReportScanCompleted;
@@ -912,13 +921,45 @@ namespace ORT一键报告.Plans.Views
 
         /* ###############################  单元格编辑结束  ################################ */
 
+        /// <summary>
+        /// 领退表开始编辑时的快照：回线RT工令列绑定是 PropertyChanged，值在输入时就已写入记录，
+        /// 校验失败时单靠 e.Cancel 不会回滚，需要用它把原值还原回去
+        /// </summary>
+        private (Requisition item, string returnRtOrder)? _reqEditSnapshot;
+
+        private void Dg_Requisitions_BeginningEdit(object sender, DataGridBeginningEditEventArgs e)
+        {
+            _reqEditSnapshot = e.Row.Item is Requisition req && e.Column.SortMemberPath == nameof(Requisition.ReturnRtOrder)
+                ? (req, req.ReturnRtOrder)
+                : null;
+        }
+
         private void Dg_Requisitions_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
         {
-            if (e.Row.Item is Requisition req)
+            if (e.Row.Item is not Requisition req)
             {
-                _vm.NotifyPendingChanged();
-                _vm.StatusMessage = _vm.PendingText;
+                return;
             }
+            // 回线RT工令：格式（RTAH + 4位年月 + 至少2位编号，可以为空）与重号校验，
+            // 不合法则还原原值并撤销本次编辑
+            if (e.Column.SortMemberPath == nameof(Requisition.ReturnRtOrder))
+            {
+                string error = _vm.ValidateReturnRtOrder(req.ReturnRtOrder, req);
+                if (error != null)
+                {
+                    if (_reqEditSnapshot is { } snapshot && ReferenceEquals(snapshot.item, req))
+                    {
+                        req.ReturnRtOrder = snapshot.returnRtOrder;
+                    }
+                    _reqEditSnapshot = null;
+                    _ = MessageBox.Show(error, LanguageService.Get("Cap_FormatValidationFailed"));
+                    e.Cancel = true;
+                    return;
+                }
+            }
+            _reqEditSnapshot = null;
+            _vm.NotifyPendingChanged();
+            _vm.StatusMessage = _vm.PendingText;
         }
 
         private void Dg_Plans_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
@@ -1927,7 +1968,18 @@ namespace ORT一键报告.Plans.Views
                     {
                         break;
                     }
-                    SetRequisitionFieldValue(target, columns[colIndex].SortMemberPath, rows[i][j]);
+                    string field = columns[colIndex].SortMemberPath;
+                    string oldReturnRt = target.ReturnRtOrder;
+                    string error = SetRequisitionFieldValue(target, field, rows[i][j]);
+                    if (error != null)
+                    {
+                        // 校验不通过的值不留在记录里（回线RT工令还原为粘贴前的值）
+                        if (field == nameof(Requisition.ReturnRtOrder))
+                        {
+                            target.ReturnRtOrder = oldReturnRt;
+                        }
+                        _ = MessageBox.Show($"{columns[colIndex].Header}: {error}", LanguageService.Get("Cap_PasteValidationFailed"));
+                    }
                 }
             }
             _vm.NotifyPendingChanged();
@@ -2044,7 +2096,7 @@ namespace ORT一键报告.Plans.Views
             _ => null
         };
 
-        private static void SetRequisitionFieldValue(Requisition r, string field, string value)
+        private string SetRequisitionFieldValue(Requisition r, string field, string value)
         {
             if (value == "")
             {
@@ -2069,6 +2121,8 @@ namespace ORT一键报告.Plans.Views
                 case nameof(Requisition.StockInDate): r.StockInDate = ParseDate(value); break;
                 case nameof(Requisition.Remark): r.Remark = value; break;
             }
+            // 回线RT工令粘贴后同样要过格式与重号校验
+            return field == nameof(Requisition.ReturnRtOrder) ? _vm.ValidateReturnRtOrder(value, r) : null;
         }
 
         private string SetPlanFieldValue(Plan p, string field, string value)

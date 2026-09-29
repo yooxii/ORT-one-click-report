@@ -967,6 +967,27 @@ namespace ORT一键报告.Plans.ViewModels
         }
 
         /// <summary>
+        /// 校验领退表的回线RT工令：格式（RTAH + 4位年月 + 至少2位编号，可以为空）+ 不可与其他记录重复。
+        /// <paramref name="self"/> 为正在编辑的那一行（按引用排除；已入库的再按 Id 排除）；合法返回 null。
+        /// 重号比对走当前界面内存数据（含暂存新增/编辑），因此同一批粘贴多行相同工令也能被拦下。
+        /// </summary>
+        public string ValidateReturnRtOrder(string value, Requisition self)
+        {
+            string error = PlanValidation.ValidateReturnRtOrder(value);
+            if (error != null || string.IsNullOrWhiteSpace(value))
+            {
+                return error;
+            }
+            string trimmed = value.Trim();
+            bool duplicated = Requisitions.Any(r =>
+                !ReferenceEquals(r, self)
+                && !(self != null && self.Id > 0 && r.Id == self.Id)
+                && !string.IsNullOrWhiteSpace(r.ReturnRtOrder)
+                && string.Equals(r.ReturnRtOrder.Trim(), trimmed, StringComparison.OrdinalIgnoreCase));
+            return duplicated ? string.Format(LanguageService.Get("Msg_ReturnRtExistsFormat"), trimmed) : null;
+        }
+
+        /// <summary>
         /// 机种联动：输入机种名称后自动带出产品别/客户别（仅填充空字段）。
         /// 查询规则：产品别 = 机种名开始 2 位代码，客户别 = 机种名第 8 位起的 2 位代码；代码映射缺失时回退机种映射表。
         /// </summary>

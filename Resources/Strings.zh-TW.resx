@@ -2895,4 +2895,14 @@
   <data name="Msg_OpBlockedDispositionStockIn" xml:space="preserve">
     <value>該記錄單體去向為入庫：不能登記報廢；如確需走報廢分支，請先在編輯視窗把單體去向改為報廢</value>
   </data>
+  <data name="Msg_ReturnRtExistsFormat" xml:space="preserve">
+    <value>回線RT工令 [{0}] 已存在</value>
+  </data>
+  <data name="Cap_ExitConfirm" xml:space="preserve">
+    <value>退出確認</value>
+  </data>
+  <data name="Msg_ExitWithPendingFormat" xml:space="preserve">
+    <value>還有未提交的修改：{0}
+退出將丟棄這些修改，確定退出？</value>
+  </data>
 </root>

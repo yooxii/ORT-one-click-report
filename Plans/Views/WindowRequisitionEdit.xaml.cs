@@ -512,6 +512,22 @@ namespace ORT一键报告.Plans.Views
                 _ = MessageBox.Show(LocalizationHelper.Get("Msg_NeedReturnOrder"), LanguageService.Get("Cap_Info"));
                 return;
             }
+            // 回线RT工令：格式（RTAH + 4位年月 + 至少2位编号，可以为空）与重号校验
+            string returnRt = string.IsNullOrWhiteSpace(txt_returnRt.Text) ? null : txt_returnRt.Text.Trim();
+            string returnRtError = PlanValidation.ValidateReturnRtOrder(returnRt);
+            if (returnRtError != null)
+            {
+                _ = MessageBox.Show(returnRtError, LanguageService.Get("Cap_FormatValidationFailed"));
+                txt_returnRt.Focus();
+                return;
+            }
+            if (returnRt != null && IsReturnRtDuplicated(returnRt))
+            {
+                _ = MessageBox.Show(string.Format(LocalizationHelper.Get("Msg_ReturnRtExistsFormat"), returnRt),
+                    LanguageService.Get("Cap_Info"));
+                txt_returnRt.Focus();
+                return;
+            }
             // 单体去向（入库/报废二选一）：新增与编辑都必须选择
             if (cb_disposition.SelectedItem == null)
             {
@@ -649,6 +665,18 @@ namespace ORT一键报告.Plans.Views
         private void Btn_Cancel_Click(object sender, RoutedEventArgs e)
         {
             Close();
+        }
+
+        /// <summary>
+        /// 回线RT工令是否已被其他领退记录占用（不区分大小写；编辑时排除本记录）
+        /// </summary>
+        private bool IsReturnRtDuplicated(string returnRt)
+        {
+            long selfId = _editTarget?.Id ?? 0;
+            return _db.FreeSql.Select<Requisition>()
+                .Where(r => r.Id != selfId && r.ReturnRtOrder != null)
+                .ToList(r => r.ReturnRtOrder)
+                .Any(x => string.Equals(x?.Trim(), returnRt, StringComparison.OrdinalIgnoreCase));
         }
 
         /* ###############################  序列号重复检查  ################################ */

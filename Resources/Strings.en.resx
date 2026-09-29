@@ -2895,4 +2895,14 @@ Build the plan index now (compress repeated text into shared templates)?</value>
   <data name="Msg_OpBlockedDispositionStockIn" xml:space="preserve">
     <value>This record's disposition is stock-in: scrap cannot be registered; change the disposition to scrap in the edit dialog first if needed</value>
   </data>
+  <data name="Msg_ReturnRtExistsFormat" xml:space="preserve">
+    <value>Return RT order [{0}] already exists</value>
+  </data>
+  <data name="Cap_ExitConfirm" xml:space="preserve">
+    <value>Exit Confirmation</value>
+  </data>
+  <data name="Msg_ExitWithPendingFormat" xml:space="preserve">
+    <value>There are unsaved changes: {0}
+Exit now and discard them?</value>
+  </data>
 </root>

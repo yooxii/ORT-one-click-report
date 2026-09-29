@@ -29,6 +29,16 @@
             <Setter Property="HorizontalContentAlignment" Value="Center"/>
             <Setter Property="Background" Value="Transparent"/>
         </Style>
+        <!-- 多行文本编辑样式（备注列）：在单元格编辑样式基础上允许回车换行、自动折行，
+             内容顶部对齐便于多行书写；回车插入换行，Tab/点击其他单元格才提交编辑 -->
+        <Style x:Key="MultiLineEdit" TargetType="TextBox" BasedOn="{StaticResource CenterEdit}">
+            <Setter Property="AcceptsReturn" Value="True"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
+            <Setter Property="MinLines" Value="2"/>
+            <Setter Property="MaxLines" Value="8"/>
+            <Setter Property="VerticalContentAlignment" Value="Top"/>
+        </Style>
         <!-- 单元格通用样式：无内边距、内容居中；选中单元格浅灰（与选中行背景叠加显示），黑字不变 -->
         <Style x:Key="FullCell" TargetType="DataGridCell">
             <Setter Property="Padding" Value="0"/>
@@ -186,6 +196,7 @@
                           SelectionMode="Extended" SelectionUnit="CellOrRowHeader"
                           ClipboardCopyMode="None"
                           LoadingRow="Dg_Requisitions_LoadingRow"
+                          BeginningEdit="Dg_Requisitions_BeginningEdit"
                           CellEditEnding="Dg_Requisitions_CellEditEnding"
                           CurrentCellChanged="Dg_Requisitions_CurrentCellChanged"
                           PreviewMouseRightButtonDown="Dg_Requisitions_PreviewMouseRightButtonDown"
@@ -321,7 +332,20 @@
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellEditingTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTextColumn Header="{lex:Loc Admin_Remark}" Binding="{Binding Remark, UpdateSourceTrigger=PropertyChanged}" Width="140" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
+                        <!--备注：多行编辑（回车换行），显示时自动折行--> 
+                        <DataGridTemplateColumn Header="{lex:Loc Admin_Remark}" Width="140" SortMemberPath="Remark">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Remark}" TextWrapping="Wrap" Style="{StaticResource CenterText}"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                            <DataGridTemplateColumn.CellEditingTemplate>
+                                <DataTemplate>
+                                    <TextBox Text="{Binding Remark, UpdateSourceTrigger=PropertyChanged}"
+                                             Style="{StaticResource MultiLineEdit}"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellEditingTemplate>
+                        </DataGridTemplateColumn>
                     </DataGrid.Columns>
                 </DataGrid>
             </TabItem>

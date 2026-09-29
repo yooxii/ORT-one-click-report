@@ -5,7 +5,7 @@ namespace ORT一键报告.Tests
 {
     /// <summary>
     /// 计划数据编辑校验（PlanValidation）与状况归类（PlanStatusKind）测试：
-    /// 覆盖工作编号格式、状况枚举、字典约束与三种状况归类的容错写法。
+    /// 覆盖工作编号格式、回线RT工令格式、状况枚举、字典约束与三种状况归类的容错写法。
     /// </summary>
     [TestFixture]
     public class PlanValidationTests
@@ -41,6 +41,43 @@ namespace ORT一键报告.Tests
         public void 编号为00_提示从01开始()
         {
             string error = PlanValidation.ValidateJobNo("RT260800");
+            Assert.That(error, Does.Contain("01"));
+        }
+
+        /* ###############################  回线RT工令  ################################ */
+
+        [TestCase("RTAH260901")]
+        [TestCase("rtah260901")]      // 前缀不区分大小写
+        [TestCase("RTAH261299")]
+        [TestCase("RTAH2609100")]     // 当月超过 99 笔时生成器展开为 3 位，同样允许
+        [TestCase(" RTAH260901 ")]    // 首尾空白容忍
+        public void 合法回线RT工令_校验通过(string order)
+            => Assert.That(PlanValidation.ValidateReturnRtOrder(order), Is.Null);
+
+        [TestCase(null)]
+        [TestCase("")]
+        [TestCase("   ")]
+        public void 空回线RT工令_允许为空(string order)
+            => Assert.That(PlanValidation.ValidateReturnRtOrder(order), Is.Null);
+
+        [TestCase("RT260901")]        // 前缀不是 RTAH
+        [TestCase("XXAH260901")]      // 前缀错误
+        [TestCase("RTAH2609")]        // 缺末尾编号
+        [TestCase("RTAH26090")]       // 编号只有 1 位
+        [TestCase("RTAH26091")]       // 年月+编号共 5 位，凑不出至少 2 位编号
+        [TestCase("RTAH2609A1")]      // 编号含字母
+        [TestCase("RTAH 260901")]     // 中间有空格
+        public void 非法回线RT工令_给出格式说明(string order)
+        {
+            string error = PlanValidation.ValidateReturnRtOrder(order);
+            Assert.That(error, Is.Not.Null);
+            Assert.That(error, Does.Contain("RTAH"));
+        }
+
+        [Test]
+        public void 回线RT工令编号为00_提示从01开始()
+        {
+            string error = PlanValidation.ValidateReturnRtOrder("RTAH260900");
             Assert.That(error, Does.Contain("01"));
         }
 
