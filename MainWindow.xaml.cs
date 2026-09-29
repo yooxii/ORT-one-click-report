@@ -164,9 +164,11 @@ namespace ORT一键报告
             // 用户中心仅登录后可用（游客无个人资料可管理）
             menu_user_center.IsEnabled = _auth.CurrentUser != null;
             txt_user_identity.Text = string.Format(LanguageService.Get("Main_IdentityFormat"), _auth.CurrentDisplayName);
-            // 程序名下方的版本号：取程序集版本（随生成自动更新，不写死）
+            // 程序名下方的版本号：跟随程序集版本（AssemblyInfo 的 AssemblyVersion，随生成自动更新、不写死）。
+            // build 段非 0 显示三段（如 0.3.2），否则两段（如 0.4），与更新日志「## 主.次」写法保持一致
             System.Version ver = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
-            txt_version.Text = string.Format(LanguageService.Get("Main_VersionFormat"), ver?.ToString(3) ?? "-");
+            string verText = ver == null ? "-" : ver.Build > 0 ? ver.ToString(3) : ver.ToString(2);
+            txt_version.Text = string.Format(LanguageService.Get("Main_VersionFormat"), verText);
             btn_report.IsEnabled = _permission.Can("report.use");
             btn_admin.IsEnabled = _permission.Can("admin.manage");
             btn_review.IsEnabled = _permission.Can("review.view");
