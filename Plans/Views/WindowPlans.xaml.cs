@@ -2341,6 +2341,23 @@ namespace ORT一键报告.Plans.Views
             }
         }
 
+        /// <summary>
+        /// 备注列编辑：回车不插入换行（AcceptsReturn=False，回车交给表格提交并下移），
+        /// Alt+回车 在光标处插入一个换行符（多行备注用）。
+        /// </summary>
+        private void RemarkEdit_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter
+                && (Keyboard.Modifiers & ModifierKeys.Alt) == ModifierKeys.Alt
+                && sender is TextBox tb)
+            {
+                int caret = tb.CaretIndex;
+                tb.Text = (tb.Text ?? "").Insert(caret, "\n");
+                tb.CaretIndex = caret + 1;
+                e.Handled = true;   // 不让回车再被表格当作提交处理
+            }
+        }
+
         /* ###############################  列顺序与可见性持久化  ################################ */
 
         private void SaveColumnState()

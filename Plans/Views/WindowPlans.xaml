@@ -29,10 +29,10 @@
             <Setter Property="HorizontalContentAlignment" Value="Center"/>
             <Setter Property="Background" Value="Transparent"/>
         </Style>
-        <!-- 多行文本编辑样式（备注列）：在单元格编辑样式基础上允许回车换行、自动折行，
-             内容顶部对齐便于多行书写；回车插入换行，Tab/点击其他单元格才提交编辑 -->
+        <!-- 多行文本编辑样式（备注列）：自动折行、内容顶部对齐便于多行书写。
+             回车不插入换行（交给表格：提交并下移），改用 Alt+回车 在光标处插入换行（见 RemarkEdit_PreviewKeyDown） -->
         <Style x:Key="MultiLineEdit" TargetType="TextBox" BasedOn="{StaticResource CenterEdit}">
-            <Setter Property="AcceptsReturn" Value="True"/>
+            <Setter Property="AcceptsReturn" Value="False"/>
             <Setter Property="TextWrapping" Value="Wrap"/>
             <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
             <Setter Property="MinLines" Value="2"/>
@@ -342,7 +342,8 @@
                             <DataGridTemplateColumn.CellEditingTemplate>
                                 <DataTemplate>
                                     <TextBox Text="{Binding Remark, UpdateSourceTrigger=PropertyChanged}"
-                                             Style="{StaticResource MultiLineEdit}"/>
+                                             Style="{StaticResource MultiLineEdit}"
+                                             PreviewKeyDown="RemarkEdit_PreviewKeyDown"/>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellEditingTemplate>
                         </DataGridTemplateColumn>

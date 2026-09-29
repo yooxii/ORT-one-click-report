@@ -241,6 +241,35 @@ namespace ORT一键报告.Admin.Views
             LoadUsers();
         }
 
+        private void Btn_RemoveUser_Click(object sender, RoutedEventArgs e)
+        {
+            UserView user = SelectedUser;
+            if (user == null)
+            {
+                _ = MessageBox.Show(LocalizationHelper.Get("Msg_SelectUserFirst"), LanguageService.Get("Cap_Info"));
+                return;
+            }
+            if (_auth.CurrentUser?.Id == user.Id)
+            {
+                _ = MessageBox.Show(LocalizationHelper.Get("Msg_CannotRemoveSelf"), LanguageService.Get("Cap_Info"));
+                return;
+            }
+            // 移除是硬删除（连同身份），二次确认
+            if (MessageBox.Show(string.Format(LanguageService.Get("Msg_RemoveUserConfirmFormat"), user.Username),
+                LanguageService.Get("Cap_RemoveUserConfirm"), MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+            {
+                return;
+            }
+            string error = _admin.DeleteUser(user.Id);
+            if (error != null)
+            {
+                _ = MessageBox.Show(error, LanguageService.Get("Cap_SaveFailed"));
+                return;
+            }
+            LoadUsers();
+            _ = MessageBox.Show(LocalizationHelper.Get("Msg_UserRemoved"), LanguageService.Get("Cap_Success"));
+        }
+
         private void Btn_RefreshUsers_Click(object sender, RoutedEventArgs e) => LoadUsers();
 
         /* ###############################  客户管理（整合产品别）  ################################ */

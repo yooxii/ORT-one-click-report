@@ -91,6 +91,27 @@ namespace ORT一键报告.Services
             _logger.Info($"用户(Id={userId})已{(active ? "启用" : "禁用")}");
         }
 
+        /// <summary>
+        /// 移除用户：连同其角色关联一并删除。不能移除当前登录用户（也保证至少还剩一个管理员，避免锁死）。
+        /// 成功返回 null，否则返回错误信息。历史数据里以姓名/操作人记录的引用（变更日志、审核、负责人文本）保留不受影响。
+        /// </summary>
+        public string DeleteUser(long userId)
+        {
+            if (_auth.CurrentUser?.Id == userId)
+            {
+                return LanguageService.Get("Msg_CannotRemoveSelf");
+            }
+            User user = _db.FreeSql.Select<User>().Where(u => u.Id == userId).First();
+            if (user == null)
+            {
+                return LanguageService.Get("Msg_UserNotFound");
+            }
+            _db.FreeSql.Delete<UserRoleRow>().Where(r => r.UserId == userId).ExecuteAffrows();
+            _db.FreeSql.Delete<User>().Where(u => u.Id == userId).ExecuteAffrows();
+            _logger.Info($"移除用户(Id={userId}, {user.Username})");
+            return null;
+        }
+
         public void UpdateDisplayName(long userId, string displayName)
         {
             _db.FreeSql.Update<User>().Set(u => u.DisplayName, displayName).Where(u => u.Id == userId).ExecuteAffrows();

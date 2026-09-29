@@ -75,6 +75,7 @@
                         <Button Content="{lex:Loc Admin_ApplyIdentity}" Padding="8,4" Margin="0,10,0,0" Click="Btn_ApplyRoles_Click"/>
                         <Button Content="{lex:Loc Admin_ResetPassword}" Padding="8,4" Margin="0,8,0,0" Click="Btn_ResetPassword_Click"/>
                         <Button x:Name="btn_toggleActive" Content="{lex:Loc Admin_EnableDisable}" Padding="8,4" Margin="0,8,0,0" Click="Btn_ToggleActive_Click"/>
+                        <Button Content="{lex:Loc Admin_RemoveUser}" Padding="8,4" Margin="0,8,0,0" Click="Btn_RemoveUser_Click"/>
                     </StackPanel>
                 </Border>
             </Grid>

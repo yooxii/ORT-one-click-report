@@ -2926,4 +2926,22 @@ Build the plan index now (compress repeated text into shared templates)?</value>
     <value>There are unsaved changes: {0}
 Exit now and discard them?</value>
   </data>
+  <data name="Admin_RemoveUser" xml:space="preserve">
+    <value>Remove User</value>
+  </data>
+  <data name="Cap_RemoveUserConfirm" xml:space="preserve">
+    <value>Confirm Removal</value>
+  </data>
+  <data name="Msg_RemoveUserConfirmFormat" xml:space="preserve">
+    <value>Remove user [{0}]? The account and its roles will be deleted permanently.</value>
+  </data>
+  <data name="Msg_UserRemoved" xml:space="preserve">
+    <value>User removed</value>
+  </data>
+  <data name="Msg_CannotRemoveSelf" xml:space="preserve">
+    <value>Cannot remove the currently signed-in user</value>
+  </data>
+  <data name="Msg_UserNotFound" xml:space="preserve">
+    <value>User not found</value>
+  </data>
 </root>

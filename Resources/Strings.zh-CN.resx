@@ -2926,4 +2926,22 @@
     <value>还有未提交的修改：{0}
 退出将丢弃这些修改，确定退出？</value>
   </data>
+  <data name="Admin_RemoveUser" xml:space="preserve">
+    <value>移除用户</value>
+  </data>
+  <data name="Cap_RemoveUserConfirm" xml:space="preserve">
+    <value>确认移除</value>
+  </data>
+  <data name="Msg_RemoveUserConfirmFormat" xml:space="preserve">
+    <value>确定移除用户 [{0}]？该账号及其身份将被删除，且无法恢复。</value>
+  </data>
+  <data name="Msg_UserRemoved" xml:space="preserve">
+    <value>用户已移除</value>
+  </data>
+  <data name="Msg_CannotRemoveSelf" xml:space="preserve">
+    <value>不能移除当前登录用户</value>
+  </data>
+  <data name="Msg_UserNotFound" xml:space="preserve">
+    <value>用户不存在</value>
+  </data>
 </root>
