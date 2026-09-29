@@ -2412,12 +2412,6 @@ Build the plan index now (compress repeated text into shared templates)?</value>
   <data name="PlanEdit_RefreshRtHint" xml:space="preserve">
     <value>Click the Return RT Order label to generate it from the requisition date (no longer automatic)</value>
   </data>
-  <data name="ReqEdit_NeedReturn" xml:space="preserve">
-    <value>Return required</value>
-  </data>
-  <data name="ReqEdit_NoReturnHint" xml:space="preserve">
-    <value>Unchecked means no return needed (Return RT Order stays empty)</value>
-  </data>
   <data name="ReqEdit_PlanSyncRequired" xml:space="preserve">
     <value>Plan sync info expanded: every field below (including "Other") is required</value>
   </data>
@@ -2431,7 +2425,7 @@ Build the plan index now (compress repeated text into shared templates)?</value>
     <value>already in requisition [{0}]</value>
   </data>
   <data name="Msg_NeedReturnOrder" xml:space="preserve">
-    <value>Return is required: fill in the Return RT Order (or click its label to generate)</value>
+    <value>Disposition is stock-in: the Return RT Order is required (or click its label to generate)</value>
   </data>
   <data name="Msg_FillReturnDate" xml:space="preserve">
     <value>Select the return date</value>
@@ -2891,5 +2885,14 @@ Build the plan index now (compress repeated text into shared templates)?</value>
   </data>
   <data name="Msg_StockInNeedReturn" xml:space="preserve">
     <value>No return date is registered yet; register the return (right-click "Return to line") before stock-in</value>
+  </data>
+  <data name="Msg_ReturnRtNeedsStockIn" xml:space="preserve">
+    <value>The Return RT Order is only needed when the disposition is stock-in (select the disposition first)</value>
+  </data>
+  <data name="Msg_OpBlockedDispositionScrap" xml:space="preserve">
+    <value>This record's disposition is scrap: return/stock-in cannot be registered; change the disposition to stock-in in the edit dialog first if needed</value>
+  </data>
+  <data name="Msg_OpBlockedDispositionStockIn" xml:space="preserve">
+    <value>This record's disposition is stock-in: scrap cannot be registered; change the disposition to scrap in the edit dialog first if needed</value>
   </data>
 </root>

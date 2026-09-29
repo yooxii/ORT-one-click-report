@@ -122,6 +122,13 @@ namespace ORT一键报告.Services
                     plan.Rev = Cell(ws, r, map, "REV");
                     plan.WorkOrder = workOrder;
                     plan.ReturnRtOrder = Cell(ws, r, map, "回綫RT工令");
+                    // 单体去向：旧文件没有该列时按有无回线RT工令推断（入库/报废互斥）；已有值不覆盖
+                    if (string.IsNullOrWhiteSpace(plan.Disposition))
+                    {
+                        plan.Disposition = string.IsNullOrWhiteSpace(plan.ReturnRtOrder)
+                            ? RequisitionDispositionKind.Scrap
+                            : RequisitionDispositionKind.StockIn;
+                    }
                     plan.ReturnQty = Cell(ws, r, map, "回線數量");
                     plan.LineNo = Cell(ws, r, map, "線別");
                     plan.ReturnDate = ParseAnyDate(Cell(ws, r, map, "回線日期"), year);

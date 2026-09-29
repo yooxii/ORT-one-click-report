@@ -14,7 +14,7 @@ namespace ORT一键报告.Plans.Views
     /// <summary>
     /// WindowRequisitionEdit.xaml 的交互逻辑：领退表新增/编辑。
     /// 必填：領用日期/領料單据號/機種名稱/領出數量/單體去向（入库/报废）/S-N/REV./Work Order；
-    /// 自动补全：D/C、線別、回线RT工令（可选）、计划表同步信息（测试项目/开始时间/阶段/工作编号/样品数/产品别/客户别/试验时间/负责人/结束日期）。
+    /// 自动补全：D/C、線別、回线RT工令（单体去向=入库时必填）、计划表同步信息（测试项目/开始时间/阶段/工作编号/样品数/产品别/客户别/试验时间/负责人/结束日期）。
     /// 本对话框只构造结果，不写数据库；由调用方决定暂存或提审。
     /// </summary>
     public partial class WindowRequisitionEdit : Window
@@ -87,8 +87,9 @@ namespace ORT一键报告.Plans.Views
                 SetCombo(cb_stage, defaultStage);
             }
 
-            // 回线RT工令：默认「无需回线」——不勾选时留空并禁用输入
-            ApplyNeedReturnState();
+            // 回线RT工令：由「单体去向」驱动——入库才需要（启用且保存时必填），报废禁用并留空
+            cb_disposition.SelectionChanged += (s, e) => ApplyDispositionState();
+            ApplyDispositionState();
 
             // 领用日期变化：开始时间跟着走；工作编号/回线RT工令还是自动生成的那个（没手动改过）就一起刷新
             dp_reqDate.SelectedDateChanged += (s, e) => OnReqDateChanged();
@@ -222,10 +223,9 @@ namespace ORT一键报告.Plans.Views
             txt_lineNo.Text = req.LineNo;
             // 单体去向：入库/报废（旧记录可能为空，保存时按必填校验拦截）
             SetCombo(cb_disposition, req.Disposition);
-            // 回线RT工令：有值即视为「需要回线」（勾选并把值显示出来），没有就留空=无需回线
-            chk_needReturn.IsChecked = !string.IsNullOrWhiteSpace(req.ReturnRtOrder);
+            // 回线RT工令：按单体去向决定是否启用（报废时禁用并清空，保存即归位）
             txt_returnRt.Text = req.ReturnRtOrder ?? "";
-            ApplyNeedReturnState();
+            ApplyDispositionState();
             if (!string.IsNullOrWhiteSpace(req.SnFilePath))
             {
                 rb_snFile.IsChecked = true;
@@ -293,26 +293,31 @@ namespace ORT一键报告.Plans.Views
                 _ = MessageBox.Show(LocalizationHelper.Get("Msg_FillReqDate"), LanguageService.Get("Cap_Info"));
                 return;
             }
-            if (force && chk_needReturn.IsChecked != true)
+            if (cb_disposition.SelectedItem as string != RequisitionDispositionKind.StockIn)
             {
-                chk_needReturn.IsChecked = true;
+                if (force)
+                {
+                    _ = MessageBox.Show(LocalizationHelper.Get("Msg_ReturnRtNeedsStockIn"), LanguageService.Get("Cap_Info"));
+                }
+                return;
             }
             txt_returnRt.Text = _excelService.GenerateReturnRtOrder(dt);
             _autoReturnRt = txt_returnRt.Text.Trim();
         }
 
         /// <summary>
-        /// 「需要回线」勾选状态落到回线RT工令输入框：不勾选=无需回线（留空并禁用）
+        /// 单体去向驱动回线RT工令输入框：入库=需要回线（启用、保存时必填）；
+        /// 报废=无需回线（禁用并清空，避免留下无意义工令）
         /// </summary>
-        private void ApplyNeedReturnState()
+        private void ApplyDispositionState()
         {
-            if (txt_returnRt == null || chk_needReturn == null)
+            if (txt_returnRt == null || cb_disposition == null)
             {
                 return;
             }
-            bool need = chk_needReturn.IsChecked == true;
-            txt_returnRt.IsEnabled = need;
-            if (!need)
+            bool needReturn = cb_disposition.SelectedItem as string == RequisitionDispositionKind.StockIn;
+            txt_returnRt.IsEnabled = needReturn;
+            if (!needReturn)
             {
                 txt_returnRt.Text = "";
                 _autoReturnRt = null;
@@ -422,18 +427,6 @@ namespace ORT一键报告.Plans.Views
         }
 
         /// <summary>
-        /// 「需要回线」勾选变化：勾上就允许填写回线RT工令（并聚焦），取消就清空表示无需回线
-        /// </summary>
-        private void Chk_NeedReturn_Changed(object sender, RoutedEventArgs e)
-        {
-            ApplyNeedReturnState();
-            if (chk_needReturn.IsChecked == true && string.IsNullOrWhiteSpace(txt_returnRt.Text))
-            {
-                txt_returnRt.Focus();
-            }
-        }
-
-        /// <summary>
         /// 点「工作编号」标签：按当前领用日期重新生成（日期填错更正后用它刷新）
         /// </summary>
         private void Lbl_JobNo_Click(object sender, System.Windows.Input.MouseButtonEventArgs e) => RegenerateJobNo(true);
@@ -512,8 +505,9 @@ namespace ORT一键报告.Plans.Views
                 txt_sn.Focus();
                 return;
             }
-            // 回线：勾了「需要回线」就必须有回线RT工令；不勾选则留空表示无需回线
-            if (chk_needReturn.IsChecked == true && string.IsNullOrWhiteSpace(txt_returnRt.Text))
+            // 回线：单体去向为入库时必须填回线RT工令；报废无需回线（输入框已禁用清空）
+            if (cb_disposition.SelectedItem as string == RequisitionDispositionKind.StockIn
+                && string.IsNullOrWhiteSpace(txt_returnRt.Text))
             {
                 _ = MessageBox.Show(LocalizationHelper.Get("Msg_NeedReturnOrder"), LanguageService.Get("Cap_Info"));
                 return;

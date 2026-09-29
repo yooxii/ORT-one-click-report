@@ -1120,6 +1120,12 @@ namespace ORT一键报告.Plans.Views
             {
                 return;
             }
+            // 单体去向与操作分支一致：报废的记录不能回线（回线属于入库分支）
+            if (req.Disposition != RequisitionDispositionKind.StockIn)
+            {
+                _ = MessageBox.Show(LanguageService.Get("Msg_OpBlockedDispositionScrap"), LanguageService.Get("Cap_Info"));
+                return;
+            }
             WindowRequisitionReturn window = new(req) { Owner = this };
             if (window.ShowDialog() != true)
             {
@@ -1141,6 +1147,12 @@ namespace ORT一键报告.Plans.Views
             Requisition req = CurrentRequisition;
             if (!CanApplyInlineEdit(req))
             {
+                return;
+            }
+            // 单体去向与操作分支一致：报废的记录不能入库
+            if (req.Disposition != RequisitionDispositionKind.StockIn)
+            {
+                _ = MessageBox.Show(LanguageService.Get("Msg_OpBlockedDispositionScrap"), LanguageService.Get("Cap_Info"));
                 return;
             }
             // 流程依赖：报废与回线入库是分开的（整笔只走一条分支），且入库须先有回线
@@ -1208,6 +1220,12 @@ namespace ORT一键报告.Plans.Views
             if (!_vm.CanEdit)
             {
                 _ = MessageBox.Show(LanguageService.Get("Plans_Msg_NoEditPermission"), LanguageService.Get("Cap_Info"));
+                return;
+            }
+            // 单体去向与操作分支一致：入库的记录不能报废
+            if (req.Disposition != RequisitionDispositionKind.Scrap)
+            {
+                _ = MessageBox.Show(LanguageService.Get("Msg_OpBlockedDispositionStockIn"), LanguageService.Get("Cap_Info"));
                 return;
             }
             // 流程依赖：报废与回线入库是分开的（整笔只走一条分支），已登记入库不能再报废
@@ -1376,9 +1394,7 @@ namespace ORT一键报告.Plans.Views
             }
             tabs.SelectedIndex = 1;
             _vm.SelectedPlan = plan;
-            dg_plans.SelectedItem = plan;
-            dg_plans.ScrollIntoView(plan);
-            dg_plans.Focus();
+            SelectAndReveal(dg_plans, plan);
         }
 
         /// <summary>
@@ -1408,9 +1424,30 @@ namespace ORT一键报告.Plans.Views
             }
             tabs.SelectedIndex = 0;
             _vm.SelectedRequisition = req;
-            dg_requisitions.SelectedItem = req;
-            dg_requisitions.ScrollIntoView(req);
-            dg_requisitions.Focus();
+            SelectAndReveal(dg_requisitions, req);
+        }
+
+        /// <summary>
+        /// 选中并定位目标记录：切 Tab 后表格可能尚未布局/虚拟化，滚动与焦点放到 Loaded 优先级回调里执行，
+        /// 并同步 CurrentCell，让行选中与单元格选中高亮都可见
+        /// </summary>
+        private static void SelectAndReveal(DataGrid grid, object item)
+        {
+            grid.SelectedItem = item;
+            grid.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, new Action(() =>
+            {
+                grid.SelectedItem = item;
+                if (grid.Columns.Count > 0)
+                {
+                    grid.ScrollIntoView(item, grid.Columns[0]);
+                    grid.CurrentCell = new DataGridCellInfo(item, grid.Columns[0]);
+                }
+                else
+                {
+                    grid.ScrollIntoView(item);
+                }
+                grid.Focus();
+            }));
         }
 
         /// <summary>克隆领退记录（报废提审 payload 用）</summary>

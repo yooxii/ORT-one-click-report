@@ -153,6 +153,7 @@ namespace ORT一键报告.Services
             VerifyOpenable();
             ConfigureJournal();
             MigrateLegacyPlansToRequisitions();
+            BackfillRequisitionDisposition();
             _logger.Info($"数据库初始化完成: {DbPath}（数据文件夹: {DataDir}{(IsNetworkFolder ? "，网络共享" : "")}，日志模式: {CurrentJournalMode() ?? "未知"}{(IsUsingFallbackDataFolder ? "，已回退到默认目录" : "")}）");
         }
 
@@ -267,6 +268,30 @@ namespace ORT一键报告.Services
             catch (Exception ex)
             {
                 _logger.Warn($"设置数据库日志模式/忙等待失败（继续运行）: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// <summary>
+        /// 旧数据补齐「单体去向」：有回线RT工令→入库，没有→报废（仅填充空值，幂等；
+        /// 该必填字段上线前的历史记录由此一次性归位）。
+        /// </summary>
+        private void BackfillRequisitionDisposition()
+        {
+            try
+            {
+                int toStockIn = FreeSql.Ado.ExecuteNonQuery(
+                    $"UPDATE requisitions SET Disposition = '{RequisitionDispositionKind.StockIn}' WHERE (Disposition IS NULL OR Disposition = '') AND ReturnRtOrder IS NOT NULL AND ReturnRtOrder != ''");
+                int toScrap = FreeSql.Ado.ExecuteNonQuery(
+                    $"UPDATE requisitions SET Disposition = '{RequisitionDispositionKind.Scrap}' WHERE Disposition IS NULL OR Disposition = ''");
+                if (toStockIn + toScrap > 0)
+                {
+                    _logger.Info($"单体去向回填完成：入库 {toStockIn} 条、报废 {toScrap} 条（按有无回线RT工令判定）");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn(ex, "单体去向回填失败（不影响启动）");
             }
         }
 

@@ -48,13 +48,10 @@
                 <Label Content="{lex:Loc ReqEdit_LineTC}" Grid.Row="3" Grid.Column="2"/>
                 <TextBox x:Name="txt_lineNo" Grid.Row="3" Grid.Column="3" Margin="3" ToolTip="{lex:Loc ReqEdit_SNHint}"/>
 
-                <!--回线RT工令：勾选「需要回线」才需要填；不勾选留空表示无需回线（已取消自动生成）-->
+                <!--回线RT工令：由「单体去向」驱动——入库才需要（启用且保存时必填），报废禁用并留空-->
                 <Label Content="{lex:Loc Plans_ReturnRTOrder}" Grid.Row="4" Background="Transparent" Cursor="Hand"
                        ToolTip="{lex:Loc PlanEdit_RefreshRtHint}" MouseLeftButtonUp="Lbl_ReturnRt_Click"/>
-                <CheckBox x:Name="chk_needReturn" Grid.Row="4" Grid.Column="1" VerticalAlignment="Center"
-                          Content="{lex:Loc ReqEdit_NeedReturn}" Checked="Chk_NeedReturn_Changed"
-                          Unchecked="Chk_NeedReturn_Changed" ToolTip="{lex:Loc ReqEdit_NoReturnHint}"/>
-                <TextBox x:Name="txt_returnRt" Grid.Row="4" Grid.Column="3" Margin="3"
+                <TextBox x:Name="txt_returnRt" Grid.Row="4" Grid.Column="1" Margin="3"
                          ToolTip="{lex:Loc PlanEdit_RefreshRtHint}"/>
 
                 <!--单体去向：入库/报废二选一（必填，决定测试后走哪条终态分支）-->

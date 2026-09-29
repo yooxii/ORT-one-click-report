@@ -2412,12 +2412,6 @@
   <data name="PlanEdit_RefreshRtHint" xml:space="preserve">
     <value>點擊「回線RT工令」標籤按領用日期產生（已取消自動產生）</value>
   </data>
-  <data name="ReqEdit_NeedReturn" xml:space="preserve">
-    <value>需要回線</value>
-  </data>
-  <data name="ReqEdit_NoReturnHint" xml:space="preserve">
-    <value>不勾選表示無需回線（回線RT工令留空）</value>
-  </data>
   <data name="ReqEdit_PlanSyncRequired" xml:space="preserve">
     <value>已展開「計劃表同步資訊」，下列欄位（含「其他」）均為必填</value>
   </data>
@@ -2431,7 +2425,7 @@
     <value>已存在於領退記錄 [{0}]</value>
   </data>
   <data name="Msg_NeedReturnOrder" xml:space="preserve">
-    <value>已勾選「需要回線」，請填寫回線RT工令（或點擊該標籤產生）</value>
+    <value>單體去向為入庫時必須填寫回線RT工令（或點擊該標籤產生）</value>
   </data>
   <data name="Msg_FillReturnDate" xml:space="preserve">
     <value>請選擇回線日期</value>
@@ -2891,5 +2885,14 @@
   </data>
   <data name="Msg_StockInNeedReturn" xml:space="preserve">
     <value>該記錄尚未登記回線日期，不能入庫（請先右鍵「回線」登記回線）</value>
+  </data>
+  <data name="Msg_ReturnRtNeedsStockIn" xml:space="preserve">
+    <value>單體去向為入庫時才需要回線RT工令（請先選擇單體去向）</value>
+  </data>
+  <data name="Msg_OpBlockedDispositionScrap" xml:space="preserve">
+    <value>該記錄單體去向為報廢：不能登記回線/入庫；如確需走入庫分支，請先在編輯視窗把單體去向改為入庫</value>
+  </data>
+  <data name="Msg_OpBlockedDispositionStockIn" xml:space="preserve">
+    <value>該記錄單體去向為入庫：不能登記報廢；如確需走報廢分支，請先在編輯視窗把單體去向改為報廢</value>
   </data>
 </root>
