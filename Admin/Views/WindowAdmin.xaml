@@ -6,7 +6,7 @@
         xmlns:lex="http://wpflocalizeextension.codeplex.com"
         xmlns:local="clr-namespace:ORT一键报告.Admin.Views"
         mc:Ignorable="d"
-        Title="{lex:Loc Admin_Title}" Height="600" Width="950" MinHeight="450" MinWidth="750"
+        Title="{lex:Loc Admin_Title}" Height="600" Width="950" MinHeight="580" MinWidth="750"
         WindowStartupLocation="CenterOwner">
 
     <Grid Margin="5">

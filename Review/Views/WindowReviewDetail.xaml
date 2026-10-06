@@ -12,6 +12,8 @@
     <Window.Resources>
         <!-- 差异行高亮：值与库中现值不同时加底色强调（样式在转换器里构造） -->
         <conv:ChangedStyleConverter x:Key="ChangedStyle"/>
+        <conv:ChangedBackgroundConverter x:Key="ChangedBackground"/>
+        <conv:BoolToVisibilityConverter x:Key="BoolToVisibility"/>
 
         <!-- 字段表：左标签固定宽、右值自适应，行间距统一 -->
         <Style x:Key="FieldLabel" TargetType="TextBlock">
@@ -122,14 +124,21 @@
                         <ItemsControl x:Name="ic_fields">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Grid Margin="0,0,0,1">
+                                    <Grid Margin="0,0,0,1" Background="{Binding Changed, Converter={StaticResource ChangedBackground}}">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="130"/>
                                             <ColumnDefinition/>
                                         </Grid.ColumnDefinitions>
                                         <TextBlock Text="{Binding Label}" Style="{StaticResource FieldLabel}"/>
-                                        <TextBlock Grid.Column="1" Text="{Binding Value}"
-                                                   Style="{Binding Changed, Converter={StaticResource ChangedStyle}}"/>
+                                        <StackPanel Grid.Column="1">
+                                            <TextBlock Text="{Binding Value}"
+                                                       Style="{Binding Changed, Converter={StaticResource ChangedStyle}}"/>
+                                            <!-- 差异说明：旧值 → 新值，仅编辑类请求的变动字段出现 -->
+                                            <TextBlock Text="{Binding DiffText}" FontSize="11"
+                                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                                       TextWrapping="Wrap" Margin="0,1,0,0"
+                                                       Visibility="{Binding HasDiff, Converter={StaticResource BoolToVisibility}}"/>
+                                        </StackPanel>
                                     </Grid>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>

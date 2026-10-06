@@ -23,12 +23,17 @@ namespace ORT一键报告.Review.Views
         private readonly ReviewService _reviewService;
         private readonly AuthService _auth;
 
-        /// <summary>字段表的行（Label 为本地化后的字段名，Value 为格式化值，Changed 表示与库中现值不同）</summary>
+        /// <summary>字段表的行（Label 为本地化后的字段名，Value 为提交值，Changed 表示与库中现值不同）</summary>
         public class FieldRow
         {
             public string Label { get; set; }
             public string Value { get; set; }
+            /// <summary>库中原值；仅在 Changed 为 true 时有意义，用于显示「旧值 → 新值」</summary>
+            public string OldValue { get; set; }
             public bool Changed { get; set; }
+            /// <summary>差异说明：有旧值时显示「旧值 → 新值」，新增字段显示「（原来为空）」</summary>
+            public string DiffText { get; set; }
+            public bool HasDiff { get; set; }
         }
 
         /// <summary>不展示的字段：主键、审计字段、以及界面用计算字段（对应 [JsonIgnore]/[IsIgnore]）</summary>
@@ -151,14 +156,26 @@ namespace ORT一键报告.Review.Views
                 {
                     continue;   // 空值字段不占位
                 }
-                bool changed = current != null
-                    && current.TryGetValue(property.Name, out JToken old)
-                    && FormatValue(old) != value;
+                string oldValue = null;
+                bool changed = false;
+                if (current != null && current.TryGetValue(property.Name, out JToken old))
+                {
+                    oldValue = FormatValue(old);
+                    changed = oldValue != value;
+                }
                 rows.Add(new FieldRow
                 {
                     Label = FieldLabel(property.Name),
                     Value = value,
-                    Changed = changed
+                    OldValue = changed ? oldValue : null,
+                    Changed = changed,
+                    HasDiff = changed,
+                    // 原值为空时说明是「原来没填、这次补上」，用专门文案而不是空箭头
+                    DiffText = changed
+                        ? string.Format(
+                            LanguageService.Get(oldValue.Length == 0 ? "ReviewDetail_OldEmpty" : "ReviewDetail_OldToNew"),
+                            oldValue, value)
+                        : null
                 });
             }
             return rows;

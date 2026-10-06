@@ -14,10 +14,10 @@ namespace ORT一键报告.Converters
     public class ChangedStyleConverter : IValueConverter
     {
         /// <summary>高亮底色（对应主题 StatusWarnBgBrush）</summary>
-        private static readonly Brush ChangedBackground = new SolidColorBrush(Color.FromRgb(0xFF, 0xF3, 0xE0));
+        private static readonly Brush ChangedBackground = ChangedBrush.Background;
 
         /// <summary>高亮文字色（对应主题 StatusWarnBrush）</summary>
-        private static readonly Brush ChangedForeground = new SolidColorBrush(Color.FromRgb(0xE6, 0x51, 0x00));
+        private static readonly Brush ChangedForeground = ChangedBrush.Foreground;
 
         private static readonly Style NormalStyle = BuildStyle(false);
 
@@ -48,5 +48,39 @@ namespace ORT一键报告.Converters
             style.Seal();
             return style;
         }
+    }
+
+    /// <summary>
+    /// 布尔 → 画刷转换器：变动字段的整行底色，未变动返回透明（避免整表都是色块）。
+    /// </summary>
+    public class ChangedBackgroundConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+            => value is bool changed && changed ? ChangedBrush.Background : Brushes.Transparent;
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+            => throw new NotSupportedException();
+    }
+
+    /// <summary>
+    /// 布尔 → Visibility 转换器：true 显示、false 折叠。
+    /// </summary>
+    public class BoolToVisibilityConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+            => value is bool flag && flag ? Visibility.Visible : Visibility.Collapsed;
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+            => throw new NotSupportedException();
+    }
+
+    /// <summary>高亮配色的唯一定义处，供上面几个转换器共用，避免各写一份而走样</summary>
+    internal static class ChangedBrush
+    {
+        /// <summary>高亮底色（对应主题 StatusWarnBgBrush）</summary>
+        internal static readonly Brush Background = new SolidColorBrush(Color.FromRgb(0xFF, 0xF3, 0xE0));
+
+        /// <summary>高亮文字色（对应主题 StatusWarnBrush）</summary>
+        internal static readonly Brush Foreground = new SolidColorBrush(Color.FromRgb(0xE6, 0x51, 0x00));
     }
 }

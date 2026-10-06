@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -796,6 +796,12 @@
   </data>
   <data name="ReviewDetail_NoFields" xml:space="preserve">
     <value>No change content to display (usually a delete action; see raw data below)</value>
+  </data>
+  <data name="ReviewDetail_OldToNew" xml:space="preserve">
+    <value>Old: {0}  →  New: {1}</value>
+  </data>
+  <data name="ReviewDetail_OldEmpty" xml:space="preserve">
+    <value>(was empty)</value>
   </data>
   <data name="ReviewDetail_RawData" xml:space="preserve">
     <value>Raw Data</value>

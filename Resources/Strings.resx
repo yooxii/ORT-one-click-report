@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -796,6 +796,12 @@
   </data>
   <data name="ReviewDetail_NoFields" xml:space="preserve">
     <value>无可展示的更改内容（多为删除操作，原始数据见下方）</value>
+  </data>
+  <data name="ReviewDetail_OldToNew" xml:space="preserve">
+    <value>旧值：{0}　→　新值：{1}</value>
+  </data>
+  <data name="ReviewDetail_OldEmpty" xml:space="preserve">
+    <value>（原来为空）</value>
   </data>
   <data name="ReviewDetail_RawData" xml:space="preserve">
     <value>原始数据</value>
