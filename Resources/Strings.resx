@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -793,6 +793,24 @@
   </data>
   <data name="Review_RequestTime" xml:space="preserve">
     <value>请求时间</value>
+  </data>
+  <data name="ReviewDetail_NoFields" xml:space="preserve">
+    <value>无可展示的更改内容（多为删除操作，原始数据见下方）</value>
+  </data>
+  <data name="ReviewDetail_RawData" xml:space="preserve">
+    <value>原始数据</value>
+  </data>
+  <data name="ReviewDetail_Target" xml:space="preserve">
+    <value>目标记录 Id: {0}</value>
+  </data>
+  <data name="Plans_SNFile" xml:space="preserve">
+    <value>S/N 附件</value>
+  </data>
+  <data name="Plans_ScrapSn" xml:space="preserve">
+    <value>报废序列号清单</value>
+  </data>
+  <data name="Plans_ScrapSnFile" xml:space="preserve">
+    <value>报废序列号附件</value>
   </data>
   <data name="Review_Summary" xml:space="preserve">
     <value>摘要</value>

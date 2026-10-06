@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -793,6 +793,24 @@
   </data>
   <data name="Review_RequestTime" xml:space="preserve">
     <value>Request Time</value>
+  </data>
+  <data name="ReviewDetail_NoFields" xml:space="preserve">
+    <value>No change content to display (usually a delete action; see raw data below)</value>
+  </data>
+  <data name="ReviewDetail_RawData" xml:space="preserve">
+    <value>Raw Data</value>
+  </data>
+  <data name="ReviewDetail_Target" xml:space="preserve">
+    <value>Target record Id: {0}</value>
+  </data>
+  <data name="Plans_SNFile" xml:space="preserve">
+    <value>S/N Attachment</value>
+  </data>
+  <data name="Plans_ScrapSn" xml:space="preserve">
+    <value>Scrap SN List</value>
+  </data>
+  <data name="Plans_ScrapSnFile" xml:space="preserve">
+    <value>Scrap SN Attachment</value>
   </data>
   <data name="Review_Summary" xml:space="preserve">
     <value>Summary</value>

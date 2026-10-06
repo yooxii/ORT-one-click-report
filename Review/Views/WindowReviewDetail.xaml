@@ -1,57 +1,181 @@
-﻿<Window x:Class="ORT一键报告.Review.Views.WindowReviewDetail" Background="{DynamicResource WindowBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}"
+<Window x:Class="ORT一键报告.Review.Views.WindowReviewDetail" Background="{DynamicResource WindowBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:lex="http://wpflocalizeextension.codeplex.com"
+        xmlns:conv="clr-namespace:ORT一键报告.Converters"
         mc:Ignorable="d"
-        Title="{lex:Loc ReviewDetail_Title}" Height="620" Width="760" MinHeight="480" MinWidth="640"
-        WindowStartupLocation="CenterOwner">
+        Title="{lex:Loc ReviewDetail_Title}" Height="660" Width="780" MinHeight="520" MinWidth="660"
+        WindowStartupLocation="CenterOwner" SizeToContent="Manual">
 
-    <Grid Margin="10">
+    <Window.Resources>
+        <!-- 差异行高亮：值与库中现值不同时加底色强调（样式在转换器里构造） -->
+        <conv:ChangedStyleConverter x:Key="ChangedStyle"/>
+
+        <!-- 字段表：左标签固定宽、右值自适应，行间距统一 -->
+        <Style x:Key="FieldLabel" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+            <Setter Property="VerticalAlignment" Value="Top"/>
+            <Setter Property="Margin" Value="0,3,10,3"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+        <Style x:Key="FieldValue" TargetType="TextBlock">
+            <Setter Property="VerticalAlignment" Value="Top"/>
+            <Setter Property="Margin" Value="0,3,0,3"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+        <Style x:Key="SectionTitle" TargetType="TextBlock">
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Margin" Value="0,0,0,4"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="12">
         <Grid.RowDefinitions>
             <RowDefinition Height="auto"/>
             <RowDefinition Height="auto"/>
-            <RowDefinition/>
+            <RowDefinition Height="*"/>
             <RowDefinition Height="auto"/>
             <RowDefinition Height="auto"/>
         </Grid.RowDefinitions>
 
-        <!--请求基本信息-->
-        <Border BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="1" CornerRadius="3" Padding="10">
-            <StackPanel>
-                <TextBlock x:Name="txt_summary" FontSize="14" FontWeight="Bold" TextWrapping="Wrap"/>
-                <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
-                    <TextBlock x:Name="txt_meta" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+        <!-- 头部：类型/操作徽标 + 目标记录 + 请求人信息 -->
+        <Border Padding="12,10" CornerRadius="{DynamicResource CornerRadiusSmall}"
+                Background="{DynamicResource CardBackgroundBrush}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition/>
+                    <ColumnDefinition Width="auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <Border x:Name="badge_action" Padding="7,2" CornerRadius="3"
+                                Background="{DynamicResource PrimaryBrush}" VerticalAlignment="Center">
+                            <TextBlock x:Name="txt_action" Foreground="{DynamicResource PrimaryForegroundBrush}" FontWeight="SemiBold"/>
+                        </Border>
+                        <TextBlock x:Name="txt_title" FontSize="14" FontWeight="Bold" Margin="8,0,0,0"
+                                   VerticalAlignment="Center" TextWrapping="Wrap"/>
+                    </StackPanel>
+                    <TextBlock x:Name="txt_target" Margin="0,6,0,0" TextWrapping="Wrap"
+                               Foreground="{DynamicResource TextSecondaryBrush}"/>
                 </StackPanel>
-            </StackPanel>
+
+                <!-- 状态徽标：颜色随 待审核/已通过/已驳回 变化 -->
+                <Border x:Name="badge_status" Grid.Column="1" Padding="10,4" CornerRadius="3"
+                        VerticalAlignment="Top" MinWidth="72">
+                    <TextBlock x:Name="txt_status" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                </Border>
+            </Grid>
         </Border>
 
-        <TextBlock Grid.Row="1" Text="{lex:Loc ReviewDetail_ChangeContent}" Margin="0,10,0,3"/>
+        <!-- 请求与审核信息：两列紧凑排布（取代原来拼成一长串的 meta 文本） -->
+        <Border Grid.Row="1" Margin="0,8,0,0" Padding="12,8" CornerRadius="{DynamicResource CornerRadiusSmall}"
+                Background="{DynamicResource CardBackgroundBrush}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="auto"/>
+                    <ColumnDefinition/>
+                    <ColumnDefinition Width="auto"/>
+                    <ColumnDefinition/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="auto"/>
+                    <RowDefinition Height="auto"/>
+                </Grid.RowDefinitions>
 
-        <!--更改内容（格式化JSON）-->
-        <TextBox x:Name="txt_payload" Grid.Row="2" IsReadOnly="True"
-                 VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
-                 FontFamily="Consolas" AcceptsReturn="True" TextWrapping="NoWrap"/>
+                <TextBlock Text="{lex:Loc Review_Requester}" Style="{StaticResource FieldLabel}"/>
+                <TextBlock x:Name="txt_requester" Grid.Column="1" Style="{StaticResource FieldValue}"/>
+                <TextBlock Text="{lex:Loc Review_RequestTime}" Grid.Column="2" Style="{StaticResource FieldLabel}"/>
+                <TextBlock x:Name="txt_requestTime" Grid.Column="3" Style="{StaticResource FieldValue}"/>
 
-        <!--审核意见-->
-        <Grid Grid.Row="3" Margin="0,10,0,0">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="auto"/>
-                <ColumnDefinition/>
-            </Grid.ColumnDefinitions>
-            <Label Content="{lex:Loc ReviewDetail_Opinion}" VerticalContentAlignment="Center"/>
-            <TextBox x:Name="txt_comment" Grid.Column="1" VerticalContentAlignment="Center"
-                     ToolTip="{lex:Loc ReviewDetail_RejectHint}"/>
+                <TextBlock x:Name="lbl_assignee" Text="{lex:Loc Review_Assignee}" Grid.Row="1" Style="{StaticResource FieldLabel}"/>
+                <TextBlock x:Name="txt_assignee" Grid.Row="1" Grid.Column="1" Style="{StaticResource FieldValue}"/>
+                <TextBlock x:Name="lbl_reviewed" Text="{lex:Loc ReviewDetail_Reviewer}" Grid.Row="1" Grid.Column="2" Style="{StaticResource FieldLabel}"/>
+                <TextBlock x:Name="txt_reviewed" Grid.Row="1" Grid.Column="3" Style="{StaticResource FieldValue}"/>
+            </Grid>
+        </Border>
+
+        <!-- 更改内容：按字段列出的结构化表格（只显示有意义的字段，空值字段不占位） -->
+        <Border Grid.Row="2" Margin="0,8,0,0" Padding="12,10" CornerRadius="{DynamicResource CornerRadiusSmall}"
+                Background="{DynamicResource CardBackgroundBrush}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="auto"/>
+                    <RowDefinition/>
+                </Grid.RowDefinitions>
+
+                <Grid>
+                    <TextBlock Text="{lex:Loc ReviewDetail_ChangeContent}" Style="{StaticResource SectionTitle}"/>
+                    <TextBlock x:Name="txt_payloadHint" HorizontalAlignment="Right" FontSize="11"
+                               Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                </Grid>
+
+                <!-- 字段表（无字段时显示占位提示）；「原始数据」可展开查看完整 JSON -->
+                <Grid Grid.Row="1">
+                    <TextBlock x:Name="txt_noFields" Text="{lex:Loc ReviewDetail_NoFields}"
+                               Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,4,0,0"
+                               TextWrapping="Wrap" Visibility="Collapsed"/>
+
+                    <ScrollViewer x:Name="sv_fields" VerticalScrollBarVisibility="Auto"
+                                  HorizontalScrollBarVisibility="Disabled">
+                        <ItemsControl x:Name="ic_fields">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="0,0,0,1">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="130"/>
+                                            <ColumnDefinition/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="{Binding Label}" Style="{StaticResource FieldLabel}"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding Value}"
+                                                   Style="{Binding Changed, Converter={StaticResource ChangedStyle}}"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Grid>
+            </Grid>
+        </Border>
+
+        <!-- 原始数据：默认折叠，需要核对时再展开（原先直接铺满整屏的 JSON 移到这里） -->
+        <Expander x:Name="exp_raw" Grid.Row="3" Margin="0,8,0,0" IsExpanded="False"
+                  Header="{lex:Loc ReviewDetail_RawData}">
+            <TextBox x:Name="txt_payload" IsReadOnly="True" Height="150"
+                     VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                     FontFamily="{DynamicResource FontFamilyData}" AcceptsReturn="True" TextWrapping="NoWrap"
+                     Margin="0,4,0,0"/>
+        </Expander>
+
+        <!-- 审核意见 + 操作按钮 -->
+        <Grid Grid.Row="4" Margin="0,10,0,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="auto"/>
+                <RowDefinition Height="auto"/>
+            </Grid.RowDefinitions>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="auto"/>
+                    <ColumnDefinition/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="{lex:Loc ReviewDetail_Opinion}" VerticalAlignment="Center"
+                           Margin="0,0,10,0"/>
+                <TextBox x:Name="txt_comment" Grid.Column="1" MinHeight="28" VerticalContentAlignment="Center"
+                         ToolTip="{lex:Loc ReviewDetail_RejectHint}"/>
+            </Grid>
+
+            <Grid Grid.Row="1" Margin="0,10,0,0">
+                <TextBlock x:Name="txt_decided" VerticalAlignment="Center" TextWrapping="Wrap"
+                           Foreground="{DynamicResource TextSecondaryBrush}"/>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button x:Name="btn_approve" Content="{lex:Loc Common_Approve}" Width="100" Click="Btn_Approve_Click"
+                            Background="{DynamicResource StatusOkBgBrush}"/>
+                    <Button x:Name="btn_reject" Content="{lex:Loc Common_Reject}" Width="100" Margin="10,0,0,0" Click="Btn_Reject_Click"
+                            Background="{DynamicResource StatusErrorBgBrush}"/>
+                    <Button Content="{lex:Loc Common_Close}" Width="100" Margin="10,0,0,0" Click="Btn_Close_Click" IsCancel="True"/>
+                </StackPanel>
+            </Grid>
         </Grid>
-
-        <!--操作按钮-->
-        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
-            <Button x:Name="btn_approve" Content="{lex:Loc Common_Approve}" Width="100" Height="30" Click="Btn_Approve_Click"
-                    Background="{DynamicResource StatusOkBgBrush}"/>
-            <Button x:Name="btn_reject" Content="{lex:Loc Common_Reject}" Width="100" Height="30" Margin="10,0,0,0" Click="Btn_Reject_Click"
-                    Background="{DynamicResource StatusErrorBgBrush}"/>
-            <Button Content="{lex:Loc Common_Close}" Width="100" Height="30" Margin="10,0,0,0" Click="Btn_Close_Click" IsCancel="True"/>
-        </StackPanel>
     </Grid>
 </Window>

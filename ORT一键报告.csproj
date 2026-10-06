@@ -114,6 +114,7 @@
     </Compile>
     <Compile Include="Converters\SettingTemplateSelector.cs" />
     <Compile Include="Converters\InverseBoolConverter.cs" />
+    <Compile Include="Converters\ChangedStyleConverter.cs" />
     <Compile Include="Models\Report.cs" />
     <Compile Include="Models\Settings.cs" />
     <Compile Include="Services\FileService.cs" />
