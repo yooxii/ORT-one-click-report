@@ -1168,8 +1168,33 @@ namespace ORT一键报告.Plans.Views
         /// <summary>工具菜单「批量回线」</summary>
         private void Menu_BatchReturn_Click(object sender, RoutedEventArgs e) => StartRequisitionBatch(RequisitionBatchMode.Return);
 
-        /// <summary>工具菜单「批量入库」</summary>
-        private void Menu_BatchStockIn_Click(object sender, RoutedEventArgs e) => StartRequisitionBatch(RequisitionBatchMode.StockIn);
+        /// <summary>
+        /// 工具菜单「筛选待入库」：只把领退表筛成还需要登记入库的记录（含还没回线的），
+        /// 不打开批量窗口 —— 逐条在「入库」登记窗口里处理，窗口里点「下一个待入库」接着下一条
+        /// </summary>
+        private void Menu_FilterStockInPending_Click(object sender, RoutedEventArgs e)
+        {
+            if (_batchWindow != null)
+            {
+                // 批量点选进行中：先结束当前批量会话（它的筛选口径不同），避免两套口径混在一起
+                _batchWindow.Activate();
+                _vm.StatusMessage = LanguageService.Get("Plans_Batch_AlreadyOpen");
+                return;
+            }
+            tabs.SelectedIndex = 0;
+            ApplyPendingStockInFilter();
+        }
+
+        /// <summary>「筛选待入库」是否正生效（生效时每登记完一条就重筛，已登记的记录自动退出列表）</summary>
+        private bool _stockInPendingFilterActive;
+
+        /// <summary>套用「待入库」筛选（含重新筛选：登记完一条后调用，顺带刷新提示条里的条数）</summary>
+        private void ApplyPendingStockInFilter()
+        {
+            _stockInPendingFilterActive = true;
+            _vm.SetRequisitionQuickFilter(r => RequisitionBatchRules.NeedsStockIn(r),
+                LanguageService.Get("Plans_Batch_FilterStockInFormat"));
+        }
 
         /// <summary>工具菜单「批量删除」：按当前页签决定删领退记录还是计划记录</summary>
         private void Menu_BatchDelete_Click(object sender, RoutedEventArgs e)
@@ -1183,10 +1208,14 @@ namespace ORT一键报告.Plans.Views
         }
 
         /// <summary>临时筛选提示条上的「取消筛选」</summary>
-        private void Btn_ClearQuickFilter_Click(object sender, RoutedEventArgs e) => _vm.SetRequisitionQuickFilter(null, null);
+        private void Btn_ClearQuickFilter_Click(object sender, RoutedEventArgs e)
+        {
+            _stockInPendingFilterActive = false;
+            _vm.SetRequisitionQuickFilter(null, null);
+        }
 
         /// <summary>
-        /// 开始批量回线/入库/删除：切到领退表 → 把待办记录筛出来（删除不筛）→ 打开批量窗口，
+        /// 开始批量回线/删除：切到领退表 → 把待办记录筛出来（删除不筛）→ 打开批量窗口，
         /// 之后在表格里左键单击记录即逐条加入清单，点窗口「确认」整批写入
         /// </summary>
         private void StartRequisitionBatch(RequisitionBatchMode mode)
@@ -1245,10 +1274,12 @@ namespace ORT一键报告.Plans.Views
 
         /// <summary>
         /// 批量登记时表格自动筛选的口径：只留「真正还缺这一步」的记录
-        /// （待回线 = 单体去向入库且未登记回线日期；待入库 = 已回线、尚未入库且未报废）
+        /// （待回线 = 单体去向入库且还没登记回线日期）
         /// </summary>
         private void SetQuickFilterForBatch(RequisitionBatchMode mode)
         {
+            // 批量会话改用它自己的口径，逐条登记用的「待入库」筛选随之作废
+            _stockInPendingFilterActive = false;
             if (mode == RequisitionBatchMode.Delete)
             {
                 // 删除没有「待办」口径：清单里点哪条标记哪条，不改变表格筛选
@@ -1257,9 +1288,7 @@ namespace ORT一键报告.Plans.Views
             }
             _vm.SetRequisitionQuickFilter(
                 r => RequisitionBatchRules.MatchesQuickFilter(mode, r),
-                LanguageService.Get(mode == RequisitionBatchMode.Return
-                    ? "Plans_Batch_FilterReturnFormat"
-                    : "Plans_Batch_FilterStockInFormat"));
+                LanguageService.Get("Plans_Batch_FilterReturnFormat"));
         }
 
         /// <summary>表格里左键选中的记录立即加入批量清单（同一条只加一次）</summary>
@@ -1325,18 +1354,6 @@ namespace ORT一键报告.Plans.Views
                         window.Targets.Count, window.SkippedCount);
                     _logger.Info($"批量回线登记：写入 {window.Targets.Count} 条，跳过 {window.SkippedCount} 条，回线日期={window.ReturnDate:yyyy/M/d}");
                     break;
-                case RequisitionBatchMode.StockIn:
-                    foreach (Requisition req in window.Targets)
-                    {
-                        req.StockInNo = window.StockInNo;
-                        req.StockInQty = window.StockInQty;
-                        req.StockInDate = window.StockInDate;
-                    }
-                    string values = $"{window.StockInNo} / {window.StockInQty} / {window.StockInDate:yyyy/M/d}";
-                    _vm.StatusMessage = string.Format(LanguageService.Get("Plans_Msg_BatchStockInAppliedFormat"),
-                        window.Targets.Count, window.SkippedCount, values);
-                    _logger.Info($"批量入库登记：写入 {window.Targets.Count} 条，跳过 {window.SkippedCount} 条，{values}");
-                    break;
                 default:
                     _vm.DeleteRequisitions(window.Targets);
                     _vm.StatusMessage = string.Format(LanguageService.Get("Plans_Msg_BatchDeleteAppliedFormat"), window.Targets.Count);
@@ -1360,6 +1377,7 @@ namespace ORT一键报告.Plans.Views
             dg_requisitions.SelectionChanged -= Dg_Requisitions_BatchPick;
             dg_requisitions.PreviewMouseLeftButtonDown -= Dg_Requisitions_BatchPickMouse;
             _batchWindow = null;
+            _stockInPendingFilterActive = false;
             // 表格里可能还留着没结束的单元格编辑，先收掉再刷新（否则 CollectionView 拒绝 Refresh）
             EndGridEdit(dg_requisitions);
             _vm.SetRequisitionQuickFilter(null, null);
@@ -1435,6 +1453,7 @@ namespace ORT一键报告.Plans.Views
 
         /// <summary>
         /// 右键「入库」：打开入库登记窗口，确认后把入库单据/数量/日期写入该条领退记录（同样走暂存）。
+        /// 窗口里点「下一个待入库」时接着选中并打开下一条待入库记录的登记窗口，直到取消或没有下一条。
         /// </summary>
         private void Menu_RequisitionStockIn_Click(object sender, RoutedEventArgs e)
         {
@@ -1443,29 +1462,43 @@ namespace ORT一键报告.Plans.Views
             {
                 return;
             }
-            // 单体去向与操作分支一致：报废的记录不能入库
-            if (req.Disposition != RequisitionDispositionKind.StockIn)
+            while (req != null)
             {
-                _ = MessageBox.Show(LanguageService.Get("Msg_OpBlockedDispositionScrap"), LanguageService.Get("Cap_Info"));
-                return;
+                if (!RegisterStockIn(req, out bool goNext) || !goNext)
+                {
+                    return;
+                }
+                req = NextPendingStockIn(req);
+                if (req == null)
+                {
+                    _ = MessageBox.Show(LanguageService.Get("Plans_Msg_StockInNoMorePending"), LanguageService.Get("Cap_Info"));
+                    return;
+                }
+                // 下一条先选中并滚动到可见处，再打开它的入库窗口
+                _vm.SelectedRequisition = req;
+                dg_requisitions.ScrollIntoView(req);
             }
-            // 流程依赖：报废与回线入库是分开的（整笔只走一条分支），且入库须先有回线
-            if (req.ScrapDate != null || !string.IsNullOrWhiteSpace(req.ScrapQty))
+        }
+
+        /// <summary>
+        /// 打开入库登记窗口并写回该条记录：返回 false 表示窗口被取消或这条不能入库（结束流程）；
+        /// <paramref name="goNext"/> 为 true 表示用户点了窗口里的「下一个待入库」
+        /// </summary>
+        private bool RegisterStockIn(Requisition req, out bool goNext)
+        {
+            goNext = false;
+            // 报废去向/已报废/未回线都不能入库：与单条分支限制、批量窗口同一套判定
+            if (RequisitionBatchRules.StockInBlockReason(req) is string blocked)
             {
-                _ = MessageBox.Show(LanguageService.Get("Msg_StockInAfterScrap"), LanguageService.Get("Cap_Info"));
-                return;
-            }
-            if (req.ReturnDate == null)
-            {
-                _ = MessageBox.Show(LanguageService.Get("Msg_StockInNeedReturn"), LanguageService.Get("Cap_Info"));
-                return;
+                _ = MessageBox.Show(blocked, LanguageService.Get("Cap_Info"));
+                return false;
             }
             // S/N 为附件形式时展示文件名/路径，便于确认是哪一笔
             string snText = !string.IsNullOrWhiteSpace(req.SN) ? req.SN : req.SnFilePath;
             WindowRequisitionStockIn window = new(req, snText) { Owner = this };
             if (window.ShowDialog() != true)
             {
-                return;
+                return false;
             }
             _vm.SelectedRequisition = req;
             req.StockInNo = window.StockInNo;
@@ -1475,6 +1508,38 @@ namespace ORT一键报告.Plans.Views
             _vm.StatusMessage = string.Format(LanguageService.Get("Plans_Msg_StockInAppliedFormat"),
                 $"{window.StockInNo} / {window.StockInQty} / {window.StockInDate:yyyy/M/d}");
             _logger.Info($"入库登记：{req.RequisitionNo} 单号={window.StockInNo} 数量={window.StockInQty} 日期={window.StockInDate:yyyy/M/d}");
+            goNext = window.NextRequested;
+            // 正在用「筛选待入库」：重筛一次，刚登记完的记录就退出列表，提示条里的条数同步刷新
+            if (_stockInPendingFilterActive)
+            {
+                ApplyPendingStockInFilter();
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// 表格当前视图里的「下一条待入库记录」：从当前这条往后找，找不到再从视图开头绕一圈
+        /// （视图顺序与用户看到的一致；未回线/已报废的记录登记不了，不算待入库，会被跳过）
+        /// </summary>
+        private Requisition NextPendingStockIn(Requisition current)
+        {
+            List<Requisition> rows = [.. dg_requisitions.Items.OfType<Requisition>()];
+            int index = current == null ? -1 : rows.IndexOf(current);
+            for (int i = index + 1; i < rows.Count; i++)
+            {
+                if (RequisitionBatchRules.CanRegisterStockIn(rows[i]))
+                {
+                    return rows[i];
+                }
+            }
+            for (int i = 0; i <= index && i < rows.Count; i++)
+            {
+                if (RequisitionBatchRules.CanRegisterStockIn(rows[i]))
+                {
+                    return rows[i];
+                }
+            }
+            return null;
         }
 
         /// <summary>

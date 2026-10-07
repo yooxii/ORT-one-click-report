@@ -91,16 +91,11 @@
                 <!--领用日期：仅批量删除（领退记录）时用于辨认记录-->
                 <DataGridTextColumn x:Name="col_reqDate" Header="{lex:Loc Plans_RequisitionDateTC}" SortMemberPath="RequisitionDate" Width="110"
                                     Binding="{Binding RequisitionDate, StringFormat={}{0:yyyy/M/d}}" ElementStyle="{StaticResource BatchText}"/>
-                <!--领料单据号：入库与删除-->
+                <!--领料单据号：仅批量删除-->
                 <DataGridTextColumn x:Name="col_reqNo" Header="{lex:Loc Plans_RequisitionDocNo}" SortMemberPath="RequisitionNo" Width="170"
                                     Binding="{Binding RequisitionNo}" ElementStyle="{StaticResource BatchText}"/>
                 <DataGridTextColumn x:Name="col_model" Header="{lex:Loc Plans_ModelNameTC}" SortMemberPath="ModelName" Width="200"
                                     Binding="{Binding ModelName}" ElementStyle="{StaticResource BatchText}"/>
-                <!--S/N、工令：仅入库-->
-                <DataGridTextColumn x:Name="col_sn" Header="{lex:Loc Plans_SN}" SortMemberPath="SN" Width="200"
-                                    Binding="{Binding SN, Converter={StaticResource SingleLine}}" ElementStyle="{StaticResource BatchText}"/>
-                <DataGridTextColumn x:Name="col_workOrder" Header="{lex:Loc Plans_WorkOrder}" SortMemberPath="WorkOrder" Width="170"
-                                    Binding="{Binding WorkOrder}" ElementStyle="{StaticResource BatchText}"/>
                 <!--回线RT工令、回线数量：仅回线-->
                 <DataGridTextColumn x:Name="col_returnRt" Header="{lex:Loc Plans_ReturnRTOrder}" SortMemberPath="ReturnRtOrder" Width="180"
                                     Binding="{Binding ReturnRtOrder}" ElementStyle="{StaticResource BatchText}"/>
@@ -111,28 +106,12 @@
             </DataGrid.Columns>
         </DataGrid>
 
-        <!--要写入的值：回线只用日期；入库用单据/数量/日期（按批量类型在代码里切换可见性）-->
+        <!--要写入的值：只有批量回线需要填（批量删除只标记删除，不写值）-->
         <WrapPanel x:Name="panel_inputs" Grid.Row="2" Orientation="Horizontal" Margin="0,10,0,0">
-            <StackPanel x:Name="panel_return" Orientation="Horizontal">
-                <Label Content="{lex:Loc Plans_ReturnDate}" VerticalContentAlignment="Center"
-                       Style="{StaticResource RequiredFieldLabel}"/>
-                <DatePicker x:Name="dp_returnDate" Width="150" Margin="5,0,0,0" VerticalContentAlignment="Center"
-                            SelectedDateChanged="BatchInput_Changed"/>
-            </StackPanel>
-            <StackPanel x:Name="panel_stockin" Orientation="Horizontal">
-                <Label Content="{lex:Loc Plans_StockInNo}" VerticalContentAlignment="Center"
-                       Style="{StaticResource RequiredFieldLabel}"/>
-                <TextBox x:Name="txt_stockInNo" Width="150" Margin="5,0,10,0" VerticalContentAlignment="Center"
-                         TextChanged="BatchInput_Changed"/>
-                <Label Content="{lex:Loc Plans_StockInQty}" VerticalContentAlignment="Center"
-                       Style="{StaticResource RequiredFieldLabel}"/>
-                <TextBox x:Name="txt_stockInQty" Width="70" Margin="5,0,10,0" VerticalContentAlignment="Center"
-                         TextChanged="BatchInput_Changed"/>
-                <Label Content="{lex:Loc Plans_StockInDate}" VerticalContentAlignment="Center"
-                       Style="{StaticResource RequiredFieldLabel}"/>
-                <DatePicker x:Name="dp_stockInDate" Width="150" Margin="5,0,0,0" VerticalContentAlignment="Center"
-                            SelectedDateChanged="BatchInput_Changed"/>
-            </StackPanel>
+            <Label Content="{lex:Loc Plans_ReturnDate}" VerticalContentAlignment="Center"
+                   Style="{StaticResource RequiredFieldLabel}"/>
+            <DatePicker x:Name="dp_returnDate" Width="150" Margin="5,0,0,0" VerticalContentAlignment="Center"
+                        SelectedDateChanged="BatchInput_Changed"/>
         </WrapPanel>
 
         <Grid Grid.Row="3" Margin="0,12,0,0">

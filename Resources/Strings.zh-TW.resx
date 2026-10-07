@@ -2502,6 +2502,9 @@
   <data name="Plans_Msg_StockInAppliedFormat" xml:space="preserve">
     <value>已填寫入庫：{0}（暫存，點「提交儲存」後生效）</value>
   </data>
+  <data name="Plans_Msg_StockInNoMorePending" xml:space="preserve">
+    <value>沒有其他待入庫的記錄了</value>
+  </data>
   <data name="Plans_Msg_AddRequisitionNoPlan" xml:space="preserve">
     <value>已暫存領用記錄（未建立計劃表記錄）</value>
   </data>
@@ -2516,6 +2519,12 @@
   </data>
   <data name="ReqStockIn_Hint" xml:space="preserve">
     <value>點「入庫」把單據/數量/日期寫入這筆領退記錄</value>
+  </data>
+  <data name="Plans_StockIn_NextPending" xml:space="preserve">
+    <value>下一個待入庫</value>
+  </data>
+  <data name="Plans_StockIn_NextPendingTip" xml:space="preserve">
+    <value>寫入這條的入庫單據/數量/日期後，接著開啟下一條待入庫記錄的登記視窗</value>
   </data>
   <data name="Common_CopyHint" xml:space="preserve">
     <value>可選取複製（Ctrl+C），或按右鍵直接複製該值</value>
@@ -2974,8 +2983,11 @@
   <data name="Plans_Menu_BatchReturn" xml:space="preserve">
     <value>批量回線</value>
   </data>
-  <data name="Plans_Menu_BatchStockIn" xml:space="preserve">
-    <value>批量入庫</value>
+  <data name="Plans_Menu_FilterStockInPending" xml:space="preserve">
+    <value>篩選待入庫</value>
+  </data>
+  <data name="Plans_ToolTip_FilterStockInPending" xml:space="preserve">
+    <value>篩出還需要登記入庫的領退記錄（含還沒回線的），按右鍵選「入庫」逐條登記；入庫視窗裡可點「下一個待入庫」直接跳到下一條</value>
   </data>
   <data name="Plans_Menu_BatchDelete" xml:space="preserve">
     <value>批量刪除</value>
@@ -2983,17 +2995,11 @@
   <data name="Plans_ToolTip_BatchReturn" xml:space="preserve">
     <value>篩出待回線的記錄，在表格裡按左鍵加入清單，確認後整批登記回線日期（暫存，點「提交保存」後生效）</value>
   </data>
-  <data name="Plans_ToolTip_BatchStockIn" xml:space="preserve">
-    <value>篩出待入庫的記錄，在表格裡按左鍵加入清單，確認後整批登記入庫資訊（暫存，點「提交保存」後生效）</value>
-  </data>
   <data name="Plans_ToolTip_BatchDelete" xml:space="preserve">
     <value>在目前頁籤的表格裡按左鍵把記錄加入清單，確認後整批標記刪除（暫存，點「提交保存」後生效）</value>
   </data>
   <data name="Plans_Batch_ReturnTitle" xml:space="preserve">
     <value>批量回線（清單 {0} 條）</value>
-  </data>
-  <data name="Plans_Batch_StockInTitle" xml:space="preserve">
-    <value>批量入庫（清單 {0} 條）</value>
   </data>
   <data name="Plans_Batch_DeleteTitle" xml:space="preserve">
     <value>批量刪除領退記錄（清單 {0} 條）</value>
@@ -3003,9 +3009,6 @@
   </data>
   <data name="Plans_Batch_ReturnHint" xml:space="preserve">
     <value>在「領用和計劃」視窗的領退表裡按左鍵點一條記錄，這裡就新增一條清單；點「回線」把這些記錄的回線日期統一寫為下面的日期（暫存，點「提交保存」後生效）。</value>
-  </data>
-  <data name="Plans_Batch_StockInHint" xml:space="preserve">
-    <value>在領退表裡按左鍵點一條記錄，這裡就新增一條清單；點「入庫」把這些記錄統一寫入下面的入庫單據/數量/日期（暫存，點「提交保存」後生效）。</value>
   </data>
   <data name="Plans_Batch_DeleteHint" xml:space="preserve">
     <value>在領退表裡按左鍵點一條記錄，這裡就新增一條清單；點「標記刪除」把清單裡的記錄整批標記刪除（暫存，點「提交保存」後生效）。</value>
@@ -3018,9 +3021,6 @@
   </data>
   <data name="Plans_Msg_BatchReturnAppliedFormat" xml:space="preserve">
     <value>批量回線：已登記 {0} 條，跳過 {1} 條（暫存，點「提交保存」後生效）</value>
-  </data>
-  <data name="Plans_Msg_BatchStockInAppliedFormat" xml:space="preserve">
-    <value>批量入庫：已登記 {0} 條，跳過 {1} 條（{2}；暫存，點「提交保存」後生效）</value>
   </data>
   <data name="Plans_Msg_BatchDeleteAppliedFormat" xml:space="preserve">
     <value>批量標記刪除：已標記 {0} 條（暫存，點「提交保存」後生效）</value>
@@ -3035,7 +3035,7 @@
     <value>批量回線：已篩出 {0} 條待回線的記錄（單體去向為入庫、還沒登記回線日期）。在表格裡按左鍵點記錄即加入批量視窗清單；如同時有搜尋或欄篩選，可先清空以便看全。</value>
   </data>
   <data name="Plans_Batch_FilterStockInFormat" xml:space="preserve">
-    <value>批量入庫：已篩出 {0} 條待入庫的記錄（已登記回線、尚未登記入庫且未報廢）。在表格裡按左鍵點記錄即加入批量視窗清單；如同時有搜尋或欄篩選，可先清空以便看全。</value>
+    <value>篩選待入庫：已篩出 {0} 條還需登記入庫的記錄（未報廢、尚未登記入庫，含還沒回線的；未回線的要先回線才能入庫）。逐條登記：按右鍵選「入庫」，視窗裡點「下一個待入庫」接著下一條。</value>
   </data>
   <data name="Plans_Batch_DeletePickHint" xml:space="preserve">
     <value>批量刪除：在領退表裡按左鍵點要刪除的記錄，加入批量視窗清單後點「標記刪除」</value>

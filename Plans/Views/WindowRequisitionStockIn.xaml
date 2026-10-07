@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:lex="http://wpflocalizeextension.codeplex.com"
         mc:Ignorable="d"
-        Title="{lex:Loc ReqStockIn_Title}" Width="520" SizeToContent="Height" ResizeMode="NoResize"
+        Title="{lex:Loc ReqStockIn_Title}" Width="580" SizeToContent="Height" ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner">
 
     <Grid Margin="15">
@@ -69,6 +69,8 @@
                        Foreground="{DynamicResource TextSecondaryBrush}"/>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                 <Button Content="{lex:Loc Plans_Menu_StockIn}" Width="90" Click="Btn_StockIn_Click" IsDefault="True"/>
+                <Button Content="{lex:Loc Plans_StockIn_NextPending}" Width="130" Margin="10,0,0,0"
+                        Click="Btn_NextPending_Click" ToolTip="{lex:Loc Plans_StockIn_NextPendingTip}"/>
                 <Button Content="{lex:Loc Common_Cancel}" Width="90" Margin="10,0,0,0" Click="Btn_Cancel_Click" IsCancel="True"/>
             </StackPanel>
         </Grid>

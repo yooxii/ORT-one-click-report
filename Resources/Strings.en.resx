@@ -2502,6 +2502,9 @@ Build the plan index now (compress repeated text into shared templates)?</value>
   <data name="Plans_Msg_StockInAppliedFormat" xml:space="preserve">
     <value>Stock-in set to {0} (staged; submit to save)</value>
   </data>
+  <data name="Plans_Msg_StockInNoMorePending" xml:space="preserve">
+    <value>No other records are pending stock-in.</value>
+  </data>
   <data name="Plans_Msg_AddRequisitionNoPlan" xml:space="preserve">
     <value>Requisition staged (no plan row created)</value>
   </data>
@@ -2516,6 +2519,12 @@ Build the plan index now (compress repeated text into shared templates)?</value>
   </data>
   <data name="ReqStockIn_Hint" xml:space="preserve">
     <value>Click Stock In to write the document/qty/date into this record</value>
+  </data>
+  <data name="Plans_StockIn_NextPending" xml:space="preserve">
+    <value>Next pending</value>
+  </data>
+  <data name="Plans_StockIn_NextPendingTip" xml:space="preserve">
+    <value>After writing this record stock-in no./qty/date, open the registration dialog for the next record pending stock-in</value>
   </data>
   <data name="Common_CopyHint" xml:space="preserve">
     <value>Selectable, copy with Ctrl+C, or right-click to copy this value</value>
@@ -2974,8 +2983,11 @@ Exit now and discard them?</value>
   <data name="Plans_Menu_BatchReturn" xml:space="preserve">
     <value>Batch return</value>
   </data>
-  <data name="Plans_Menu_BatchStockIn" xml:space="preserve">
-    <value>Batch stock-in</value>
+  <data name="Plans_Menu_FilterStockInPending" xml:space="preserve">
+    <value>Filter pending stock-in</value>
+  </data>
+  <data name="Plans_ToolTip_FilterStockInPending" xml:space="preserve">
+    <value>Filters the records that still need stock-in (including those not yet returned); right-click a record and pick Stock In to register them one by one - the dialog can jump straight to the next pending record</value>
   </data>
   <data name="Plans_Menu_BatchDelete" xml:space="preserve">
     <value>Batch delete</value>
@@ -2983,17 +2995,11 @@ Exit now and discard them?</value>
   <data name="Plans_ToolTip_BatchReturn" xml:space="preserve">
     <value>Filters the records that still need a return date; left-click rows to add them, then confirm to fill the date for the whole list (staged; applied after Save)</value>
   </data>
-  <data name="Plans_ToolTip_BatchStockIn" xml:space="preserve">
-    <value>Filters the records that still need stock-in; left-click rows to add them, then confirm to fill the stock-in fields for the whole list (staged; applied after Save)</value>
-  </data>
   <data name="Plans_ToolTip_BatchDelete" xml:space="preserve">
     <value>Left-click rows in the active table to add them, then confirm to mark the whole list for deletion (staged; applied after Save)</value>
   </data>
   <data name="Plans_Batch_ReturnTitle" xml:space="preserve">
     <value>Batch return (list: {0})</value>
-  </data>
-  <data name="Plans_Batch_StockInTitle" xml:space="preserve">
-    <value>Batch stock-in (list: {0})</value>
   </data>
   <data name="Plans_Batch_DeleteTitle" xml:space="preserve">
     <value>Batch delete requisitions (list: {0})</value>
@@ -3003,9 +3009,6 @@ Exit now and discard them?</value>
   </data>
   <data name="Plans_Batch_ReturnHint" xml:space="preserve">
     <value>Left-click a row in the requisition table of the "Requisition and Plan" window and it is added here; the return date below is written to every record in the list (staged; applied after Save).</value>
-  </data>
-  <data name="Plans_Batch_StockInHint" xml:space="preserve">
-    <value>Left-click a row in the requisition table and it is added here; the stock-in no./qty/date below are written to every record in the list (staged; applied after Save).</value>
   </data>
   <data name="Plans_Batch_DeleteHint" xml:space="preserve">
     <value>Left-click a row in the requisition table and it is added here; the whole list is marked for deletion (staged; applied after Save).</value>
@@ -3018,9 +3021,6 @@ Exit now and discard them?</value>
   </data>
   <data name="Plans_Msg_BatchReturnAppliedFormat" xml:space="preserve">
     <value>Batch return: {0} updated, {1} skipped (staged; applied after Save)</value>
-  </data>
-  <data name="Plans_Msg_BatchStockInAppliedFormat" xml:space="preserve">
-    <value>Batch stock-in: {0} updated, {1} skipped ({2}; staged, applied after Save)</value>
   </data>
   <data name="Plans_Msg_BatchDeleteAppliedFormat" xml:space="preserve">
     <value>Batch delete: {0} marked (staged; applied after Save)</value>
@@ -3035,7 +3035,7 @@ Exit now and discard them?</value>
     <value>Batch return: {0} records still need a return date (disposition = stock-in, no return date yet). Left-click rows in the table to add them to the batch window; if a search or column filter is active, clear it to see them all.</value>
   </data>
   <data name="Plans_Batch_FilterStockInFormat" xml:space="preserve">
-    <value>Batch stock-in: {0} records still need stock-in (return date set, not stocked in yet, not scrapped). Left-click rows in the table to add them to the batch window; if a search or column filter is active, clear it to see them all.</value>
+    <value>Pending stock-in: {0} records still need stock-in (not scrapped, not stocked in yet, including records not yet returned - a record must be returned before it can be stocked in). Register one by one: right-click a record and pick Stock In; the dialog can jump to the next pending record.</value>
   </data>
   <data name="Plans_Batch_DeletePickHint" xml:space="preserve">
     <value>Batch delete: left-click the requisitions to delete, then click "Mark for deletion" in the batch window</value>

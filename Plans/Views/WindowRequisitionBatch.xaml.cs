@@ -13,11 +13,11 @@ using System.Windows.Controls;
 namespace ORT一键报告.Plans.Views
 {
     /// <summary>
-    /// 领退表批量登记窗口（非模态）：工具菜单「批量回线 / 批量入库 / 批量删除」打开，
+    /// 领退表批量登记窗口（非模态）：工具菜单「批量回线 / 批量删除」打开，
     /// 与主窗口并存——主窗口表格里左键单击一条记录，这里就新增一行（同一条只加一次）。
     /// 清单只列与本次操作有关的信息，口径与单条登记窗口一致：
-    /// 回线＝机种名称/回线RT工令/回线数/线别；入库＝机种名称/领料单据号/S/N/工令/线别；
-    /// 删除＝领用日期/领料单据号/机种名称。右键单击任一单元格即复制该值。
+    /// 回线＝机种名称/回线RT工令/回线数/线别；删除＝领用日期/领料单据号/机种名称。
+    /// 右键单击任一单元格即复制该值。
     /// 窗口只收集要写入的值，点「确认」时通过 <see cref="Confirmed"/> 交给
     /// 调用方（WindowPlans）写回，仍走暂存 → 点「提交保存」时统一入库。
     /// </summary>
@@ -44,15 +44,6 @@ namespace ORT一键报告.Plans.Views
         /// <summary>确认回线时的日期（回线模式）</summary>
         public DateTime ReturnDate { get; private set; }
 
-        /// <summary>确认入库时的入库单据（入库模式）</summary>
-        public string StockInNo { get; private set; }
-
-        /// <summary>确认入库时的入库数量（入库模式）</summary>
-        public string StockInQty { get; private set; }
-
-        /// <summary>确认入库时的入库日期（入库模式）</summary>
-        public DateTime StockInDate { get; private set; }
-
         public WindowRequisitionBatch(RequisitionBatchMode mode)
         {
             InitializeComponent();
@@ -63,12 +54,10 @@ namespace ORT一键报告.Plans.Views
             Title = string.Format(LanguageService.Get(TitleKey(mode)), 0);
             txt_hint.Text = LanguageService.Get(HintKey(mode));
             btn_confirm.Content = LanguageService.Get(ConfirmKey(mode));
-            panel_return.Visibility = mode == RequisitionBatchMode.Return ? Visibility.Visible : Visibility.Collapsed;
-            panel_stockin.Visibility = mode == RequisitionBatchMode.StockIn ? Visibility.Visible : Visibility.Collapsed;
+            // 只有批量回线要填值（批量删除不写值，只标记删除）
             panel_inputs.Visibility = mode == RequisitionBatchMode.Delete ? Visibility.Collapsed : Visibility.Visible;
             ApplyColumns();
             dp_returnDate.SelectedDate = DateTime.Today;
-            dp_stockInDate.SelectedDate = DateTime.Today;
 
             RightClickCopy.AttachDataGrid(dg_items, BatchCellValue);
             RefreshState();
@@ -78,22 +67,17 @@ namespace ORT一键报告.Plans.Views
 
         /// <summary>
         /// 按批量类型显示清单列，口径与单条登记窗口的条目一致：
-        /// 回线＝机种名称/回线RT工令/回线数/线别；入库＝机种名称/领料单据号/S/N/工令/线别；
-        /// 删除＝领用日期/领料单据号/机种名称
+        /// 回线＝机种名称/回线RT工令/回线数/线别；删除＝领用日期/领料单据号/机种名称
         /// </summary>
         private void ApplyColumns()
         {
             bool isReturn = _mode == RequisitionBatchMode.Return;
-            bool isStockIn = _mode == RequisitionBatchMode.StockIn;
-            bool isDelete = _mode == RequisitionBatchMode.Delete;
-            Show(col_reqDate, isDelete);      // 领用日期：删除时用来辨认记录
-            Show(col_reqNo, !isReturn);       // 领料单据号：入库、删除
-            Show(col_model, true);            // 机种名称：三种操作都有
-            Show(col_sn, isStockIn);          // S/N：入库
-            Show(col_workOrder, isStockIn);   // 工令：入库
+            Show(col_reqDate, !isReturn);     // 领用日期：删除时用来辨认记录
+            Show(col_reqNo, !isReturn);       // 领料单据号：删除
+            Show(col_model, true);            // 机种名称：两种操作都有
             Show(col_returnRt, isReturn);     // 回线RT工令：回线
             Show(col_returnQty, isReturn);    // 回线数量：回线
-            Show(col_line, !isDelete);        // 线别：回线、入库
+            Show(col_line, isReturn);         // 线别：回线
         }
 
         private static void Show(DataGridColumn column, bool visible)
@@ -152,21 +136,13 @@ namespace ORT一键报告.Plans.Views
         /* ###############################  预填要写入的值  ################################ */
 
         /// <summary>
-        /// 清单里已有相同的回线日期/入库信息时沿用（方便修正），否则回线用今天、
-        /// 入库日期用今天；单据/数量为空则不预填
+        /// 清单里已有相同的回线日期时沿用（方便修正），否则用今天
         /// </summary>
         private void PrefillInputs()
         {
             if (_mode == RequisitionBatchMode.Return)
             {
                 dp_returnDate.SelectedDate = CommonDate(Targets.Select(r => r.ReturnDate)) ?? DateTime.Today;
-                return;
-            }
-            if (_mode == RequisitionBatchMode.StockIn)
-            {
-                txt_stockInNo.Text = CommonText(Targets.Select(r => r.StockInNo)) ?? "";
-                txt_stockInQty.Text = CommonText(Targets.Select(r => r.StockInQty)) ?? "";
-                dp_stockInDate.SelectedDate = CommonDate(Targets.Select(r => r.StockInDate)) ?? DateTime.Today;
             }
         }
 
@@ -176,18 +152,6 @@ namespace ORT一键报告.Plans.Views
             List<DateTime?> list = [.. values];
             DateTime? first = list.FirstOrDefault();
             return first != null && list.All(v => v == first) ? first : null;
-        }
-
-        /// <summary>所有值都相同（且非空）时返回该文本，否则 null</summary>
-        private static string CommonText(IEnumerable<string> values)
-        {
-            List<string> list = [.. values.Where(v => !string.IsNullOrWhiteSpace(v))];
-            if (list.Count == 0)
-            {
-                return null;
-            }
-            string first = list[0].Trim();
-            return list.All(v => string.Equals(v.Trim(), first, StringComparison.Ordinal)) ? first : null;
         }
 
         /* ###############################  状态  ################################ */
@@ -264,29 +228,6 @@ namespace ORT一键报告.Plans.Views
                 }
                 ReturnDate = date;
             }
-            else if (_mode == RequisitionBatchMode.StockIn)
-            {
-                if (string.IsNullOrWhiteSpace(txt_stockInNo.Text))
-                {
-                    _ = MessageBox.Show(LocalizationHelper.Get("Msg_FillStockInNo"), LanguageService.Get("Cap_Info"));
-                    txt_stockInNo.Focus();
-                    return;
-                }
-                if (string.IsNullOrWhiteSpace(txt_stockInQty.Text))
-                {
-                    _ = MessageBox.Show(LocalizationHelper.Get("Msg_FillStockInQty"), LanguageService.Get("Cap_Info"));
-                    txt_stockInQty.Focus();
-                    return;
-                }
-                if (dp_stockInDate.SelectedDate is not DateTime date)
-                {
-                    _ = MessageBox.Show(LocalizationHelper.Get("Msg_FillStockInDate"), LanguageService.Get("Cap_Info"));
-                    return;
-                }
-                StockInNo = txt_stockInNo.Text.Trim();
-                StockInQty = txt_stockInQty.Text.Trim();
-                StockInDate = date;
-            }
             _logger.Info($"批量{LanguageService.Get(ConfirmKey(_mode))}：清单 {_rows.Count} 条，写入 {Targets.Count} 条，跳过 {SkippedCount} 条");
             Confirmed?.Invoke(this);
             Close();
@@ -299,21 +240,18 @@ namespace ORT一键报告.Plans.Views
 
         private static string TitleKey(RequisitionBatchMode mode) => mode switch
         {
-            RequisitionBatchMode.StockIn => "Plans_Batch_StockInTitle",
             RequisitionBatchMode.Delete => "Plans_Batch_DeleteTitle",
             _ => "Plans_Batch_ReturnTitle"
         };
 
         private static string HintKey(RequisitionBatchMode mode) => mode switch
         {
-            RequisitionBatchMode.StockIn => "Plans_Batch_StockInHint",
             RequisitionBatchMode.Delete => "Plans_Batch_DeleteHint",
             _ => "Plans_Batch_ReturnHint"
         };
 
         private static string ConfirmKey(RequisitionBatchMode mode) => mode switch
         {
-            RequisitionBatchMode.StockIn => "Plans_Menu_StockIn",
             RequisitionBatchMode.Delete => "Plans_MarkDelete",
             _ => "Plans_Menu_ReturnLine"
         };
