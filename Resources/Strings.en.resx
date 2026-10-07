@@ -3013,33 +3013,6 @@ Exit now and discard them?</value>
   <data name="Plans_Batch_PlanDeleteHint" xml:space="preserve">
     <value>Left-click a row in the plan table and it is added here; the whole list is marked for deletion (staged; applied after Save).</value>
   </data>
-  <data name="Plans_Batch_SummaryFormat" xml:space="preserve">
-    <value>List {0} | Applicable {1} | Skipped {2} | Models: {3}</value>
-  </data>
-  <data name="Plans_Batch_ModelItemFormat" xml:space="preserve">
-    <value>{0} ×{1}</value>
-  </data>
-  <data name="Plans_Batch_ModelSeparator" xml:space="preserve">
-    <value>, </value>
-  </data>
-  <data name="Plans_Batch_ResultHeader" xml:space="preserve">
-    <value>Result</value>
-  </data>
-  <data name="Plans_Batch_StatusOkReturnFormat" xml:space="preserve">
-    <value>Return date → {0}</value>
-  </data>
-  <data name="Plans_Batch_StatusOkStockInFormat" xml:space="preserve">
-    <value>Stock-in → {0}</value>
-  </data>
-  <data name="Plans_Batch_StatusOkDelete" xml:space="preserve">
-    <value>Will be marked for deletion (staged)</value>
-  </data>
-  <data name="Plans_Batch_StatusSkipFormat" xml:space="preserve">
-    <value>Skipped: {0}</value>
-  </data>
-  <data name="Plans_Batch_NotFilled" xml:space="preserve">
-    <value>not set</value>
-  </data>
   <data name="Plans_Batch_CopyHint" xml:space="preserve">
     <value>Right-click any cell to copy its value</value>
   </data>
@@ -3069,9 +3042,6 @@ Exit now and discard them?</value>
   </data>
   <data name="Plans_Batch_PlanDeletePickHint" xml:space="preserve">
     <value>Batch delete: left-click the plans to delete, then click "Mark for deletion" in the batch window</value>
-  </data>
-  <data name="Plans_Batch_EmptyHint" xml:space="preserve">
-    <value>The list is empty: left-click rows in the table above and each one is added here</value>
   </data>
   <data name="Plans_Batch_EmptyConfirm" xml:space="preserve">
     <value>The list is empty: left-click the records to process in the table first</value>

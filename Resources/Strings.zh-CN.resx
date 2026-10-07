@@ -3013,33 +3013,6 @@
   <data name="Plans_Batch_PlanDeleteHint" xml:space="preserve">
     <value>在计划表里左键单击一条记录，这里就新增一条清单；点「标记删除」把清单里的计划整批标记删除（暂存，点「提交保存」后生效）。</value>
   </data>
-  <data name="Plans_Batch_SummaryFormat" xml:space="preserve">
-    <value>清单 {0} 条｜可执行 {1} 条｜跳过 {2} 条｜机种：{3}</value>
-  </data>
-  <data name="Plans_Batch_ModelItemFormat" xml:space="preserve">
-    <value>{0} ×{1}</value>
-  </data>
-  <data name="Plans_Batch_ModelSeparator" xml:space="preserve">
-    <value>、</value>
-  </data>
-  <data name="Plans_Batch_ResultHeader" xml:space="preserve">
-    <value>本次结果</value>
-  </data>
-  <data name="Plans_Batch_StatusOkReturnFormat" xml:space="preserve">
-    <value>将写入回线日期 {0}</value>
-  </data>
-  <data name="Plans_Batch_StatusOkStockInFormat" xml:space="preserve">
-    <value>将写入入库 {0}</value>
-  </data>
-  <data name="Plans_Batch_StatusOkDelete" xml:space="preserve">
-    <value>将标记删除（暂存）</value>
-  </data>
-  <data name="Plans_Batch_StatusSkipFormat" xml:space="preserve">
-    <value>跳过：{0}</value>
-  </data>
-  <data name="Plans_Batch_NotFilled" xml:space="preserve">
-    <value>未填</value>
-  </data>
   <data name="Plans_Batch_CopyHint" xml:space="preserve">
     <value>右键单击任一单元格即复制该值</value>
   </data>
@@ -3069,9 +3042,6 @@
   </data>
   <data name="Plans_Batch_PlanDeletePickHint" xml:space="preserve">
     <value>批量删除：在计划表里左键单击要删除的记录，加入批量窗口清单后点「标记删除」</value>
-  </data>
-  <data name="Plans_Batch_EmptyHint" xml:space="preserve">
-    <value>清单还是空的：在上面的表格里左键单击记录，选一条这里就新增一条</value>
   </data>
   <data name="Plans_Batch_EmptyConfirm" xml:space="preserve">
     <value>清单还是空的：请先在表格里左键单击要处理的记录</value>

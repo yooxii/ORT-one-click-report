@@ -15,7 +15,7 @@
     <MapFileExtensions>true</MapFileExtensions>
     <PublisherName>Lucas Li%28AcBel ORT%29</PublisherName>
     <ApplicationRevision>0</ApplicationRevision>
-    <ApplicationVersion>0.4.0.%2a</ApplicationVersion>
+    <ApplicationVersion>0.5.0.%2a</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <CreateDesktopShortcut>true</CreateDesktopShortcut>
     <PublishWizardCompleted>true</PublishWizardCompleted>
@@ -240,8 +240,6 @@
       <DependentUpon>WindowPlanBatchDelete.xaml</DependentUpon>
     </Compile>
     <Compile Include="Plans\Views\PlanFieldText.cs" />
-    <Compile Include="Plans\Views\RequisitionBatchRow.cs" />
-    <Compile Include="Plans\Views\PlanBatchRow.cs" />
     <Compile Include="Utils\SmartTableExtractor.cs" />
     <Compile Include="Utils\SnVerification.cs" />
     <Compile Include="Reports\ViewModels\BaseReportPageViewModel.cs" />

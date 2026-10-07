@@ -6,7 +6,7 @@
         xmlns:lex="http://wpflocalizeextension.codeplex.com"
         xmlns:conv="clr-namespace:ORT一键报告.Converters"
         mc:Ignorable="d"
-        Width="980" Height="520" MinWidth="760" MinHeight="360" ShowInTaskbar="False"
+        Width="900" Height="460" MinWidth="700" MinHeight="320" ShowInTaskbar="False"
         WindowStartupLocation="Manual">
 
     <Window.Resources>
@@ -26,19 +26,6 @@
             <Setter Property="TextAlignment" Value="Center"/>
             <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
             <Setter Property="ToolTip" Value="{Binding RelativeSource={RelativeSource Self}, Path=Text}"/>
-        </Style>
-        <!-- 本次结果列：可执行绿色（与「已结案」同色），跳过用红字说明原因 -->
-        <Style x:Key="BatchStatusText" TargetType="TextBlock" BasedOn="{StaticResource BatchText}">
-            <Setter Property="FontWeight" Value="Bold"/>
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding Eligible}" Value="False">
-                    <Setter Property="Foreground" Value="{DynamicResource StatusPendingBrush}"/>
-                    <Setter Property="FontWeight" Value="Normal"/>
-                </DataTrigger>
-                <DataTrigger Binding="{Binding Eligible}" Value="True">
-                    <Setter Property="Foreground" Value="{DynamicResource StatusClosedBrush}"/>
-                </DataTrigger>
-            </Style.Triggers>
         </Style>
         <!-- 置顶开关：外观沿用主题按钮，勾选时用强调色填充，和界面其余按钮一致 -->
         <Style x:Key="TopmostToggle" TargetType="ToggleButton">
@@ -82,8 +69,6 @@
     <Grid Margin="12">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -92,79 +77,42 @@
         <!--操作说明（按批量类型在代码里切换文字）-->
         <TextBlock x:Name="txt_hint" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}"/>
 
-        <!--汇总：清单条数、可执行/跳过条数、机种分布-->
-        <Border Grid.Row="1" Margin="0,6,0,6" Padding="8,4" CornerRadius="{DynamicResource CornerRadiusSmall}"
-                Background="{DynamicResource CardBackgroundBrush}">
-            <TextBlock x:Name="txt_summary" TextWrapping="Wrap" FontWeight="Bold"/>
-        </Border>
-
-        <!--清单工具条：点错时可以移除选中的那几条-->
-        <DockPanel Grid.Row="2" Margin="0,0,0,4">
-            <TextBlock x:Name="txt_empty" DockPanel.Dock="Right" VerticalAlignment="Center" Margin="8,0,0,0"
-                       Foreground="{DynamicResource TextSecondaryBrush}" Text="{lex:Loc Plans_Batch_EmptyHint}"/>
-            <Button x:Name="btn_remove" Content="{lex:Loc Plans_Batch_RemoveSelected}" Padding="8,2"
-                    HorizontalAlignment="Left" Click="Btn_Remove_Click"/>
-        </DockPanel>
-
-        <!--清单：选中记录的全部关键信息（右键单击任一单元格即复制该值）-->
-        <DataGrid x:Name="dg_items" Grid.Row="3"
+        <!--清单：只列与本次操作有关的信息（与单条登记窗口一致），右键单击任一单元格即复制该值-->
+        <DataGrid x:Name="dg_items" Grid.Row="1" Margin="0,6,0,0"
                   AutoGenerateColumns="False" CanUserAddRows="False" CanUserSortColumns="False"
-                  CanUserReorderColumns="True" IsReadOnly="True"
+                  CanUserReorderColumns="False" IsReadOnly="True"
                   HeadersVisibility="Column" GridLinesVisibility="All"
                   SelectionMode="Extended" SelectionUnit="Cell"
-                  ClipboardCopyMode="None" FrozenColumnCount="1"
+                  ClipboardCopyMode="None"
                   CellStyle="{StaticResource BatchCell}"
                   SelectionChanged="Dg_Items_SelectionChanged"
                   VirtualizingPanel.IsVirtualizing="True">
             <DataGrid.Columns>
-                <DataGridTextColumn Header="{lex:Loc Plans_Batch_ResultHeader}" Binding="{Binding Status}"
-                                    SortMemberPath="Status" Width="260"
-                                    ElementStyle="{StaticResource BatchStatusText}"/>
-                <DataGridTextColumn Header="{lex:Loc Plans_RequisitionDateTC}" SortMemberPath="RequisitionDate" Width="90"
-                                    Binding="{Binding Item.RequisitionDate, StringFormat={}{0:yyyy/M/d}}" ElementStyle="{StaticResource BatchText}"/>
-                <DataGridTextColumn Header="{lex:Loc Plans_RequisitionDocNo}" SortMemberPath="RequisitionNo" Width="120"
-                                    Binding="{Binding Item.RequisitionNo}" ElementStyle="{StaticResource BatchText}"/>
-                <DataGridTextColumn Header="{lex:Loc Plans_ModelNameTC}" SortMemberPath="ModelName" Width="130"
-                                    Binding="{Binding Item.ModelName}" ElementStyle="{StaticResource BatchText}"/>
-                <DataGridTextColumn Header="{lex:Loc Plans_IssueQty}" SortMemberPath="OutQty" Width="75"
-                                    Binding="{Binding Item.OutQty}" ElementStyle="{StaticResource BatchText}"/>
-                <DataGridTextColumn Header="{lex:Loc Plans_Disposition}" SortMemberPath="Disposition" Width="75"
-                                    Binding="{Binding Item.Disposition}" ElementStyle="{StaticResource BatchText}"/>
-                <DataGridTextColumn Header="{lex:Loc Plans_SN}" SortMemberPath="SN" Width="180"
-                                    Binding="{Binding Item.SN, Converter={StaticResource SingleLine}}" ElementStyle="{StaticResource BatchText}"/>
-                <DataGridTextColumn Header="{lex:Loc Plans_DC}" SortMemberPath="DC" Width="50"
-                                    Binding="{Binding Item.DC}" ElementStyle="{StaticResource BatchText}"/>
-                <DataGridTextColumn Header="{lex:Loc Plans_REV}" SortMemberPath="Rev" Width="50"
-                                    Binding="{Binding Item.Rev}" ElementStyle="{StaticResource BatchText}"/>
-                <DataGridTextColumn Header="{lex:Loc Plans_WorkOrder}" SortMemberPath="WorkOrder" Width="140"
-                                    Binding="{Binding Item.WorkOrder}" ElementStyle="{StaticResource BatchText}"/>
-                <DataGridTextColumn Header="{lex:Loc Plans_ReturnRTOrder}" SortMemberPath="ReturnRtOrder" Width="110"
-                                    Binding="{Binding Item.ReturnRtOrder}" ElementStyle="{StaticResource BatchText}"/>
-                <DataGridTextColumn Header="{lex:Loc Plans_ReturnQty}" SortMemberPath="ReturnQty" Width="75"
-                                    Binding="{Binding Item.ReturnQty}" ElementStyle="{StaticResource BatchText}"/>
-                <DataGridTextColumn Header="{lex:Loc Plans_Line}" SortMemberPath="LineNo" Width="55"
-                                    Binding="{Binding Item.LineNo}" ElementStyle="{StaticResource BatchText}"/>
-                <DataGridTextColumn Header="{lex:Loc Plans_ReturnDate}" SortMemberPath="ReturnDate" Width="90"
-                                    Binding="{Binding Item.ReturnDate, StringFormat={}{0:yyyy/M/d}}" ElementStyle="{StaticResource BatchText}"/>
-                <DataGridTextColumn Header="{lex:Loc Plans_StockInNo}" SortMemberPath="StockInNo" Width="110"
-                                    Binding="{Binding Item.StockInNo}" ElementStyle="{StaticResource BatchText}"/>
-                <DataGridTextColumn Header="{lex:Loc Plans_StockInQty}" SortMemberPath="StockInQty" Width="75"
-                                    Binding="{Binding Item.StockInQty}" ElementStyle="{StaticResource BatchText}"/>
-                <DataGridTextColumn Header="{lex:Loc Plans_StockInDate}" SortMemberPath="StockInDate" Width="90"
-                                    Binding="{Binding Item.StockInDate, StringFormat={}{0:yyyy/M/d}}" ElementStyle="{StaticResource BatchText}"/>
-                <DataGridTextColumn Header="{lex:Loc Plans_ScrapNo}" SortMemberPath="ScrapNo" Width="110"
-                                    Binding="{Binding Item.ScrapNo}" ElementStyle="{StaticResource BatchText}"/>
-                <DataGridTextColumn Header="{lex:Loc Plans_ScrapQty}" SortMemberPath="ScrapQty" Width="75"
-                                    Binding="{Binding Item.ScrapQty}" ElementStyle="{StaticResource BatchText}"/>
-                <DataGridTextColumn Header="{lex:Loc Plans_ScrapDate}" SortMemberPath="ScrapDate" Width="90"
-                                    Binding="{Binding Item.ScrapDate, StringFormat={}{0:yyyy/M/d}}" ElementStyle="{StaticResource BatchText}"/>
-                <DataGridTextColumn Header="{lex:Loc Admin_Remark}" SortMemberPath="Remark" Width="150"
-                                    Binding="{Binding Item.Remark, Converter={StaticResource SingleLine}}" ElementStyle="{StaticResource BatchText}"/>
+                <!--领用日期：仅批量删除（领退记录）时用于辨认记录-->
+                <DataGridTextColumn x:Name="col_reqDate" Header="{lex:Loc Plans_RequisitionDateTC}" SortMemberPath="RequisitionDate" Width="110"
+                                    Binding="{Binding RequisitionDate, StringFormat={}{0:yyyy/M/d}}" ElementStyle="{StaticResource BatchText}"/>
+                <!--领料单据号：入库与删除-->
+                <DataGridTextColumn x:Name="col_reqNo" Header="{lex:Loc Plans_RequisitionDocNo}" SortMemberPath="RequisitionNo" Width="170"
+                                    Binding="{Binding RequisitionNo}" ElementStyle="{StaticResource BatchText}"/>
+                <DataGridTextColumn x:Name="col_model" Header="{lex:Loc Plans_ModelNameTC}" SortMemberPath="ModelName" Width="200"
+                                    Binding="{Binding ModelName}" ElementStyle="{StaticResource BatchText}"/>
+                <!--S/N、工令：仅入库-->
+                <DataGridTextColumn x:Name="col_sn" Header="{lex:Loc Plans_SN}" SortMemberPath="SN" Width="200"
+                                    Binding="{Binding SN, Converter={StaticResource SingleLine}}" ElementStyle="{StaticResource BatchText}"/>
+                <DataGridTextColumn x:Name="col_workOrder" Header="{lex:Loc Plans_WorkOrder}" SortMemberPath="WorkOrder" Width="170"
+                                    Binding="{Binding WorkOrder}" ElementStyle="{StaticResource BatchText}"/>
+                <!--回线RT工令、回线数量：仅回线-->
+                <DataGridTextColumn x:Name="col_returnRt" Header="{lex:Loc Plans_ReturnRTOrder}" SortMemberPath="ReturnRtOrder" Width="180"
+                                    Binding="{Binding ReturnRtOrder}" ElementStyle="{StaticResource BatchText}"/>
+                <DataGridTextColumn x:Name="col_returnQty" Header="{lex:Loc Plans_ReturnQty}" SortMemberPath="ReturnQty" Width="110"
+                                    Binding="{Binding ReturnQty}" ElementStyle="{StaticResource BatchText}"/>
+                <DataGridTextColumn x:Name="col_line" Header="{lex:Loc Plans_Line}" SortMemberPath="LineNo" Width="90"
+                                    Binding="{Binding LineNo}" ElementStyle="{StaticResource BatchText}"/>
             </DataGrid.Columns>
         </DataGrid>
 
         <!--要写入的值：回线只用日期；入库用单据/数量/日期（按批量类型在代码里切换可见性）-->
-        <WrapPanel x:Name="panel_inputs" Grid.Row="4" Orientation="Horizontal" Margin="0,10,0,0">
+        <WrapPanel x:Name="panel_inputs" Grid.Row="2" Orientation="Horizontal" Margin="0,10,0,0">
             <StackPanel x:Name="panel_return" Orientation="Horizontal">
                 <Label Content="{lex:Loc Plans_ReturnDate}" VerticalContentAlignment="Center"
                        Style="{StaticResource RequiredFieldLabel}"/>
@@ -187,8 +135,9 @@
             </StackPanel>
         </WrapPanel>
 
-        <Grid Grid.Row="5" Margin="0,12,0,0">
+        <Grid Grid.Row="3" Margin="0,12,0,0">
             <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
@@ -197,10 +146,13 @@
             <ToggleButton x:Name="btn_topmost" Style="{StaticResource TopmostToggle}"
                           Content="{lex:Loc Plans_Batch_Topmost}" ToolTip="{lex:Loc Plans_Batch_TopmostToolTip}"
                           Checked="Btn_Topmost_Changed" Unchecked="Btn_Topmost_Changed"/>
-            <TextBlock Grid.Column="1" Margin="12,0,0,0" Text="{lex:Loc Plans_Batch_CopyHint}"
+            <!--移除点错加入的记录-->
+            <Button x:Name="btn_remove" Grid.Column="1" Content="{lex:Loc Plans_Batch_RemoveSelected}" Padding="8,2"
+                    Margin="8,0,0,0" Click="Btn_Remove_Click"/>
+            <TextBlock Grid.Column="2" Margin="12,0,0,0" Text="{lex:Loc Plans_Batch_CopyHint}"
                        VerticalAlignment="Center" TextWrapping="Wrap"
                        Foreground="{DynamicResource TextSecondaryBrush}"/>
-            <StackPanel Grid.Column="2" Orientation="Horizontal">
+            <StackPanel Grid.Column="3" Orientation="Horizontal">
                 <Button x:Name="btn_confirm" Width="110" Click="Btn_Confirm_Click" IsDefault="True"/>
                 <Button Content="{lex:Loc Common_Cancel}" Width="90" Margin="10,0,0,0" Click="Btn_Cancel_Click" IsCancel="True"/>
             </StackPanel>

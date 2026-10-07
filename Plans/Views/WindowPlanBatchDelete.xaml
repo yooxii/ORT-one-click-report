@@ -6,7 +6,7 @@
         xmlns:lex="http://wpflocalizeextension.codeplex.com"
         xmlns:conv="clr-namespace:ORT一键报告.Converters"
         mc:Ignorable="d"
-        Width="980" Height="480" MinWidth="760" MinHeight="340" ShowInTaskbar="False"
+        Width="820" Height="420" MinWidth="640" MinHeight="300" ShowInTaskbar="False"
         WindowStartupLocation="Manual">
 
     <Window.Resources>
@@ -25,10 +25,6 @@
             <Setter Property="TextAlignment" Value="Center"/>
             <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
             <Setter Property="ToolTip" Value="{Binding RelativeSource={RelativeSource Self}, Path=Text}"/>
-        </Style>
-        <Style x:Key="BatchResultText" TargetType="TextBlock" BasedOn="{StaticResource BatchText}">
-            <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="Foreground" Value="{DynamicResource StatusPendingBrush}"/>
         </Style>
         <!-- 置顶开关：外观沿用主题按钮，勾选时用强调色填充，和界面其余按钮一致 -->
         <Style x:Key="TopmostToggle" TargetType="ToggleButton">
@@ -72,76 +68,35 @@
     <Grid Margin="12">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <TextBlock x:Name="txt_hint" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}"/>
 
-        <Border Grid.Row="1" Margin="0,6,0,6" Padding="8,4" CornerRadius="{DynamicResource CornerRadiusSmall}"
-                Background="{DynamicResource CardBackgroundBrush}">
-            <TextBlock x:Name="txt_summary" TextWrapping="Wrap" FontWeight="Bold"/>
-        </Border>
-
-        <!--清单工具条：点错时可以移除选中的那几条-->
-        <DockPanel Grid.Row="2" Margin="0,0,0,4">
-            <TextBlock x:Name="txt_empty" DockPanel.Dock="Right" VerticalAlignment="Center" Margin="8,0,0,0"
-                       Foreground="{DynamicResource TextSecondaryBrush}" Text="{lex:Loc Plans_Batch_EmptyHint}"/>
-            <Button x:Name="btn_remove" Content="{lex:Loc Plans_Batch_RemoveSelected}" Padding="8,2"
-                    HorizontalAlignment="Left" Click="Btn_Remove_Click"/>
-        </DockPanel>
-
-        <!--清单：将被标记删除的计划记录全部关键信息（右键单击任一单元格即复制该值）-->
-        <DataGrid x:Name="dg_items" Grid.Row="3"
+        <!--清单：只列辨认计划记录所需的信息（与单条删除时确认的条目一致），右键单击任一单元格即复制该值-->
+        <DataGrid x:Name="dg_items" Grid.Row="1" Margin="0,6,0,0"
                   AutoGenerateColumns="False" CanUserAddRows="False" CanUserSortColumns="False"
-                  CanUserReorderColumns="True" IsReadOnly="True"
+                  CanUserReorderColumns="False" IsReadOnly="True"
                   HeadersVisibility="Column" GridLinesVisibility="All"
                   SelectionMode="Extended" SelectionUnit="Cell"
-                  ClipboardCopyMode="None" FrozenColumnCount="1"
+                  ClipboardCopyMode="None"
                   CellStyle="{StaticResource BatchCell}"
                   SelectionChanged="Dg_Items_SelectionChanged"
                   VirtualizingPanel.IsVirtualizing="True">
             <DataGrid.Columns>
-                <DataGridTextColumn Header="{lex:Loc Plans_Batch_ResultHeader}" Binding="{Binding Result}"
-                                    SortMemberPath="Result" Width="200"
-                                    ElementStyle="{StaticResource BatchResultText}"/>
-                <DataGridTextColumn Header="{lex:Loc Plans_WorkNumber}" SortMemberPath="JobNo" Width="110"
-                                    Binding="{Binding Item.JobNo}" ElementStyle="{StaticResource BatchText}"/>
-                <DataGridTextColumn Header="{lex:Loc Plans_ProductType}" SortMemberPath="Product" Width="90"
-                                    Binding="{Binding Item.Product}" ElementStyle="{StaticResource BatchText}"/>
-                <DataGridTextColumn Header="{lex:Loc PlanEdit_Customer}" SortMemberPath="Customer" Width="100"
-                                    Binding="{Binding Item.Customer}" ElementStyle="{StaticResource BatchText}"/>
-                <DataGridTextColumn Header="{lex:Loc Plans_ModelName}" SortMemberPath="ModelName" Width="130"
-                                    Binding="{Binding Item.ModelName}" ElementStyle="{StaticResource BatchText}"/>
-                <DataGridTextColumn Header="{lex:Loc Plans_Stage}" SortMemberPath="Stage" Width="65"
-                                    Binding="{Binding Item.Stage}" ElementStyle="{StaticResource BatchText}"/>
-                <DataGridTextColumn Header="{lex:Loc Plans_TestItem}" SortMemberPath="TestItem" Width="150"
-                                    Binding="{Binding Item.TestItem}" ElementStyle="{StaticResource BatchText}"/>
-                <DataGridTextColumn Header="{lex:Loc PlanEdit_SampleQty}" SortMemberPath="SampleSize" Width="60"
-                                    Binding="{Binding Item.SampleSize}" ElementStyle="{StaticResource BatchText}"/>
-                <DataGridTextColumn Header="{lex:Loc Admin_TestTime}" SortMemberPath="TestPeriod" Width="70"
-                                    Binding="{Binding Item.TestPeriod}" ElementStyle="{StaticResource BatchText}"/>
-                <DataGridTextColumn Header="{lex:Loc Plans_Owner}" SortMemberPath="Owner" Width="80"
-                                    Binding="{Binding Item.Owner}" ElementStyle="{StaticResource BatchText}"/>
-                <DataGridTextColumn Header="{lex:Loc Plans_StartDate}" SortMemberPath="StartDate" Width="90"
-                                    Binding="{Binding Item.StartDate, StringFormat={}{0:yyyy/M/d}}" ElementStyle="{StaticResource BatchText}"/>
-                <DataGridTextColumn Header="{lex:Loc PlanEdit_EndDate}" SortMemberPath="EndDate" Width="90"
-                                    Binding="{Binding Item.EndDate, StringFormat={}{0:yyyy/M/d}}" ElementStyle="{StaticResource BatchText}"/>
-                <DataGridTextColumn Header="{lex:Loc Plans_Status}" SortMemberPath="Status" Width="75"
-                                    Binding="{Binding Item.Status}" ElementStyle="{StaticResource BatchText}"/>
-                <DataGridTextColumn Header="{lex:Loc Plans_ReportStatus}" SortMemberPath="ReportStatus" Width="80"
-                                    Binding="{Binding Item.ReportStatus}" ElementStyle="{StaticResource BatchText}"/>
-                <DataGridTextColumn Header="{lex:Loc Plans_UnitReturn}" SortMemberPath="UnitReturnDate" Width="90"
-                                    Binding="{Binding Item.UnitReturnDate, StringFormat={}{0:yyyy/M/d}}" ElementStyle="{StaticResource BatchText}"/>
-                <DataGridTextColumn Header="{lex:Loc Admin_Remark}" SortMemberPath="Remark" Width="150"
-                                    Binding="{Binding Item.Remark, Converter={StaticResource SingleLine}}" ElementStyle="{StaticResource BatchText}"/>
+                <DataGridTextColumn Header="{lex:Loc Plans_WorkNumber}" SortMemberPath="JobNo" Width="150"
+                                    Binding="{Binding JobNo}" ElementStyle="{StaticResource BatchText}"/>
+                <DataGridTextColumn Header="{lex:Loc Plans_ModelName}" SortMemberPath="ModelName" Width="220"
+                                    Binding="{Binding ModelName}" ElementStyle="{StaticResource BatchText}"/>
+                <DataGridTextColumn Header="{lex:Loc Plans_TestItem}" SortMemberPath="TestItem" Width="200"
+                                    Binding="{Binding TestItem}" ElementStyle="{StaticResource BatchText}"/>
             </DataGrid.Columns>
         </DataGrid>
 
-        <Grid Grid.Row="4" Margin="0,12,0,0">
+        <Grid Grid.Row="2" Margin="0,12,0,0">
             <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
@@ -150,10 +105,13 @@
             <ToggleButton x:Name="btn_topmost" Style="{StaticResource TopmostToggle}"
                           Content="{lex:Loc Plans_Batch_Topmost}" ToolTip="{lex:Loc Plans_Batch_TopmostToolTip}"
                           Checked="Btn_Topmost_Changed" Unchecked="Btn_Topmost_Changed"/>
-            <TextBlock Grid.Column="1" Margin="12,0,0,0" Text="{lex:Loc Plans_Batch_CopyHint}"
+            <!--移除点错加入的记录-->
+            <Button x:Name="btn_remove" Grid.Column="1" Content="{lex:Loc Plans_Batch_RemoveSelected}" Padding="8,2"
+                    Margin="8,0,0,0" Click="Btn_Remove_Click"/>
+            <TextBlock Grid.Column="2" Margin="12,0,0,0" Text="{lex:Loc Plans_Batch_CopyHint}"
                        VerticalAlignment="Center" TextWrapping="Wrap"
                        Foreground="{DynamicResource TextSecondaryBrush}"/>
-            <StackPanel Grid.Column="2" Orientation="Horizontal">
+            <StackPanel Grid.Column="3" Orientation="Horizontal">
                 <Button x:Name="btn_confirm" Width="110" Click="Btn_Confirm_Click" IsDefault="True"/>
                 <Button Content="{lex:Loc Common_Cancel}" Width="90" Margin="10,0,0,0" Click="Btn_Cancel_Click" IsCancel="True"/>
             </StackPanel>

@@ -14,21 +14,21 @@ namespace ORT一键报告.Plans.Views
     /// <summary>
     /// 计划表批量标记删除窗口（非模态）：工具菜单「批量删除」在计划表页签下打开，
     /// 与主窗口并存——计划表里左键单击一条记录，这里就新增一行（同一条只加一次）。
-    /// 清单列出将被删除的全部关键字段供核对；右键单击任一单元格即复制该值。
+    /// 清单只列辨认记录所需的信息（工作编号/机种名称/测试项目），右键单击任一单元格即复制该值。
     /// 点「确认」时通过 <see cref="Confirmed"/> 交给调用方（WindowPlans）标记删除，
     /// 仍走暂存 → 点「提交保存」时统一入库。
     /// </summary>
     public partial class WindowPlanBatchDelete : Window
     {
         private readonly Logger _logger = LogManager.GetCurrentClassLogger();
-        private readonly ObservableCollection<PlanBatchRow> _rows = [];
+        private readonly ObservableCollection<Plan> _rows = [];
         private readonly HashSet<Plan> _picked = [];
 
         /// <summary>点了「确认」时触发（调用方负责标记删除并结束会话）</summary>
         public event Action<WindowPlanBatchDelete> Confirmed;
 
         /// <summary>清单里将被标记删除的计划记录</summary>
-        public List<Plan> Targets { get; private set; } = [];
+        public List<Plan> Targets => [.. _rows];
 
         public WindowPlanBatchDelete()
         {
@@ -36,7 +36,7 @@ namespace ORT一键报告.Plans.Views
             dg_items.ItemsSource = _rows;
             btn_confirm.Content = LanguageService.Get("Plans_MarkDelete");
             RightClickCopy.AttachDataGrid(dg_items, BatchCellValue);
-            RefreshSummary();
+            RefreshState();
         }
 
         /* ###############################  清单增删  ################################ */
@@ -51,62 +51,45 @@ namespace ORT一键报告.Plans.Views
             bool added = false;
             foreach (Plan plan in records.Where(p => p != null).ToList())
             {
-                if (!_picked.Add(plan))
+                if (_picked.Add(plan))
                 {
-                    continue;
+                    _rows.Add(plan);
+                    added = true;
                 }
-                _rows.Add(new PlanBatchRow(plan, LanguageService.Get("Plans_Batch_StatusOkDelete")));
-                added = true;
             }
             if (added)
             {
-                RefreshSummary();
+                RefreshState();
             }
         }
 
         /// <summary>把清单里当前选中的记录移出（点错了可以撤销）</summary>
         private void Btn_Remove_Click(object sender, RoutedEventArgs e)
         {
-            List<PlanBatchRow> picked = [.. dg_items.SelectedItems.OfType<PlanBatchRow>()];
+            List<Plan> picked = [.. dg_items.SelectedItems.OfType<Plan>()];
             if (picked.Count == 0)
             {
                 return;
             }
-            foreach (PlanBatchRow row in picked)
+            foreach (Plan plan in picked)
             {
-                _rows.Remove(row);
-                _picked.Remove(row.Item);
+                _rows.Remove(plan);
+                _picked.Remove(plan);
             }
-            RefreshSummary();
+            RefreshState();
         }
 
         private void Dg_Items_SelectionChanged(object sender, SelectionChangedEventArgs e)
             => btn_remove.IsEnabled = dg_items.SelectedItems.Count > 0;
 
-        /* ###############################  清单与汇总  ################################ */
+        /* ###############################  状态  ################################ */
 
-        /// <summary>刷新标题、清单条数汇总（含机种分布）与空清单提示</summary>
-        private void RefreshSummary()
+        private void RefreshState()
         {
-            Targets = [.. _rows.Select(r => r.Item)];
-            Title = string.Format(LanguageService.Get("Plans_Batch_PlanDeleteTitle"), _rows.Count);
             txt_hint.Text = LanguageService.Get("Plans_Batch_PlanDeleteHint");
-            txt_summary.Text = string.Format(LanguageService.Get("Plans_Batch_SummaryFormat"),
-                _rows.Count, _rows.Count, 0, BuildModelSummary());
-            txt_empty.Visibility = _rows.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+            Title = string.Format(LanguageService.Get("Plans_Batch_PlanDeleteTitle"), _rows.Count);
             btn_confirm.IsEnabled = _rows.Count > 0;
             btn_remove.IsEnabled = dg_items.SelectedItems.Count > 0;
-        }
-
-        /// <summary>汇总条里的机种分布（按条数降序）</summary>
-        private string BuildModelSummary()
-        {
-            List<string> parts = [.. _rows
-                .GroupBy(r => string.IsNullOrWhiteSpace(r.Item.ModelName) ? "-" : r.Item.ModelName.Trim(), StringComparer.Ordinal)
-                .OrderByDescending(g => g.Count())
-                .ThenBy(g => g.Key, StringComparer.Ordinal)
-                .Select(g => string.Format(LanguageService.Get("Plans_Batch_ModelItemFormat"), g.Key, g.Count()))];
-            return parts.Count == 0 ? "-" : string.Join(LanguageService.Get("Plans_Batch_ModelSeparator"), parts);
         }
 
         /* ###############################  窗口位置与置顶  ################################ */
@@ -135,11 +118,9 @@ namespace ORT一键报告.Plans.Views
         private static string BatchCellValue(object item, DataGridColumn column)
         {
             string field = column?.SortMemberPath;
-            if (item is not PlanBatchRow row || string.IsNullOrEmpty(field))
-            {
-                return "";
-            }
-            return field == "Result" ? row.Result : PlanFieldText.PlanText(row.Item, field) ?? "";
+            return item is Plan plan && !string.IsNullOrEmpty(field)
+                ? PlanFieldText.PlanText(plan, field) ?? ""
+                : "";
         }
 
         /* ###############################  确认 / 取消  ################################ */
