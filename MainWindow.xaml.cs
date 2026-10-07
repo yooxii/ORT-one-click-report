@@ -6,10 +6,15 @@ using ORT一键报告.Plans.Views;
 using ORT一键报告.Reports.Views;
 using ORT一键报告.Review.Views;
 using ORT一键报告.Services;
+using ORT一键报告.Utils;
 using ORT一键报告.ViewModels;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Windows;
+using DrawingIcon = System.Drawing.Icon;
+using DrawingSystemIcons = System.Drawing.SystemIcons;
+using WinForms = System.Windows.Forms;
 
 namespace ORT一键报告
 {
@@ -33,6 +38,18 @@ namespace ORT一键报告
         {
             Interval = TimeSpan.FromHours(6)
         };
+
+        /// <summary>右下角托盘图标（最小化到后台时显示；退出或关闭后台运行后释放）</summary>
+        private WinForms.NotifyIcon _trayIcon;
+
+        /// <summary>本次关闭是否真的要退出程序（托盘「退出程序」/ 注销登录 / 系统结束会话时为 true）</summary>
+        private bool _exitRequested;
+
+        /// <summary>当前是否已最小化到后台（窗口隐藏、托盘图标有效）</summary>
+        private bool _inBackground;
+
+        /// <summary>本次运行是否以「后台运行」状态启动（由 --background 命令行参数决定）</summary>
+        public bool StartInBackground { get; set; }
 
         public MainViewModel MainVM { get; set; }
 
@@ -66,6 +83,235 @@ namespace ORT一键报告
             Loaded += (s, e) => StartMailReminder();
             Loaded += (s, e) => StartPlanIndexScheduler();
             Closed += (s, e) => _mailTimer.Stop();
+            // 关闭主窗口：先问是「最小化到后台」还是「退出程序」（见 OnClosing）
+            Closing += MainWindow_Closing;
+            Closed += (s, e) => DisposeTrayIcon();
+        }
+
+        /// <summary>
+        /// 系统结束会话 / 注销登录：不再拦截关闭，直接放行（由 App 的 SessionEnding 调用）
+        /// </summary>
+        public void AllowExitForSessionEnding() => _exitRequested = true;
+
+        /* ###############################  后台运行（托盘）  ################################ */
+
+        /// <summary>
+        /// 把窗口收进右下角托盘：隐藏窗口、显示托盘图标，并顺手清理一次内存；
+        /// 程序本身继续运行（报告扫描、计划索引、邮件提醒等后台任务照常）。
+        /// </summary>
+        public void MinimizeToBackground()
+        {
+            try
+            {
+                Hide();
+                ShowInTaskbar = false;
+                EnsureTrayIcon();
+                _inBackground = true;
+                UpdateTrayText();
+                // 界面相关的托管对象（图片、表格、报告预览等）暂时用不到了，回收并把工作集还给系统
+                MemoryTrimmer.Trim("最小化到后台");
+                _logger.Info("已最小化到后台（托盘）");
+                _trayIcon?.ShowBalloonTip(4000,
+                    LanguageService.Get("Main_TrayBalloonTitle"),
+                    LanguageService.Get("Main_TrayBalloonText"),
+                    WinForms.ToolTipIcon.Info);
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn($"最小化到后台失败: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 从托盘恢复主窗口（重复启动程序、双击托盘图标、托盘菜单都走这里）
+        /// </summary>
+        public void RestoreFromBackground()
+        {
+            try
+            {
+                _inBackground = false;
+                if (!IsVisible)
+                {
+                    Show();
+                }
+                ShowInTaskbar = true;
+                if (WindowState == WindowState.Minimized)
+                {
+                    WindowState = WindowState.Normal;
+                }
+                Activate();
+                Topmost = true;
+                Topmost = false;
+                Focus();
+                _logger.Info("已从后台恢复主窗口");
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn($"恢复主窗口失败: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 真正退出程序：置退出标记并关窗（OnClosing 不再拦截，OnClosed 里统一 Shutdown）
+        /// </summary>
+        public void ExitApplication()
+        {
+            _exitRequested = true;
+            Close();
+        }
+
+        /// <summary>
+        /// 主窗口关闭：先问是「最小化到后台」还是「退出程序」。
+        /// 「是」＝收进托盘并清理内存（取消本次关闭）；「否」＝退出程序；直接叉掉对话框＝什么都不做。
+        /// 用户关闭了「关闭时询问」或不希望拦截（托盘退出、注销、系统结束）时直接退出。
+        /// </summary>
+        private void MainWindow_Closing(object sender, CancelEventArgs e)
+        {
+            if (_exitRequested || Application.Current == null)
+            {
+                return;
+            }
+            if (App.IsExiting)
+            {
+                _exitRequested = true;
+                return;
+            }
+            if (!_appSettings.MinimizeToTrayOnClose)
+            {
+                _exitRequested = true;
+                return;
+            }
+            MessageBoxResult result = MessageBox.Show(this,
+                LanguageService.Get("Main_MinimizeAskMessage"),
+                LanguageService.Get("Main_MinimizeAskTitle"),
+                MessageBoxButton.YesNo, MessageBoxImage.Question);
+            if (result == MessageBoxResult.Yes)
+            {
+                e.Cancel = true;
+                MinimizeToBackground();
+                return;
+            }
+            _exitRequested = true;
+        }
+
+        /// <summary>
+        /// 按需创建托盘图标（最小化到后台时才需要；用户关掉后台运行后不再创建）
+        /// </summary>
+        private void EnsureTrayIcon()
+        {
+            if (_trayIcon != null)
+            {
+                return;
+            }
+            WinForms.ContextMenuStrip menu = new();
+            menu.Items.Add(LanguageService.Get("Main_TrayShow"), null, (s, e) => RestoreFromBackground());
+            menu.Items.Add(new WinForms.ToolStripSeparator());
+            menu.Items.Add(LanguageService.Get("Main_TrayExit"), null, (s, e) => ExitApplication());
+
+            _trayIcon = new WinForms.NotifyIcon
+            {
+                Icon = LoadTrayIcon(),
+                Visible = true,
+                ContextMenuStrip = menu
+            };
+            _trayIcon.DoubleClick += (s, e) => RestoreFromBackground();
+            UpdateTrayText();
+            // 设置里改字体后托盘菜单文字跟着变
+            _appSettings.SettingsChanged += OnSettingsChangedForTray;
+        }
+
+        /// <summary>
+        /// 刷新托盘图标提示文字与菜单（语言、字体、版本变化时调用）
+        /// </summary>
+        private void UpdateTrayText()
+        {
+            if (_trayIcon == null)
+            {
+                return;
+            }
+            try
+            {
+                _trayIcon.Text = LanguageService.Get("Main_TrayTip");
+                if (_trayIcon.ContextMenuStrip != null && _trayIcon.ContextMenuStrip.Items.Count >= 3)
+                {
+                    _trayIcon.ContextMenuStrip.Items[0].Text = LanguageService.Get("Main_TrayShow");
+                    _trayIcon.ContextMenuStrip.Items[2].Text = LanguageService.Get("Main_TrayExit");
+                    _trayIcon.ContextMenuStrip.Font = new System.Drawing.Font(
+                        _appSettings.Settings.UI.FontFamily,
+                        (float)Math.Max(8, Math.Min(12, _appSettings.Settings.UI.FontSize)));
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn($"刷新托盘提示失败: {ex.Message}");
+            }
+        }
+
+        private void OnSettingsChangedForTray()
+        {
+            Dispatcher.Invoke(() =>
+            {
+                if (_trayIcon == null)
+                {
+                    return;
+                }
+                if (!_appSettings.MinimizeToTrayOnClose && !_inBackground)
+                {
+                    // 用户取消了「关闭时最小化到后台」：清掉托盘图标，不留下无用的后台入口
+                    DisposeTrayIcon();
+                    return;
+                }
+                UpdateTrayText();
+            });
+        }
+
+        /// <summary>
+        /// 释放托盘图标（程序退出、或用户关掉后台运行时调用）
+        /// </summary>
+        public void DisposeTrayIcon()
+        {
+            if (_trayIcon == null)
+            {
+                return;
+            }
+            try
+            {
+                _trayIcon.Visible = false;
+                _trayIcon.Dispose();
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn($"释放托盘图标失败: {ex.Message}");
+            }
+            finally
+            {
+                _trayIcon = null;
+                _appSettings.SettingsChanged -= OnSettingsChangedForTray;
+            }
+        }
+
+        /// <summary>
+        /// 托盘图标：优先取程序自带图标；取不到时退回系统信息图标（不影响功能）
+        /// </summary>
+        private static DrawingIcon LoadTrayIcon()
+        {
+            try
+            {
+                string exe = StartupManager.ProgramPath();
+                if (!string.IsNullOrEmpty(exe) && System.IO.File.Exists(exe))
+                {
+                    DrawingIcon icon = System.Drawing.Icon.ExtractAssociatedIcon(exe);
+                    if (icon != null)
+                    {
+                        return icon;
+                    }
+                }
+            }
+            catch
+            {
+                // 忽略，用系统图标兜底
+            }
+            return DrawingSystemIcons.Application;
         }
 
         /// <summary>
@@ -386,7 +632,7 @@ namespace ORT一键报告
 
         private void MenuItem_Quit_Click(object sender, RoutedEventArgs e)
         {
-            Close();
+            ExitApplication();
         }
 
         private void Button_YiJianBaoGao_Click(object sender, RoutedEventArgs e)

@@ -3058,4 +3058,65 @@
   <data name="Plans_Batch_AlreadyOpen" xml:space="preserve">
     <value>已有一個批量視窗正在點選：先點它的「確認」或「取消」結束，再開始新的批量操作</value>
   </data>
+  <data name="Settings_Background" xml:space="preserve">
+    <value>背景執行</value>
+  </data>
+  <data name="Settings_BackgroundHint" xml:space="preserve">
+    <value>控制關閉主視窗時的行為與開機自動啟動；這些設定按本機儲存，不隨資料夾共享給其他電腦。</value>
+  </data>
+  <data name="Settings_MinimizeToTray" xml:space="preserve">
+    <value>關閉主視窗時先詢問是否最小化到背景</value>
+  </data>
+  <data name="Settings_MinimizeToTrayHint" xml:space="preserve">
+    <value>勾選後，關閉主視窗會先詢問「最小化到背景繼續執行」還是「結束程式」；最小化到背景時視窗收進右下角通知區域並順手清理一次記憶體，程式仍在背景執行（自動掃描、郵件提醒照常執行），連按兩下通知區域圖示即可恢復視窗，按右鍵可選擇結束。</value>
+  </data>
+  <data name="Settings_AutoStart" xml:space="preserve">
+    <value>開機自動啟動（目前使用者）</value>
+  </data>
+  <data name="Settings_AutoStartHint" xml:space="preserve">
+    <value>登錄到目前使用者的啟動項，登入 Windows 後自動執行本程式，不需要管理員權限；在工作管理員的「啟動」頁也看得到並可關閉。程式位於網路共享或網路磁碟時不允許自動啟動。修改後按「儲存/套用」寫入。</value>
+  </data>
+  <data name="Settings_AutoStartBackground" xml:space="preserve">
+    <value>開機自動啟動時直接進背景</value>
+  </data>
+  <data name="Settings_AutoStartBackgroundHint" xml:space="preserve">
+    <value>勾選後開機自動啟動不彈出主視窗，直接收進通知區域；需要登入時仍會先彈出登入視窗。</value>
+  </data>
+  <data name="Settings_AutoStartRemoteBlockedFormat" xml:space="preserve">
+    <value>程式目前位於遠端路徑：{0}
+遠端路徑（網路共享或網路磁碟）裡的程式不能設定開機自動啟動：登入時網路往往還沒就緒，登錄了也會啟動失敗。請把程式解壓到本機磁碟後再設定。</value>
+  </data>
+  <data name="Settings_AutoStartFailedFormat" xml:space="preserve">
+    <value>設定開機自動啟動失敗：{0}</value>
+  </data>
+  <data name="Main_TrayShow" xml:space="preserve">
+    <value>顯示主視窗</value>
+  </data>
+  <data name="Main_TrayExit" xml:space="preserve">
+    <value>結束程式</value>
+  </data>
+  <data name="Main_TrayBalloonTitle" xml:space="preserve">
+    <value>已最小化到背景</value>
+  </data>
+  <data name="Main_TrayBalloonText" xml:space="preserve">
+    <value>程式仍在背景執行（自動掃描、郵件提醒照常執行），連按兩下通知區域圖示可恢復視窗。</value>
+  </data>
+  <data name="Main_MinimizeAskMessage" xml:space="preserve">
+    <value>是否最小化到背景繼續執行？
+「是」＝收進右下角通知區域並清理一次記憶體，程式繼續在背景執行；
+「否」＝直接結束程式。
+（可在「設定 → 背景執行」裡關閉本提示）</value>
+  </data>
+  <data name="Main_MinimizeAskTitle" xml:space="preserve">
+    <value>關閉主視窗</value>
+  </data>
+  <data name="Main_TrayTip" xml:space="preserve">
+    <value>ORT實驗室管理系統（在背景執行，連按兩下恢復視窗）</value>
+  </data>
+  <data name="Msg_AlreadyRunning" xml:space="preserve">
+    <value>程式已經開啟：已把它的視窗顯示出來，本次不再重複啟動。</value>
+  </data>
+  <data name="Msg_AlreadyRunningTitle" xml:space="preserve">
+    <value>程式已在執行</value>
+  </data>
 </root>

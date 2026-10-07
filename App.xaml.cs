@@ -24,12 +24,39 @@ namespace ORT一键报告
 
         public static IServiceProvider ServiceProvider { get; private set; }
 
+        /// <summary>
+        /// 程序是否正在退出（托盘「退出程序」/注销等）：主窗口据此不再拦截关闭。
+        /// </summary>
+        public static bool IsExiting { get; private set; }
+
+        /// <summary>
+        /// 又启动了一个实例（第一个实例收到通知）：把已有窗口显示出来。
+        /// 监听在拿到互斥体后就开始，登录窗口阶段也能响应，避免新实例一直等不到回应。
+        /// </summary>
+        private static event Action InstanceActivationRequested;
+
+        /// <summary>主窗口还没建好时收到的「又启动了一个」请求（登录窗口阶段）；由管道线程写入，故用 volatile</summary>
+        private volatile bool _activationPending;
+
         protected override void OnStartup(StartupEventArgs e)
         {
             logger.Info("ORT实验室管理系统程序启动");
             try
             {
                 base.OnStartup(e);
+
+                // 单实例：同一个 Windows 用户只允许开一个。已经有一个在运行时，
+                // 通知它把主窗口显示出来（恢复/置前），本次启动直接退出。
+                if (!SingleInstanceManager.TryAcquire())
+                {
+                    logger.Info("已有实例在运行，本次启动结束");
+                    Shutdown(0);
+                    return;
+                }
+                // 立刻开始监听重复启动请求：此时可能还停在登录窗口，也要能回应
+                //（主窗口没建好时先记下来，等窗口出来再显示）
+                SingleInstanceManager.StartListening(() => InstanceActivationRequested?.Invoke());
+                InstanceActivationRequested += () => _activationPending = true;
 
                 // 登录前置后，启动阶段唯一的窗口是登录窗口：若保持 WPF 默认的
                 // ShutdownMode.OnLastWindowClose，登录窗口一关闭（登录成功 / 游客进入 / 直接关掉）
@@ -172,10 +199,33 @@ namespace ORT一键报告
                 logger.Info(loginResult == true ? "登录成功，打开主界面" : "以游客身份进入主界面");
 
                 // 手动创建主窗口（App.xaml 已去掉 StartupUri，以便登录前置）
-                MainWindow mainWindow = new();
+                MainWindow mainWindow = new()
+                {
+                    // 开机自启到后台：带上 --background 启动时不弹主窗口，直接进托盘（后台任务照常跑）
+                    StartInBackground = StartupManager.StartsInBackground(e.Args)
+                };
                 // 显式登记为主窗口：任务栏、Toast 定位与 Owner 归属都依赖它（登录窗口是启动阶段的临时窗口）
                 MainWindow = mainWindow;
                 mainWindow.Show();
+
+                // 监听「又开了一个」的请求：主窗口就绪后，把它转回 UI 线程并显示主窗口
+                InstanceActivationRequested += () => Dispatcher.Invoke(mainWindow.RestoreFromBackground);
+
+                // 系统注销/关机时不再拦截主窗口关闭
+                SessionEnding += (s, args) => mainWindow.AllowExitForSessionEnding();
+
+                if (mainWindow.StartInBackground)
+                {
+                    logger.Info("按 --background 参数以后台方式启动，直接最小化到托盘");
+                    mainWindow.MinimizeToBackground();
+                }
+                else if (_activationPending)
+                {
+                    // 登录窗口阶段用户又双击了一次图标：这里补上「显示窗口」的动作
+                    _activationPending = false;
+                    logger.Info("登录期间收到过重复启动请求，主窗口显示后置前");
+                    mainWindow.RestoreFromBackground();
+                }
 
                 // 主窗口显示后启动闲置报告扫描调度（与计划索引调度并列）
                 try
@@ -241,6 +291,7 @@ namespace ORT一键报告
 
         protected override void OnExit(ExitEventArgs e)
         {
+            IsExiting = true;
             logger.Info("程序退出");
             try
             {
@@ -250,6 +301,16 @@ namespace ORT一键报告
             {
                 logger.Warn($"清理临时目录失败: {ex.Message}");
             }
+            // 托盘图标与单实例互斥体都要收干净，避免残留图标或让下一次启动误判为"已有一个在运行"
+            try
+            {
+                (MainWindow as ORT一键报告.MainWindow)?.DisposeTrayIcon();
+            }
+            catch (Exception ex)
+            {
+                logger.Warn($"释放托盘图标失败: {ex.Message}");
+            }
+            SingleInstanceManager.Release();
             (ServiceProvider as IDisposable)?.Dispose();
             LogManager.Shutdown();
             base.OnExit(e);

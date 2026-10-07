@@ -38,5 +38,26 @@ namespace ORT一键报告.Models
 
         /// <summary>计划表列布局（"requisitions" / "plans" → 列键列表）</summary>
         public Dictionary<string, List<string>> PlansLayout { get; set; }
+
+        /// <summary>后台运行设置（本机：最小化到后台 / 开机自启）</summary>
+        public BackgroundSettings Background { get; set; } = new BackgroundSettings();
+    }
+
+    /// <summary>
+    /// 后台运行设置（保存在本机 local_settings.json）：
+    /// 「最小化到后台」只影响本机的窗口关闭行为，「开机自启」要写当前用户的注册表启动项，
+    /// 因此这两项都跟随本机，不随数据库共享给其他电脑。
+    /// 远程路径（网络共享 / 网络盘 / SUBST 虚拟盘）里的程序不登记开机自启，见 StartupManager。
+    /// </summary>
+    public class BackgroundSettings
+    {
+        /// <summary>关闭主窗口时询问是否最小化到后台（托盘），默认开启</summary>
+        public bool MinimizeToTrayOnClose { get; set; } = true;
+
+        /// <summary>开机自启（当前用户，无需管理员权限）</summary>
+        public bool AutoStart { get; set; }
+
+        /// <summary>开机自启时直接进后台（托盘），不弹出主窗口</summary>
+        public bool AutoStartToBackground { get; set; }
     }
 }

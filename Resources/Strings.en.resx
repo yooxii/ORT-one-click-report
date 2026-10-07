@@ -3058,4 +3058,65 @@ Exit now and discard them?</value>
   <data name="Plans_Batch_AlreadyOpen" xml:space="preserve">
     <value>A batch window is already picking records: confirm or cancel it first, then start a new batch action</value>
   </data>
+  <data name="Settings_Background" xml:space="preserve">
+    <value>Background</value>
+  </data>
+  <data name="Settings_BackgroundHint" xml:space="preserve">
+    <value>Controls what happens when the main window is closed and whether the app starts with Windows. These settings are stored on this computer only and are not shared through the data folder.</value>
+  </data>
+  <data name="Settings_MinimizeToTray" xml:space="preserve">
+    <value>Ask to minimize to background when closing the main window</value>
+  </data>
+  <data name="Settings_MinimizeToTrayHint" xml:space="preserve">
+    <value>When enabled, closing the main window first asks whether to keep running in the background or to exit. Minimizing sends the window to the notification area, frees memory once, and keeps the app running (automatic scans and mail reminders continue). Double-click the tray icon to restore the window; right-click it to exit.</value>
+  </data>
+  <data name="Settings_AutoStart" xml:space="preserve">
+    <value>Start with Windows (current user)</value>
+  </data>
+  <data name="Settings_AutoStartHint" xml:space="preserve">
+    <value>Registers a startup entry for the current user so the app runs after signing in to Windows; no administrator rights are required. The entry is also listed on the Startup page of Task Manager. Starting from a network share or mapped network drive is not allowed. Click Save or Apply to write the change.</value>
+  </data>
+  <data name="Settings_AutoStartBackground" xml:space="preserve">
+    <value>Start minimized to background</value>
+  </data>
+  <data name="Settings_AutoStartBackgroundHint" xml:space="preserve">
+    <value>When enabled, starting with Windows does not open the main window; the app goes straight to the notification area. A login window still appears when signing in is required.</value>
+  </data>
+  <data name="Settings_AutoStartRemoteBlockedFormat" xml:space="preserve">
+    <value>The program is running from a remote path: {0}
+Programs on a remote path (network share or mapped network drive) cannot start with Windows: the network is usually not ready at sign-in, so the entry would fail. Extract the program to a local disk first.</value>
+  </data>
+  <data name="Settings_AutoStartFailedFormat" xml:space="preserve">
+    <value>Failed to change the startup setting: {0}</value>
+  </data>
+  <data name="Main_TrayShow" xml:space="preserve">
+    <value>Show main window</value>
+  </data>
+  <data name="Main_TrayExit" xml:space="preserve">
+    <value>Exit</value>
+  </data>
+  <data name="Main_TrayBalloonTitle" xml:space="preserve">
+    <value>Minimized to background</value>
+  </data>
+  <data name="Main_TrayBalloonText" xml:space="preserve">
+    <value>The app is still running in the background (automatic scans and mail reminders continue). Double-click the tray icon to restore the window.</value>
+  </data>
+  <data name="Main_MinimizeAskMessage" xml:space="preserve">
+    <value>Keep running in the background?
+Yes = move to the notification area, free memory once and keep running;
+No = exit the program.
+(This prompt can be turned off in Settings > Background.)</value>
+  </data>
+  <data name="Main_MinimizeAskTitle" xml:space="preserve">
+    <value>Close main window</value>
+  </data>
+  <data name="Main_TrayTip" xml:space="preserve">
+    <value>ORT Lab Management System (running in the background; double-click to restore)</value>
+  </data>
+  <data name="Msg_AlreadyRunning" xml:space="preserve">
+    <value>The program is already running: its window has been brought to the front, so this launch is skipped.</value>
+  </data>
+  <data name="Msg_AlreadyRunningTitle" xml:space="preserve">
+    <value>Already running</value>
+  </data>
 </root>

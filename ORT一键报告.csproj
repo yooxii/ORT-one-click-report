@@ -86,6 +86,8 @@
     <Reference Include="System.configuration" />
     <Reference Include="System.Data" />
     <Reference Include="System.Drawing" />
+    <!--托盘图标（最小化到后台）用 WinForms 的 NotifyIcon；只用到 WinForms，界面仍是 WPF-->
+    <Reference Include="System.Windows.Forms" />
     <Reference Include="System.IO.Compression.FileSystem" />
     <Reference Include="System.Numerics" />
     <Reference Include="System.Security" />
@@ -150,6 +152,9 @@
     <Compile Include="Services\ReportScanService.cs" />
     <Compile Include="Services\ReportScanScheduler.cs" />
     <Compile Include="Services\HighCostTaskCoordinator.cs" />
+    <Compile Include="Services\StartupManager.cs" />
+    <Compile Include="Services\SingleInstanceManager.cs" />
+    <Compile Include="Utils\MemoryTrimmer.cs" />
     <Compile Include="Models\ReportStatusKind.cs" />
     <Compile Include="Models\RequisitionDispositionKind.cs" />
     <Compile Include="Services\ReportTemplateService.cs" />

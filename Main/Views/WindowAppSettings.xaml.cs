@@ -139,6 +139,7 @@ namespace ORT一键报告.Main.Views
             _sections.Add(("sec_mail_template", sec_mail_template));
             _sections.Add(("sec_planindex", sec_planindex));
             _sections.Add(("sec_reportscan", sec_reportscan));
+            _sections.Add(("sec_background", sec_background));
         }
 
         /// <summary>
@@ -554,6 +555,115 @@ namespace ORT一键报告.Main.Views
             chk_reportScanAuto.IsChecked = _settings.GetBool(ReportScanScheduler.SettingAutoKey, true);
             txt_reportScanIdle.Text = _settings.GetInt(ReportScanScheduler.SettingIdleSecondsKey,
                 ReportScanScheduler.DefaultIdleSeconds).ToString();
+
+            // 后台运行（本机设置，所有用户可见）
+            LoadBackgroundValues();
+        }
+
+        /* ###############################  后台运行（本机）  ################################ */
+
+        /// <summary>
+        /// 载入后台运行设置。
+        /// 「开机自启」以注册表为准（用户可能在任务管理器里关掉），发现不一致就同步回本机设置，
+        /// 避免设置界面显示的状态与实际自启状态不一致。
+        /// </summary>
+        private void LoadBackgroundValues()
+        {
+            BackgroundSettings background = _settings.GetBackgroundSettings();
+            bool registered = StartupManager.IsEnabled();
+            if (registered != background.AutoStart
+                || (registered && StartupManager.IsRegisteredToBackground() != background.AutoStartToBackground))
+            {
+                background.AutoStart = registered;
+                if (!registered)
+                {
+                    background.AutoStartToBackground = false;
+                }
+                else
+                {
+                    background.AutoStartToBackground = StartupManager.IsRegisteredToBackground();
+                }
+                _settings.SetBackgroundSettings(background);
+            }
+
+            _loading = true;
+            chk_minimizeToTray.IsChecked = background.MinimizeToTrayOnClose;
+            chk_autoStart.IsChecked = background.AutoStart;
+            chk_autoStartBackground.IsChecked = background.AutoStartToBackground;
+            _loading = false;
+            UpdateBackgroundState();
+        }
+
+        /// <summary>
+        /// 刷新后台运行区的联动状态：不勾自启时「自启到后台」不可选；
+        /// 程序位于远程路径时禁止开机自启，并把原因显示在下方。
+        /// </summary>
+        private void UpdateBackgroundState()
+        {
+            string remote = StartupManager.TryDescribeRemoteLocation();
+            bool blocked = remote != null;
+            chk_autoStart.IsEnabled = !blocked;
+            chk_autoStartBackground.IsEnabled = !blocked && chk_autoStart.IsChecked == true;
+            if (blocked)
+            {
+                chk_autoStart.IsChecked = false;
+                chk_autoStartBackground.IsChecked = false;
+                txt_autoStartBlocked.Text = string.Format(LanguageService.Get("Settings_AutoStartRemoteBlockedFormat"), remote);
+                txt_autoStartBlocked.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                txt_autoStartBlocked.Text = "";
+                txt_autoStartBlocked.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        private void Chk_AutoStart_Changed(object sender, RoutedEventArgs e)
+        {
+            if (_loading)
+            {
+                return;
+            }
+            UpdateBackgroundState();
+        }
+
+        /// <summary>
+        /// 界面值写回后台运行设置，并按需写入/删除注册表启动项。
+        /// 远程路径禁用自启：界面勾不上，这里再挡一次（设置窗口开着时程序也不会换位置）。
+        /// </summary>
+        private bool ApplyBackgroundValues()
+        {
+            BackgroundSettings background = _settings.GetBackgroundSettings();
+            background.MinimizeToTrayOnClose = chk_minimizeToTray.IsChecked == true;
+
+            bool wantAutoStart = chk_autoStart.IsChecked == true;
+            bool wantBackground = wantAutoStart && chk_autoStartBackground.IsChecked == true;
+            if (wantAutoStart && StartupManager.TryDescribeRemoteLocation() is string remote)
+            {
+                _ = MessageBox.Show(
+                    string.Format(LanguageService.Get("Settings_AutoStartRemoteBlockedFormat"), remote),
+                    LanguageService.Get("Cap_Warning"), MessageBoxButton.OK, MessageBoxImage.Warning);
+                chk_autoStart.IsChecked = false;
+                UpdateBackgroundState();
+                return false;
+            }
+            if (wantAutoStart != StartupManager.IsEnabled()
+                || (wantAutoStart && wantBackground != StartupManager.IsRegisteredToBackground()))
+            {
+                if (!StartupManager.TryEnable(wantAutoStart, wantBackground, out string error))
+                {
+                    _ = MessageBox.Show(
+                        string.Format(LanguageService.Get("Settings_AutoStartFailedFormat"), error),
+                        LanguageService.Get("Cap_Error"), MessageBoxButton.OK, MessageBoxImage.Warning);
+                    chk_autoStart.IsChecked = StartupManager.IsEnabled();
+                    UpdateBackgroundState();
+                    return false;
+                }
+            }
+            background.AutoStart = wantAutoStart;
+            background.AutoStartToBackground = wantBackground;
+            _settings.SetBackgroundSettings(background);
+            return true;
         }
 
         /* ###############################  保存/应用/取消  ################################ */
@@ -666,6 +776,12 @@ namespace ORT一键报告.Main.Views
             {
                 _settings.SetEmiDataPath(emiPath);
                 _initialEmiPath = emiPath;
+            }
+
+            // 后台运行：本机设置 + 注册表启动项（远程路径会被拒绝，远程时返回 false 放弃本次保存）
+            if (!ApplyBackgroundValues())
+            {
+                return false;
             }
 
             // 数据文件夹：仅管理员。判据是"输入框里的路径 vs 磁盘上已保存的路径"，

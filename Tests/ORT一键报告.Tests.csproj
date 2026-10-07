@@ -63,6 +63,7 @@
     <Compile Include="PlansViewRefreshTests.cs" />
     <Compile Include="RequisitionBatchRulesTests.cs" />
     <Compile Include="SnVerificationTests.cs" />
+    <Compile Include="StartupManagerTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\ORT一键报告.csproj">

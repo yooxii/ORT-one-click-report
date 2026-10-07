@@ -124,6 +124,32 @@ namespace ORT一键报告.Services
         public void SetAteDataPath(string dir) => LocalSettingsStore.Update(s => s.AteDataPath = dir);
         public void SetEmiDataPath(string dir) => LocalSettingsStore.Update(s => s.EmiDataPath = dir);
 
+        /* ---- 后台运行（本机）：关闭窗口是否最小化到后台、开机自启 ---- */
+
+        /// <summary>
+        /// 读取后台运行设置（旧版本文件里没有这一节时返回默认值）
+        /// </summary>
+        public BackgroundSettings GetBackgroundSettings()
+            => LocalSettingsStore.Read().Background ?? new BackgroundSettings();
+
+        /// <summary>
+        /// 保存后台运行设置
+        /// </summary>
+        public void SetBackgroundSettings(BackgroundSettings background)
+        {
+            if (background == null)
+            {
+                return;
+            }
+            LocalSettingsStore.Update(s => s.Background = background);
+        }
+
+        /// <summary>关闭主窗口时是否询问最小化到后台</summary>
+        public bool MinimizeToTrayOnClose => GetBackgroundSettings().MinimizeToTrayOnClose;
+
+        /// <summary>开机自启是否登记为「直接进后台」</summary>
+        public bool StartToBackground => GetBackgroundSettings().AutoStartToBackground;
+
         /* ###############################  数据库设置（app_settings 表）  ################################ */
 
         /// <summary>

@@ -45,6 +45,7 @@
                     </TreeViewItem>
                     <TreeViewItem Header="{lex:Loc PlanIndex_Settings_Title}" Tag="sec_planindex"/>
                     <TreeViewItem Header="{lex:Loc ReportScan_SettingsTitle}" Tag="sec_reportscan"/>
+                    <TreeViewItem Header="{lex:Loc Settings_Background}" Tag="sec_background"/>
                 </TreeView>
             </DockPanel>
         </Border>
@@ -461,6 +462,29 @@
                         </StackPanel>
                         <TextBlock Text="{lex:Loc ReportScan_IdleSecondsHint}" Foreground="{DynamicResource TextSecondaryBrush}"
                                    TextWrapping="Wrap" Margin="0,4,0,0"/>
+                    </StackPanel>
+                </Border>
+
+                <!--后台运行：关闭窗口最小化到后台（托盘）、开机自启、自启到后台；本机设置，所有用户可见-->
+                <Border x:Name="sec_background" Padding="0,10">
+                    <StackPanel>
+                        <TextBlock Text="{lex:Loc Settings_Background}" FontSize="16" FontWeight="SemiBold"/>
+                        <TextBlock Text="{lex:Loc Settings_BackgroundHint}" Foreground="{DynamicResource TextSecondaryBrush}"
+                                   TextWrapping="Wrap" Margin="0,2,0,8"/>
+                        <CheckBox x:Name="chk_minimizeToTray" Content="{lex:Loc Settings_MinimizeToTray}" Margin="0,2,0,2"
+                                  ToolTip="{lex:Loc Settings_MinimizeToTrayHint}"/>
+                        <TextBlock Text="{lex:Loc Settings_MinimizeToTrayHint}" Foreground="{DynamicResource TextSecondaryBrush}"
+                                   TextWrapping="Wrap" Margin="24,0,0,8"/>
+                        <CheckBox x:Name="chk_autoStart" Content="{lex:Loc Settings_AutoStart}" Margin="0,2,0,2"
+                                  Checked="Chk_AutoStart_Changed" Unchecked="Chk_AutoStart_Changed"/>
+                        <TextBlock Text="{lex:Loc Settings_AutoStartHint}" Foreground="{DynamicResource TextSecondaryBrush}"
+                                   TextWrapping="Wrap" Margin="24,0,0,8"/>
+                        <CheckBox x:Name="chk_autoStartBackground" Content="{lex:Loc Settings_AutoStartBackground}" Margin="24,2,0,2"
+                                  ToolTip="{lex:Loc Settings_AutoStartBackgroundHint}"/>
+                        <TextBlock Text="{lex:Loc Settings_AutoStartBackgroundHint}" Foreground="{DynamicResource TextSecondaryBrush}"
+                                   TextWrapping="Wrap" Margin="48,0,0,8"/>
+                        <TextBlock x:Name="txt_autoStartBlocked" Foreground="{DynamicResource TextSecondaryBrush}"
+                                   TextWrapping="Wrap" Margin="24,0,0,0" Visibility="Collapsed"/>
                     </StackPanel>
                 </Border>
 

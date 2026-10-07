@@ -3058,4 +3058,65 @@
   <data name="Plans_Batch_AlreadyOpen" xml:space="preserve">
     <value>已有一个批量窗口正在点选：先点它的「确认」或「取消」结束，再开始新的批量操作</value>
   </data>
+  <data name="Settings_Background" xml:space="preserve">
+    <value>后台运行</value>
+  </data>
+  <data name="Settings_BackgroundHint" xml:space="preserve">
+    <value>控制关闭主窗口时的行为与开机自启；这些设置按本机保存，不随数据文件夹共享给其他电脑。</value>
+  </data>
+  <data name="Settings_MinimizeToTray" xml:space="preserve">
+    <value>关闭主窗口时先询问是否最小化到后台</value>
+  </data>
+  <data name="Settings_MinimizeToTrayHint" xml:space="preserve">
+    <value>勾选后，关闭主窗口会先询问「最小化到后台继续运行」还是「退出程序」；最小化到后台时窗口收进右下角托盘并顺手清理一次内存，程序仍在后台运行（自动扫描、邮件提醒照常执行），双击托盘图标即可恢复窗口，右键托盘图标可选退出。</value>
+  </data>
+  <data name="Settings_AutoStart" xml:space="preserve">
+    <value>开机自启（当前用户）</value>
+  </data>
+  <data name="Settings_AutoStartHint" xml:space="preserve">
+    <value>登记到当前用户的启动项，登录 Windows 后自动运行本程序，不需要管理员权限；在任务管理器的「启动」页也能看到并关闭。程序位于网络共享或网络盘时不允许自启。修改后按「保存/应用」写入。</value>
+  </data>
+  <data name="Settings_AutoStartBackground" xml:space="preserve">
+    <value>开机自启时直接进后台</value>
+  </data>
+  <data name="Settings_AutoStartBackgroundHint" xml:space="preserve">
+    <value>勾选后开机自启不弹出主窗口，直接收进托盘；需要登录时仍会先弹出登录窗口。</value>
+  </data>
+  <data name="Settings_AutoStartRemoteBlockedFormat" xml:space="preserve">
+    <value>程序当前位于远程路径：{0}
+远程路径（网络共享或网络盘）里的程序不能设置开机自启：登录时网络往往还没就绪，登记了也会自启失败。请把程序解压到本机磁盘后再设置。</value>
+  </data>
+  <data name="Settings_AutoStartFailedFormat" xml:space="preserve">
+    <value>设置开机自启失败：{0}</value>
+  </data>
+  <data name="Main_TrayShow" xml:space="preserve">
+    <value>显示主窗口</value>
+  </data>
+  <data name="Main_TrayExit" xml:space="preserve">
+    <value>退出程序</value>
+  </data>
+  <data name="Main_TrayBalloonTitle" xml:space="preserve">
+    <value>已最小化到后台</value>
+  </data>
+  <data name="Main_TrayBalloonText" xml:space="preserve">
+    <value>程序仍在后台运行（自动扫描、邮件提醒照常执行），双击托盘图标可恢复窗口。</value>
+  </data>
+  <data name="Main_MinimizeAskMessage" xml:space="preserve">
+    <value>是否最小化到后台继续运行？
+「是」＝收进右下角托盘并清理一次内存，程序继续在后台运行；
+「否」＝直接退出程序。
+（可在「设置 → 后台运行」里关闭本提示）</value>
+  </data>
+  <data name="Main_MinimizeAskTitle" xml:space="preserve">
+    <value>关闭主窗口</value>
+  </data>
+  <data name="Main_TrayTip" xml:space="preserve">
+    <value>ORT实验室管理系统（在后台运行，双击恢复窗口）</value>
+  </data>
+  <data name="Msg_AlreadyRunning" xml:space="preserve">
+    <value>程序已经打开：已把它的窗口显示出来，本次不再重复启动。</value>
+  </data>
+  <data name="Msg_AlreadyRunningTitle" xml:space="preserve">
+    <value>程序已运行</value>
+  </data>
 </root>
