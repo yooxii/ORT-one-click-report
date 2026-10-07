@@ -643,6 +643,41 @@ class MailTests(TempDatabaseTest):
         self.assertEqual(1, summary["sent"])
         self.assertIn("admin@example.com", summary["details"][0])
 
+    def test_reminder_skips_when_the_other_end_already_sent(self):
+        """两端共用 mail_logs 去重：主程序刚发过的计划，XP 端这一轮要跳过（不重复发信）。"""
+        owner_id = self.add_user("wang", "secret", display_name="王工", email="wang@example.com")
+        self.db.execute("INSERT INTO user_roles (UserId, Role) VALUES (?, ?)", (owner_id, "Technician"))
+        self.db.execute(
+            "INSERT INTO plans (JobNo, ModelName, Owner, EndDate, Status) VALUES (?, ?, ?, ?, ?)",
+            ("RT2601", "X100", "王工", "2026-10-08 00:00:00", "进行中"),
+        )
+        # 主程序（.NET 侧）写下的发送记录：Kind=Warning / RefType=Plan / RefKey=工作編號 / Success=1
+        self.db.execute(
+            "INSERT INTO mail_logs (Kind, RefType, RefKey, Recipients, Subject, Success, CreatedAt) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (
+                "Warning",
+                "Plan",
+                "RT2601",
+                "wang@example.com",
+                "提醒",
+                1,
+                compat.format_datetime_text(datetime.datetime.now()),
+            ),
+        )
+        self.settings.dedupe_days = 1
+        reminder = mail_service.PlanDeadlineReminder(self.db, self.service, self.settings)
+        summary = reminder.run(dry_run=True, today=datetime.datetime(2026, 10, 7, 8, 0, 0))
+        self.assertEqual(1, summary["candidates"])
+        self.assertEqual(0, summary["sent"])
+        self.assertEqual(1, summary["skipped"])
+        self.assertIn("去重", summary["details"][0])
+
+        # 去重关掉（=0）就没有这层保护，两端都会发 —— 所以设置界面会为此给出警告
+        self.settings.dedupe_days = 0
+        summary = reminder.run(dry_run=True, today=datetime.datetime(2026, 10, 7, 8, 0, 0))
+        self.assertEqual(1, summary["sent"])
+
 
 class MailConfigTests(TempDatabaseTest):
     """邮件设置界面写库：取值校验 + 与主程序一致的键名/文本格式。"""
@@ -715,6 +750,18 @@ class MailConfigTests(TempDatabaseTest):
         self.assertTrue([line for line in warnings if "集成验证" in line])
         self.assertTrue([line for line in warnings if "抄送" in line])
 
+    def test_validate_warns_when_dedupe_is_off(self):
+        """去重是两端共用的防重复机制：关掉它就该警告（警告类邮件开着时）。"""
+        _cleaned, errors, warnings = mail_config.validate(self.values(**{"mail.dedupeDays": "0"}))
+        self.assertEqual([], errors)
+        self.assertTrue([line for line in warnings if "去重天数为 0" in line])
+
+        # 警告类邮件没开就不会有重复发信问题，不该刷这条警告
+        _cleaned, _errors, warnings = mail_config.validate(
+            self.values(**{"mail.dedupeDays": "0", "mail.warningEnabled": False})
+        )
+        self.assertEqual([], [line for line in warnings if "去重天数为 0" in line])
+
     def test_save_writes_dotnet_text_and_leaves_foreign_keys(self):
         store = config.AppSettingsStore(self.db)
         store.set("mail.passwordEnc", "主程序写的密文")
@@ -783,6 +830,60 @@ class MailConfigTests(TempDatabaseTest):
             self.assertTrue(hasattr(settings, field["attr"]), "%s 的 attr 不存在" % field["key"])
         self.assertEqual(len(mail_config.FIELD_KEYS), len(set(mail_config.FIELD_KEYS)))
         self.assertEqual(set(mail_config.FIELD_KEYS), set(mail_config.current_values(settings)))
+
+
+class ReminderCommandTests(TempDatabaseTest):
+    """``--check-plans-email`` 的退出码：现场的计划任务靠它判断这一轮有没有发失败。"""
+
+    def setUp(self):
+        TempDatabaseTest.setUp(self)
+        user_id = self.add_user("wang", "secret", display_name="王工", email="wang@example.com")
+        self.db.execute("INSERT INTO user_roles (UserId, Role) VALUES (?, ?)", (user_id, "Technician"))
+        tomorrow = compat.format_datetime_text(datetime.datetime.now() + datetime.timedelta(days=1))
+        self.db.execute(
+            "INSERT INTO plans (JobNo, ModelName, Owner, EndDate, Status) VALUES (?, ?, ?, ?, ?)",
+            ("RT2601", "X100", "王工", tomorrow, "进行中"),
+        )
+        # 一台不存在的 SMTP 服务器（本机 1 端口）：真实发送必然失败，且立刻被拒
+        config.AppSettingsStore(self.db).set_many(
+            {
+                "mail.enabled": True,
+                "mail.warningEnabled": True,
+                "mail.warningDaysBefore": 3,
+                "mail.dedupeDays": 1,
+                "mail.timeoutSeconds": 5,
+                "mail.host": "127.0.0.1",
+                "mail.port": 1,
+                "mail.security": "None",
+                "mail.fromAddress": "ort@example.com",
+            }
+        )
+
+    def tearDown(self):
+        logger = logging.getLogger(logging_setup.LOGGER_NAME)
+        for handler in list(logger.handlers):
+            logger.removeHandler(handler)
+            try:
+                handler.close()
+            except Exception:
+                pass
+        TempDatabaseTest.tearDown(self)
+
+    def run_main(self, extra):
+        return main_module.main(
+            ["--app-dir", self.temp_dir, "--data-folder", self.temp_dir, "--no-dialog"] + extra
+        )
+
+    def test_dry_run_exits_zero(self):
+        self.assertEqual(0, self.run_main(["--check-plans-email"]))
+        # 演练不记账：mail_logs 里不该出现这一轮的东西
+        self.assertEqual(0, self.db.scalar("SELECT COUNT(*) FROM mail_logs WHERE RefKey = 'RT2601'", default=0))
+
+    def test_send_failure_exits_one_and_is_recorded(self):
+        self.assertEqual(1, self.run_main(["--check-plans-email", "--send"]))
+        self.assertEqual(1, self.db.scalar("SELECT COUNT(*) FROM mail_logs WHERE RefKey = 'RT2601' AND Success = 0"))
+        text = compat.read_text(os.path.join(self.temp_dir, "Logs", "ort_xp.log"))
+        self.assertIn("计划到期提醒", text)
 
 
 class SortingTests(TempDatabaseTest):

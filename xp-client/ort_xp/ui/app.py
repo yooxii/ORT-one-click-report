@@ -721,7 +721,7 @@ class MailWindow(object):
     def _dry_run_reminder(self):
         from ..context import run_reminder
 
-        self._write(run_reminder(self.context, dry_run=True))
+        self._write(str(run_reminder(self.context, dry_run=True)))
 
     def _refresh_logs(self):
         try:

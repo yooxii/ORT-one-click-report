@@ -145,6 +145,13 @@ def validate(values):
     if cleaned.get("mail.useDefaultCredentials"):
         warnings.append("「Windows 集成验证」本客户端不支持（标准库没有 NTLM），发信会被跳过；请改用账号密码。")
 
+    # 去重是两端共用的防重复发信机制（mail_logs + DedupeDays）：关掉它，两端都跑提醒就会重复发信
+    if cleaned.get("mail.warningEnabled") and compat.to_int(cleaned.get("mail.dedupeDays"), 0) <= 0:
+        warnings.append(
+            "去重天数为 0：共享的 mail_logs 去重被关闭。如果主程序与 XP 端都会发到期提醒，"
+            "同一封提醒会发两次；建议至少填 1。"
+        )
+
     return cleaned, errors, warnings
 
 

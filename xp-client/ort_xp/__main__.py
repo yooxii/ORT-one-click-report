@@ -192,11 +192,12 @@ def main(argv=None):
         return EXIT_OK if passed else EXIT_PROBLEM
 
     if args.check_plans_email:
-        text = context_module.run_reminder(context, dry_run=not args.send)
-        compat.say(text)
-        logger.info("计划到期提醒：\n%s" % text)
+        result = context_module.run_reminder(context, dry_run=not args.send)
+        compat.say(result.text)
+        logger.info("计划到期提醒：\n%s" % result.text)
         context.close()
-        return EXIT_OK
+        # 退出码就是现场信号：定时任务里非 0 表示这一轮有发信失败，值得去看日志
+        return EXIT_PROBLEM if result.failed else EXIT_OK
 
     try:
         from .ui import app as ui_app

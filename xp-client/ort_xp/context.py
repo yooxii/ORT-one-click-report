@@ -208,12 +208,32 @@ class AppContext(object):
         return True
 
 
+class ReminderRun(object):
+    """一轮到期提醒的结果：可读文本 + 统计（命令行据此决定退出码）。"""
+
+    def __init__(self, text, summary):
+        self.text = text
+        self.summary = summary
+
+    @property
+    def failed(self):
+        return int(self.summary.get("failed", 0))
+
+    def __str__(self):
+        return self.text
+
+
 def run_reminder(context, dry_run=True):
     """执行一轮计划到期提醒（默认演练，不发真信）。"""
     summary = context.reminder.run(dry_run=dry_run)
     lines = [
         "计划到期提醒（%s）" % ("演练，不真正发送" if dry_run else "实际发送"),
-        "候选计划：%d；发送成功：%d；跳过：%d；失败：%d" % (summary["candidates"], summary["sent"], summary["skipped"], summary["failed"]),
+        "候选计划：%d；发送成功：%d；跳过：%d；失败：%d" % (
+            summary["candidates"],
+            summary["sent"],
+            summary["skipped"],
+            summary["failed"],
+        ),
     ]
     lines.extend(["  " + item for item in summary["details"]])
-    return "\n".join(lines)
+    return ReminderRun("\n".join(lines), summary)
