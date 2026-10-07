@@ -5,6 +5,7 @@ using ORT一键报告.Services;
 using ORT一键报告.Utils;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -12,65 +13,116 @@ using System.Windows.Controls;
 namespace ORT一键报告.Plans.Views
 {
     /// <summary>
-    /// 领退表批量登记窗口：多选记录后右键「回线 / 入库 / 标记删除」共用。
-    /// 清单把选中记录的关键字段全部列出（领用、回线、入库、报废、备注），
+    /// 领退表批量登记窗口（非模态）：工具菜单「批量回线 / 批量入库 / 批量删除」打开，
+    /// 与主窗口并存——主窗口表格里左键单击一条记录，这里就新增一行（同一条只加一次）。
+    /// 清单把记录的关键字段全部列出（领用、回线、入库、报废、备注），
     /// 「本次结果」列逐条给出将写入什么或跳过原因；右键单击任一单元格即复制该值。
-    /// 窗口只收集要写入的值并算出可执行清单，实际写回由调用方（WindowPlans）完成，
-    /// 仍走暂存 → 点「提交保存」时统一入库。
+    /// 窗口只收集要写入的值并算出可执行清单，点「确认」时通过 <see cref="Confirmed"/> 交给
+    /// 调用方（WindowPlans）写回，仍走暂存 → 点「提交保存」时统一入库。
     /// </summary>
     public partial class WindowRequisitionBatch : Window
     {
         private readonly Logger _logger = LogManager.GetCurrentClassLogger();
         private readonly RequisitionBatchMode _mode;
-        private readonly List<RequisitionBatchRow> _rows;
+        private readonly ObservableCollection<RequisitionBatchRow> _rows = [];
+        private readonly HashSet<Requisition> _picked = [];
+
+        /// <summary>点了「确认」时触发（调用方负责把值写回记录并关闭会话）</summary>
+        public event Action<WindowRequisitionBatch> Confirmed;
 
         /// <summary>本次操作类型</summary>
         public RequisitionBatchMode Mode => _mode;
 
-        /// <summary>可执行（会被写入）的记录；跳过的不在其中</summary>
+        /// <summary>清单里可执行（会被写入）的记录；跳过的不在其中</summary>
         public List<Requisition> Targets { get; private set; } = [];
 
-        /// <summary>因不满足条件被跳过的记录数</summary>
+        /// <summary>清单里因不满足条件被跳过的记录数</summary>
         public int SkippedCount { get; private set; }
 
-        /// <summary>确认回线时的日期（回线模式，DialogResult 为 true 时有效）</summary>
+        /// <summary>确认回线时的日期（回线模式）</summary>
         public DateTime ReturnDate { get; private set; }
 
-        /// <summary>确认入库时的入库单据（入库模式，DialogResult 为 true 时有效）</summary>
+        /// <summary>确认入库时的入库单据（入库模式）</summary>
         public string StockInNo { get; private set; }
 
-        /// <summary>确认入库时的入库数量（入库模式，DialogResult 为 true 时有效）</summary>
+        /// <summary>确认入库时的入库数量（入库模式）</summary>
         public string StockInQty { get; private set; }
 
-        /// <summary>确认入库时的入库日期（入库模式，DialogResult 为 true 时有效）</summary>
+        /// <summary>确认入库时的入库日期（入库模式）</summary>
         public DateTime StockInDate { get; private set; }
 
-        public WindowRequisitionBatch(RequisitionBatchMode mode, IEnumerable<Requisition> records)
+        public WindowRequisitionBatch(RequisitionBatchMode mode)
         {
             InitializeComponent();
             _mode = mode;
-            List<Requisition> list = records?.Where(r => r != null).ToList() ?? [];
-            _rows = [.. list.Select(r => new RequisitionBatchRow(mode, r))];
             dg_items.ItemsSource = _rows;
-            RecalcTargets();
 
             // 标题/说明/按钮/输入区按批量类型切换
-            Title = string.Format(LanguageService.Get(TitleKey(mode)), _rows.Count);
+            Title = string.Format(LanguageService.Get(TitleKey(mode)), 0);
             txt_hint.Text = LanguageService.Get(HintKey(mode));
             btn_confirm.Content = LanguageService.Get(ConfirmKey(mode));
             panel_return.Visibility = mode == RequisitionBatchMode.Return ? Visibility.Visible : Visibility.Collapsed;
             panel_stockin.Visibility = mode == RequisitionBatchMode.StockIn ? Visibility.Visible : Visibility.Collapsed;
             panel_inputs.Visibility = mode == RequisitionBatchMode.Delete ? Visibility.Collapsed : Visibility.Visible;
+            dp_returnDate.SelectedDate = DateTime.Today;
+            dp_stockInDate.SelectedDate = DateTime.Today;
 
-            PrefillInputs();
             RightClickCopy.AttachDataGrid(dg_items, BatchCellValue);
-            RefreshStatus();
+            RefreshSummary();
         }
+
+        /* ###############################  清单增删  ################################ */
+
+        /// <summary>
+        /// 把主窗口表格里点选的记录加入清单（同一条只加一次；不满足条件的也会加入并标出跳过原因）
+        /// </summary>
+        public void AddRecords(IEnumerable<Requisition> records)
+        {
+            if (records == null)
+            {
+                return;
+            }
+            bool added = false;
+            foreach (Requisition req in records.Where(r => r != null).ToList())
+            {
+                if (!_picked.Add(req))
+                {
+                    continue;
+                }
+                _rows.Add(new RequisitionBatchRow(_mode, req));
+                added = true;
+            }
+            if (added)
+            {
+                PrefillInputs();
+                RefreshSummary();
+            }
+        }
+
+        /// <summary>把清单里当前选中的记录移出（点错了可以撤销）</summary>
+        private void Btn_Remove_Click(object sender, RoutedEventArgs e)
+        {
+            List<RequisitionBatchRow> picked = [.. dg_items.SelectedItems.OfType<RequisitionBatchRow>()];
+            if (picked.Count == 0)
+            {
+                return;
+            }
+            foreach (RequisitionBatchRow row in picked)
+            {
+                _rows.Remove(row);
+                _picked.Remove(row.Item);
+            }
+            PrefillInputs();
+            RefreshSummary();
+        }
+
+        private void Dg_Items_SelectionChanged(object sender, SelectionChangedEventArgs e)
+            => btn_remove.IsEnabled = dg_items.SelectedItems.Count > 0;
 
         /* ###############################  预填要写入的值  ################################ */
 
         /// <summary>
-        /// 可执行记录已有相同的回线日期/入库信息时沿用（方便修正），否则回线用今天、
+        /// 清单里已有相同的回线日期/入库信息时沿用（方便修正），否则回线用今天、
         /// 入库日期用今天；单据/数量为空则不预填
         /// </summary>
         private void PrefillInputs()
@@ -83,10 +135,8 @@ namespace ORT一键报告.Plans.Views
             }
             if (_mode == RequisitionBatchMode.StockIn)
             {
-                string no = CommonText(eligible.Select(r => r.StockInNo));
-                string qty = CommonText(eligible.Select(r => r.StockInQty));
-                txt_stockInNo.Text = no ?? "";
-                txt_stockInQty.Text = qty ?? "";
+                txt_stockInNo.Text = CommonText(eligible.Select(r => r.StockInNo)) ?? "";
+                txt_stockInQty.Text = CommonText(eligible.Select(r => r.StockInQty)) ?? "";
                 dp_stockInDate.SelectedDate = CommonDate(eligible.Select(r => r.StockInDate)) ?? DateTime.Today;
             }
         }
@@ -113,25 +163,20 @@ namespace ORT一键报告.Plans.Views
 
         /* ###############################  清单与汇总  ################################ */
 
-        /// <summary>重新计算可执行清单与跳过条数（按当前选中记录的可执行性）</summary>
-        private void RecalcTargets()
-        {
-            Targets = [.. _rows.Where(r => r.Eligible).Select(r => r.Item)];
-            SkippedCount = _rows.Count - Targets.Count;
-        }
-
         /// <summary>输入变化时刷新「本次结果」与汇总，并同步确认按钮可用性</summary>
-        private void BatchInput_Changed(object sender, RoutedEventArgs e) => RefreshStatus();
+        private void BatchInput_Changed(object sender, RoutedEventArgs e) => RefreshSummary();
 
         /// <summary>
-        /// 刷新「本次结果」列（将写入什么 / 跳过原因）与顶部汇总（条数、机种分布）
+        /// 刷新标题、清单条数汇总（含机种分布）与「本次结果」列（将写入什么 / 跳过原因）
         /// </summary>
-        private void RefreshStatus()
+        private void RefreshSummary()
         {
             if (_rows == null)
             {
                 return;
             }
+            Targets = [.. _rows.Where(r => r.Eligible).Select(r => r.Item)];
+            SkippedCount = _rows.Count - Targets.Count;
             string returnText = ReturnDateText();
             string stockInText = StockInText();
             foreach (RequisitionBatchRow row in _rows)
@@ -148,9 +193,12 @@ namespace ORT一键报告.Plans.Views
                     _ => LanguageService.Get("Plans_Batch_StatusOkDelete")
                 };
             }
+            Title = string.Format(LanguageService.Get(TitleKey(_mode)), _rows.Count);
             txt_summary.Text = string.Format(LanguageService.Get("Plans_Batch_SummaryFormat"),
                 _rows.Count, Targets.Count, SkippedCount, BuildModelSummary());
+            txt_empty.Visibility = _rows.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
             btn_confirm.IsEnabled = Targets.Count > 0;
+            btn_remove.IsEnabled = dg_items.SelectedItems.Count > 0;
         }
 
         /// <summary>汇总条里的机种分布（按条数降序，如「A ×2、B ×1」）</summary>
@@ -177,6 +225,28 @@ namespace ORT一键报告.Plans.Views
             return $"{no} / {qty} / {date}";
         }
 
+        /* ###############################  窗口位置与置顶  ################################ */
+
+        /// <summary>
+        /// 显示前定位到主窗口右下角（不遮住表格左上角的记录），用户可自行拖动、缩放
+        /// </summary>
+        public void PlaceNearOwner(Window owner)
+        {
+            if (owner == null)
+            {
+                return;
+            }
+            Owner = owner;
+            Rect area = SystemParameters.WorkArea;
+            double left = owner.Left + owner.Width - Width - 24;
+            double top = owner.Top + owner.Height - Height - 24;
+            Left = Math.Max(area.Left, Math.Min(left, area.Right - Width));
+            Top = Math.Max(area.Top, Math.Min(top, area.Bottom - Height));
+        }
+
+        /// <summary>置顶开关：默认不置顶</summary>
+        private void Btn_Topmost_Changed(object sender, RoutedEventArgs e) => Topmost = btn_topmost.IsChecked == true;
+
         /* ###############################  右键单击复制一次值  ################################ */
 
         /// <summary>
@@ -196,7 +266,12 @@ namespace ORT一键报告.Plans.Views
 
         private void Btn_Confirm_Click(object sender, RoutedEventArgs e)
         {
-            RecalcTargets();
+            if (_rows.Count == 0)
+            {
+                _ = MessageBox.Show(LanguageService.Get("Plans_Batch_EmptyConfirm"), LanguageService.Get("Cap_Info"));
+                return;
+            }
+            RefreshSummary();
             if (Targets.Count == 0)
             {
                 _ = MessageBox.Show(LanguageService.Get("Plans_Msg_BatchNoneApplied"), LanguageService.Get("Cap_Info"));
@@ -234,11 +309,13 @@ namespace ORT一键报告.Plans.Views
                 StockInQty = txt_stockInQty.Text.Trim();
                 StockInDate = date;
             }
-            _logger.Info($"批量{LanguageService.Get(ConfirmKey(_mode))}：写入 {Targets.Count} 条，跳过 {SkippedCount} 条");
-            DialogResult = true;
+            _logger.Info($"批量{LanguageService.Get(ConfirmKey(_mode))}：清单 {_rows.Count} 条，写入 {Targets.Count} 条，跳过 {SkippedCount} 条");
+            Confirmed?.Invoke(this);
+            Close();
         }
 
-        private void Btn_Cancel_Click(object sender, RoutedEventArgs e) => DialogResult = false;
+        /// <summary>取消：整个清单作废（非模态窗口不能设 DialogResult，直接关闭）</summary>
+        private void Btn_Cancel_Click(object sender, RoutedEventArgs e) => Close();
 
         /* ###############################  资源键  ################################ */
 

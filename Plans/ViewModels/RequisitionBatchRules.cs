@@ -69,5 +69,29 @@ namespace ORT一键报告.Plans.ViewModels
             RequisitionBatchMode.StockIn => StockInBlockReason(req),
             _ => null
         };
+
+        /* ###############################  批量登记的表格筛选口径  ################################ */
+
+        /// <summary>
+        /// 待回线（批量回线时表格要筛出来的记录）：单体去向为入库，且还没登记回线日期
+        /// </summary>
+        public static bool NeedsReturn(Requisition req)
+            => req != null && req.Disposition == RequisitionDispositionKind.StockIn && req.ReturnDate == null;
+
+        /// <summary>
+        /// 待入库（批量入库时表格要筛出来的记录）：已登记回线、尚未登记入库、且未报废
+        /// </summary>
+        public static bool NeedsStockIn(Requisition req)
+            => StockInBlockReason(req) == null && req.StockInDate == null && string.IsNullOrWhiteSpace(req.StockInNo);
+
+        /// <summary>
+        /// 批量登记时表格的临时筛选口径（删除没有「待办」口径，恒为 true，即不筛）
+        /// </summary>
+        public static bool MatchesQuickFilter(RequisitionBatchMode mode, Requisition req) => mode switch
+        {
+            RequisitionBatchMode.Return => NeedsReturn(req),
+            RequisitionBatchMode.StockIn => NeedsStockIn(req),
+            _ => true
+        };
     }
 }

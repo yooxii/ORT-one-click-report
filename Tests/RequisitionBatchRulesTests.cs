@@ -99,5 +99,52 @@ namespace ORT一键报告.Tests
             Assert.That(RequisitionBatchRules.BlockReason(RequisitionBatchMode.Return, stockIn), Is.Null);
             Assert.That(RequisitionBatchRules.BlockReason(RequisitionBatchMode.StockIn, stockIn), Is.EqualTo(L("Msg_StockInNeedReturn")));
         }
+
+        /* ###############################  表格自动筛选口径  ################################ */
+
+        [Test]
+        public void 待回线_入库去向未回线_命中()
+        {
+            Assert.That(RequisitionBatchRules.NeedsReturn(Req(RequisitionDispositionKind.StockIn)), Is.True);
+        }
+
+        [Test]
+        public void 待回线_报废去向或已回线_不命中()
+        {
+            Requisition returned = Req(RequisitionDispositionKind.StockIn);
+            returned.ReturnDate = new DateTime(2026, 10, 1);
+
+            Assert.That(RequisitionBatchRules.NeedsReturn(Req(RequisitionDispositionKind.Scrap)), Is.False);
+            Assert.That(RequisitionBatchRules.NeedsReturn(returned), Is.False);
+        }
+
+        [Test]
+        public void 待入库_已回线未入库_命中()
+        {
+            Requisition req = Req(RequisitionDispositionKind.StockIn);
+            req.ReturnDate = new DateTime(2026, 10, 1);
+
+            Assert.That(RequisitionBatchRules.NeedsStockIn(req), Is.True);
+        }
+
+        [Test]
+        public void 待入库_未回线或已入库_不命中()
+        {
+            Requisition stocked = Req(RequisitionDispositionKind.StockIn);
+            stocked.ReturnDate = new DateTime(2026, 10, 1);
+            stocked.StockInNo = "RK-001";
+
+            Assert.That(RequisitionBatchRules.NeedsStockIn(Req(RequisitionDispositionKind.StockIn)), Is.False);
+            Assert.That(RequisitionBatchRules.NeedsStockIn(stocked), Is.False);
+        }
+
+        [Test]
+        public void 筛选口径_按批量类型取_删除不过滤()
+        {
+            Requisition scrap = Req(RequisitionDispositionKind.Scrap);
+
+            Assert.That(RequisitionBatchRules.MatchesQuickFilter(RequisitionBatchMode.Return, scrap), Is.False);
+            Assert.That(RequisitionBatchRules.MatchesQuickFilter(RequisitionBatchMode.Delete, scrap), Is.True);
+        }
     }
 }

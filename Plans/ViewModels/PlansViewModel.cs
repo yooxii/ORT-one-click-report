@@ -292,6 +292,40 @@ namespace ORT一键报告.Plans.ViewModels
             }
         }
 
+        /* ###############################  临时筛选（批量登记）  ################################ */
+
+        /// <summary>领退表的临时筛选（批量回线/入库时把待办记录筛出来）；为空表示不筛</summary>
+        private Func<Requisition, bool> _requisitionQuickFilter;
+
+        private string _quickFilterHint;
+        /// <summary>临时筛选的界面提示（含筛出的条数）；为空表示当前没有临时筛选</summary>
+        public string QuickFilterHint
+        {
+            get => _quickFilterHint;
+            private set => SetProperty(ref _quickFilterHint, value);
+        }
+
+        /// <summary>当前是否有临时筛选（提示条是否显示）</summary>
+        public bool IsQuickFilterActive => _requisitionQuickFilter != null;
+
+        /// <summary>
+        /// 设置或清除领退表的临时筛选（批量登记用）：<paramref name="hintFormat"/> 里的 {0} 填筛出的条数。
+        /// 与搜索关键字、列筛选是「同时满足」的关系，不会覆盖用户已有的筛选条件。
+        /// </summary>
+        public void SetRequisitionQuickFilter(Func<Requisition, bool> predicate, string hintFormat)
+        {
+            _requisitionQuickFilter = predicate;
+            RequisitionsView.Refresh();
+            QuickFilterHint = predicate == null
+                ? null
+                : string.Format(hintFormat ?? "{0}", RequisitionsView.OfType<Requisition>().Count());
+            OnPropertyChanged(nameof(IsQuickFilterActive));
+        }
+
+        private RelayCommand _clearQuickFilterCommand;
+        /// <summary>清除临时筛选（批量登记结束时同步调用）</summary>
+        public ICommand ClearQuickFilterCommand => _clearQuickFilterCommand ??= new RelayCommand(() => SetRequisitionQuickFilter(null, null));
+
         /* ###############################  列筛选（表头右键菜单）  ################################ */
 
         /// <summary>
@@ -930,6 +964,11 @@ namespace ORT一键报告.Plans.ViewModels
         private bool RequisitionFilter(object obj)
         {
             if (obj is not Requisition req || !PassesColumnFilters(_reqFilters.Values, req))
+            {
+                return false;
+            }
+            // 临时筛选（批量登记时把待回线/待入库的记录筛出来）
+            if (_requisitionQuickFilter != null && !_requisitionQuickFilter(req))
             {
                 return false;
             }

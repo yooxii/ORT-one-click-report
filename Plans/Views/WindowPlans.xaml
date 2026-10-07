@@ -114,6 +114,14 @@
                           ToolTip="{lex:Loc PlanIndex_ToolTip_Build}"/>
                 <Separator/>
                 <MenuItem Header="{lex:Loc Plans_ReturnTransfer}" Click="Btn_ReturnLine_Click"/>
+                <Separator/>
+                <!--批量登记：先把待办记录筛出来，在表格里左键单击逐条加入清单，再整批写入-->
+                <MenuItem Header="{lex:Loc Plans_Menu_BatchReturn}" Click="Menu_BatchReturn_Click"
+                          ToolTip="{lex:Loc Plans_ToolTip_BatchReturn}"/>
+                <MenuItem Header="{lex:Loc Plans_Menu_BatchStockIn}" Click="Menu_BatchStockIn_Click"
+                          ToolTip="{lex:Loc Plans_ToolTip_BatchStockIn}"/>
+                <MenuItem Header="{lex:Loc Plans_Menu_BatchDelete}" Click="Menu_BatchDelete_Click"
+                          ToolTip="{lex:Loc Plans_ToolTip_BatchDelete}"/>
             </MenuItem>
             <MenuItem Header="{lex:Loc Common_View}">
                 <MenuItem x:Name="menu_view_toolbar" Header="{lex:Loc Menu_Toolbar}" IsCheckable="True" Click="Menu_View_Toggle_Click"/>
@@ -180,6 +188,18 @@
                          Text="{Binding SearchKeyword, UpdateSourceTrigger=PropertyChanged}"
                          ToolTip="{lex:Loc Plans_SearchHint}"/>
             </DockPanel>
+            <!--批量登记进行中：提示当前筛出的是哪一批记录，可一键取消筛选（结束批量登记也会自动取消）-->
+            <Border x:Name="panel_quick_filter" Margin="0,4,0,0" Padding="8,4"
+                    CornerRadius="{DynamicResource CornerRadiusSmall}"
+                    Background="{DynamicResource StatusOngoingBgBrush}"
+                    Visibility="{Binding IsQuickFilterActive, Converter={StaticResource BoolToVis}}">
+                <DockPanel>
+                    <Button DockPanel.Dock="Right" Content="{lex:Loc Plans_Batch_ClearFilter}" Padding="8,2" Margin="8,0,0,0"
+                            Click="Btn_ClearQuickFilter_Click"/>
+                    <TextBlock Text="{Binding QuickFilterHint}" TextWrapping="Wrap" VerticalAlignment="Center"
+                               Foreground="{DynamicResource StatusOngoingBrush}"/>
+                </DockPanel>
+            </Border>
         </StackPanel>
 
         <!--两 Tab：领退表 / 计划表-->
@@ -204,14 +224,13 @@
                     <DataGrid.ContextMenu>
                         <ContextMenu>
                             <MenuItem Header="{lex:Loc Plans_EditDialog}" Click="Menu_EditRequisition_Click"/>
-                            <MenuItem x:Name="menu_req_delete" Header="{lex:Loc Plans_MarkDelete}" Click="Menu_DeleteRequisition_Click"
-                                      ToolTip="{lex:Loc Plans_ToolTip_BatchDelete}"/>
+                            <MenuItem Header="{lex:Loc Plans_MarkDelete}" Click="Menu_DeleteRequisition_Click"/>
                             <Separator/>
-                            <!--回线/入库：只在领退表右键菜单里（写入该条记录，需点「提交保存」才入库）；
-                                多选时表头由代码改为「批量回线（N 条）」，动作对选中的整批记录生效-->
-                            <MenuItem x:Name="menu_req_return" Header="{lex:Loc Plans_Menu_ReturnLine}" Click="Menu_RequisitionReturn_Click"
+                            <!--回线/入库：只作用于右键所在的那一条记录（写入后需点「提交保存」才入库）；
+                                多条一起登记走「工具」菜单的批量回线/批量入库-->
+                            <MenuItem Header="{lex:Loc Plans_Menu_ReturnLine}" Click="Menu_RequisitionReturn_Click"
                                       ToolTip="{lex:Loc ReqReturn_Hint}"/>
-                            <MenuItem x:Name="menu_req_stockin" Header="{lex:Loc Plans_Menu_StockIn}" Click="Menu_RequisitionStockIn_Click"
+                            <MenuItem Header="{lex:Loc Plans_Menu_StockIn}" Click="Menu_RequisitionStockIn_Click"
                                       ToolTip="{lex:Loc ReqStockIn_Hint}"/>
                             <MenuItem Header="{lex:Loc Plans_Menu_Scrap}" Click="Menu_RequisitionScrap_Click"
                                       ToolTip="{lex:Loc ReqScrap_Hint}"/>
@@ -373,8 +392,7 @@
                     <DataGrid.ContextMenu>
                         <ContextMenu>
                             <MenuItem Header="{lex:Loc Plans_EditDialog}" Click="Menu_EditPlan_Click"/>
-                            <MenuItem x:Name="menu_plan_delete" Header="{lex:Loc Plans_MarkDelete}" Click="Menu_DeletePlan_Click"
-                                      ToolTip="{lex:Loc Plans_ToolTip_BatchDelete}"/>
+                            <MenuItem Header="{lex:Loc Plans_MarkDelete}" Click="Menu_DeletePlan_Click"/>
                             <Separator/>
                             <MenuItem Header="{lex:Loc Plans_OpenReportFolder}" Click="Menu_OpenReportFolder_Click" ToolTip="{lex:Loc Plans_ToolTip_OpenFolder}"/>
                             <MenuItem Header="{lex:Loc Plans_OpenOverview}" Click="Menu_OpenReportOverview_Click" ToolTip="{lex:Loc Plans_ToolTip_OpenOverview}"/>

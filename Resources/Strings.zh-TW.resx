@@ -2971,44 +2971,50 @@
   <data name="Msg_ValueCopiedFormat" xml:space="preserve">
     <value>已複製：{0}</value>
   </data>
-  <data name="Plans_Menu_BatchReturnFormat" xml:space="preserve">
-    <value>批量回線（{0} 條）</value>
+  <data name="Plans_Menu_BatchReturn" xml:space="preserve">
+    <value>批量回線</value>
   </data>
-  <data name="Plans_Menu_BatchStockInFormat" xml:space="preserve">
-    <value>批量入庫（{0} 條）</value>
+  <data name="Plans_Menu_BatchStockIn" xml:space="preserve">
+    <value>批量入庫</value>
   </data>
-  <data name="Plans_Menu_BatchDeleteFormat" xml:space="preserve">
-    <value>批量刪除（{0} 條）</value>
+  <data name="Plans_Menu_BatchDelete" xml:space="preserve">
+    <value>批量刪除</value>
+  </data>
+  <data name="Plans_ToolTip_BatchReturn" xml:space="preserve">
+    <value>篩出待回線的記錄，在表格裡按左鍵加入清單，確認後整批登記回線日期（暫存，點「提交保存」後生效）</value>
+  </data>
+  <data name="Plans_ToolTip_BatchStockIn" xml:space="preserve">
+    <value>篩出待入庫的記錄，在表格裡按左鍵加入清單，確認後整批登記入庫資訊（暫存，點「提交保存」後生效）</value>
   </data>
   <data name="Plans_ToolTip_BatchDelete" xml:space="preserve">
-    <value>選中多條時批量標記刪除（暫存，點「提交保存」後生效）</value>
+    <value>在目前頁籤的表格裡按左鍵把記錄加入清單，確認後整批標記刪除（暫存，點「提交保存」後生效）</value>
   </data>
   <data name="Plans_Batch_ReturnTitle" xml:space="preserve">
-    <value>批量回線（{0} 條記錄）</value>
+    <value>批量回線（清單 {0} 條）</value>
   </data>
   <data name="Plans_Batch_StockInTitle" xml:space="preserve">
-    <value>批量入庫（{0} 條記錄）</value>
+    <value>批量入庫（清單 {0} 條）</value>
   </data>
   <data name="Plans_Batch_DeleteTitle" xml:space="preserve">
-    <value>批量標記刪除（{0} 條領退記錄）</value>
+    <value>批量刪除領退記錄（清單 {0} 條）</value>
   </data>
   <data name="Plans_Batch_PlanDeleteTitle" xml:space="preserve">
-    <value>批量標記刪除（{0} 條計劃記錄）</value>
+    <value>批量刪除計劃記錄（清單 {0} 條）</value>
   </data>
   <data name="Plans_Batch_ReturnHint" xml:space="preserve">
-    <value>選中的領退記錄將統一寫入下面這個回線日期（暫存，點「提交保存」後生效）；已有回線日期的記錄會被覆蓋。不符合條件的記錄（單體去向為報廢）自動跳過，原因見清單「本次結果」欄。</value>
+    <value>在「領用和計劃」視窗的領退表裡按左鍵點一條記錄，這裡就新增一條清單；點「回線」把這些記錄的回線日期統一寫為下面的日期（暫存，點「提交保存」後生效）。</value>
   </data>
   <data name="Plans_Batch_StockInHint" xml:space="preserve">
-    <value>選中的領退記錄將統一寫入下面這組入庫單據/數量/日期（暫存，點「提交保存」後生效）。不符合條件的記錄（單體去向為報廢、已報廢、尚未回線）自動跳過，原因見清單「本次結果」欄。</value>
+    <value>在領退表裡按左鍵點一條記錄，這裡就新增一條清單；點「入庫」把這些記錄統一寫入下面的入庫單據/數量/日期（暫存，點「提交保存」後生效）。</value>
   </data>
   <data name="Plans_Batch_DeleteHint" xml:space="preserve">
-    <value>選中的領退記錄將全部標記刪除（暫存，點「提交保存」後生效）；刪除前請核對清單裡的資訊。</value>
+    <value>在領退表裡按左鍵點一條記錄，這裡就新增一條清單；點「標記刪除」把清單裡的記錄整批標記刪除（暫存，點「提交保存」後生效）。</value>
   </data>
   <data name="Plans_Batch_PlanDeleteHint" xml:space="preserve">
-    <value>選中的計劃記錄將全部標記刪除（暫存，點「提交保存」後生效）；刪除前請核對清單裡的資訊。</value>
+    <value>在計劃表裡按左鍵點一條記錄，這裡就新增一條清單；點「標記刪除」把清單裡的計劃整批標記刪除（暫存，點「提交保存」後生效）。</value>
   </data>
   <data name="Plans_Batch_SummaryFormat" xml:space="preserve">
-    <value>共選中 {0} 條｜可執行 {1} 條｜跳過 {2} 條｜機種：{3}</value>
+    <value>清單 {0} 條｜可執行 {1} 條｜跳過 {2} 條｜機種：{3}</value>
   </data>
   <data name="Plans_Batch_ModelItemFormat" xml:space="preserve">
     <value>{0} ×{1}</value>
@@ -3048,5 +3054,38 @@
   </data>
   <data name="Plans_Msg_BatchNoneApplied" xml:space="preserve">
     <value>所選記錄都不符合條件，未執行任何操作</value>
+  </data>
+  <data name="Plans_Batch_ClearFilter" xml:space="preserve">
+    <value>取消篩選</value>
+  </data>
+  <data name="Plans_Batch_FilterReturnFormat" xml:space="preserve">
+    <value>批量回線：已篩出 {0} 條待回線的記錄（單體去向為入庫、還沒登記回線日期）。在表格裡按左鍵點記錄即加入批量視窗清單；如同時有搜尋或欄篩選，可先清空以便看全。</value>
+  </data>
+  <data name="Plans_Batch_FilterStockInFormat" xml:space="preserve">
+    <value>批量入庫：已篩出 {0} 條待入庫的記錄（已登記回線、尚未登記入庫且未報廢）。在表格裡按左鍵點記錄即加入批量視窗清單；如同時有搜尋或欄篩選，可先清空以便看全。</value>
+  </data>
+  <data name="Plans_Batch_DeletePickHint" xml:space="preserve">
+    <value>批量刪除：在領退表裡按左鍵點要刪除的記錄，加入批量視窗清單後點「標記刪除」</value>
+  </data>
+  <data name="Plans_Batch_PlanDeletePickHint" xml:space="preserve">
+    <value>批量刪除：在計劃表裡按左鍵點要刪除的記錄，加入批量視窗清單後點「標記刪除」</value>
+  </data>
+  <data name="Plans_Batch_EmptyHint" xml:space="preserve">
+    <value>清單還是空的：在上面的表格裡按左鍵點記錄，選一條這裡就新增一條</value>
+  </data>
+  <data name="Plans_Batch_EmptyConfirm" xml:space="preserve">
+    <value>清單還是空的：請先在表格裡按左鍵點要處理的記錄</value>
+  </data>
+  <data name="Plans_Batch_RemoveSelected" xml:space="preserve">
+    <value>移除選取</value>
+  </data>
+  <data name="Plans_Batch_Topmost" xml:space="preserve">
+    <value>置頂</value>
+  </data>
+  <data name="Plans_Batch_TopmostToolTip" xml:space="preserve">
+    <value>勾選後本視窗始終顯示在其他視窗之上，方便一邊點表格一邊核對清單（預設不置頂）</value>
+  </data>
+  <data name="Plans_Batch_AlreadyOpen" xml:space="preserve">
+    <value>已有一個批量視窗正在點選：先點它的「確認」或「取消」結束，再開始新的批量操作</value>
   </data>
 </root>

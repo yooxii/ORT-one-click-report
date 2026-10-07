@@ -6,8 +6,8 @@
         xmlns:lex="http://wpflocalizeextension.codeplex.com"
         xmlns:conv="clr-namespace:ORT一键报告.Converters"
         mc:Ignorable="d"
-        Width="1180" Height="640" MinWidth="900" MinHeight="420" ShowInTaskbar="False"
-        WindowStartupLocation="CenterOwner">
+        Width="980" Height="520" MinWidth="760" MinHeight="360" ShowInTaskbar="False"
+        WindowStartupLocation="Manual">
 
     <Window.Resources>
         <conv:SingleLineTextConverter x:Key="SingleLine"/>
@@ -40,10 +40,48 @@
                 </DataTrigger>
             </Style.Triggers>
         </Style>
+        <!-- 置顶开关：外观沿用主题按钮，勾选时用强调色填充，和界面其余按钮一致 -->
+        <Style x:Key="TopmostToggle" TargetType="ToggleButton">
+            <Setter Property="Foreground" Value="{DynamicResource ButtonForegroundBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="10,4"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border x:Name="bd"
+                                Background="{DynamicResource ButtonBackgroundBrush}"
+                                BorderBrush="{DynamicResource ButtonBorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="{DynamicResource CornerRadiusButton}"
+                                Padding="{TemplateBinding Padding}"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="{DynamicResource ButtonHoverBrush}"/>
+                                <Setter TargetName="bd" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="{DynamicResource PrimaryBrush}"/>
+                                <Setter TargetName="bd" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource PrimaryForegroundBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="bd" Property="Opacity" Value="{DynamicResource DisabledOpacity}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
     <Grid Margin="12">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -54,20 +92,29 @@
         <!--操作说明（按批量类型在代码里切换文字）-->
         <TextBlock x:Name="txt_hint" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}"/>
 
-        <!--汇总：选中条数、可执行/跳过条数、机种分布-->
+        <!--汇总：清单条数、可执行/跳过条数、机种分布-->
         <Border Grid.Row="1" Margin="0,6,0,6" Padding="8,4" CornerRadius="{DynamicResource CornerRadiusSmall}"
                 Background="{DynamicResource CardBackgroundBrush}">
             <TextBlock x:Name="txt_summary" TextWrapping="Wrap" FontWeight="Bold"/>
         </Border>
 
+        <!--清单工具条：点错时可以移除选中的那几条-->
+        <DockPanel Grid.Row="2" Margin="0,0,0,4">
+            <TextBlock x:Name="txt_empty" DockPanel.Dock="Right" VerticalAlignment="Center" Margin="8,0,0,0"
+                       Foreground="{DynamicResource TextSecondaryBrush}" Text="{lex:Loc Plans_Batch_EmptyHint}"/>
+            <Button x:Name="btn_remove" Content="{lex:Loc Plans_Batch_RemoveSelected}" Padding="8,2"
+                    HorizontalAlignment="Left" Click="Btn_Remove_Click"/>
+        </DockPanel>
+
         <!--清单：选中记录的全部关键信息（右键单击任一单元格即复制该值）-->
-        <DataGrid x:Name="dg_items" Grid.Row="2"
+        <DataGrid x:Name="dg_items" Grid.Row="3"
                   AutoGenerateColumns="False" CanUserAddRows="False" CanUserSortColumns="False"
                   CanUserReorderColumns="True" IsReadOnly="True"
                   HeadersVisibility="Column" GridLinesVisibility="All"
-                  SelectionMode="Single" SelectionUnit="Cell"
+                  SelectionMode="Extended" SelectionUnit="Cell"
                   ClipboardCopyMode="None" FrozenColumnCount="1"
                   CellStyle="{StaticResource BatchCell}"
+                  SelectionChanged="Dg_Items_SelectionChanged"
                   VirtualizingPanel.IsVirtualizing="True">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="{lex:Loc Plans_Batch_ResultHeader}" Binding="{Binding Status}"
@@ -117,7 +164,7 @@
         </DataGrid>
 
         <!--要写入的值：回线只用日期；入库用单据/数量/日期（按批量类型在代码里切换可见性）-->
-        <WrapPanel x:Name="panel_inputs" Grid.Row="3" Orientation="Horizontal" Margin="0,10,0,0">
+        <WrapPanel x:Name="panel_inputs" Grid.Row="4" Orientation="Horizontal" Margin="0,10,0,0">
             <StackPanel x:Name="panel_return" Orientation="Horizontal">
                 <Label Content="{lex:Loc Plans_ReturnDate}" VerticalContentAlignment="Center"
                        Style="{StaticResource RequiredFieldLabel}"/>
@@ -140,10 +187,20 @@
             </StackPanel>
         </WrapPanel>
 
-        <Grid Grid.Row="4" Margin="0,12,0,0">
-            <TextBlock Text="{lex:Loc Plans_Batch_CopyHint}" VerticalAlignment="Center" TextWrapping="Wrap"
+        <Grid Grid.Row="5" Margin="0,12,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <!--置顶：默认不置顶，勾选后窗口始终显示在其他窗口之上（方便边点表格边核对清单）-->
+            <ToggleButton x:Name="btn_topmost" Style="{StaticResource TopmostToggle}"
+                          Content="{lex:Loc Plans_Batch_Topmost}" ToolTip="{lex:Loc Plans_Batch_TopmostToolTip}"
+                          Checked="Btn_Topmost_Changed" Unchecked="Btn_Topmost_Changed"/>
+            <TextBlock Grid.Column="1" Margin="12,0,0,0" Text="{lex:Loc Plans_Batch_CopyHint}"
+                       VerticalAlignment="Center" TextWrapping="Wrap"
                        Foreground="{DynamicResource TextSecondaryBrush}"/>
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+            <StackPanel Grid.Column="2" Orientation="Horizontal">
                 <Button x:Name="btn_confirm" Width="110" Click="Btn_Confirm_Click" IsDefault="True"/>
                 <Button Content="{lex:Loc Common_Cancel}" Width="90" Margin="10,0,0,0" Click="Btn_Cancel_Click" IsCancel="True"/>
             </StackPanel>

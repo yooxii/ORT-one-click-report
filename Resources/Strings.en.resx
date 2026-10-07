@@ -2971,44 +2971,50 @@ Exit now and discard them?</value>
   <data name="Msg_ValueCopiedFormat" xml:space="preserve">
     <value>Copied: {0}</value>
   </data>
-  <data name="Plans_Menu_BatchReturnFormat" xml:space="preserve">
-    <value>Batch return ({0} records)</value>
+  <data name="Plans_Menu_BatchReturn" xml:space="preserve">
+    <value>Batch return</value>
   </data>
-  <data name="Plans_Menu_BatchStockInFormat" xml:space="preserve">
-    <value>Batch stock-in ({0} records)</value>
+  <data name="Plans_Menu_BatchStockIn" xml:space="preserve">
+    <value>Batch stock-in</value>
   </data>
-  <data name="Plans_Menu_BatchDeleteFormat" xml:space="preserve">
-    <value>Batch delete ({0} records)</value>
+  <data name="Plans_Menu_BatchDelete" xml:space="preserve">
+    <value>Batch delete</value>
+  </data>
+  <data name="Plans_ToolTip_BatchReturn" xml:space="preserve">
+    <value>Filters the records that still need a return date; left-click rows to add them, then confirm to fill the date for the whole list (staged; applied after Save)</value>
+  </data>
+  <data name="Plans_ToolTip_BatchStockIn" xml:space="preserve">
+    <value>Filters the records that still need stock-in; left-click rows to add them, then confirm to fill the stock-in fields for the whole list (staged; applied after Save)</value>
   </data>
   <data name="Plans_ToolTip_BatchDelete" xml:space="preserve">
-    <value>With multiple rows selected, marks them all for deletion (staged; applied after Save)</value>
+    <value>Left-click rows in the active table to add them, then confirm to mark the whole list for deletion (staged; applied after Save)</value>
   </data>
   <data name="Plans_Batch_ReturnTitle" xml:space="preserve">
-    <value>Batch return ({0} records)</value>
+    <value>Batch return (list: {0})</value>
   </data>
   <data name="Plans_Batch_StockInTitle" xml:space="preserve">
-    <value>Batch stock-in ({0} records)</value>
+    <value>Batch stock-in (list: {0})</value>
   </data>
   <data name="Plans_Batch_DeleteTitle" xml:space="preserve">
-    <value>Batch delete ({0} requisition records)</value>
+    <value>Batch delete requisitions (list: {0})</value>
   </data>
   <data name="Plans_Batch_PlanDeleteTitle" xml:space="preserve">
-    <value>Batch delete ({0} plan records)</value>
+    <value>Batch delete plans (list: {0})</value>
   </data>
   <data name="Plans_Batch_ReturnHint" xml:space="preserve">
-    <value>All selected requisitions get the return date below (staged; applied after Save). Existing return dates are overwritten. Rows that do not qualify (disposition = scrap) are skipped; the reason is shown in the Result column.</value>
+    <value>Left-click a row in the requisition table of the "Requisition and Plan" window and it is added here; the return date below is written to every record in the list (staged; applied after Save).</value>
   </data>
   <data name="Plans_Batch_StockInHint" xml:space="preserve">
-    <value>All selected requisitions get the stock-in no./qty/date below (staged; applied after Save). Rows that do not qualify (scrap disposition, already scrapped, no return date yet) are skipped; the reason is shown in the Result column.</value>
+    <value>Left-click a row in the requisition table and it is added here; the stock-in no./qty/date below are written to every record in the list (staged; applied after Save).</value>
   </data>
   <data name="Plans_Batch_DeleteHint" xml:space="preserve">
-    <value>All selected requisitions will be marked for deletion (staged; applied after Save). Check the list before confirming.</value>
+    <value>Left-click a row in the requisition table and it is added here; the whole list is marked for deletion (staged; applied after Save).</value>
   </data>
   <data name="Plans_Batch_PlanDeleteHint" xml:space="preserve">
-    <value>All selected plans will be marked for deletion (staged; applied after Save). Check the list before confirming.</value>
+    <value>Left-click a row in the plan table and it is added here; the whole list is marked for deletion (staged; applied after Save).</value>
   </data>
   <data name="Plans_Batch_SummaryFormat" xml:space="preserve">
-    <value>Selected {0} | Applicable {1} | Skipped {2} | Models: {3}</value>
+    <value>List {0} | Applicable {1} | Skipped {2} | Models: {3}</value>
   </data>
   <data name="Plans_Batch_ModelItemFormat" xml:space="preserve">
     <value>{0} ×{1}</value>
@@ -3048,5 +3054,38 @@ Exit now and discard them?</value>
   </data>
   <data name="Plans_Msg_BatchNoneApplied" xml:space="preserve">
     <value>None of the selected records qualify; nothing was changed.</value>
+  </data>
+  <data name="Plans_Batch_ClearFilter" xml:space="preserve">
+    <value>Clear filter</value>
+  </data>
+  <data name="Plans_Batch_FilterReturnFormat" xml:space="preserve">
+    <value>Batch return: {0} records still need a return date (disposition = stock-in, no return date yet). Left-click rows in the table to add them to the batch window; if a search or column filter is active, clear it to see them all.</value>
+  </data>
+  <data name="Plans_Batch_FilterStockInFormat" xml:space="preserve">
+    <value>Batch stock-in: {0} records still need stock-in (return date set, not stocked in yet, not scrapped). Left-click rows in the table to add them to the batch window; if a search or column filter is active, clear it to see them all.</value>
+  </data>
+  <data name="Plans_Batch_DeletePickHint" xml:space="preserve">
+    <value>Batch delete: left-click the requisitions to delete, then click "Mark for deletion" in the batch window</value>
+  </data>
+  <data name="Plans_Batch_PlanDeletePickHint" xml:space="preserve">
+    <value>Batch delete: left-click the plans to delete, then click "Mark for deletion" in the batch window</value>
+  </data>
+  <data name="Plans_Batch_EmptyHint" xml:space="preserve">
+    <value>The list is empty: left-click rows in the table above and each one is added here</value>
+  </data>
+  <data name="Plans_Batch_EmptyConfirm" xml:space="preserve">
+    <value>The list is empty: left-click the records to process in the table first</value>
+  </data>
+  <data name="Plans_Batch_RemoveSelected" xml:space="preserve">
+    <value>Remove selected</value>
+  </data>
+  <data name="Plans_Batch_Topmost" xml:space="preserve">
+    <value>Always on top</value>
+  </data>
+  <data name="Plans_Batch_TopmostToolTip" xml:space="preserve">
+    <value>Keep this window above other windows so you can check the list while clicking the table (off by default)</value>
+  </data>
+  <data name="Plans_Batch_AlreadyOpen" xml:space="preserve">
+    <value>A batch window is already picking records: confirm or cancel it first, then start a new batch action</value>
   </data>
 </root>
