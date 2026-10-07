@@ -18,13 +18,24 @@ _FORMAT = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
 
 
 class Utf8FileHandler(logging.Handler):
-    """UTF-8 文件日志（替代 3.4 上没有 encoding 参数的 FileHandler）。"""
+    """UTF-8 文件日志（替代 3.4 上没有 encoding 参数的 FileHandler）。
+
+    新建文件时先写一个 UTF-8 BOM：XP 的记事本靠 BOM 判断编码，没有 BOM 的话
+    现场人员打开日志看到的是乱码（这正是「排错要看日志」的最后一公里）。
+    """
 
     def __init__(self, path, mode="a"):
         logging.Handler.__init__(self)
         compat.ensure_dir(os.path.dirname(path))
         self.path = path
+        is_new = (not os.path.isfile(path)) or os.path.getsize(path) == 0
         self._stream = codecs.open(path, mode, "utf-8")
+        if is_new:
+            try:
+                self._stream.write(u"\ufeff")
+                self._stream.flush()
+            except Exception:
+                pass
 
     def emit(self, record):
         try:

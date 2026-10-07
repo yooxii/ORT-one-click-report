@@ -90,9 +90,14 @@ def _write_log_line(text, app_dir=None):
     try:
         directory = log_dir(app_dir)
         compat.ensure_dir(directory)
+        path = os.path.join(directory, "ort_xp.log")
+        # 新建文件时补 UTF-8 BOM，与 logging_setup 保持一致（XP 记事本靠它认编码）
+        is_new = (not os.path.isfile(path)) or os.path.getsize(path) == 0
         stamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S,%f")[:-3]
-        stream = compat.open_text(os.path.join(directory, "ort_xp.log"), "a")
+        stream = compat.open_text(path, "a")
         try:
+            if is_new:
+                stream.write(u"\ufeff")
             stream.write("%s [ERROR] ort_xp: %s%s" % (stamp, text, os.linesep))
         finally:
             stream.close()

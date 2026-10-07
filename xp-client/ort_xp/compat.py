@@ -185,14 +185,20 @@ def ensure_dir(path):
 
 
 def read_text(path):
-    """按 UTF-8 读取文本；文件不存在返回 None。"""
+    """按 UTF-8 读取文本；文件不存在返回 None。
+
+    日志文件带 UTF-8 BOM（给 XP 记事本看的），读取时去掉，调用方拿到的就是正文。
+    """
     if not os.path.isfile(path):
         return None
     stream = codecs.open(path, "r", "utf-8")
     try:
-        return stream.read()
+        text = stream.read()
     finally:
         stream.close()
+    if text and text[0] == u"\ufeff":
+        text = text[1:]
+    return text
 
 
 def write_text(path, text):

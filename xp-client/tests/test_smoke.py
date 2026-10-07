@@ -263,6 +263,17 @@ class CompatTests(unittest.TestCase):
             # Python 3.6+ 的 Windows 文件系统编码是 UTF-8，中文路径本来就没问题
             self.assertTrue(compat.can_encode_path(u"D:\\ORT\u4e00\u952e\u62a5\u544a"))
 
+    def test_read_text_strips_bom(self):
+        """带 BOM 的文本（日志、用户手改过的 json）读出来要是正文。"""
+        directory = tempfile.mkdtemp(prefix="ort-xp-bom-")
+        try:
+            path = os.path.join(directory, "bom.txt")
+            compat.write_text(path, u"\ufeffhello")
+            self.assertEqual("hello", compat.read_text(path))
+            self.assertIsNone(compat.read_text(os.path.join(directory, "missing.txt")))
+        finally:
+            shutil.rmtree(directory, ignore_errors=True)
+
 
 class DatabaseTests(TempDatabaseTest):
     def test_table_and_column_detection(self):
@@ -1355,6 +1366,26 @@ class StartupFailureTests(unittest.TestCase):
 
     def test_report_never_raises_when_the_log_is_unwritable(self):
         self.assertEqual(2, fatal.report("标题", "正文", os.path.join(self.temp_dir, "no", "such", "dir")))
+
+    def test_log_file_gets_a_bom_when_created(self):
+        """XP 记事本靠 BOM 判断 UTF-8：新建日志要写 BOM，追加时不能重复写。"""
+        path = os.path.join(self.temp_dir, "Logs", "ort_xp.log")
+        first = logging_setup.Utf8FileHandler(path)
+        first.close()
+        with open(path, "rb") as stream:
+            self.assertTrue(stream.read().startswith(b"\xef\xbb\xbf"))
+
+        second = logging_setup.Utf8FileHandler(path)
+        second.close()
+        with open(path, "rb") as stream:
+            self.assertEqual(1, stream.read().count(b"\xef\xbb\xbf"))
+
+        # 早期错误走的直接写文件那条路，也应该补上 BOM
+        os.remove(path)
+        fatal.report("没有找到数据库", "正文", self.temp_dir)
+        with open(path, "rb") as stream:
+            self.assertTrue(stream.read().startswith(b"\xef\xbb\xbf"))
+        self.assertIn("[ERROR]", compat.read_text(path))
 
     def test_dialog_switch_follows_the_env_var(self):
         os.environ[fatal.NO_DIALOG_ENV] = "1"

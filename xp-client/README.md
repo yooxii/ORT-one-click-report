@@ -39,6 +39,7 @@ xp-client/
 │  ├─ 01-环境搭建.md             # 目标机与开发机环境、安装步骤、语法约束
 │  ├─ 02-数据契约.md             # 与主程序共库的全部约定（路径、设置键、日期格式、并发）
 │  ├─ 03-里程碑与工时.md         # 阶段拆分、工时、当前进度
+│  ├─ 04-部署与交付.md           # 部署步骤、现场自检、已知限制、XP 实机回归清单
 │  └─ schema.md                 # 表与字段清单（由 tools/extract_schema.py 从 C# 模型生成，勿手改）
 ├─ ort_xp/                      # 应用源码（Python 3.4 兼容）
 │  ├─ compat.py                 # 3.4 兼容层：编码、控制台、.NET 值解析
@@ -54,9 +55,12 @@ xp-client/
 │  ├─ compat_check.py           # Python 3.4 语法/API 下限检查
 │  ├─ extract_schema.py         # 从主程序 C# 模型生成 docs/schema.md 与 schema_generated.py
 │  ├─ verify_roundtrip.py       # 共库往返验证（在真实库副本上读写，证明与主程序格式一致）
+│  ├─ verify_alternating.ps1    # 与主程序驱动（System.Data.SQLite）交替读写 + 锁行为验证
+│  ├─ xp_step.py                # 上面这个脚本用的「XP 客户端单步」工具
 │  ├─ run_dev.ps1               # 开发机启动
-│  └─ build_xp.ps1              # XP 包构建（需在 Python 3.4 环境执行）
-├─ packaging/                   # PyInstaller 配置与打包说明
+│  ├─ build_xp.ps1              # XP 包构建（需在 Python 3.4 环境执行）
+│  └─ make_release.ps1          # 打成交付 zip + sha256
+├─ packaging/                   # PyInstaller 配置、打包说明、随包分发的 XP 脚本（xp-extras/）
 ├─ requirements/                # 依赖清单（运行时为零依赖）
 └─ tests/                       # 标准库 unittest，无第三方测试框架
 ```
@@ -73,6 +77,10 @@ python -m unittest discover -s tests -v
 # 3) 共库往返验证（在真实库的副本上读写，证明两边格式一致且不动原库）
 python .\tools\verify_roundtrip.py
 
+# 3b) 与主程序驱动交替读写 + 锁行为验证（17 项，用 System.Data.SQLite 当另一端）
+.\tools\verify_alternating.ps1
+.\tools\verify_alternating.ps1 -Python D:\Python34-32\python.exe   # 用 XP 上的那个解释器跑
+
 # 4) 启动界面（开发机；用 --data-folder 指向主程序数据目录）
 .\tools\run_dev.ps1 -DataFolder "D:\source\repos\ORT一键报告\bin\Debug\Data"
 
@@ -82,6 +90,9 @@ python -m ort_xp --selftest
 # 6) 界面装配自检 / 出错只写日志不弹框
 python -m ort_xp --ui-smoke --data-folder "D:\source\repos\ORT一键报告\bin\Debug\Data"
 python -m ort_xp --no-dialog
+
+# 7) 出交付包（zip + sha256）
+.\tools\make_release.ps1
 ```
 
 > 不带 `--data-folder` 启动时，程序按 `local_settings.json` → 程序目录 `Data` 找库；
@@ -104,17 +115,23 @@ python -m ort_xp --no-dialog
 - [x] 里程碑 0：子项目骨架、环境自检、数据层连通性验证（Python 3.13 直读主程序库成功）
 - [x] 里程碑 2：数据层（仓储 / 变更日志 / 下拉取值）与登录、记住登录
 - [x] 里程碑 3：领用表与计划表的新增/编辑/删除（校验规则与自动编号对齐主程序，改动写变更日志）、
-  列表搜索与**点列头排序**；95 项单测 + 真实库副本 32 项检查全通过
+  列表搜索与**点列头排序**；97 项单测 + 真实库副本 32 项检查全通过
 - [x] 里程碑 4：邮件 —— SMTP 发送（三种安全方式）、收件人与抄送解析（姓名→用户表、固定抄送、
   按类型抄送管理员）、计划到期提醒（筛选规则与主程序一致）、`mail_logs` 去重与记录、
   **可编辑的邮件设置界面**（写共享 `mail.*`，保存即生效，含演练/真实测试发送）
+- [x] 共库交替读写验证（里程碑 1 的一条）：`tools\verify_alternating.ps1` 用主程序自己的驱动
+  （`System.Data.SQLite`）当另一端，与 XP 客户端**互相读写、交替提交**，17 项检查全通过，
+  含「一端持有写事务时另一端写入必须干净失败、回滚后立刻恢复」的锁行为验证
+- [x] 交付物（里程碑 5 的一部分）：`make_release.ps1` 出 zip + sha256；包内自带 `selftest.cmd`
+  （双击现场自检，跑完用记事本打开日志）与 `make_shortcut.vbs`（WSH 建桌面快捷方式，XP 无 PowerShell）；
+  日志改为 UTF-8 **带 BOM**，XP 记事本打开不乱码；[docs/04-部署与交付.md](docs/04-部署与交付.md)
+  给出部署步骤、现场自检、已知限制与 14 条 XP 实机回归清单
 - [x] 启动期故障可见 + 首次运行选库（2026-10-07 实机反馈「双击没反应」后的修复，见
   [docs/01-环境搭建.md](docs/01-环境搭建.md) 第 9 节）：缺库时不再静默退出、也不再让 sqlite 建空库，
   改为写日志 + 弹框 + 选择数据文件夹；新增 `--ui-smoke` 与 `--no-dialog`
-- [ ] 里程碑 1：技术验证 —— **打包与本机运行已完成**（`D:\Python34-32` 装好 Python 3.4.4 + PyInstaller 3.3.1，
-  `dist\ORT-XP` 可运行，3.4 下 95 项单测全绿）；**待办：在真实 XP 机器/虚拟机上跑一遍界面**
-- [ ] 里程碑 3 收尾：界面在 XP 实机上的点击回归
+- [ ] 里程碑 1：技术验证 —— **打包、本机运行与共库交替读写已完成**；**待办：在真实 XP 机器/虚拟机上
+  跑一遍界面**（docs/04 第 6 节的 14 条回归清单）
+- [ ] 里程碑 5 收尾：XP 干净机器回归记录、已知限制与使用说明随包交付确认
 - [ ] 里程碑 4 收尾：**约定只有一端负责定时发送**；真实库账号 `Email` 全为空，补邮箱后才能验证实发
-- [ ] 里程碑 5：打包、XP 回归、交付
 
 工时估算见 [docs/03-里程碑与工时.md](docs/03-里程碑与工时.md)。

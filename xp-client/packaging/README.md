@@ -16,11 +16,15 @@ XP 上可用的最后一个 CPython 系列是 **3.4**（3.5 起改用 VS2015 的
 # 一次性准备（Python 3.4 环境里）
 D:\Python34-32\python.exe -m pip install "pyinstaller==3.3.1"
 
-# 打包
+# 打包（7 步：解释器 → PyInstaller → 3.4 语法下限 → ASCII 暂存 → 构建 → 冒烟 → 拷部署脚本）
 .\tools\build_xp.ps1 -Python D:\Python34-32\python.exe
+
+# 出交付 zip + sha256
+.\tools\make_release.ps1
 ```
 
-产物：`xp-client\dist\ORT-XP\`（onedir），其中 `ORT-XP.exe` 是入口。
+产物：`xp-client\dist\ORT-XP\`（onedir，其中 `ORT-XP.exe` 是入口）与
+`xp-client\dist\ORT-XP-<版本>-<日期>.zip`（+ `.sha256.txt`）。
 
 ## 部署到 XP 机器
 
@@ -44,29 +48,38 @@ D:\Python34-32\python.exe -m pip install "pyinstaller==3.3.1"
 3. 共享目录必须映射成盘符（SQLite 打不开 `\\服务器\共享\...`）。
 4. `msvcr100.dll`（32 位 VC++2010 运行库）**已经打进包里**（约 774 KB，Microsoft 签名），
    XP 机器上不需要另装运行库。
-5. 排错：窗口子系统看不到控制台，**所有启动期失败都会写日志并弹框**。
-   - 运行日志：`ORT-XP\Logs\ort_xp.log`（UTF-8；`--selftest` / `--ui-smoke` 的结果也写在这里）；
+5. 包内自带两个现场脚本（纯 ASCII 文件名与内容）：
+   - `selftest.cmd`：双击即跑 `--version` / `--selftest` / `--ui-smoke` / `--check-plans-email`，
+     结束后用记事本打开日志；
+   - `make_shortcut.vbs`：双击在桌面建快捷方式（用 WSH，因为 XP 默认没有 PowerShell）。
+6. 排错：窗口子系统看不到控制台，**所有启动期失败都会写日志并弹框**。
+   - 运行日志：`ORT-XP\Logs\ort_xp.log`（UTF-8 **带 BOM**，XP 记事本打开不乱码；
+     `--selftest` / `--ui-smoke` 的结果也写在这里）；
    - 未捕获异常的完整回溯：`ORT-XP\Logs\fatal_<时间戳>.log`；
    - 不想让弹框打断脚本时加 `--no-dialog`（或设 `ORT_XP_NO_DIALOG=1`）。
 
 ## 已在本机验证过的内容（2026-10-07）
 
 ```
-Python 3.4.4 (32 bit) + PyInstaller 3.3.1  →  dist\ORT-XP（15.3 MB，917 个文件）
+Python 3.4.4 (32 bit) + PyInstaller 3.3.1  →  dist\ORT-XP（15.3 MB，917 个文件 + selftest.cmd/make_shortcut.vbs）
 ORT-XP.exe 的 PE 头 MajorOperatingSystemVersion = 5.1   ← 启动器面向 Windows XP
-Python 3.4.4 下 95 项单测全通过（ORT_XP_UI_TEST=1 时含界面装配与可见性检查）
+Python 3.4.4 下 97 项单测全通过（ORT_XP_UI_TEST=1 时含界面装配与可见性检查）
 ORT-XP.exe --version         → 退出码 0，中文输出正常
 ORT-XP.exe --selftest        → 退出码 0，14 项检查全通过（含 DPAPI 往返、SQLite 3.8.11、
                                OpenSSL 1.0.2d + PROTOCOL_TLSv1_2、真实库 20 张表）
 ORT-XP.exe --check-plans-email → 退出码 0（演练，68 条候选计划，未发信）
 ORT-XP.exe --ui-smoke --data-folder "..."  → 退出码 0，7 个窗口逐个 winfo_viewable() 通过
+共库交替读写        → tools\verify_alternating.ps1：17 项全通过（用 System.Data.SQLite 3.46.1 当
+                     主程序那一端，含持写事务时的锁行为），Python 3.13 与 3.4.4 各跑一遍
+共库往返（格式）    → tools\verify_roundtrip.py：32 项全通过，原库（含 -wal/-shm）哈希未变
 无数据文件夹时双击           → 不再静默退出：日志写 [ERROR]，并弹出「没有找到数据库」对话框
                                （列出数据文件夹、库路径、4 种解决办法，可直接选文件夹）
 有数据文件夹时双击           → 登录窗口正常显示（已用 PrintWindow 截图确认窗口内容）
 在含简体中文的路径下运行     → 退出码 2，并提示「请把程序放到纯英文/数字路径」
 ```
 
-仍然待办：在**真实 XP 机器（或 XP 虚拟机）**上跑一遍（含界面登录与编辑操作）。
+仍然待办：在**真实 XP 机器（或 XP 虚拟机）**上跑一遍（含界面登录与编辑操作）——
+逐条清单见 [docs/04-部署与交付.md](../docs/04-部署与交付.md) 第 6 节。
 
 ## 与主程序的已知差异
 
