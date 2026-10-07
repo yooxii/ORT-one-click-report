@@ -279,8 +279,8 @@ class Database(object):
             "size": self.size_bytes(),
             "network": self.is_network(),
             "sqlite_version": sqlite3.sqlite_version,
-            # sqlite3.version 在 3.12 起废弃、3.14 移除；用 getattr 兼容两边
-            "python_sqlite": getattr(sqlite3, "version", "") or "",
+            # 不读 sqlite3.version：3.12 起废弃、3.14 移除，读了会在开发机上刷警告
+            "python_version": compat.python_version_text(),
             "tables": [],
             "journal_mode": None,
             "error": None,

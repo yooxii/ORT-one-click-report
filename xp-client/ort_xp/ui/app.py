@@ -12,10 +12,13 @@
 编辑类操作（领退单新增/编辑、计划增改删）在里程碑 3 实现，邮件设置写库在里程碑 4 实现。
 """
 
+import datetime
 import tkinter as tk
 from tkinter import messagebox, ttk
 
 from .. import compat
+from ..services import plan_rules
+from ..services import plans as plans_service
 from ..version import APP_NAME, VERSION, BUILD_STAGE, TARGET_OS, TARGET_PYTHON
 
 REQUISITION_COLUMNS = (
@@ -39,8 +42,6 @@ PLAN_COLUMNS = (
     ("EndDate", "结束日期", 100),
     ("Status", "完成状况", 90),
 )
-
-EDIT_HINT = "编辑功能将在里程碑 3 实现（当前为只读列表）。"
 
 
 class Application(object):
@@ -106,7 +107,9 @@ class Application(object):
             "邮件：%s" % context.mail_settings.describe(),
             "目标环境：%s + Python %s" % (TARGET_OS, TARGET_PYTHON),
             "",
-            "提示：本里程碑界面只读；编辑、审核、报告生成不在本客户端范围内。",
+            "提示：本客户端支持领用表与计划表的新增/编辑/删除（改动都会写变更日志）；",
+            "报告生成、审核、管理端、流程与索引不在本客户端范围内。",
+            "带 * 为必填；日期格式 yyyy-MM-dd；双击表格行可直接编辑。",
         ]
         if user is not None and not user.email:
             lines.append("注意：当前账号没有邮箱，将收不到到期提醒。")
@@ -211,8 +214,87 @@ class LoginDialog(object):
         return self.ok
 
 
+class FormDialog(object):
+    """通用表单对话框：tkinter 没有现成的表单控件，这里按字段定义生成。
+
+    字段定义 ``(键, 标签, 类型, 选项)``，类型取 ``text`` / ``multiline`` / ``date`` / ``combo``。
+    ``date`` 用文本框收 ``yyyy-MM-dd``（标准库没有日期选择器），留空表示不填。
+    """
+
+    def __init__(self, parent, title, fields, initial=None, hint=None, width=46):
+        self.fields = fields
+        self.initial = initial or {}
+        self.values = None
+        self._inputs = {}
+        self.window = tk.Toplevel(parent)
+        self.window.title(title)
+        self.window.transient(parent)
+        self.window.resizable(False, False)
+        self._build(hint, width)
+        self.window.protocol("WM_DELETE_WINDOW", self._cancel)
+        self.window.bind("<Escape>", lambda event: self._cancel())
+        self.window.grab_set()
+
+    def _build(self, hint, width):
+        frame = ttk.Frame(self.window, padding=12)
+        frame.pack(fill="both", expand=True)
+        row = 0
+        if hint:
+            ttk.Label(frame, text=hint, foreground="#555555", wraplength=width * 8).grid(
+                row=row, column=0, columnspan=2, sticky="w", pady=(0, 8)
+            )
+            row += 1
+        for key, label, kind, options in self.fields:
+            ttk.Label(frame, text=label).grid(row=row, column=0, sticky="e", padx=(0, 8), pady=3)
+            value = self.initial.get(key, "")
+            text_value = "" if value is None else str(value)
+            if kind == "multiline":
+                widget = tk.Text(frame, width=width, height=3, wrap="word")
+                widget.insert("1.0", text_value)
+            elif kind == "combo":
+                widget = ttk.Combobox(frame, values=list(options or ()), width=width - 3)
+                widget.set(text_value)
+            else:
+                variable = tk.StringVar(value=text_value)
+                widget = ttk.Entry(frame, textvariable=variable, width=width)
+                self._inputs[key + "::var"] = variable
+            widget.grid(row=row, column=1, sticky="we", pady=3)
+            self._inputs[key] = widget
+            row += 1
+
+        buttons = ttk.Frame(frame)
+        buttons.grid(row=row, column=0, columnspan=2, sticky="e", pady=(12, 0))
+        ttk.Button(buttons, text="保存", width=10, command=self._confirm).pack(side="left", padx=(0, 8))
+        ttk.Button(buttons, text="取消", width=8, command=self._cancel).pack(side="left")
+
+    def read(self):
+        result = {}
+        for key, _label, kind, _options in self.fields:
+            widget = self._inputs[key]
+            if kind == "multiline":
+                text = widget.get("1.0", "end").strip()
+            elif kind == "combo":
+                text = widget.get().strip()
+            else:
+                text = self._inputs[key + "::var"].get().strip()
+            result[key] = text
+        return result
+
+    def _confirm(self):
+        self.values = self.read()
+        self.window.destroy()
+
+    def _cancel(self):
+        self.values = None
+        self.window.destroy()
+
+    def show(self):
+        self.window.wait_window()
+        return self.values
+
+
 class TableTab(ttk.Frame):
-    """一个只读表格页签（领用表 / 计划表共用）。"""
+    """一个表格页签（领用表 / 计划表共用）：搜索、增删改，改动都写变更日志。"""
 
     def __init__(self, parent, context, kind):
         ttk.Frame.__init__(self, parent, padding=8)
@@ -232,6 +314,9 @@ class TableTab(ttk.Frame):
         entry.bind("<Return>", lambda event: self.reload())
         ttk.Button(toolbar, text="查询", command=self.reload).pack(side="left")
         ttk.Button(toolbar, text="刷新", command=self.reload).pack(side="left", padx=6)
+        ttk.Button(toolbar, text="新增", command=self._add).pack(side="left", padx=(12, 0))
+        ttk.Button(toolbar, text="编辑", command=self._edit).pack(side="left", padx=6)
+        ttk.Button(toolbar, text="删除", command=self._delete).pack(side="left")
         self.count_label = ttk.Label(toolbar, text="")
         self.count_label.pack(side="left", padx=12)
 
@@ -253,7 +338,113 @@ class TableTab(ttk.Frame):
         self.tree.bind("<Double-1>", self._on_double_click)
 
     def _on_double_click(self, event):
-        messagebox.showinfo("提示", EDIT_HINT, parent=self.winfo_toplevel())
+        self._edit()
+
+    # ---------------------------------------------------------------- 增删改
+
+    def _operator(self):
+        user = self.context.auth.current_user if self.context.auth is not None else None
+        return user.username if user is not None else ""
+
+    def _service(self):
+        service = (
+            self.context.requisition_service if self.kind == "requisitions" else self.context.plan_service
+        )
+        return service.with_operator(self._operator())
+
+    def _repository(self):
+        return (
+            self.context.repositories.requisitions
+            if self.kind == "requisitions"
+            else self.context.repositories.plans
+        )
+
+    def _is_requisition(self):
+        return self.kind == "requisitions"
+
+    def _title(self):
+        return "领退单" if self._is_requisition() else "计划"
+
+    def _fields(self):
+        """字段清单来自服务层（那边可脱离界面测试）。"""
+        if self._is_requisition():
+            return plans_service.requisition_form_fields()
+        return plans_service.plan_form_fields(self.context.repositories.lookups)
+
+    def _date_fields(self):
+        if self._is_requisition():
+            return plans_service.REQUISITION_DATE_FIELDS
+        return plans_service.PLAN_DATE_FIELDS
+
+    def _defaults(self):
+        today = datetime.date.today().strftime("%Y-%m-%d")
+        if self._is_requisition():
+            return {"RequisitionDate": today, "Disposition": plan_rules.DISPOSITION_STOCK_IN}
+        return {"StartDate": today, "Status": "Ongoing"}
+
+    def _to_values(self, raw):
+        """界面字符串 → 服务需要的值（日期转 datetime，空文本转 None）。"""
+        keep_empty = ("Remark",) if self._is_requisition() else ()
+        return plans_service.form_values(raw, self._date_fields(), keep_empty)
+
+    def _from_row(self, row):
+        return plans_service.form_initial(self._fields(), row, self._date_fields())
+
+    def _selected_id(self):
+        selection = self.tree.selection()
+        if not selection:
+            return None
+        tags = self.tree.item(selection[0], "tags")
+        if not tags:
+            return None
+        try:
+            return int(tags[0])
+        except (TypeError, ValueError):
+            return None
+
+    def _add(self):
+        hint = "带 * 为必填。日期格式 yyyy-MM-dd；回线RT工令形如 RTAH260901。"
+        raw = FormDialog(self.winfo_toplevel(), "新增" + self._title(), self._fields(), self._defaults(), hint).show()
+        if raw is None:
+            return
+        self._apply(self._service().save(self._to_values(raw)))
+
+    def _edit(self, record_id=None):
+        if record_id is None:
+            record_id = self._selected_id()
+        if record_id is None:
+            messagebox.showinfo("提示", "请先在表格里选择一行。", parent=self.winfo_toplevel())
+            return
+        row = self._repository().get(record_id)
+        if row is None:
+            messagebox.showwarning("提示", "该记录已不存在，列表将刷新。", parent=self.winfo_toplevel())
+            self.reload()
+            return
+        raw = FormDialog(
+            self.winfo_toplevel(), "编辑" + self._title(), self._fields(), self._from_row(row)
+        ).show()
+        if raw is None:
+            return
+        self._apply(self._service().save(self._to_values(raw), record_id))
+
+    def _delete(self):
+        record_id = self._selected_id()
+        if record_id is None:
+            messagebox.showinfo("提示", "请先在表格里选择一行。", parent=self.winfo_toplevel())
+            return
+        if not messagebox.askyesno(
+            "删除确认", "确定删除选中的%s吗？\n删除会记入变更日志。" % self._title(), parent=self.winfo_toplevel()
+        ):
+            return
+        self._apply(self._service().delete(record_id))
+
+    def _apply(self, result):
+        if not result.ok:
+            title = "校验未通过" if result.errors else "操作失败"
+            messagebox.showerror(title, result.error_text() or result.message, parent=self.winfo_toplevel())
+            return
+        messagebox.showinfo("完成", result.message or "已保存", parent=self.winfo_toplevel())
+        self.reload()
 
     def reload(self):
         keyword = (self.keyword.get() or "").strip()
@@ -274,7 +465,8 @@ class TableTab(ttk.Frame):
             for key in keys:
                 value = row[key]
                 values.append("" if value is None else str(value))
-            self.tree.insert("", "end", values=tuple(values))
+            # Id 存进 tags，编辑/删除时用来定位记录
+            self.tree.insert("", "end", values=tuple(values), tags=(str(row["Id"]),))
         self.count_label.configure(text="共 %d 行（最多显示 500 行）" % len(rows))
 
 

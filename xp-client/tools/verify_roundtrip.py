@@ -40,6 +40,8 @@ from ort_xp.db import repositories, schema_generated  # noqa: E402
 from ort_xp.db.connection import Database  # noqa: E402
 from ort_xp.services import auth as auth_service  # noqa: E402
 from ort_xp.services import mail as mail_service  # noqa: E402
+from ort_xp.services import plan_rules  # noqa: E402
+from ort_xp.services import plans as plans_service  # noqa: E402
 
 DATE_TEXT_RE = re.compile(r"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$")
 OPERATOR = "xp-verify"
@@ -315,6 +317,158 @@ def verify_mail(report, db, settings_store):
     return summary
 
 
+def verify_edit_services(report, db, repos):
+    """里程碑 3：编辑服务（校验 + 落库 + 变更日志）在真实库副本上的行为。"""
+    requisitions = plans_service.RequisitionService(repos, repos.lookups, OPERATOR)
+    plan_service = plans_service.PlanService(repos, repos.lookups, OPERATOR)
+
+    result = requisitions.save({})
+    report.check(
+        "领退：必填校验",
+        not result.ok and "请填写領料單据號" in result.errors and "请选择领用日期" in result.errors,
+        "一次返回 %d 条错误" % len(result.errors),
+    )
+
+    bad_return_rt = requisitions.save(
+        {
+            "RequisitionDate": datetime.datetime(2026, 10, 7),
+            "RequisitionNo": "XP-EDIT-001",
+            "ModelName": "31ABCDEFG7H",
+            "OutQty": "1",
+            "Rev": "A",
+            "WorkOrder": "WO-XP-2",
+            "Disposition": plan_rules.DISPOSITION_STOCK_IN,
+            "ReturnRtOrder": "RT261001",
+        }
+    )
+    report.check(
+        "领退：回线RT工令格式校验",
+        not bad_return_rt.ok and plan_rules.MESSAGE_RETURN_RT_FORMAT in bad_return_rt.errors,
+        bad_return_rt.error_text(),
+    )
+
+    next_order = requisitions.next_return_rt_order(datetime.datetime(2026, 10, 7))
+    report.check(
+        "领退：回线RT工令自动编号（当月 MAX+1）",
+        next_order.startswith("RTAH2610") and next_order.endswith("01"),
+        next_order,
+    )
+
+    created = requisitions.save(
+        {
+            "RequisitionDate": datetime.datetime(2026, 10, 7),
+            "RequisitionNo": "XP-EDIT-001",
+            "ModelName": "31ABCDEFG7H",
+            "OutQty": "1",
+            "Rev": "A",
+            "WorkOrder": "WO-XP-2",
+            "Disposition": plan_rules.DISPOSITION_STOCK_IN,
+            "ReturnRtOrder": next_order,
+            "Remark": "编辑服务验证",
+        }
+    )
+    report.check(
+        "领退：保存成功并留变更日志",
+        created.ok and created.record_id is not None,
+        created.error_text() or created.message,
+    )
+
+    duplicate = requisitions.save(
+        {
+            "RequisitionDate": datetime.datetime(2026, 10, 7),
+            "RequisitionNo": "XP-EDIT-001",
+            "ModelName": "31ABCDEFG7H",
+            "OutQty": "1",
+            "Rev": "A",
+            "WorkOrder": "WO-XP-2",
+            "Disposition": plan_rules.DISPOSITION_SCRAP,
+        }
+    )
+    report.check(
+        "领退：单据号重号被拒",
+        not duplicate.ok and any("已存在" in item for item in duplicate.errors),
+        duplicate.error_text(),
+    )
+
+    stages = repos.lookups.stages()
+    stage = stages[0] if stages else "DVT"
+    plan_created = plan_service.save(
+        {
+            "ModelName": "31ABCDEFG7H",
+            "TestItem": "热冲击（XP 编辑验证）",
+            "Stage": stage,
+            "Owner": "验证人",
+            "StartDate": datetime.datetime(2026, 10, 7),
+            "Status": "Ongoing",
+            "Remark": "编辑服务验证",
+        }
+    )
+    job_no = repos.plans.get(plan_created.record_id)["JobNo"] if plan_created.ok else None
+    report.check(
+        "计划：编号留空时自动生成 QRT{年月}{序号}",
+        plan_created.ok
+        and job_no is not None
+        and plan_rules.validate_job_no(job_no) is None
+        and job_no.startswith("QRT2610"),
+        "JobNo=%s" % job_no,
+    )
+
+    if plan_created.ok:
+        duplicate_plan = plan_service.save(
+            {
+                "JobNo": job_no,
+                "ModelName": "31ABCDEFG7H",
+                "TestItem": "热冲击（XP 编辑验证）",
+                "Stage": stage,
+                "StartDate": datetime.datetime(2026, 10, 7),
+                "Remark": "重复工令",
+            }
+        )
+        report.check(
+            "计划：工作编号重号被拒",
+            not duplicate_plan.ok and any("已存在" in item for item in duplicate_plan.errors),
+            duplicate_plan.error_text(),
+        )
+
+        edited = plan_service.save(
+            {
+                "JobNo": job_no,
+                "ModelName": "31ABCDEFG7H",
+                "TestItem": "热冲击（XP 编辑验证）",
+                "Stage": stage,
+                "StartDate": datetime.datetime(2026, 10, 7),
+                "Status": "Close",
+                "Remark": "改为结案",
+            },
+            plan_created.record_id,
+        )
+        report.check(
+            "计划：编辑生效",
+            edited.ok and repos.plans.get(plan_created.record_id)["Status"] == "Close",
+            edited.error_text() or edited.message,
+        )
+
+        plan_logs = db.scalar(
+            'SELECT COUNT(*) FROM "plan_change_logs" WHERE "Summary" LIKE ?', ("%QRT2610%",), default=0
+        )
+        report.check("计划：变更日志已写", plan_logs >= 2, "相关日志 %d 条" % plan_logs)
+
+    deleted_plan = plan_service.delete(plan_created.record_id) if plan_created.ok else None
+    deleted_requisition = requisitions.delete(created.record_id) if created.ok else None
+    report.check(
+        "编辑服务：删除成功",
+        deleted_plan is not None
+        and deleted_plan.ok
+        and deleted_requisition is not None
+        and deleted_requisition.ok,
+        "%s / %s"
+        % (
+            deleted_plan.message if deleted_plan else "未创建计划",
+            deleted_requisition.message if deleted_requisition else "未创建领退",
+        ),
+    )
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description="共库往返验证（在副本上进行）")
     parser.add_argument("--db", help="真实数据库路径（默认自动定位）")
@@ -357,7 +511,10 @@ def main(argv=None):
             report.section("5. 邮件")
             verify_mail(report, db, settings_store)
 
-            report.section("6. 清理副本写入")
+            report.section("6. 编辑服务（里程碑 3：校验 / 保存 / 变更日志）")
+            verify_edit_services(report, db, repos)
+
+            report.section("7. 清理副本写入")
             deleted_plan = repos.plans.delete(plan_id, OPERATOR)
             deleted_requisition = repos.requisitions.delete(requisition_id, OPERATOR)
             plan_logs = db.scalar(
@@ -373,7 +530,7 @@ def main(argv=None):
         finally:
             db.close()
 
-        report.section("7. 原库未被改动")
+        report.section("8. 原库未被改动")
         after = dict((suffix, file_hash(source + suffix)) for suffix in ("", "-wal", "-shm"))
         unchanged = before == after
         report.check("原库（含 -wal/-shm）哈希未变", unchanged, "sha256 前 12 位=%s" % (after[""] or "")[:12])

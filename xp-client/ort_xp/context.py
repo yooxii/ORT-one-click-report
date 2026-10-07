@@ -14,6 +14,7 @@ from .db.connection import Database, DatabaseError
 from .db.repositories import Repositories
 from .services.auth import AuthService
 from .services.mail import MailService, PlanDeadlineReminder, is_valid_address
+from .services.plans import PlanService, RequisitionService
 from .version import APP_NAME, VERSION, BUILD_STAGE, TARGET_OS, TARGET_PYTHON
 
 #: 本范围必须存在的表（缺失说明数据文件夹不是主程序的，或库还没建好）
@@ -39,6 +40,8 @@ class AppContext(object):
         self.mail = None
         self.reminder = None
         self.repositories = None
+        self.requisition_service = None
+        self.plan_service = None
 
     # ---------------------------------------------------------------- 装配
 
@@ -59,6 +62,8 @@ class AppContext(object):
         self.reminder = PlanDeadlineReminder(
             self.database, self.mail, self.mail_settings, self.logger, plans=self.repositories.plans
         )
+        self.requisition_service = RequisitionService(self.repositories, self.repositories.lookups)
+        self.plan_service = PlanService(self.repositories, self.repositories.lookups)
         if self.logger is not None:
             self.logger.info("已连接数据库：%s（来源：%s）" % (self.db_path, self.data_source))
         return self

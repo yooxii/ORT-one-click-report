@@ -23,9 +23,12 @@ for _path in (_PARENT, os.path.join(_PARENT, "tools")):
 import compat_check  # noqa: E402
 from ort_xp import compat, config, credentials, dpapi  # noqa: E402
 from ort_xp.db import repositories  # noqa: E402
+from ort_xp.db import schema_generated  # noqa: E402
 from ort_xp.db.connection import Database  # noqa: E402
 from ort_xp.services import auth as auth_service  # noqa: E402
 from ort_xp.services import mail as mail_service  # noqa: E402
+from ort_xp.services import plan_rules  # noqa: E402
+from ort_xp.services import plans as plans_service  # noqa: E402
 
 #: 与主程序 AuthService.HashPassword 对应的向量：Base64(SHA256(UTF8("abc123" + "p@ss")))
 PASSWORD_VECTOR_SALT = "abc123"
@@ -94,8 +97,23 @@ CREATE TABLE requisitions (
     ModelName NVARCHAR(128) NULL,
     OutQty NVARCHAR(32) NULL,
     Disposition NVARCHAR(16) NULL,
+    SN NVARCHAR(2048) NULL,
+    SnFilePath NVARCHAR(512) NULL,
+    Rev NVARCHAR(32) NULL,
     WorkOrder NVARCHAR(64) NULL,
+    DC NVARCHAR(32) NULL,
+    LineNo NVARCHAR(32) NULL,
     ReturnRtOrder NVARCHAR(64) NULL,
+    ReturnQty NVARCHAR(32) NULL,
+    ReturnDate DATETIME NULL,
+    StockInNo NVARCHAR(64) NULL,
+    StockInQty NVARCHAR(32) NULL,
+    StockInDate DATETIME NULL,
+    ScrapNo NVARCHAR(64) NULL,
+    ScrapQty NVARCHAR(32) NULL,
+    ScrapDate DATETIME NULL,
+    ScrapSnText TEXT NULL,
+    ScrapSnFilePath NVARCHAR(512) NULL,
     Remark NVARCHAR(512) NULL,
     CreatedBy NVARCHAR(64) NULL,
     CreatedAt DATETIME NULL,
@@ -227,6 +245,13 @@ class DatabaseTests(TempDatabaseTest):
         self.assertIn("Username", self.db.column_names("users"))
         self.assertTrue(self.db.has_column("users", "username"))
         self.assertFalse(self.db.has_column("users", "NotThere"))
+
+    def test_temp_schema_matches_generated_schema(self):
+        """临时库的列必须与从主程序模型生成的清单完全一致，避免测试与实际字段脱节。"""
+        for table in ("plans", "requisitions", "users", "mail_logs", "app_settings"):
+            expected = set(schema_generated.columns_of(table))
+            actual = set(self.db.column_names(table))
+            self.assertEqual(expected, actual, "%s 列不一致" % table)
 
     def test_transaction_commit_and_rollback(self):
         with self.db.transaction() as connection:
@@ -691,6 +716,286 @@ class RepositoryTests(TempDatabaseTest):
         self.assertEqual(["电源供应器"], self.repos.lookups.products())
         self.db.execute("INSERT INTO customers (Name, Code) VALUES (?, ?)", ("客户甲", "FG"))
         self.assertEqual(["客户甲"], self.repos.lookups.customers())
+
+
+class PlanRulesTests(unittest.TestCase):
+    """校验规则与自动编号：逐条对齐主程序 PlanValidation / PlanExcelService。"""
+
+    def test_job_no_format(self):
+        rules = plan_rules
+        for value in ("RT260801", "QRT260812", "rt260801", "RT2608999"):
+            self.assertIsNone(rules.validate_job_no(value), value)
+        for value in ("RT2608", "260801", "RT2608AB", "X260801", "RT123"):
+            self.assertEqual(rules.MESSAGE_JOB_NO_FORMAT, rules.validate_job_no(value), value)
+        self.assertIsNone(rules.validate_job_no(""))
+        self.assertIsNone(rules.validate_job_no(None))
+        self.assertEqual(rules.MESSAGE_JOB_NO_SEQ, rules.validate_job_no("RT260800"))
+
+    def test_return_rt_order_format(self):
+        rules = plan_rules
+        self.assertIsNone(rules.validate_return_rt_order("RTAH260901"))
+        self.assertIsNone(rules.validate_return_rt_order(None))
+        self.assertEqual(rules.MESSAGE_RETURN_RT_FORMAT, rules.validate_return_rt_order("RTAH2609"))
+        self.assertEqual(rules.MESSAGE_RETURN_RT_SEQ, rules.validate_return_rt_order("RTAH260900"))
+
+    def test_status_validation_and_kind(self):
+        rules = plan_rules
+        self.assertIsNone(rules.validate_status("Close"))
+        self.assertIsNone(rules.validate_status("ongoing"))
+        self.assertEqual(rules.MESSAGE_STATUS, rules.validate_status("结案"))
+        self.assertEqual(rules.STATUS_ONGOING, rules.status_kind("进行中"))
+        self.assertEqual(rules.STATUS_ONGOING, rules.status_kind("Ongoing"))
+        self.assertEqual(rules.STATUS_PENDING, rules.status_kind("待测"))
+        self.assertEqual(rules.STATUS_CLOSED, rules.status_kind("Close"))
+        self.assertEqual(rules.STATUS_CLOSED, rules.status_kind("已完成"))
+        self.assertEqual("", rules.status_kind("随便写的"))
+        self.assertEqual("", rules.status_kind(None))
+
+    def test_catalog_and_disposition_validation(self):
+        rules = plan_rules
+        self.assertIsNone(rules.validate_in_catalog("DVT", ["DVT", "MP"], "阶段"))
+        self.assertIsNone(rules.validate_in_catalog("", ["DVT"], "阶段"))
+        self.assertIn("不在字典中", rules.validate_in_catalog("EVT", ["DVT"], "阶段"))
+        self.assertIsNone(rules.validate_disposition("入库"))
+        self.assertIsNone(rules.validate_disposition("报废"))
+        self.assertIn("只能是", rules.validate_disposition("丢弃"))
+
+    def test_sequence_formatting(self):
+        self.assertEqual("01", plan_rules.format_sequence(1))
+        self.assertEqual("99", plan_rules.format_sequence(99))
+        self.assertEqual("100", plan_rules.format_sequence(100))
+
+    def test_generate_job_no_shares_monthly_sequence(self):
+        existing = ["RT260801", "QRT260802", "QRT261001", "RT259912", None, "垃圾数据"]
+        self.assertEqual("RT260803", plan_rules.generate_job_no(existing, datetime.datetime(2026, 8, 15)))
+        self.assertEqual("QRT260803", plan_rules.generate_job_no(existing, datetime.datetime(2026, 8, 15), "QRT"))
+        self.assertEqual("RT260901", plan_rules.generate_job_no(existing, datetime.datetime(2026, 9, 1)))
+        self.assertEqual("QRT261002", plan_rules.generate_job_no(existing, datetime.datetime(2026, 10, 1), "QRT"))
+        # 序号 ≥ 100 时按实际位数展开
+        self.assertEqual("RT2608100", plan_rules.generate_job_no(["RT260899"], datetime.datetime(2026, 8, 1)))
+
+    def test_generate_return_rt_order(self):
+        existing = ["RTAH260901", "RTAH260902", "RTAH261001", "无效"]
+        self.assertEqual("RTAH260903", plan_rules.generate_return_rt_order(existing, datetime.datetime(2026, 9, 20)))
+        self.assertEqual("RTAH261002", plan_rules.generate_return_rt_order(existing, datetime.datetime(2026, 10, 2)))
+
+
+class EditServiceTests(TempDatabaseTest):
+    """编辑服务：必填/格式/唯一性校验 + 落库 + 变更日志（不依赖界面）。"""
+
+    OPERATOR = "tester"
+
+    def setUp(self):
+        TempDatabaseTest.setUp(self)
+        self.repos = repositories.Repositories(self.db)
+        self.requisitions = plans_service.RequisitionService(self.repos, self.repos.lookups, self.OPERATOR)
+        self.plans = plans_service.PlanService(self.repos, self.repos.lookups, self.OPERATOR)
+        self.db.execute("INSERT INTO stages (Name) VALUES (?)", ("DVT",))
+        self.db.execute("INSERT INTO test_items_catalog (Name) VALUES (?)", ("热冲击",))
+
+    def requisition_values(self, **overrides):
+        values = {
+            "RequisitionDate": datetime.datetime(2026, 9, 1),
+            "RequisitionNo": "2609-001",
+            "ModelName": "31ABCDEFG7H",
+            "OutQty": "2",
+            "Rev": "A",
+            "WorkOrder": "WO-1",
+            "Disposition": plan_rules.DISPOSITION_STOCK_IN,
+            "ReturnRtOrder": "RTAH260901",
+            "Remark": "备注",
+        }
+        values.update(overrides)
+        return values
+
+    def plan_values(self, **overrides):
+        values = {
+            "ModelName": "31ABCDEFG7H",
+            "TestItem": "热冲击",
+            "Stage": "DVT",
+            "Owner": "王工",
+            "StartDate": datetime.datetime(2026, 9, 1),
+            "Status": "Ongoing",
+            "Remark": "计划备注",
+        }
+        values.update(overrides)
+        return values
+
+    def test_requisition_required_fields(self):
+        result = self.requisitions.save({})
+        self.assertFalse(result.ok)
+        self.assertIn("请选择领用日期", result.errors)
+        self.assertIn("请填写領料單据號", result.errors)
+        self.assertIn("请填写机种名", result.errors)
+        self.assertIn("请填写领用数量", result.errors)
+        self.assertIn("请填写版本", result.errors)
+        self.assertIn("请填写工令", result.errors)
+        self.assertEqual(0, self.repos.requisitions.count())
+
+    def test_requisition_disposition_and_return_rt_rules(self):
+        result = self.requisitions.save(
+            self.requisition_values(Disposition=plan_rules.DISPOSITION_STOCK_IN, ReturnRtOrder="")
+        )
+        self.assertFalse(result.ok)
+        self.assertIn("单体去向为「入库」时必须填写回线RT工令", result.errors)
+
+        result = self.requisitions.save(self.requisition_values(ReturnRtOrder="RT260901"))
+        self.assertFalse(result.ok)
+        self.assertIn(plan_rules.MESSAGE_RETURN_RT_FORMAT, result.errors)
+
+        # 报废无需回线RT工令
+        result = self.requisitions.save(
+            self.requisition_values(Disposition=plan_rules.DISPOSITION_SCRAP, ReturnRtOrder="")
+        )
+        self.assertTrue(result.ok, result.errors)
+
+    def test_requisition_unique_rules(self):
+        first = self.requisitions.save(self.requisition_values())
+        self.assertTrue(first.ok, first.errors)
+        duplicate_no = self.requisitions.save(self.requisition_values(ReturnRtOrder="RTAH260902"))
+        self.assertFalse(duplicate_no.ok)
+        self.assertIn("領料單据號 [2609-001] 已存在", duplicate_no.errors)
+        duplicate_rt = self.requisitions.save(self.requisition_values(RequisitionNo="2609-002"))
+        self.assertFalse(duplicate_rt.ok)
+        self.assertIn("回线RT工令 [RTAH260901] 已存在", duplicate_rt.errors)
+        # 编辑自己时不算重号
+        result = self.requisitions.save(self.requisition_values(), first.record_id)
+        self.assertTrue(result.ok, result.errors)
+
+    def test_requisition_save_edit_delete_writes_logs(self):
+        created = self.requisitions.save(self.requisition_values())
+        self.assertTrue(created.ok, created.errors)
+        row = self.repos.requisitions.get(created.record_id)
+        self.assertEqual("2026-09-01 00:00:00", row["RequisitionDate"])
+        self.assertEqual(self.OPERATOR, row["CreatedBy"])
+
+        edited = self.requisitions.save(self.requisition_values(OutQty="5"), created.record_id)
+        self.assertTrue(edited.ok, edited.errors)
+        self.assertEqual("5", self.repos.requisitions.get(created.record_id)["OutQty"])
+
+        deleted = self.requisitions.delete(created.record_id)
+        self.assertTrue(deleted.ok)
+        self.assertIsNone(self.repos.requisitions.get(created.record_id))
+
+        actions = [item["Action"] for item in self.repos.change_logs.recent()]
+        self.assertEqual([repositories.ACTION_DELETE, repositories.ACTION_EDIT, repositories.ACTION_ADD], actions)
+        summaries = [item["Summary"] for item in self.repos.change_logs.recent()]
+        self.assertEqual("删除领退 2609-001 (31ABCDEFG7H)", summaries[0])
+
+    def test_requisition_return_rt_generator(self):
+        self.assertEqual("RTAH260901", self.requisitions.next_return_rt_order(datetime.datetime(2026, 9, 5)))
+        self.requisitions.save(self.requisition_values())
+        self.assertEqual("RTAH260902", self.requisitions.next_return_rt_order(datetime.datetime(2026, 9, 6)))
+
+    def test_plan_required_fields_and_catalog(self):
+        result = self.plans.save({})
+        self.assertFalse(result.ok)
+        self.assertIn("请选择测试项目", result.errors)
+        self.assertIn("请填写开始时间", result.errors)
+        self.assertIn("请选择阶段", result.errors)
+        self.assertIn("请填写机种名", result.errors)
+        self.assertIn("请填写备注", result.errors)
+
+        result = self.plans.save(self.plan_values(TestItem="不存在的项目"))
+        self.assertFalse(result.ok)
+        self.assertIn("不在字典中", "\n".join(result.errors))
+
+        result = self.plans.save(self.plan_values(Status="结案"))
+        self.assertFalse(result.ok)
+        self.assertIn(plan_rules.MESSAGE_STATUS, result.errors)
+
+    def test_plan_auto_job_no_and_uniqueness(self):
+        first = self.plans.save(self.plan_values())
+        self.assertTrue(first.ok, first.errors)
+        first_row = self.repos.plans.get(first.record_id)
+        self.assertEqual("QRT260901", first_row["JobNo"])
+
+        second = self.plans.save(self.plan_values(ModelName="31OTHER"))
+        self.assertEqual("QRT260902", self.repos.plans.get(second.record_id)["JobNo"])
+
+        duplicate = self.plans.save(self.plan_values(JobNo="QRT260901"))
+        self.assertFalse(duplicate.ok)
+        self.assertIn("工作编号 [QRT260901] 已存在", duplicate.errors)
+
+        edited = self.plans.save(self.plan_values(JobNo="QRT260901", Status="Close"), first.record_id)
+        self.assertTrue(edited.ok, edited.errors)
+        self.assertEqual("Close", self.repos.plans.get(first.record_id)["Status"])
+
+    def test_plan_suggest_product_customer(self):
+        self.db.execute(
+            "INSERT INTO model_mappings (ModelName, Product, Customer) VALUES (?, ?, ?)",
+            ("31ABCDEFG7H", "电源供应器", "客户甲"),
+        )
+        product, customer = self.plans.suggest_product_customer("31ABCDEFG7H")
+        self.assertEqual("电源供应器", product)
+        self.assertEqual("客户甲", customer)
+        self.assertEqual((None, None), self.plans.suggest_product_customer(None))
+
+
+class FormHelperTests(unittest.TestCase):
+    """表单字段与「界面字符串 ↔ 服务值」转换（放在服务层，可脱离界面测试）。"""
+
+    class FakeLookups(object):
+        def test_items(self):
+            return ["热冲击"]
+
+        def stages(self):
+            return ["DVT"]
+
+        def products(self):
+            return ["电源供应器"]
+
+        def customers(self):
+            return ["客户甲"]
+
+    def test_form_fields_cover_payload_fields(self):
+        fields = set(key for key, _label, _kind, _options in plans_service.requisition_form_fields())
+        payload = set(plans_service.REQUISITION_TEXT_FIELDS) | set(plans_service.REQUISITION_DATE_FIELDS)
+        missing = payload - fields - set(plans_service.FORM_EXEMPT_FIELDS)
+        self.assertEqual(set(), missing, "领退表单缺字段：%s" % missing)
+
+        plan_fields = set(
+            key for key, _label, _kind, _options in plans_service.plan_form_fields(self.FakeLookups())
+        )
+        plan_payload = set(plans_service.PLAN_TEXT_FIELDS) | set(plans_service.PLAN_DATE_FIELDS)
+        self.assertEqual(set(), plan_payload - plan_fields, "计划表单缺字段")
+
+    def test_plan_form_fields_use_catalogs(self):
+        fields = dict(
+            (key, options) for key, _label, _kind, options in plans_service.plan_form_fields(self.FakeLookups())
+        )
+        self.assertEqual(("热冲击",), fields["TestItem"])
+        self.assertEqual(("DVT",), fields["Stage"])
+        self.assertEqual(("电源供应器",), fields["Product"])
+        self.assertEqual(("客户甲",), fields["Customer"])
+        self.assertEqual(plan_rules.VALID_STATUSES, fields["Status"])
+
+    def test_form_values_conversion(self):
+        values = plans_service.form_values(
+            {"RequisitionDate": "2026-10-07", "OutQty": "", "Remark": "", "RequisitionNo": "2609-001"},
+            plans_service.REQUISITION_DATE_FIELDS,
+            ("Remark",),
+        )
+        self.assertEqual(datetime.datetime(2026, 10, 7), values["RequisitionDate"])
+        self.assertIsNone(values["OutQty"])
+        self.assertEqual("", values["Remark"])
+        self.assertEqual("2609-001", values["RequisitionNo"])
+
+        values = plans_service.form_values(
+            {"StartDate": "不是日期", "EndDate": ""}, plans_service.PLAN_DATE_FIELDS
+        )
+        self.assertIsNone(values["StartDate"])
+        self.assertIsNone(values["EndDate"])
+
+    def test_form_initial_conversion(self):
+        fields = plans_service.requisition_form_fields()
+        row = dict((key, None) for key, _label, _kind, _options in fields)
+        row["RequisitionDate"] = "2026-10-07 00:00:00"
+        row["RequisitionNo"] = "2609-001"
+        initial = plans_service.form_initial(fields, row, plans_service.REQUISITION_DATE_FIELDS)
+        self.assertEqual("2026-10-07", initial["RequisitionDate"])
+        self.assertEqual("2609-001", initial["RequisitionNo"])
+        self.assertEqual("", initial["Remark"])
 
 
 class SourceCompatibilityTests(unittest.TestCase):
