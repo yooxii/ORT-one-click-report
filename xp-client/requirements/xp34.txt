@@ -1,0 +1,17 @@
+# XP 目标机（Python 3.4.10 32 位）运行时依赖
+#
+# 结论：**零第三方运行时依赖**。
+# 本范围（数据层 / 登录 / 领用与计划表 / 邮件）只需要标准库：
+#   sqlite3  tkinter  smtplib  ssl  email  hashlib  base64  hmac  json  uuid
+#   ctypes（DPAPI）  logging  codecs  datetime  os  sys
+#
+# 之所以能做到零依赖：范围里已经砍掉了 Excel / Word / PDF / OLE 处理，
+# 那些才是必须第三方库的部分。这也让 XP 部署不再需要去找 cp34 的 wheel。
+#
+# 唯一可选件：
+#   certifi —— 提供一份较新的 CA 根证书包。Python 3.4 的 ssl 不会读取
+#   Windows 证书库，而 XP 的根证书库早已过期，SMTP/HTTPS 会因证书不受信任失败。
+#   替代做法（推荐，免依赖）：把一份 PEM 随程序分发，运行时用 cafile 指定。
+#
+# 若将来确需引入第三方包，务必确认其存在 cp34-cp34m-win32 的 wheel，
+# 并在 docs/01-环境搭建.md 的依赖表里登记“已验证版本”。
