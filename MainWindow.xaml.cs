@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using NLog;
 using ORT一键报告.Admin.Views;
 using ORT一键报告.Main.Views;
+using ORT一键报告.Models;
 using ORT一键报告.Plans.Views;
 using ORT一键报告.Reports.Views;
 using ORT一键报告.Review.Views;
@@ -41,6 +42,9 @@ namespace ORT一键报告
 
         /// <summary>右下角托盘图标（最小化到后台时显示；退出或关闭后台运行后释放）</summary>
         private WinForms.NotifyIcon _trayIcon;
+
+        /// <summary>托盘菜单当前使用的字体（每次重建都会换一个，旧的在重建时释放）</summary>
+        private System.Drawing.Font _trayMenuFont;
 
         /// <summary>本次关闭是否真的要退出程序（托盘「退出程序」/ 注销登录 / 系统结束会话时为 true）</summary>
         private bool _exitRequested;
@@ -203,27 +207,225 @@ namespace ORT一键报告
             {
                 return;
             }
-            WinForms.ContextMenuStrip menu = new();
-            menu.Items.Add(LanguageService.Get("Main_TrayShow"), null, (s, e) => RestoreFromBackground());
-            menu.Items.Add(new WinForms.ToolStripSeparator());
-            menu.Items.Add(LanguageService.Get("Main_TrayExit"), null, (s, e) => ExitApplication());
-
             _trayIcon = new WinForms.NotifyIcon
             {
                 Icon = LoadTrayIcon(),
-                Visible = true,
-                ContextMenuStrip = menu
+                Visible = true
             };
             _trayIcon.DoubleClick += (s, e) => RestoreFromBackground();
-            UpdateTrayText();
-            // 设置里改字体后托盘菜单文字跟着变
+            BuildTrayMenu();
+            // 设置里改字体/语言/开机自启后托盘菜单跟着刷新
             _appSettings.SettingsChanged += OnSettingsChangedForTray;
         }
 
+        /* ###############################  托盘菜单  ################################ */
+
+        /// <summary>托盘菜单分隔线的标记（ToolStripItem 只能属于一个菜单，因此每次都新建，靠这个标记识别）</summary>
+        private const string TraySeparatorTag = "tray-separator";
+
         /// <summary>
-        /// 刷新托盘图标提示文字与菜单（语言、字体、版本变化时调用）
+        /// 重建整个托盘菜单：按当前权限禁用无权使用的项，并同步开机自启的勾选状态。
+        /// 语言、权限、开机自启状态变化后都走这里重建，避免按下标改文字改错项。
         /// </summary>
-        private void UpdateTrayText()
+        private void BuildTrayMenu()
+        {
+            if (_trayIcon == null)
+            {
+                return;
+            }
+            try
+            {
+                DisposeTrayMenu();
+                WinForms.ContextMenuStrip menu = new();
+                _trayMenuFont = TrayMenuFont();
+                menu.Font = _trayMenuFont;
+
+                AddTrayItem(menu.Items, LanguageService.Get("Main_TrayShow"), true, (s, e) => RestoreFromBackground());
+                AddTraySeparator(menu.Items);
+
+                // 领用与计划：打开需要浏览权限；新增/批量回线/回线转移单还需要编辑权限
+                WinForms.ToolStripMenuItem plans = new(LanguageService.Get("MainWindow_Button_Plans"))
+                {
+                    Enabled = _permission.Can("plan.view")
+                };
+                menu.Items.Add(plans);
+                AddTrayItem(plans.DropDownItems, LanguageService.Get("Plans_Menu_OpenRequisitions"), true, (s, e) => OpenPlans());
+                AddTrayItem(plans.DropDownItems, LanguageService.Get("Plans_Menu_OpenPlans"), true, (s, e) => OpenPlans());
+                AddTraySeparator(plans.DropDownItems);
+                AddTrayItem(plans.DropDownItems, LanguageService.Get("Plans_AddRequisition"), CanPlanEdit, (s, e) => OpenPlans(() => InvokeOpenPlans(w => w.InvokeAddRequisition())));
+                AddTrayItem(plans.DropDownItems, LanguageService.Get("Plans_AddPlan"), CanPlanEdit, (s, e) => OpenPlans(() => InvokeOpenPlans(w => w.InvokeAddPlan())));
+                AddTraySeparator(plans.DropDownItems);
+                AddTrayItem(plans.DropDownItems, LanguageService.Get("Plans_Menu_BatchReturn"), CanPlanEdit, (s, e) => OpenPlans(() => InvokeOpenPlans(w => w.InvokeBatchReturn())));
+                AddTrayItem(plans.DropDownItems, LanguageService.Get("Plans_ReturnTransfer"), CanPlanEdit, (s, e) => OpenPlans(() => InvokeOpenPlans(w => w.InvokeReturnTransfer())));
+
+                // 一键报告：Burn In / Thermal Shock / EMI 三个报告页 + ATE 工具
+                bool canReport = _permission.Can("report.use");
+                WinForms.ToolStripMenuItem report = new(LanguageService.Get("MainWindow_Button_Report"))
+                {
+                    Enabled = canReport
+                };
+                menu.Items.Add(report);
+                AddTrayItem(report.DropDownItems, LanguageService.Get("Main_TrayReportBurnIn"), true, (s, e) => OpenReport("Burn In"));
+                AddTrayItem(report.DropDownItems, LanguageService.Get("Main_TrayReportThermalShock"), true, (s, e) => OpenReport("Thermal Shock"));
+                AddTrayItem(report.DropDownItems, LanguageService.Get("Main_TrayReportEmi"), true, (s, e) => OpenReport("EMI"));
+                AddTraySeparator(report.DropDownItems);
+                AddTrayItem(report.DropDownItems, LanguageService.Get("Main_TrayAteTool"), true, (s, e) => OpenAteTool());
+
+                // 管理：打开管理表
+                WinForms.ToolStripMenuItem admin = new(LanguageService.Get("MainWindow_Button_Admin"))
+                {
+                    Enabled = _permission.Can("admin.manage")
+                };
+                menu.Items.Add(admin);
+                AddTrayItem(admin.DropDownItems, LanguageService.Get("Main_TrayAdminOpen"), true, (s, e) => OpenAdmin());
+
+                // 审查
+                AddTrayItem(menu.Items, LanguageService.Get("MainWindow_Button_Review"), _permission.Can("review.view"), (s, e) => OpenReview());
+
+                AddTraySeparator(menu.Items);
+
+                // 设置：打开设置 + 开机自启开关（远程路径下不可自启，直接禁用）
+                WinForms.ToolStripMenuItem settings = new(LanguageService.Get("MainWindow_Menu_Settings"));
+                menu.Items.Add(settings);
+                AddTrayItem(settings.DropDownItems, LanguageService.Get("Main_TrayOpenSettings"), true, (s, e) => OpenSettings());
+                bool autoStartAvailable = ShouldOfferAutoStart();
+                AddTrayItem(settings.DropDownItems, LanguageService.Get("Main_TrayAutoStart"), autoStartAvailable, (s, e) => ToggleAutoStart())
+                    .Checked = autoStartAvailable && StartupManager.IsEnabled();
+
+                AddTraySeparator(menu.Items);
+                AddTrayItem(menu.Items, LanguageService.Get("Main_TrayExit"), true, (s, e) => ExitApplication());
+
+                _trayIcon.ContextMenuStrip = menu;
+                UpdateTrayTip();
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn($"构建托盘菜单失败: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 往菜单里加一项，返回新加的项以便继续设置属性
+        /// </summary>
+        private static WinForms.ToolStripMenuItem AddTrayItem(WinForms.ToolStripItemCollection items, string text, bool enabled, EventHandler onClick)
+        {
+            WinForms.ToolStripMenuItem item = new(text) { Enabled = enabled };
+            if (onClick != null)
+            {
+                item.Click += onClick;
+            }
+            items.Add(item);
+            return item;
+        }
+
+        /// <summary>往菜单里加一条分隔线</summary>
+        private static void AddTraySeparator(WinForms.ToolStripItemCollection items)
+            => items.Add(new WinForms.ToolStripSeparator { Tag = TraySeparatorTag });
+
+        /// <summary>托盘菜单字体跟随设置里的界面字体与字号（夹在 8–12 之间，托盘菜单过大会很怪）</summary>
+        private System.Drawing.Font TrayMenuFont()
+        {
+            try
+            {
+                return new System.Drawing.Font(
+                    _appSettings.Settings.UI.FontFamily,
+                    (float)Math.Max(8, Math.Min(12, _appSettings.Settings.UI.FontSize)));
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn($"托盘菜单字体回退为默认: {ex.Message}");
+                return System.Drawing.SystemFonts.MenuFont;
+            }
+        }
+
+        /// <summary>释放上一次构建的菜单（连同菜单里自己建的项与字体）</summary>
+        private void DisposeTrayMenu()
+        {
+            // 每次重建都会新建字体，这里一并释放，避免反复开关窗口攒下一堆字体句柄
+            try
+            {
+                _trayMenuFont?.Dispose();
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn($"释放托盘菜单字体失败: {ex.Message}");
+            }
+            _trayMenuFont = null;
+
+            WinForms.ContextMenuStrip menu = _trayIcon?.ContextMenuStrip;
+            if (menu == null)
+            {
+                return;
+            }
+            _trayIcon.ContextMenuStrip = null;
+            foreach (WinForms.ToolStripItem item in menu.Items)
+            {
+                if (!Equals(item.Tag, TraySeparatorTag))
+                {
+                    item.Dispose();
+                }
+            }
+            menu.Dispose();
+        }
+
+        /// <summary>
+        /// 在已打开的领退和计划窗口上执行动作；窗口有可能刚被用户关掉，这里兜底重开一次
+        /// </summary>
+        private static void InvokeOpenPlans(Action<Plans.Views.WindowPlans> action)
+        {
+            foreach (Window w in Application.Current.Windows)
+            {
+                if (w is Plans.Views.WindowPlans plans)
+                {
+                    action(plans);
+                    return;
+                }
+            }
+            // 窗口在点菜单的瞬间被关掉了：重开一个再执行
+            Plans.Views.WindowPlans reopened = new();
+            reopened.Show();
+            action(reopened);
+        }
+
+        /// <summary>
+        /// 是否提供「开机自启」开关：程序位于远程路径（网络共享/网络盘/SUBST 虚拟盘）时不可自启，
+        /// 按需求直接禁用该菜单项
+        /// </summary>
+        private static bool ShouldOfferAutoStart() => !StartupManager.IsRemoteLocation();
+
+        /// <summary>托盘菜单「开机自启」：在开与关之间切换（远程路径下菜单项已禁用，这里再挡一次）</summary>
+        private void ToggleAutoStart()
+        {
+            if (StartupManager.TryDescribeRemoteLocation() is string remote)
+            {
+                _ = MessageBox.Show(
+                    string.Format(LanguageService.Get("Settings_AutoStartRemoteBlockedFormat"), remote),
+                    LanguageService.Get("Cap_Warning"), MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            bool enable = !StartupManager.IsEnabled();
+            BackgroundSettings background = _appSettings.GetBackgroundSettings();
+            bool toBackground = enable && background.AutoStartToBackground;
+            if (!StartupManager.TryEnable(enable, toBackground, out string error))
+            {
+                _ = MessageBox.Show(
+                    string.Format(LanguageService.Get("Settings_AutoStartFailedFormat"), error),
+                    LanguageService.Get("Cap_Error"), MessageBoxButton.OK, MessageBoxImage.Warning);
+                BuildTrayMenu();
+                return;
+            }
+            // 同步回本机设置，设置窗口里的勾选状态跟着变
+            background.AutoStart = enable;
+            background.AutoStartToBackground = toBackground;
+            _appSettings.SetBackgroundSettings(background);
+            _logger.Info(enable ? "托盘菜单：已开启开机自启" : "托盘菜单：已关闭开机自启");
+            BuildTrayMenu();
+        }
+
+        /// <summary>
+        /// 刷新托盘图标的提示文字（悬停显示）
+        /// </summary>
+        private void UpdateTrayTip()
         {
             if (_trayIcon == null)
             {
@@ -232,19 +434,18 @@ namespace ORT一键报告
             try
             {
                 _trayIcon.Text = LanguageService.Get("Main_TrayTip");
-                if (_trayIcon.ContextMenuStrip != null && _trayIcon.ContextMenuStrip.Items.Count >= 3)
-                {
-                    _trayIcon.ContextMenuStrip.Items[0].Text = LanguageService.Get("Main_TrayShow");
-                    _trayIcon.ContextMenuStrip.Items[2].Text = LanguageService.Get("Main_TrayExit");
-                    _trayIcon.ContextMenuStrip.Font = new System.Drawing.Font(
-                        _appSettings.Settings.UI.FontFamily,
-                        (float)Math.Max(8, Math.Min(12, _appSettings.Settings.UI.FontSize)));
-                }
             }
             catch (Exception ex)
             {
                 _logger.Warn($"刷新托盘提示失败: {ex.Message}");
             }
+        }
+
+        /// <summary>刷新托盘提示与菜单（语言、字体、权限、开机自启状态变化后调用）</summary>
+        private void UpdateTrayText()
+        {
+            UpdateTrayTip();
+            BuildTrayMenu();
         }
 
         private void OnSettingsChangedForTray()
@@ -277,6 +478,7 @@ namespace ORT一键报告
             try
             {
                 _trayIcon.Visible = false;
+                DisposeTrayMenu();
                 _trayIcon.Dispose();
             }
             catch (Exception ex)
@@ -399,6 +601,11 @@ namespace ORT一键报告
         }
 
         /// <summary>
+        /// 是否有领退表编辑权限（托盘菜单「新增领用/新增计划/批量回线/回线转移单」的可用性判据）
+        /// </summary>
+        private bool CanPlanEdit => _permission.Can("plan.edit");
+
+        /// <summary>
         /// 根据当前登录状态与角色刷新入口可用性，并关闭当前无权限访问的子窗口
         /// </summary>
         private void UpdateUIByPermission()
@@ -424,6 +631,8 @@ namespace ORT一键报告
 
             // 权限变化时关闭当前无权限访问的子窗口
             CloseUnauthorizedWindows();
+            // 托盘菜单里的项也按权限决定可用性：登录/注销/换人后重建，避免留下无权使用的入口
+            BuildTrayMenu();
         }
 
         /// <summary>
@@ -622,7 +831,11 @@ namespace ORT一键报告
             window.Show();
         }
 
-        private void MenuItem_Settings_Click(object sender, RoutedEventArgs e)        {
+        private void MenuItem_Settings_Click(object sender, RoutedEventArgs e) => OpenSettings();
+
+        /// <summary>打开设置窗口（主窗口菜单与托盘菜单共用）</summary>
+        internal void OpenSettings()
+        {
             WindowAppSettings settingsWindow = new()
             {
                 Owner = null
@@ -635,7 +848,13 @@ namespace ORT一键报告
             ExitApplication();
         }
 
-        private void Button_YiJianBaoGao_Click(object sender, RoutedEventArgs e)
+        private void Button_YiJianBaoGao_Click(object sender, RoutedEventArgs e) => OpenReport();
+
+        /// <summary>
+        /// 打开一键报告窗口；<paramref name="reportType"/> 非空时（托盘菜单：Burn In / Thermal Shock / EMI）
+        /// 还要切到对应报告页，且预填与刷新要等窗口加载完再做
+        /// </summary>
+        internal void OpenReport(string reportType = null)
         {
             if (!_permission.Can("report.use"))
             {
@@ -646,32 +865,67 @@ namespace ORT一键报告
             // 直接进入：清掉上一次从计划表进入残留的匹配记录（ReportService 是单例，
             // 否则概览读到的 SN/工令/版本会被上一次的领用表数据覆盖）
             App.ServiceProvider.GetRequiredService<ReportService>().ClearMatchedSource();
+            // 指定报告页时先显示窗口：页面创建要读表头、填单体数据，得等窗口加载完成
             WindowMainReport windowMainReport = new();
+            if (string.IsNullOrEmpty(reportType))
+            {
+                windowMainReport.Show();
+                return;
+            }
+            windowMainReport.Loaded += (s, args) => windowMainReport.SelectReportTab(reportType);
             windowMainReport.Show();
         }
 
-        private void Button_Plans_Click(object sender, RoutedEventArgs e)
+        /// <summary>
+        /// 打开 ATE 工具（托盘菜单「一键报告 → ATE 工具」）
+        /// </summary>
+        internal void OpenAteTool()
         {
-            // 已打开的领退和计划窗口则聚焦，不重复打开
+            if (!_permission.Can("report.use"))
+            {
+                _ = MessageBox.Show(LocalizationHelper.Get("Msg_ReportNeedLogin"), LanguageService.Get("Cap_NoPermission"));
+                return;
+            }
+            new ATEWindow().Show();
+        }
+
+        private void Button_Plans_Click(object sender, RoutedEventArgs e) => OpenPlans();
+
+        /// <summary>
+        /// 打开领退和计划窗口（已打开则聚焦）。
+        /// <paramref name="pendingAction"/> 非空时（托盘菜单：新增领用/新增计划/批量回线/回线转移单），
+        /// 等窗口首次显示完成后自动执行该动作。
+        /// </summary>
+        internal void OpenPlans(Action pendingAction = null)
+        {
+            Plans.Views.WindowPlans existing = null;
             foreach (Window w in Application.Current.Windows)
             {
-                if (w is Plans.Views.WindowPlans existing)
+                if (w is Plans.Views.WindowPlans found)
                 {
-                    if (existing.WindowState == WindowState.Minimized)
-                    {
-                        existing.WindowState = WindowState.Normal;
-                    }
-                    existing.Activate();
-                    return;
+                    existing = found;
+                    break;
                 }
             }
-            Plans.Views.WindowPlans windowPlans = new()
+            if (existing != null)
             {
-            };
+                if (existing.WindowState == WindowState.Minimized)
+                {
+                    existing.WindowState = WindowState.Normal;
+                }
+                existing.Activate();
+                // 窗口之前就开着：直接执行（新增/批量窗口都是即时动作，不依赖刚加载完）
+                pendingAction?.Invoke();
+                return;
+            }
+            Plans.Views.WindowPlans windowPlans = new(pendingAction);
             windowPlans.Show();
         }
 
-        private void Button_Admin_Click(object sender, RoutedEventArgs e)
+        private void Button_Admin_Click(object sender, RoutedEventArgs e) => OpenAdmin();
+
+        /// <summary>打开管理窗口（托盘菜单「管理 → 打开管理表」）</summary>
+        internal void OpenAdmin()
         {
             if (!_permission.Can("admin.manage"))
             {
@@ -684,7 +938,10 @@ namespace ORT一键报告
             windowAdmin.Show();
         }
 
-        private void Button_Review_Click(object sender, RoutedEventArgs e)
+        private void Button_Review_Click(object sender, RoutedEventArgs e) => OpenReview();
+
+        /// <summary>打开审核窗口（托盘菜单「审查」）</summary>
+        internal void OpenReview()
         {
             if (!_permission.Can("review.view"))
             {

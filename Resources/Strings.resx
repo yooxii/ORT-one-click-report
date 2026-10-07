@@ -3119,4 +3119,37 @@
   <data name="Msg_AlreadyRunningTitle" xml:space="preserve">
     <value>程序已运行</value>
   </data>
+  <data name="Plans_Menu_OpenRequisitions" xml:space="preserve">
+    <value>打开领退表</value>
+  </data>
+  <data name="Plans_Menu_OpenPlans" xml:space="preserve">
+    <value>打开计划表</value>
+  </data>
+  <data name="Plans_AddRequisition" xml:space="preserve">
+    <value>新增领用</value>
+  </data>
+  <data name="Plans_AddPlan" xml:space="preserve">
+    <value>新增计划</value>
+  </data>
+  <data name="Main_TrayReportBurnIn" xml:space="preserve">
+    <value>Burn In 报告</value>
+  </data>
+  <data name="Main_TrayReportThermalShock" xml:space="preserve">
+    <value>Thermal Shock 报告</value>
+  </data>
+  <data name="Main_TrayReportEmi" xml:space="preserve">
+    <value>EMI 报告</value>
+  </data>
+  <data name="Main_TrayAteTool" xml:space="preserve">
+    <value>ATE 工具</value>
+  </data>
+  <data name="Main_TrayAdminOpen" xml:space="preserve">
+    <value>打开管理表</value>
+  </data>
+  <data name="Main_TrayOpenSettings" xml:space="preserve">
+    <value>打开设置</value>
+  </data>
+  <data name="Main_TrayAutoStart" xml:space="preserve">
+    <value>开机自启动</value>
+  </data>
 </root>

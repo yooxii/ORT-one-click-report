@@ -189,6 +189,65 @@ namespace ORT一键报告.Reports.Views
             }
         }
 
+        /* ###############################  外部入口（托盘菜单）  ################################ */
+
+        /// <summary>
+        /// 外部入口：打开并切到指定报告页（Burn In / Thermal Shock / EMI）。
+        /// 该页被「视图」菜单取消勾选时由这里自动勾上并创建——托盘里主动选了某一页，
+        /// 结果却什么都不显示会让人以为功能坏了。勾选状态照旧写回设置。
+        /// </summary>
+        public void SelectReportTab(string reportType)
+        {
+            if (string.IsNullOrWhiteSpace(reportType)
+                || !ReportTabDefs.TryGetValue(reportType, out ReportTabDef def))
+            {
+                return;
+            }
+            try
+            {
+                if (_menuByReport.TryGetValue(reportType, out MenuItem menu))
+                {
+                    if (!menu.IsChecked)
+                    {
+                        menu.IsChecked = true;
+                    }
+                    else
+                    {
+                        AppSettingsService settings = App.ServiceProvider.GetRequiredService<AppSettingsService>();
+                        settings.SetBool(def.SettingsKey, true);
+                    }
+                }
+                bool created = !_tabs.ContainsKey(reportType);
+                AddTab(reportType, def);
+                if (created && _tabs.TryGetValue(reportType, out (TabItem Tab, UserControl Page) entry))
+                {
+                    // 与勾选菜单一样的收尾：初始化页面 + 按需读表头/填单体数据
+                    InitSinglePage(entry.Page);
+                    if (ReportService.EnteredFromPlan)
+                    {
+                        ReadHeaderFromReportFolder(entry.Page);
+                    }
+                    if ((ReportService.UUTInfos?.SNs?.Count ?? 0) > 0)
+                    {
+                        FillDetailsForPage(entry.Page);
+                    }
+                }
+                if (_tabs.TryGetValue(reportType, out (TabItem Tab, UserControl Page) current))
+                {
+                    tab_report.SelectedItem = current.Tab;
+                }
+                if (WindowState == WindowState.Minimized)
+                {
+                    WindowState = WindowState.Normal;
+                }
+                Activate();
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn($"切换到报告页失败（{reportType}）: {ex.Message}");
+            }
+        }
+
         /* ###############################  加载/生成  ################################ */
 
         /// <summary>

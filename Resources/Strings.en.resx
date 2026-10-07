@@ -3119,4 +3119,37 @@ No = exit the program.
   <data name="Msg_AlreadyRunningTitle" xml:space="preserve">
     <value>Already running</value>
   </data>
+  <data name="Plans_Menu_OpenRequisitions" xml:space="preserve">
+    <value>Open requisitions</value>
+  </data>
+  <data name="Plans_Menu_OpenPlans" xml:space="preserve">
+    <value>Open plans</value>
+  </data>
+  <data name="Plans_AddRequisition" xml:space="preserve">
+    <value>New requisition</value>
+  </data>
+  <data name="Plans_AddPlan" xml:space="preserve">
+    <value>New plan</value>
+  </data>
+  <data name="Main_TrayReportBurnIn" xml:space="preserve">
+    <value>Burn In report</value>
+  </data>
+  <data name="Main_TrayReportThermalShock" xml:space="preserve">
+    <value>Thermal Shock report</value>
+  </data>
+  <data name="Main_TrayReportEmi" xml:space="preserve">
+    <value>EMI report</value>
+  </data>
+  <data name="Main_TrayAteTool" xml:space="preserve">
+    <value>ATE tool</value>
+  </data>
+  <data name="Main_TrayAdminOpen" xml:space="preserve">
+    <value>Open admin tables</value>
+  </data>
+  <data name="Main_TrayOpenSettings" xml:space="preserve">
+    <value>Open settings</value>
+  </data>
+  <data name="Main_TrayAutoStart" xml:space="preserve">
+    <value>Start with Windows</value>
+  </data>
 </root>

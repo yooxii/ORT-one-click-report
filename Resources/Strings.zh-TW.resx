@@ -3119,4 +3119,37 @@
   <data name="Msg_AlreadyRunningTitle" xml:space="preserve">
     <value>程式已在執行</value>
   </data>
+  <data name="Plans_Menu_OpenRequisitions" xml:space="preserve">
+    <value>開啟領退表</value>
+  </data>
+  <data name="Plans_Menu_OpenPlans" xml:space="preserve">
+    <value>開啟計畫表</value>
+  </data>
+  <data name="Plans_AddRequisition" xml:space="preserve">
+    <value>新增領用</value>
+  </data>
+  <data name="Plans_AddPlan" xml:space="preserve">
+    <value>新增計畫</value>
+  </data>
+  <data name="Main_TrayReportBurnIn" xml:space="preserve">
+    <value>Burn In 報告</value>
+  </data>
+  <data name="Main_TrayReportThermalShock" xml:space="preserve">
+    <value>Thermal Shock 報告</value>
+  </data>
+  <data name="Main_TrayReportEmi" xml:space="preserve">
+    <value>EMI 報告</value>
+  </data>
+  <data name="Main_TrayAteTool" xml:space="preserve">
+    <value>ATE 工具</value>
+  </data>
+  <data name="Main_TrayAdminOpen" xml:space="preserve">
+    <value>開啟管理表</value>
+  </data>
+  <data name="Main_TrayOpenSettings" xml:space="preserve">
+    <value>開啟設定</value>
+  </data>
+  <data name="Main_TrayAutoStart" xml:space="preserve">
+    <value>開機自動啟動</value>
+  </data>
 </root>

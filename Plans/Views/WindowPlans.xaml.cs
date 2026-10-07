@@ -35,8 +35,22 @@ namespace ORT一键报告.Plans.Views
         private readonly PlansViewModel _vm;
         private readonly AppSettingsService _appSettings;
 
-        public WindowPlans()
+        /// <summary>
+        /// 界面完全就绪（首次 Loaded 之后）才执行的一次性动作：托盘菜单让本窗口「新增领用 / 批量回线…」时用。
+        /// 必须等表格建好再执行——这些动作会操作 DataGrid、弹权限提示，构造函数里跑太早。
+        /// </summary>
+        private Action _pendingAction;
+
+        public WindowPlans() : this(null)
         {
+        }
+
+        /// <summary>
+        /// <paramref name="pendingAction"/> 非空时，窗口首次显示完成后自动执行它（供托盘菜单等外部入口使用）
+        /// </summary>
+        public WindowPlans(Action pendingAction)
+        {
+            _pendingAction = pendingAction;
             InitializeComponent();
             // 默认窗口更大（两表列多行多，小窗看不到全部内容）：按屏幕工作区收敛，避免小屏/缩放下超出桌面
             Width = Math.Min(Width, SystemParameters.WorkArea.Width);
@@ -54,6 +68,7 @@ namespace ORT一键报告.Plans.Views
                 BuildSortMenu(menu_window_sort, ActiveGrid());
                 BuildColumnMenu(menu_window_columns, ActiveGrid());
                 RefreshHeaderStyles();
+                RunPendingActionOnce();
             };
             tabs.SelectionChanged += (s, e) =>
             {
@@ -1167,6 +1182,41 @@ namespace ORT一键报告.Plans.Views
 
         /// <summary>工具菜单「批量回线」</summary>
         private void Menu_BatchReturn_Click(object sender, RoutedEventArgs e) => StartRequisitionBatch(RequisitionBatchMode.Return);
+
+        /* ###############################  外部入口（托盘菜单）  ################################ */
+
+        /// <summary>
+        /// 窗口首次显示完成后执行外部排队的一次性动作（只执行一次；抛错只记日志，不影响窗口）
+        /// </summary>
+        private void RunPendingActionOnce()
+        {
+            Action action = _pendingAction;
+            _pendingAction = null;
+            if (action == null)
+            {
+                return;
+            }
+            try
+            {
+                action();
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "执行托盘菜单排队动作失败");
+            }
+        }
+
+        /// <summary>外部入口：新增领用（等价于操作菜单的「新增领用」）</summary>
+        public void InvokeAddRequisition() => _vm.AddRequisitionCommand.Execute(null);
+
+        /// <summary>外部入口：新增计划（等价于操作菜单的「新增计划」）</summary>
+        public void InvokeAddPlan() => _vm.AddPlanCommand.Execute(null);
+
+        /// <summary>外部入口：批量回线（等价于工具菜单的「批量回线」）</summary>
+        public void InvokeBatchReturn() => StartRequisitionBatch(RequisitionBatchMode.Return);
+
+        /// <summary>外部入口：回线转移单</summary>
+        public void InvokeReturnTransfer() => Btn_ReturnLine_Click(this, new RoutedEventArgs());
 
         /// <summary>
         /// 工具菜单「筛选待入库」：只把领退表筛成还需要登记入库的记录（含还没回线的），
