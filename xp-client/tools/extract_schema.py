@@ -42,11 +42,15 @@ ATTR_PAIR_RE = re.compile(r"(\w+)\s*=\s*([^,)]+)")
 
 
 def map_sql_type(csharp_type, string_length, is_nullable):
-    """把 C# 类型映射成 SQLite 声明类型（与 FreeSql 生成的实际类型同风格）。"""
+    """把 C# 类型映射成 SQLite 声明类型（与 FreeSql 生成的实际类型同风格）。
+
+    实测：FreeSql 对不限定长度的字符串生成 ``TEXT``（如 requisitions.ScrapSnText），
+    限定长度的生成 ``NVARCHAR(n)``。
+    """
     value = csharp_type.replace("System.", "").strip()
     array = value.endswith("[]")
     if value.startswith("string"):
-        return "NVARCHAR(%s)" % (string_length if string_length else 0)
+        return "NVARCHAR(%s)" % string_length if string_length else "TEXT"
     if value.startswith("DateTime"):
         return "DATETIME"
     if value.startswith("TimeSpan"):

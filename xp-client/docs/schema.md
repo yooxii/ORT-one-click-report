@@ -81,8 +81,8 @@
 | `Action` | string | NVARCHAR(16) | 否 |  | 操作：新增 / 编辑 / 删除 |
 | `PlanId` | long | INTEGER | 否 |  | 计划记录Id（新增时为提交后的Id） |
 | `Summary` | string | NVARCHAR(256) | 是 |  | 变更摘要 |
-| `BeforeJson` | string | NVARCHAR(0) | 是 |  | 变更前快照（JSON，新增时为null） |
-| `AfterJson` | string | NVARCHAR(0) | 是 |  | 变更后快照（JSON，删除时为null） |
+| `BeforeJson` | string | TEXT | 是 |  | 变更前快照（JSON，新增时为null） |
+| `AfterJson` | string | TEXT | 是 |  | 变更后快照（JSON，删除时为null） |
 | `Operator` | string | NVARCHAR(64) | 否 |  | 操作人 |
 | `CreatedAt` | DateTime | DATETIME | 否 |  |  |
 
@@ -189,7 +189,7 @@
 | `ScrapNo` | string | NVARCHAR(64) | 是 |  | 報廢單据號（可空） |
 | `ScrapQty` | string | NVARCHAR(32) | 是 |  | 報廢數量 |
 | `ScrapDate` | System.DateTime? | DATETIME | 是 |  | 報廢日期 |
-| `ScrapSnText` | string | NVARCHAR(0) | 是 |  | 報廢序列號清單（文本模式；与 ScrapSnFilePath 二选一） |
+| `ScrapSnText` | string | TEXT | 是 |  | 報廢序列號清單（文本模式；与 ScrapSnFilePath 二选一） |
 | `ScrapSnFilePath` | string | NVARCHAR(512) | 是 |  | 報廢序列號文件（文件模式，存 OleDir 相对文件名；与 ScrapSnText 二选一） |
 | `Remark` | string | NVARCHAR(512) | 是 |  | 备注 |
 | `CreatedBy` | string | NVARCHAR(64) | 是 |  |  |
@@ -210,7 +210,7 @@
 | `Action` | string | NVARCHAR(16) | 否 |  | 操作类型：新增 / 编辑 / 删除 |
 | `TargetId` | long? | INTEGER | 是 |  | 目标记录Id（编辑/删除时有值） |
 | `Summary` | string | NVARCHAR(256) | 是 |  | 请求摘要（列表展示用） |
-| `PayloadJson` | string | NVARCHAR(0) | 是 |  | 更改内容（Plan 序列化 JSON） |
+| `PayloadJson` | string | TEXT | 是 |  | 更改内容（Plan 序列化 JSON） |
 | `RequesterName` | string | NVARCHAR(64) | 否 |  | 请求人 |
 | `AssigneeName` | string | NVARCHAR(64) | 是 |  | 当前待审核人（提交时自动指派给待办最少的审核员；审核完成后由 ReviewerName 记录实际审核人） |
 | `Status` | string | NVARCHAR(16) | 否 |  | 状态：待审核 / 已通过 / 已驳回 |
@@ -259,10 +259,10 @@
 | `Id` | long | INTEGER | 否 | 是、自增 |  |
 | `TestItemName` | string | NVARCHAR(128) | 否 |  |  |
 | `Category` | string | NVARCHAR(128) | 是 |  |  |
-| `SamplingPlan` | string | NVARCHAR(0) | 是 |  |  |
-| `TestCondition` | string | NVARCHAR(0) | 是 |  |  |
-| `PassCriterion` | string | NVARCHAR(0) | 是 |  |  |
-| `Remark` | string | NVARCHAR(0) | 是 |  |  |
+| `SamplingPlan` | string | TEXT | 是 |  |  |
+| `TestCondition` | string | TEXT | 是 |  |  |
+| `PassCriterion` | string | TEXT | 是 |  |  |
+| `Remark` | string | TEXT | 是 |  |  |
 | `Period` | string | NVARCHAR(64) | 是 |  |  |
 | `UsageCount` | int | INTEGER | 否 |  |  |
 | `IsManual` | bool | BOOLEAN | 否 |  |  |
@@ -282,7 +282,7 @@
 | `Id` | long | INTEGER | 否 | 是、自增 |  |
 | `ModelName` | string | NVARCHAR(128) | 否 |  |  |
 | `Stage` | string | NVARCHAR(16) | 否 |  |  |
-| `Remark` | string | NVARCHAR(0) | 是 |  |  |
+| `Remark` | string | TEXT | 是 |  |  |
 | `Source` | string | NVARCHAR(16) | 是 |  |  |
 | `CreatedBy` | string | NVARCHAR(64) | 是 |  |  |
 | `CreatedAt` | DateTime? | DATETIME | 是 |  |  |
@@ -303,14 +303,14 @@
 | `Category` | string | NVARCHAR(128) | 是 |  |  |
 | `TestItemName` | string | NVARCHAR(128) | 否 |  |  |
 | `TemplateId` | long? | INTEGER | 是 |  |  |
-| `SamplingPlan` | string | NVARCHAR(0) | 是 |  |  |
-| `TestCondition` | string | NVARCHAR(0) | 是 |  |  |
-| `PassCriterion` | string | NVARCHAR(0) | 是 |  |  |
-| `Remark` | string | NVARCHAR(0) | 是 |  |  |
+| `SamplingPlan` | string | TEXT | 是 |  |  |
+| `TestCondition` | string | TEXT | 是 |  |  |
+| `PassCriterion` | string | TEXT | 是 |  |  |
+| `Remark` | string | TEXT | 是 |  |  |
 | `Period` | string | NVARCHAR(64) | 是 |  |  |
 | `OverriddenFields` | string | NVARCHAR(256) | 是 |  |  |
 | `Confirmed` | bool | BOOLEAN | 否 |  |  |
-| `SourceVariants` | string | NVARCHAR(0) | 是 |  |  |
+| `SourceVariants` | string | TEXT | 是 |  |  |
 | `FromIndex` | bool | BOOLEAN | 否 |  | 是否由计划索引生成（重建索引时会被最新报告刷新或清理； 用户手工新增的明细为 false，重建时保留） |
 | `UpdatedBy` | string | NVARCHAR(64) | 是 |  |  |
 | `UpdatedAt` | DateTime? | DATETIME | 是 |  |  |
@@ -375,10 +375,10 @@
 | `Category` | string | NVARCHAR(128) | 是 |  |  |
 | `TestItemName` | string | NVARCHAR(128) | 是 |  |  |
 | `OrderNo` | int | INTEGER | 否 |  |  |
-| `SamplingPlan` | string | NVARCHAR(0) | 是 |  |  |
-| `TestCondition` | string | NVARCHAR(0) | 是 |  |  |
-| `PassCriterion` | string | NVARCHAR(0) | 是 |  |  |
-| `Remark` | string | NVARCHAR(0) | 是 |  |  |
+| `SamplingPlan` | string | TEXT | 是 |  |  |
+| `TestCondition` | string | TEXT | 是 |  |  |
+| `PassCriterion` | string | TEXT | 是 |  |  |
+| `Remark` | string | TEXT | 是 |  |  |
 
 ## `plan_item_images`
 

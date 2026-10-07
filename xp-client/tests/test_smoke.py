@@ -6,6 +6,7 @@
     python -m unittest discover -s tests -v
 """
 
+import datetime
 import os
 import shutil
 import sqlite3
@@ -21,6 +22,7 @@ for _path in (_PARENT, os.path.join(_PARENT, "tools")):
 
 import compat_check  # noqa: E402
 from ort_xp import compat, config, credentials, dpapi  # noqa: E402
+from ort_xp.db import repositories  # noqa: E402
 from ort_xp.db.connection import Database  # noqa: E402
 from ort_xp.services import auth as auth_service  # noqa: E402
 from ort_xp.services import mail as mail_service  # noqa: E402
@@ -95,8 +97,54 @@ CREATE TABLE requisitions (
     WorkOrder NVARCHAR(64) NULL,
     ReturnRtOrder NVARCHAR(64) NULL,
     Remark NVARCHAR(512) NULL,
-    CreatedAt DATETIME NULL
+    CreatedBy NVARCHAR(64) NULL,
+    CreatedAt DATETIME NULL,
+    UpdatedBy NVARCHAR(64) NULL,
+    UpdatedAt DATETIME NULL
 );
+-- 下拉取值用的字典表
+CREATE TABLE stages (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    Name NVARCHAR(32) NOT NULL,
+    Description NVARCHAR(256) NULL
+);
+CREATE TABLE code_mappings (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    CodeType NVARCHAR(1) NOT NULL,
+    Code NVARCHAR(8) NOT NULL,
+    Name NVARCHAR(64) NOT NULL
+);
+CREATE TABLE products (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    Name NVARCHAR(64) NOT NULL,
+    Code NVARCHAR(32) NULL,
+    Remark NVARCHAR(256) NULL
+);
+CREATE TABLE customers (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    Name NVARCHAR(64) NOT NULL,
+    Code NVARCHAR(32) NULL,
+    Remark NVARCHAR(256) NULL
+);
+CREATE TABLE model_mappings (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ModelName NVARCHAR(128) NOT NULL,
+    Product NVARCHAR(64) NULL,
+    Customer NVARCHAR(64) NULL
+);
+CREATE TABLE test_items_catalog (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    Name NVARCHAR(128) NOT NULL,
+    Period NVARCHAR(32) NULL,
+    Category NVARCHAR(64) NULL,
+    Owner NVARCHAR(64) NULL,
+    OwnerIds NVARCHAR(256) NULL,
+    Remark NVARCHAR(256) NULL
+);
+-- 唯一索引与真实库一致（FreeSql 按模型上的 [Index] 生成）
+CREATE UNIQUE INDEX uk_username ON users("Username");
+CREATE UNIQUE INDEX uk_job_no ON plans("JobNo");
+CREATE UNIQUE INDEX uk_req_requisition_no ON requisitions("RequisitionNo");
 """
 
 
@@ -458,6 +506,191 @@ class CredentialTests(unittest.TestCase):
         self.assertEqual("smtp-secret", self.store.load_mail_password())
         self.store.clear_mail_password()
         self.assertIsNone(self.store.load_mail_password())
+
+
+class RepositoryTests(TempDatabaseTest):
+    """数据层读写：行内容、日期格式、变更日志、唯一性、下拉取值。"""
+
+    OPERATOR = "tester"
+
+    def setUp(self):
+        TempDatabaseTest.setUp(self)
+        self.repos = repositories.Repositories(self.db)
+
+    def plan_values(self, **overrides):
+        values = {
+            "JobNo": "RT2601-001",
+            "ModelName": "31ABCDEFG7H",
+            "TestItem": "热冲击",
+            "Owner": "王工",
+            "Stage": "DVT",
+            "Status": "进行中",
+            "StartDate": datetime.datetime(2026, 10, 1),
+            "EndDate": datetime.datetime(2026, 10, 10),
+        }
+        values.update(overrides)
+        return values
+
+    def test_change_log_table_created_like_main_program(self):
+        self.assertFalse(self.db.table_exists("plan_change_logs"))
+        record_id = self.repos.plans.insert(self.plan_values(), self.OPERATOR)
+        self.assertTrue(record_id > 0)
+        self.assertTrue(self.db.table_exists("plan_change_logs"))
+        for column in repositories.schema_generated.columns_of("plan_change_logs"):
+            self.assertTrue(self.db.has_column("plan_change_logs", column), column)
+
+    def test_insert_writes_row_and_add_log(self):
+        record_id = self.repos.plans.insert(self.plan_values(), self.OPERATOR)
+        row = self.repos.plans.get(record_id)
+        self.assertEqual("31ABCDEFG7H", row["ModelName"])
+        self.assertEqual("热冲击", row["TestItem"])
+        # 日期按主程序格式落库（TEXT，无微秒）
+        self.assertEqual("2026-10-01 00:00:00", row["StartDate"])
+        self.assertEqual("2026-10-10 00:00:00", row["EndDate"])
+        # 审计字段
+        self.assertEqual(self.OPERATOR, row["CreatedBy"])
+        self.assertEqual(self.OPERATOR, row["UpdatedBy"])
+        self.assertTrue(row["CreatedAt"].startswith("20"))
+
+        logs = self.repos.change_logs.recent()
+        self.assertEqual(1, len(logs))
+        self.assertEqual(repositories.ACTION_ADD, logs[0]["Action"])
+        self.assertEqual("新增计划 RT2601-001 (31ABCDEFG7H)", logs[0]["Summary"])
+        self.assertEqual(self.OPERATOR, logs[0]["Operator"])
+
+        detail = self.db.query_one("SELECT * FROM plan_change_logs WHERE Id = ?", (logs[0]["Id"],))
+        self.assertIsNone(detail["BeforeJson"])
+        # PascalCase + 紧凑 JSON + ISO 日期（对齐 Newtonsoft）
+        self.assertTrue(detail["AfterJson"].startswith('{"Id":'))
+        self.assertIn('"ModelName":"31ABCDEFG7H"', detail["AfterJson"])
+        self.assertIn('"StartDate":"2026-10-01T00:00:00"', detail["AfterJson"])
+        self.assertNotIn(": ", detail["AfterJson"])
+
+    def test_update_writes_before_after_and_skips_noop(self):
+        record_id = self.repos.plans.insert(self.plan_values(), self.OPERATOR)
+        self.assertTrue(self.repos.plans.update(record_id, {"Status": "Close", "Remark": "已结案"}, self.OPERATOR))
+        row = self.repos.plans.get(record_id)
+        self.assertEqual("Close", row["Status"])
+        self.assertEqual("已结案", row["Remark"])
+
+        logs = self.repos.change_logs.recent()
+        self.assertEqual(repositories.ACTION_EDIT, logs[0]["Action"])
+        self.assertEqual("编辑计划 RT2601-001 (31ABCDEFG7H)", logs[0]["Summary"])
+        detail = self.db.query_one("SELECT * FROM plan_change_logs WHERE Id = ?", (logs[0]["Id"],))
+        self.assertIn('"Status":"进行中"', detail["BeforeJson"])
+        self.assertIn('"Status":"Close"', detail["AfterJson"])
+
+        # 内容没变 → 不写库也不写日志
+        before_count = self.repos.change_logs.count()
+        self.assertFalse(self.repos.plans.update(record_id, {"Status": "Close"}, self.OPERATOR))
+        self.assertEqual(before_count, self.repos.change_logs.count())
+
+    def test_delete_writes_log_and_removes_row(self):
+        record_id = self.repos.plans.insert(self.plan_values(), self.OPERATOR)
+        self.assertTrue(self.repos.plans.delete(record_id, self.OPERATOR))
+        self.assertIsNone(self.repos.plans.get(record_id))
+        logs = self.repos.change_logs.recent()
+        self.assertEqual(repositories.ACTION_DELETE, logs[0]["Action"])
+        self.assertEqual("删除计划 RT2601-001 (31ABCDEFG7H)", logs[0]["Summary"])
+        detail = self.db.query_one("SELECT * FROM plan_change_logs WHERE Id = ?", (logs[0]["Id"],))
+        self.assertIsNotNone(detail["BeforeJson"])
+        self.assertIsNone(detail["AfterJson"])
+
+    def test_requisition_roundtrip_and_summary(self):
+        record_id = self.repos.requisitions.insert(
+            {
+                "RequisitionDate": datetime.datetime(2026, 8, 12),
+                "RequisitionNo": "2608-001",
+                "ModelName": "31ABCDEFG7H",
+                "OutQty": "2",
+                "Disposition": "入库",
+                "WorkOrder": "WO-1",
+                "Remark": "含中文备注",
+            },
+            "张伟",
+        )
+        row = self.repos.requisitions.get(record_id)
+        self.assertEqual("2608-001", row["RequisitionNo"])
+        self.assertEqual("含中文备注", row["Remark"])
+        self.assertEqual("2026-08-12 00:00:00", row["RequisitionDate"])
+        self.assertEqual("新增领退 2608-001 (31ABCDEFG7H)", self.repos.change_logs.recent()[0]["Summary"])
+        self.assertTrue(self.repos.requisitions.requisition_no_exists("2608-001"))
+        self.assertFalse(self.repos.requisitions.requisition_no_exists("2608-001", exclude_id=record_id))
+
+    def test_change_log_is_shared_by_plans_and_requisitions(self):
+        """主程序的计划与领退共用 plan_change_logs，PlanId 会重号 —— 靠 Action/Summary 区分。"""
+        plan_id = self.repos.plans.insert(self.plan_values(), self.OPERATOR)
+        requisition_id = self.repos.requisitions.insert(
+            {"RequisitionNo": "RT2601-001", "ModelName": "31ABCDEFG7H"}, self.OPERATOR
+        )
+        self.assertEqual(2, self.repos.change_logs.count())
+        summaries = [row["Summary"] for row in self.repos.change_logs.recent()]
+        self.assertTrue(any(item.startswith("新增计划") for item in summaries), summaries)
+        self.assertTrue(any(item.startswith("新增领退") for item in summaries), summaries)
+        if plan_id == requisition_id:
+            rows = self.db.query('SELECT "Summary" FROM "plan_change_logs" WHERE "PlanId" = ?', (plan_id,))
+            self.assertEqual(2, len(rows), "Id 重号时两条日志会同时命中 PlanId，必须靠 Summary 区分")
+
+    def test_unique_index_still_enforced(self):
+        self.repos.plans.insert(self.plan_values(), self.OPERATOR)
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.repos.plans.insert(self.plan_values(), self.OPERATOR)
+        self.assertTrue(self.repos.plans.job_no_exists("RT2601-001"))
+
+    def test_search_and_count(self):
+        self.repos.plans.insert(self.plan_values(), self.OPERATOR)
+        self.repos.plans.insert(
+            self.plan_values(JobNo="RT2601-002", ModelName="32XYZ", TestItem="Burn-In"), self.OPERATOR
+        )
+        self.assertEqual(2, self.repos.plans.count())
+        self.assertEqual(1, len(self.repos.plans.list(keyword="XYZ")))
+        self.assertEqual(2, len(self.repos.plans.list()))
+        self.assertEqual(1, len(self.repos.plans.list(keyword="热冲击")))
+        self.assertEqual(1, len(self.repos.plans.list(keyword="Burn-In")))
+
+    def test_lookup_code_rules_match_main_program(self):
+        lookups = self.repos.lookups
+        self.assertEqual("31", lookups.model_to_product_code("31ABCDEFG7H"))
+        self.assertEqual("FG", lookups.model_to_customer_code("31ABCDEFG7H"))
+        # 主程序规则：客户代码取第 8-9 位，不足 9 位就没有
+        self.assertIsNone(lookups.model_to_customer_code("SHORT"))
+        self.assertEqual("RT", lookups.model_to_customer_code("TOO-SHORT"))
+        self.assertIsNone(lookups.model_to_product_code(""))
+        self.assertIsNone(lookups.model_to_customer_code(None))
+
+    def test_lookup_queries(self):
+        self.db.execute("INSERT INTO stages (Name, Description) VALUES (?, ?)", ("DVT", "设计验证"))
+        self.db.execute("INSERT INTO stages (Name, Description) VALUES (?, ?)", ("MP", "量产"))
+        self.assertEqual(["DVT", "MP"], self.repos.lookups.stages())
+
+        self.db.execute(
+            "INSERT INTO code_mappings (CodeType, Code, Name) VALUES (?, ?, ?)", ("P", "31", "电源供应器")
+        )
+        self.db.execute(
+            "INSERT INTO code_mappings (CodeType, Code, Name) VALUES (?, ?, ?)", ("C", "FG", "客户甲")
+        )
+        self.assertEqual("电源供应器", self.repos.lookups.code_mapping("P", "31"))
+        self.assertEqual("电源供应器", self.repos.lookups.find_product_by_model("31ABCDEFG7H"))
+        self.assertEqual("客户甲", self.repos.lookups.find_customer_by_model("31ABCDEFG7H"))
+        self.assertIsNone(self.repos.lookups.code_mapping("P", "99"))
+
+        self.db.execute(
+            "INSERT INTO model_mappings (ModelName, Product, Customer) VALUES (?, ?, ?)",
+            ("31ABCDEFG7H", "电源供应器", "客户甲"),
+        )
+        mapping = self.repos.lookups.find_model_mapping(" 31ABCDEFG7H ")
+        self.assertEqual("客户甲", mapping["Customer"])
+        self.assertIsNone(self.repos.lookups.find_model_mapping("不存在"))
+        self.assertEqual(1, len(self.repos.lookups.model_mappings()))
+
+        self.db.execute("INSERT INTO test_items_catalog (Name) VALUES (?)", ("热冲击",))
+        self.db.execute("INSERT INTO test_items_catalog (Name) VALUES (?)", ("Burn-In",))
+        self.assertEqual(["Burn-In", "热冲击"], self.repos.lookups.test_items())
+
+        self.db.execute("INSERT INTO products (Name, Code) VALUES (?, ?)", ("电源供应器", "31"))
+        self.assertEqual(["电源供应器"], self.repos.lookups.products())
+        self.db.execute("INSERT INTO customers (Name, Code) VALUES (?, ?)", ("客户甲", "FG"))
+        self.assertEqual(["客户甲"], self.repos.lookups.customers())
 
 
 class SourceCompatibilityTests(unittest.TestCase):

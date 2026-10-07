@@ -107,7 +107,10 @@ class Database(object):
             raise DatabaseError("数据目录不存在：%s" % os.path.dirname(self.path))
         try:
             # isolation_level=None → 自动提交，事务由 transaction() 显式控制
-            connection = sqlite3.connect(self.path, self.timeout_seconds, isolation_level=None)
+            # 参数全部用关键字传：3.15 起 sqlite3.connect 的位置参数会变成仅限关键字
+            connection = sqlite3.connect(
+                self.path, timeout=self.timeout_seconds, isolation_level=None
+            )
         except sqlite3.Error as exc:
             raise DatabaseError(self._open_failure_text(exc))
         connection.row_factory = sqlite3.Row
@@ -179,6 +182,15 @@ class Database(object):
     def execute(self, sql, params=()):
         connection = self.connect()
         return self._run(lambda: connection.execute(sql, params).rowcount)
+
+    def insert(self, sql, params=()):
+        """执行 INSERT 并返回自增主键（对应主程序的 ``ExecuteIdentity``）。"""
+        connection = self.connect()
+
+        def _run():
+            return connection.execute(sql, params).lastrowid
+
+        return self._run(_run)
 
     def execute_many(self, sql, seq_of_params):
         connection = self.connect()
@@ -267,7 +279,8 @@ class Database(object):
             "size": self.size_bytes(),
             "network": self.is_network(),
             "sqlite_version": sqlite3.sqlite_version,
-            "python_sqlite": sqlite3.version,
+            # sqlite3.version 在 3.12 起废弃、3.14 移除；用 getattr 兼容两边
+            "python_sqlite": getattr(sqlite3, "version", "") or "",
             "tables": [],
             "journal_mode": None,
             "error": None,

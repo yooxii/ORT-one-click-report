@@ -19,6 +19,7 @@ from email.mime.text import MIMEText
 from email.utils import formataddr
 
 from .. import compat
+from ..db.repositories import PlanRepository
 
 MAIL_KIND_NOTICE = "Notice"
 MAIL_KIND_WARNING = "Warning"
@@ -316,21 +317,19 @@ class PlanDeadlineReminder(object):
 
     REF_TYPE = "Plan"
 
-    def __init__(self, database, mail_service, settings, logger=None):
+    def __init__(self, database, mail_service, settings, logger=None, plans=None):
         self._db = database
         self._mail = mail_service
         self.settings = settings
         self._logger = logger
+        # 计划查询统一走仓储，避免 SQL 散落在两处
+        self._plans = plans if plans is not None else PlanRepository(database, logger=logger)
 
     def collect(self, today=None):
         """返回需要提醒的计划列表（已过滤已结案与不满足规则的项）。"""
         today = today or datetime.datetime.now()
         limit = today + datetime.timedelta(days=max(0, self.settings.warning_days_before))
-        rows = self._db.query(
-            "SELECT Id, JobNo, ModelName, Owner, EndDate, Status FROM plans "
-            "WHERE EndDate IS NOT NULL AND TRIM(EndDate) <> '' AND EndDate <= ? ORDER BY EndDate",
-            (compat.format_datetime_text(limit),),
-        )
+        rows = self._plans.deadline_candidates(compat.format_datetime_text(limit))
         result = []
         for row in rows:
             if is_completed(row["Status"]):

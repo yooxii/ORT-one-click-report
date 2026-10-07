@@ -11,6 +11,7 @@ import sqlite3
 
 from . import compat, config, credentials, dpapi, logging_setup
 from .db.connection import Database, DatabaseError
+from .db.repositories import Repositories
 from .services.auth import AuthService
 from .services.mail import MailService, PlanDeadlineReminder, is_valid_address
 from .version import APP_NAME, VERSION, BUILD_STAGE, TARGET_OS, TARGET_PYTHON
@@ -37,12 +38,14 @@ class AppContext(object):
         self.auth = None
         self.mail = None
         self.reminder = None
+        self.repositories = None
 
     # ---------------------------------------------------------------- 装配
 
     def open(self):
         """连接数据库并装配服务；失败抛出 ``DatabaseError``。"""
         self.database.connect()
+        self.repositories = Repositories(self.database, self.logger)
         self.settings_store = config.AppSettingsStore(self.database)
         self.mail_settings = config.MailSettings.from_store(self.settings_store, self.credentials)
         self.auth = AuthService(self.database, self.credentials, self.logger)
@@ -53,7 +56,9 @@ class AppContext(object):
             self.logger,
             ca_bundle=self.ca_bundle(),
         )
-        self.reminder = PlanDeadlineReminder(self.database, self.mail, self.mail_settings, self.logger)
+        self.reminder = PlanDeadlineReminder(
+            self.database, self.mail, self.mail_settings, self.logger, plans=self.repositories.plans
+        )
         if self.logger is not None:
             self.logger.info("已连接数据库：%s（来源：%s）" % (self.db_path, self.data_source))
         return self

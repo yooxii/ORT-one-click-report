@@ -45,13 +45,14 @@ xp-client/
 │  ├─ config.py                 # 数据目录 / 数据库路径 / app_settings 读取
 │  ├─ dpapi.py                  # DPAPI（ctypes，零依赖）加解密
 │  ├─ logging_setup.py          # 日志（UTF-8 文件 + 控制台安全输出）
-│  ├─ db/                       # 数据层：连接、事务、重试、表结构
+│  ├─ db/                       # 数据层：连接、事务、重试、仓储、表结构
 │  ├─ services/                 # auth（登录）/ mail（SMTP 与到期提醒）
 │  └─ ui/                       # tkinter 界面：登录、主窗口、领用与计划
 ├─ tools/                       # 开发/运维脚本（不随程序发布）
 │  ├─ check_env.py              # 环境自检（解释器、依赖、数据库连通性、DPAPI）
 │  ├─ compat_check.py           # Python 3.4 语法/API 下限检查
 │  ├─ extract_schema.py         # 从主程序 C# 模型生成 docs/schema.md 与 schema_generated.py
+│  ├─ verify_roundtrip.py       # 共库往返验证（在真实库副本上读写，证明与主程序格式一致）
 │  ├─ run_dev.ps1               # 开发机启动
 │  └─ build_xp.ps1              # XP 包构建（需在 Python 3.4 环境执行）
 ├─ packaging/                   # PyInstaller 配置与打包说明
@@ -68,10 +69,13 @@ python .\tools\check_env.py
 # 2) 单元测试
 python -m unittest discover -s tests -v
 
-# 3) 启动界面（开发机；用 --data-folder 指向主程序数据目录）
+# 3) 共库往返验证（在真实库的副本上读写，证明两边格式一致且不动原库）
+python .\tools\verify_roundtrip.py
+
+# 4) 启动界面（开发机；用 --data-folder 指向主程序数据目录）
 .\tools\run_dev.ps1 -DataFolder "D:\source\repos\ORT一键报告\bin\Debug\Data"
 
-# 4) 无界面自检（不连界面，验证数据层与邮件配置）
+# 5) 无界面自检（不连界面，验证数据层与邮件配置）
 python -m ort_xp --selftest
 ```
 
@@ -89,10 +93,11 @@ python -m ort_xp --selftest
 ## 当前进度
 
 - [x] 里程碑 0：子项目骨架、环境自检、数据层连通性验证（Python 3.13 直读主程序库成功）
-- [ ] 里程碑 1：技术验证 —— XP 实机 + Python 3.4.10 + PyInstaller 3.3.1 打包运行（**最大风险项**）
-- [ ] 里程碑 2：数据层与登录
-- [ ] 里程碑 3：领用表 / 计划表简单交互
-- [ ] 里程碑 4：邮件（SMTP + 到期提醒）
+- [x] 里程碑 2：数据层（仓储 / 变更日志 / 下拉取值）与登录、记住登录；41 项单测 +
+  真实库副本往返验证 22 项全通过（还差一次「用真实账号成功登录」的实机确认）
+- [ ] 里程碑 1：技术验证 —— XP 实机 + Python 3.4.10 + PyInstaller 3.3.1 打包运行（**最大风险项**，缺 XP 环境）
+- [ ] 里程碑 3：领用表 / 计划表简单交互（当前界面是只读列表）
+- [ ] 里程碑 4：邮件（SMTP 发送与到期提醒服务已就绪，设置界面写库待做）
 - [ ] 里程碑 5：打包、XP 回归、交付
 
 工时估算见 [docs/03-里程碑与工时.md](docs/03-里程碑与工时.md)。

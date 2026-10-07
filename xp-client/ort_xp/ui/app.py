@@ -258,22 +258,12 @@ class TableTab(ttk.Frame):
     def reload(self):
         keyword = (self.keyword.get() or "").strip()
         keys = [item[0] for item in self.columns]
-        sql = "SELECT %s FROM %s" % (", ".join(keys), self.kind)
-        params = []
-        if keyword:
-            if self.kind == "requisitions":
-                fields = ("RequisitionNo", "ModelName", "WorkOrder", "Remark")
-            else:
-                fields = ("JobNo", "ModelName", "TestItem", "Owner", "Remark")
-            clauses = []
-            for field in fields:
-                clauses.append("%s LIKE ?" % field)
-                params.append("%" + keyword + "%")
-            sql += " WHERE " + " OR ".join(clauses)
-        sql += " ORDER BY Id DESC LIMIT 500"
-
         try:
-            rows = self.context.database.query(sql, tuple(params))
+            # 查询统一走仓储（数据层只有一处 SQL），界面只负责展示
+            repository = (
+                self.context.repositories.requisitions if self.kind == "requisitions" else self.context.repositories.plans
+            )
+            rows = repository.list(keyword=keyword or None, limit=500)
         except Exception as exc:
             messagebox.showerror("读取失败", str(exc), parent=self.winfo_toplevel())
             return
