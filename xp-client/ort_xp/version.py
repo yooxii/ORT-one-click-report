@@ -6,11 +6,11 @@ APP_NAME = "ORT实验室管理系统 XP 精简版"
 #: %LocalAppData% 下的目录名（本机凭据、本机 SMTP 口令存这里）
 APP_FOLDER_NAME = "ORT实验室管理系统-XP"
 
-VERSION = "0.3.0"
+VERSION = "0.4.0"
 
 #: 目标机环境（写进部署说明与日志）
 TARGET_PYTHON = "3.4.4"
 TARGET_OS = "Windows XP SP3 (32 位)"
 
 #: 当前所处的里程碑
-BUILD_STAGE = "里程碑 2–3 + 部署可用性：数据层 / 登录 / 领用与计划（含编辑）/ 首次运行选库与故障可见"
+BUILD_STAGE = "里程碑 2–4：数据层 / 登录 / 领用与计划（含编辑、点列头排序）/ 邮件设置与提醒"

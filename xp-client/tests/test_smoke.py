@@ -31,6 +31,7 @@ from ort_xp.db import schema_generated  # noqa: E402
 from ort_xp.db.connection import Database  # noqa: E402
 from ort_xp.services import auth as auth_service  # noqa: E402
 from ort_xp.services import mail as mail_service  # noqa: E402
+from ort_xp.services import mail_config  # noqa: E402
 from ort_xp.services import plan_rules  # noqa: E402
 from ort_xp.services import plans as plans_service  # noqa: E402
 from ort_xp.ui import first_run  # noqa: E402
@@ -524,6 +525,288 @@ class MailTests(TempDatabaseTest):
         self.assertEqual(1, summary["candidates"])
         self.assertEqual(1, summary["sent"])
         self.assertEqual(0, summary["failed"])
+
+    # ------------------------------------------------------------ 收件人与抄送
+
+    def test_normalize_recipients_resolves_names_and_splits(self):
+        """姓名也要能解析成邮箱（与主程序 NormalizeRecipients 同序）。"""
+        self.add_user("alice", "secret", display_name="爱丽丝", email="alice@example.com")
+        self.add_user("bob", "secret", display_name="鲍勃", email="bob@example.com")
+        self.assertEqual(
+            ["alice@example.com", "bob@example.com"],
+            self.service.normalize_recipients(["爱丽丝；鲍勃"]),
+        )
+        self.assertEqual(
+            ["alice@example.com", "bob@example.com"],
+            self.service.normalize_recipients(["爱丽丝，bob@example.com"]),
+        )
+        # 真实库里「负责人」大量写成 李剛/李志斌：斜杠也要当分隔符，否则谁都收不到
+        self.assertEqual(
+            ["alice@example.com", "bob@example.com"],
+            self.service.normalize_recipients(["爱丽丝/鲍勃"]),
+        )
+        self.assertEqual([], self.service.normalize_recipients(["查无此人", "bad"]))
+
+    def test_split_list_separators(self):
+        expected = ["a", "b", "c"]
+        for separator in (";", "；", ",", "，", "、", "/", "／"):
+            self.assertEqual(expected, mail_service.split_list("a%sb%sc" % (separator, separator)))
+
+    def test_cc_list_for_merges_fixed_cc_and_dedupes(self):
+        self.settings.cc_list = "boss@example.com; a@b.com"
+        self.assertEqual(
+            ["boss@example.com", "a@b.com"],
+            self.service.cc_list_for(["other@example.com"]),
+        )
+        # 已经在收件人里的地址不再抄送；额外抄送去重后并入
+        self.assertEqual(
+            ["boss@example.com", "extra@example.com"],
+            self.service.cc_list_for(["a@b.com"], ["extra@example.com", "extra@example.com"]),
+        )
+
+    def test_cc_for_follows_the_per_kind_switch(self):
+        admin_id = self.add_user("admin", "secret", display_name="管理员", email="admin@example.com")
+        self.db.execute("INSERT INTO user_roles (UserId, Role) VALUES (?, ?)", (admin_id, "Administrator"))
+        self.settings.cc_admins = {"Warning": True, "Notice": False}
+        self.assertEqual(["admin@example.com"], self.service.cc_for("Warning"))
+        self.assertEqual([], self.service.cc_for("Notice"))
+
+    def test_send_dry_run_returns_to_plus_cc(self):
+        self.settings.cc_list = "boss@example.com"
+        result = self.service.send(
+            mail_service.MAIL_KIND_WARNING,
+            ["a@b.com"],
+            "主题",
+            "正文",
+            ref_type="Plan",
+            ref_key="RT2601",
+            dry_run=True,
+            cc=["admin@example.com"],
+        )
+        self.assertTrue(result.success)
+        self.assertEqual(["a@b.com", "boss@example.com", "admin@example.com"], result.recipients)
+
+    def test_send_test_ignores_dedupe(self):
+        """测试邮件与主程序一样走 Settings/TestMail 且忽略去重，方便反复调试 SMTP。"""
+        now = compat.format_datetime_text(datetime.datetime.now())
+        self.db.execute(
+            "INSERT INTO mail_logs (Kind, RefType, RefKey, Recipients, Subject, Success, CreatedAt) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?)",
+            ("Notice", "Settings", "TestMail", "a@b.com", "旧的测试邮件", 1, now),
+        )
+        self.settings.dedupe_days = 30
+        self.assertTrue(self.service.send_test("a@b.com", dry_run=True).success)
+        skipped = self.service.send(
+            mail_service.MAIL_KIND_NOTICE, ["a@b.com"], "主题", "正文", ref_type="Settings", ref_key="TestMail", dry_run=True
+        )
+        self.assertTrue(skipped.skipped)
+        self.assertIn("去重", skipped.message)
+
+    def test_dedupe_is_checked_before_recipients(self):
+        """先判重复再解析收件人（与主程序同序），否则跳过原因会指错方向。"""
+        now = compat.format_datetime_text(datetime.datetime.now())
+        self.db.execute(
+            "INSERT INTO mail_logs (Kind, RefType, RefKey, Recipients, Subject, Success, CreatedAt) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?)",
+            ("Warning", "Plan", "RT2601", "a@b.com", "旧提醒", 1, now),
+        )
+        self.settings.dedupe_days = 1
+        result = self.service.send(
+            mail_service.MAIL_KIND_WARNING, [], "主题", "正文", ref_type="Plan", ref_key="RT2601", dry_run=True
+        )
+        self.assertTrue(result.skipped)
+        self.assertIn("去重", result.message)
+
+    def test_reminder_uses_admin_cc(self):
+        owner_id = self.add_user("wang", "secret", display_name="王工", email="wang@example.com")
+        self.db.execute("INSERT INTO user_roles (UserId, Role) VALUES (?, ?)", (owner_id, "Technician"))
+        admin_id = self.add_user("admin", "secret", display_name="管理员", email="admin@example.com")
+        self.db.execute("INSERT INTO user_roles (UserId, Role) VALUES (?, ?)", (admin_id, "Administrator"))
+        self.db.execute(
+            "INSERT INTO plans (JobNo, ModelName, Owner, EndDate, Status) VALUES (?, ?, ?, ?, ?)",
+            ("RT2601", "X100", "王工", "2026-10-08 00:00:00", "进行中"),
+        )
+        self.settings.cc_admins = {"Warning": True}
+        reminder = mail_service.PlanDeadlineReminder(self.db, self.service, self.settings)
+        summary = reminder.run(dry_run=True, today=datetime.datetime(2026, 10, 7, 8, 0, 0))
+        self.assertEqual(1, summary["sent"])
+        self.assertIn("admin@example.com", summary["details"][0])
+
+
+class MailConfigTests(TempDatabaseTest):
+    """邮件设置界面写库：取值校验 + 与主程序一致的键名/文本格式。"""
+
+    def values(self, **overrides):
+        values = {
+            "mail.enabled": True,
+            "mail.noticeEnabled": True,
+            "mail.warningEnabled": True,
+            "mail.warningIncludeOverdue": True,
+            "mail.ignoreCertErrors": False,
+            "mail.bodyIsHtml": False,
+            "mail.useDefaultCredentials": False,
+            "mail.host": "smtp.example.com",
+            "mail.port": "587",
+            "mail.security": "StartTls",
+            "mail.fromAddress": "ort@example.com",
+            "mail.fromName": "ORT 实验室",
+            "mail.username": "ort",
+            "mail.ccList": "",
+            "mail.timeoutSeconds": "30",
+            "mail.warningDaysBefore": "3",
+            "mail.dedupeDays": "1",
+        }
+        values.update(overrides)
+        return values
+
+    def test_validate_accepts_and_normalizes(self):
+        cleaned, errors, warnings = mail_config.validate(self.values())
+        self.assertEqual([], errors)
+        self.assertEqual([], warnings)
+        self.assertIs(True, cleaned["mail.enabled"])
+        self.assertEqual(587, cleaned["mail.port"])
+        self.assertEqual(30, cleaned["mail.timeoutSeconds"])
+        # 空文本按主程序规则写 NULL
+        self.assertIsNone(cleaned["mail.ccList"])
+
+    def test_validate_rejects_bad_numbers_and_security(self):
+        cases = [
+            ("mail.port", "0"),
+            ("mail.port", "70000"),
+            ("mail.port", "abc"),
+            ("mail.port", ""),
+            ("mail.timeoutSeconds", "2"),
+            ("mail.timeoutSeconds", "301"),
+            ("mail.warningDaysBefore", "-1"),
+            ("mail.dedupeDays", "400"),
+            ("mail.security", "TLS"),
+        ]
+        for key, value in cases:
+            cleaned, errors, _warnings = mail_config.validate(self.values(**{key: value}))
+            self.assertTrue(errors, "%s=%s 应该被拒绝" % (key, value))
+
+    def test_validate_requires_host_and_from_when_enabled(self):
+        _cleaned, errors, _warnings = mail_config.validate(self.values(**{"mail.host": "  "}))
+        self.assertTrue([line for line in errors if "SMTP 服务器" in line])
+        _cleaned, errors, _warnings = mail_config.validate(self.values(**{"mail.fromAddress": "not-an-address"}))
+        self.assertTrue([line for line in errors if "发件地址" in line])
+        # 未启用时不强制服务器，但填了非法发件地址仍要拦住
+        _cleaned, errors, _warnings = mail_config.validate(
+            self.values(**{"mail.enabled": False, "mail.host": "", "mail.fromAddress": "bad"})
+        )
+        self.assertTrue(errors)
+
+    def test_validate_warns_on_integrated_auth_and_bad_cc(self):
+        _cleaned, errors, warnings = mail_config.validate(
+            self.values(**{"mail.useDefaultCredentials": True, "mail.ccList": "boss@example.com; 不是邮箱"})
+        )
+        self.assertEqual([], errors)
+        self.assertTrue([line for line in warnings if "集成验证" in line])
+        self.assertTrue([line for line in warnings if "抄送" in line])
+
+    def test_save_writes_dotnet_text_and_leaves_foreign_keys(self):
+        store = config.AppSettingsStore(self.db)
+        store.set("mail.passwordEnc", "主程序写的密文")
+        store.set("mail.template.Warning.subject", "{{JobNo}} 提醒")
+        store.set("mail.ccAdmin.Warning", True)
+        store.set("mail.host", "旧服务器")
+
+        cleaned, errors, _warnings = mail_config.save(store, self.values())
+        self.assertEqual([], errors)
+        self.assertEqual("True", store.get("mail.enabled"))
+        self.assertEqual("587", store.get("mail.port"))
+        self.assertEqual("StartTls", store.get("mail.security"))
+        self.assertEqual("smtp.example.com", store.get("mail.host"))
+        self.assertEqual(1, self.db.scalar("SELECT COUNT(*) FROM app_settings WHERE Key = 'mail.host'"))
+        # 本客户端不该碰的键
+        self.assertEqual("主程序写的密文", store.get("mail.passwordEnc"))
+        self.assertEqual("{{JobNo}} 提醒", store.get("mail.template.Warning.subject"))
+        self.assertEqual("True", store.get("mail.ccAdmin.Warning"))
+
+        # 写进去的值能被 MailSettings 原样读回
+        settings = config.MailSettings.from_store(store)
+        self.assertTrue(settings.enabled)
+        self.assertEqual(587, settings.port)
+        self.assertEqual("StartTls", settings.security)
+        self.assertEqual(3, settings.warning_days_before)
+
+    def test_save_refuses_to_write_anything_on_errors(self):
+        store = config.AppSettingsStore(self.db)
+        store.set("mail.host", "旧服务器")
+        _cleaned, errors, _warnings = mail_config.save(store, self.values(**{"mail.port": "70000"}))
+        self.assertTrue(errors)
+        self.assertEqual("旧服务器", store.get("mail.host"))
+
+    def test_current_values_roundtrip(self):
+        store = config.AppSettingsStore(self.db)
+        mail_config.save(store, self.values())
+        settings = config.MailSettings.from_store(store)
+        values = mail_config.current_values(settings)
+        cleaned, errors, _warnings = mail_config.validate(values)
+        self.assertEqual([], errors)
+        self.assertEqual([], mail_config.compare(settings, cleaned))
+        self.assertEqual("StartTls", values["mail.security"])
+        self.assertEqual("587", values["mail.port"])
+
+    def test_foreign_keys_are_classified_read_only(self):
+        """主程序写的、本客户端不碰的键必须都被 READ_ONLY_KEYS 前缀解释清楚。"""
+        foreign = [
+            "mail.passwordEnc",
+            "mail.template.Notice.subject",
+            "mail.template.Notice.body",
+            "mail.template.Warning.subject",
+            "mail.template.Warning.body",
+            "mail.ccAdmin.Notice",
+            "mail.ccAdmin.Warning",
+        ]
+        for key in foreign:
+            self.assertTrue(
+                key.startswith(mail_config.READ_ONLY_KEYS), "%s 既不在界面字段里，也没被列为只读" % key
+            )
+        for key in mail_config.FIELD_KEYS:
+            self.assertFalse(key.startswith(mail_config.READ_ONLY_KEYS), key)
+
+    def test_every_field_maps_to_a_known_setting(self):
+        settings = config.MailSettings()
+        for field in mail_config.FIELDS:
+            self.assertTrue(hasattr(settings, field["attr"]), "%s 的 attr 不存在" % field["key"])
+        self.assertEqual(len(mail_config.FIELD_KEYS), len(set(mail_config.FIELD_KEYS)))
+        self.assertEqual(set(mail_config.FIELD_KEYS), set(mail_config.current_values(settings)))
+
+
+class SortingTests(TempDatabaseTest):
+    """列头排序：ORDER BY 片段只接受白名单列名，空值排最后。"""
+
+    def test_order_by_clause_rejects_unknown_column(self):
+        self.assertRaises(ValueError, repositories.order_by_clause, ("JobNo",), "JobNo; DROP TABLE plans")
+        self.assertRaises(ValueError, repositories.order_by_clause, ("JobNo",), "Id")
+
+    def test_order_by_clause_direction_and_empty_last(self):
+        ascending = repositories.order_by_clause(("JobNo",), "JobNo")
+        self.assertTrue(ascending.startswith('("JobNo" IS NULL'))
+        self.assertTrue(ascending.endswith('"JobNo" ASC'))
+        descending = repositories.order_by_clause(("JobNo",), "JobNo", True)
+        self.assertTrue(descending.endswith('"JobNo" DESC'))
+
+    def test_list_orders_by_column_with_empty_last(self):
+        repo = repositories.Repositories(self.db).plans
+        for job_no, model in (("RT2602", "B"), ("RT2601", "C"), ("RT2603", None)):
+            repo.insert(
+                {
+                    "JobNo": job_no,
+                    "ModelName": model,
+                    "TestItem": "热冲击",
+                    "Stage": "DVT",
+                    "Owner": "王工",
+                    "Status": "进行中",
+                    "StartDate": datetime.datetime(2026, 10, 1),
+                },
+                "tester",
+            )
+        rows = repo.list(order=repositories.order_by_clause(("ModelName", "JobNo"), "ModelName"))
+        self.assertEqual(["B", "C", None], [row["ModelName"] for row in rows])
+        rows = repo.list(order=repositories.order_by_clause(("ModelName", "JobNo"), "ModelName", True))
+        self.assertEqual(["C", "B", None], [row["ModelName"] for row in rows])
 
 
 @unittest.skipUnless(dpapi.AVAILABLE, "DPAPI 不可用")

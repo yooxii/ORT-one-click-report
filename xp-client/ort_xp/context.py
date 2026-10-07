@@ -50,8 +50,19 @@ class AppContext(object):
         self.database.connect()
         self.repositories = Repositories(self.database, self.logger)
         self.settings_store = config.AppSettingsStore(self.database)
-        self.mail_settings = config.MailSettings.from_store(self.settings_store, self.credentials)
+        self.reload_mail()
         self.auth = AuthService(self.database, self.credentials, self.logger)
+        self.requisition_service = RequisitionService(self.repositories, self.repositories.lookups)
+        self.plan_service = PlanService(self.repositories, self.repositories.lookups)
+        if self.logger is not None:
+            self.logger.info("已连接数据库：%s（来源：%s）" % (self.db_path, self.data_source))
+        return self
+
+    def reload_mail(self):
+        """（重新）读取邮件设置并装配邮件服务 —— 设置界面保存后调用即可立即生效。"""
+        if self.settings_store is None:
+            self.settings_store = config.AppSettingsStore(self.database)
+        self.mail_settings = config.MailSettings.from_store(self.settings_store, self.credentials)
         self.mail = MailService(
             self.database,
             self.mail_settings,
@@ -60,13 +71,13 @@ class AppContext(object):
             ca_bundle=self.ca_bundle(),
         )
         self.reminder = PlanDeadlineReminder(
-            self.database, self.mail, self.mail_settings, self.logger, plans=self.repositories.plans
+            self.database,
+            self.mail,
+            self.mail_settings,
+            self.logger,
+            plans=self.repositories.plans if self.repositories is not None else None,
         )
-        self.requisition_service = RequisitionService(self.repositories, self.repositories.lookups)
-        self.plan_service = PlanService(self.repositories, self.repositories.lookups)
-        if self.logger is not None:
-            self.logger.info("已连接数据库：%s（来源：%s）" % (self.db_path, self.data_source))
-        return self
+        return self.mail_settings
 
     def close(self):
         self.database.close()

@@ -17,29 +17,32 @@ import tkinter as tk
 from tkinter import messagebox, ttk
 
 from .. import fatal
+from ..db import repositories
+from ..services import mail as mail_service
+from ..services import mail_config
 from ..services import plan_rules
 from ..services import plans as plans_service
 from ..version import APP_NAME, VERSION, BUILD_STAGE, TARGET_OS, TARGET_PYTHON
 
 REQUISITION_COLUMNS = (
-    ("RequisitionDate", "领用日期", 100),
-    ("RequisitionNo", "领用单号", 110),
+    ("RequisitionDate", "领用日期", 130),
+    ("RequisitionNo", "领用单号", 120),
     ("ModelName", "机种", 140),
-    ("WorkOrder", "工令", 110),
+    ("WorkOrder", "工令", 130),
     ("OutQty", "领用数", 60),
     ("Disposition", "单体去向", 80),
-    ("ReturnRtOrder", "回线RT工令", 110),
+    ("ReturnRtOrder", "回线RT工令", 120),
     ("Remark", "备注", 200),
 )
 
 PLAN_COLUMNS = (
-    ("JobNo", "工作編號", 110),
+    ("JobNo", "工作編號", 120),
     ("ModelName", "机种", 150),
     ("TestItem", "测试项目", 140),
     ("Stage", "阶段", 70),
     ("Owner", "负责人", 80),
-    ("StartDate", "开始日期", 100),
-    ("EndDate", "结束日期", 100),
+    ("StartDate", "开始日期", 130),
+    ("EndDate", "结束日期", 130),
     ("Status", "完成状况", 90),
 )
 
@@ -310,6 +313,9 @@ class TableTab(ttk.Frame):
         self.context = context
         self.kind = kind  # requisitions / plans
         self.columns = REQUISITION_COLUMNS if kind == "requisitions" else PLAN_COLUMNS
+        self.column_keys = tuple(item[0] for item in self.columns)
+        self.sort_column = None
+        self.sort_desc = False
         self._build()
         self.reload()
 
@@ -334,7 +340,8 @@ class TableTab(ttk.Frame):
         keys = [item[0] for item in self.columns]
         self.tree = ttk.Treeview(container, columns=keys, show="headings", height=16)
         for key, title, width in self.columns:
-            self.tree.heading(key, text=title)
+            # 点列头排序：升序 → 降序 → 取消（回默认 Id 倒序）
+            self.tree.heading(key, text=title, command=lambda column=key: self._sort_by(column))
             self.tree.column(key, width=width, anchor="w", stretch=True)
         scroll_y = ttk.Scrollbar(container, orient="vertical", command=self.tree.yview)
         scroll_x = ttk.Scrollbar(container, orient="horizontal", command=self.tree.xview)
@@ -348,6 +355,34 @@ class TableTab(ttk.Frame):
 
     def _on_double_click(self, event):
         self._edit()
+
+    # ---------------------------------------------------------------- 排序
+
+    def _sort_by(self, column):
+        """点列头：第一次升序，再点降序，第三次回到默认（Id 倒序）。"""
+        if self.sort_column != column:
+            self.sort_column = column
+            self.sort_desc = False
+        elif not self.sort_desc:
+            self.sort_desc = True
+        else:
+            self.sort_column = None
+            self.sort_desc = False
+        self._update_headings()
+        self.reload()
+
+    def _update_headings(self):
+        for key, title, _width in self.columns:
+            marker = ""
+            if key == self.sort_column:
+                marker = " ▼" if self.sort_desc else " ▲"
+            self.tree.heading(key, text=title + marker)
+
+    def _order_clause(self):
+        """当前排序对应的 ORDER BY（列名走白名单，界面字符串不会拼进 SQL）。"""
+        if not self.sort_column:
+            return "Id DESC"
+        return repositories.order_by_clause(self.column_keys, self.sort_column, self.sort_desc)
 
     # ---------------------------------------------------------------- 增删改
 
@@ -463,7 +498,7 @@ class TableTab(ttk.Frame):
             repository = (
                 self.context.repositories.requisitions if self.kind == "requisitions" else self.context.repositories.plans
             )
-            rows = repository.list(keyword=keyword or None, limit=500)
+            rows = repository.list(keyword=keyword or None, limit=500, order=self._order_clause())
         except Exception as exc:
             messagebox.showerror("读取失败", str(exc), parent=self.winfo_toplevel())
             return
@@ -491,52 +526,164 @@ class PlansWindow(object):
 
 
 class MailWindow(object):
+    """邮件设置：读写 ``app_settings`` 的 ``mail.*`` 键 + 本机 DPAPI 口令 + 测试发送。
+
+    字段、取值范围与写出的文本格式与主程序设置窗口一致；口令（``mail.passwordEnc``）与
+    邮件模板、抄送管理员开关**不在本窗口维护**（见 ``services/mail_config.py``）。
+    """
+
     def __init__(self, parent, context, on_saved=None):
         self.context = context
         self.on_saved = on_saved
+        self.vars = {}
+        self._security_labels = dict((code, label) for code, label in mail_config.SECURITY_OPTIONS)
+        self._security_codes = dict((label, code) for code, label in mail_config.SECURITY_OPTIONS)
         self.window = tk.Toplevel(parent)
         self.window.title("邮件设置")
-        self.window.geometry("620x420")
+        # 不写死 geometry：让 Tk 按内容算尺寸，避免字段多的时候按钮/输出区被裁掉
         self._build()
+        self._load()
+
+    # ---------------------------------------------------------------- 装配
 
     def _build(self):
-        settings = self.context.mail_settings
-        frame = ttk.Frame(self.window, padding=12)
+        frame = ttk.Frame(self.window, padding=10)
         frame.pack(fill="both", expand=True)
 
-        info = ttk.LabelFrame(frame, text="当前配置（读自 app_settings）", padding=10)
-        info.pack(fill="x")
-        lines = [
-            "启用：%s" % ("是" if settings.enabled else "否"),
-            "服务器：%s:%d（安全方式 %s）" % (settings.host or "(未配置)", settings.port, settings.security),
-            "发件人：%s <%s>" % (settings.from_name or "", settings.from_address or "(未配置)"),
-            "账号：%s" % (settings.username or "(未配置)"),
-            "密码来源：%s" % settings.password_source,
-            "提醒：提前 %d 天，含逾期=%s，去重 %d 天" % (
-                settings.warning_days_before,
-                "是" if settings.warning_include_overdue else "否",
-                settings.dedupe_days,
-            ),
-        ]
-        for line in lines:
-            ttk.Label(info, text=line).pack(anchor="w")
+        self.status = ttk.Label(frame, text="", wraplength=720)
+        self.status.pack(anchor="w", pady=(0, 6))
 
-        local = ttk.LabelFrame(frame, text="本机 SMTP 口令（DPAPI 加密，只存本机）", padding=10)
-        local.pack(fill="x", pady=10)
-        ttk.Label(local, text="说明：共享库里的口令是主程序用 DPAPI(CurrentUser) 加密的，换机器解不开，"
-                              "所以 XP 端需要在本机单独保存一份。").pack(anchor="w")
+        columns = ttk.Frame(frame)
+        columns.pack(fill="x")
+
+        smtp = ttk.LabelFrame(columns, text="SMTP（写入共享设置，主程序同样读取）", padding=8)
+        smtp.pack(side="left", fill="both", expand=True)
+        switches = ttk.LabelFrame(columns, text="开关与提醒", padding=8)
+        switches.pack(side="left", fill="both", expand=True, padx=(8, 0))
+
+        row = 0
+        for field in mail_config.FIELDS:
+            if field["kind"] == "bool":
+                continue
+            row = self._add_field(smtp, field, row)
+        row = 0
+        for field in mail_config.FIELDS:
+            if field["kind"] != "bool":
+                continue
+            row = self._add_field(switches, field, row)
+
+        local = ttk.LabelFrame(frame, text="本机 SMTP 口令（DPAPI 加密，只存本机）", padding=8)
+        local.pack(fill="x", pady=8)
+        ttk.Label(local, text=mail_config.read_only_note(), wraplength=760).pack(anchor="w")
+        password_row = ttk.Frame(local)
+        password_row.pack(fill="x", pady=(4, 0))
         self.password = tk.StringVar()
-        ttk.Entry(local, textvariable=self.password, show="*", width=40).pack(anchor="w", pady=6)
-        ttk.Button(local, text="保存到本机", command=self._save_password).pack(anchor="w")
+        ttk.Entry(password_row, textvariable=self.password, show="*", width=30).pack(side="left")
+        ttk.Button(password_row, text="保存到本机", command=self._save_password).pack(side="left", padx=8)
+        self.password_state = ttk.Label(password_row, text="")
+        self.password_state.pack(side="left")
+
+        test_row = ttk.Frame(frame)
+        test_row.pack(fill="x")
+        ttk.Label(test_row, text="测试收件地址").pack(side="left")
+        self.test_to = tk.StringVar()
+        ttk.Entry(test_row, textvariable=self.test_to, width=28).pack(side="left", padx=6)
+        ttk.Label(test_row, text="（留空用发件地址）").pack(side="left")
 
         actions = ttk.Frame(frame)
-        actions.pack(fill="x", pady=(4, 0))
-        ttk.Button(actions, text="计划到期提醒（演练，不发信）", command=self._dry_run_reminder).pack(side="left")
-        ttk.Button(actions, text="发送测试邮件（演练）", command=self._dry_run_test).pack(side="left", padx=8)
+        actions.pack(fill="x", pady=6)
+        ttk.Button(actions, text="保存并生效", width=12, command=self._save).pack(side="left")
+        ttk.Button(actions, text="测试发送（演练）", command=lambda: self._test_send(False)).pack(side="left", padx=6)
+        ttk.Button(actions, text="测试发送（真实）", command=lambda: self._test_send(True)).pack(side="left")
+        ttk.Button(actions, text="到期提醒演练", command=self._dry_run_reminder).pack(side="left", padx=6)
+        ttk.Button(actions, text="刷新发送记录", command=self._refresh_logs).pack(side="left")
 
-        self.output = tk.Text(frame, height=8, wrap="word")
-        self.output.pack(fill="both", expand=True, pady=(10, 0))
-        self._write("提示：真正发信需要 --send 或在后续里程碑的界面里显式确认。")
+        self.output = tk.Text(frame, height=6, wrap="word")
+        scroll = ttk.Scrollbar(frame, orient="vertical", command=self.output.yview)
+        self.output.configure(yscrollcommand=scroll.set)
+        self.output.pack(side="left", fill="both", expand=True)
+        scroll.pack(side="right", fill="y")
+
+    def _add_field(self, parent, field, row):
+        key = field["key"]
+        kind = field["kind"]
+        if kind == "bool":
+            variable = tk.BooleanVar(value=False)
+            ttk.Checkbutton(parent, text=field["label"], variable=variable).grid(
+                row=row, column=0, columnspan=2, sticky="w", pady=1
+            )
+        else:
+            ttk.Label(parent, text=field["label"]).grid(row=row, column=0, sticky="e", padx=(0, 8), pady=2)
+            variable = tk.StringVar()
+            if kind == "choice":
+                widget = ttk.Combobox(
+                    parent,
+                    textvariable=variable,
+                    state="readonly",
+                    width=12,
+                    values=[label for _code, label in field["options"]],
+                )
+            else:
+                widget = ttk.Entry(parent, textvariable=variable, width=26)
+            widget.grid(row=row, column=1, sticky="we", pady=2)
+        self.vars[key] = variable
+        return row + 1
+
+    # ---------------------------------------------------------------- 读 / 写
+
+    def _load(self):
+        """把当前生效的设置填进控件（保存后与打开时都用它）。"""
+        values = mail_config.current_values(self.context.mail_settings)
+        for field in mail_config.FIELDS:
+            key = field["key"]
+            value = values.get(key)
+            if field["kind"] == "bool":
+                self.vars[key].set(bool(value))
+            elif field["kind"] == "choice":
+                self.vars[key].set(self._security_labels.get(value, self._security_labels["None"]))
+            else:
+                self.vars[key].set("" if value is None else str(value))
+        settings = self.context.mail_settings
+        ready, reason = self.context.mail.is_ready()
+        self.status.configure(
+            text="当前生效：%s\n发信条件：%s"
+            % (mail_config.summary_line(settings), "可发信" if ready else "未就绪 —— %s" % reason)
+        )
+        self.password_state.configure(text="当前口令来源：%s" % settings.password_source)
+
+    def _collect(self):
+        values = {}
+        for field in mail_config.FIELDS:
+            key = field["key"]
+            raw = self.vars[key].get()
+            if field["kind"] == "bool":
+                values[key] = bool(raw)
+            elif field["kind"] == "choice":
+                values[key] = self._security_codes.get(raw, "None")
+            else:
+                values[key] = raw
+        return values
+
+    def _save(self):
+        before = self.context.mail_settings
+        cleaned, errors, warnings = mail_config.save(self.context.settings_store, self._collect())
+        if errors:
+            for line in errors:
+                self._write("校验未通过：" + line)
+            messagebox.showerror("校验未通过", "\n".join(errors), parent=self.window)
+            return
+        changed = mail_config.compare(before, cleaned)
+        self.context.reload_mail()
+        self._load()
+        for line in warnings:
+            self._write("提醒：" + line)
+        self._write(
+            "已保存到 app_settings：%s" % ("、".join(changed) if changed else "（内容与原来一致）")
+        )
+        if self.on_saved:
+            self.on_saved()
+
+    # ---------------------------------------------------------------- 口令与发送
 
     def _write(self, text):
         self.output.configure(state="normal")
@@ -548,23 +695,56 @@ class MailWindow(object):
         password = self.password.get()
         if self.context.credentials.save_mail_password(password):
             self._write("本机口令已保存。" if password else "本机口令已清除。")
+            self.password.set("")
+            self.context.reload_mail()
+            self._load()
             if self.on_saved:
                 self.on_saved()
         else:
             messagebox.showerror("保存失败", "DPAPI 不可用，无法加密保存。", parent=self.window)
+
+    def _test_send(self, real):
+        recipient = (self.test_to.get() or "").strip() or self.context.mail_settings.from_address
+        if not mail_service.is_valid_address(recipient):
+            self._write("请先填一个有效的测试收件地址（或在上面配置发件地址）。")
+            return
+        if real and not messagebox.askyesno(
+            "确认发送", "确定现在真的发一封测试邮件到 %s 吗？" % recipient, parent=self.window
+        ):
+            return
+        result = self.context.mail.send_test(recipient, dry_run=not real)
+        self._write(
+            "测试发送（%s）→ %s：%s" % ("真实发送" if real else "演练，不发信", ";".join(result.recipients) or recipient, result.message)
+        )
+        self._refresh_logs()
 
     def _dry_run_reminder(self):
         from ..context import run_reminder
 
         self._write(run_reminder(self.context, dry_run=True))
 
-    def _dry_run_test(self):
-        recipient = self.context.mail_settings.from_address
-        if not recipient:
-            self._write("未配置发件地址，无法演练测试邮件。")
+    def _refresh_logs(self):
+        try:
+            rows = self.context.mail.recent_logs(20)
+        except Exception as exc:
+            self._write("读取发送记录失败：%s" % exc)
             return
-        result = self.context.mail.send_test(recipient, dry_run=True)
-        self._write("测试邮件演练：%s" % result.message)
+        if not rows:
+            self._write("（还没有发送记录；也可能是数据文件夹里没有 mail_logs 表）")
+            return
+        self._write("最近 %d 条发送记录：" % len(rows))
+        for row in rows:
+            self._write(
+                "  %s [%s] %s → %s：%s%s"
+                % (
+                    row["CreatedAt"],
+                    row["Kind"],
+                    row["RefKey"] or "-",
+                    row["Recipients"] or "-",
+                    "成功" if row["Success"] else "失败",
+                    "" if row["Success"] else "（%s）" % (row["Error"] or ""),
+                )
+            )
 
 
 class SelftestWindow(object):

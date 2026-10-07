@@ -7,6 +7,7 @@
 import collections
 import json
 import os
+import sqlite3
 
 from . import compat, dpapi
 from .credentials import LocalCredentialStore
@@ -130,21 +131,31 @@ class AppSettingsStore(object):
 
     def set(self, key, value):
         """写入单个键（存在则更新，不存在则插入）；值的文本化与主程序一致。"""
+        self.set_many({key: value})
+        return self.text_of(value)
+
+    @staticmethod
+    def text_of(value):
+        """把 Python 值转成主程序风格的设置文本（布尔写 ``True`` / ``False``）。"""
         if isinstance(value, bool):
-            text = compat.bool_text(value)
-        elif value is None:
-            text = None
-        else:
-            text = str(value)
-        with self._db.transaction(immediate=True) as conn:
-            cursor = conn.execute("UPDATE app_settings SET Value = ? WHERE Key = ?", (text, key))
-            if cursor.rowcount == 0:
-                conn.execute("INSERT INTO app_settings (Key, Value) VALUES (?, ?)", (key, text))
-        return text
+            return compat.bool_text(value)
+        if value is None:
+            return None
+        return str(value)
 
     def set_many(self, mapping):
-        for key, value in mapping.items():
-            self.set(key, value)
+        """一次事务写入多个键：设置界面要保存十几项，不能写一半就失败。"""
+        if not self.available():
+            raise sqlite3.OperationalError(
+                "app_settings 表不存在：请先用主程序打开一次该数据文件夹（表结构由主程序创建）"
+            )
+        with self._db.transaction(immediate=True) as conn:
+            for key, value in mapping.items():
+                text = self.text_of(value)
+                cursor = conn.execute("UPDATE app_settings SET Value = ? WHERE Key = ?", (text, key))
+                if cursor.rowcount == 0:
+                    conn.execute("INSERT INTO app_settings (Key, Value) VALUES (?, ?)", (key, text))
+        return len(mapping)
 
 
 # --------------------------------------------------------------------------- 邮件设置

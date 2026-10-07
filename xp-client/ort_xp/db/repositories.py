@@ -80,6 +80,18 @@ def to_sql_value(value):
     return str(value)
 
 
+def order_by_clause(columns, column, descending=False):
+    """把「界面点选的列」转成安全的 ``ORDER BY`` 片段。
+
+    只允许白名单里的列（列名来自我们自己的界面定义，仍然显式校验，杜绝把界面字符串
+    直接拼进 SQL）；空值/空串排最后，免得一升序就满屏空格子。
+    """
+    if column not in columns:
+        raise ValueError("不允许按 %s 排序" % column)
+    direction = "DESC" if descending else "ASC"
+    return '("%s" IS NULL OR "%s" = \'\'), "%s" %s' % (column, column, column, direction)
+
+
 class ChangeLogRepository(object):
     """``plan_change_logs``：领退与计划共用的变更日志（追加型）。"""
 

@@ -54,7 +54,7 @@ D:\Python34-32\python.exe -m pip install "pyinstaller==3.3.1"
 ```
 Python 3.4.4 (32 bit) + PyInstaller 3.3.1  →  dist\ORT-XP（15.3 MB，917 个文件）
 ORT-XP.exe 的 PE 头 MajorOperatingSystemVersion = 5.1   ← 启动器面向 Windows XP
-Python 3.4.4 下 75 项单测全通过（ORT_XP_UI_TEST=1 时含界面装配与可见性检查）
+Python 3.4.4 下 95 项单测全通过（ORT_XP_UI_TEST=1 时含界面装配与可见性检查）
 ORT-XP.exe --version         → 退出码 0，中文输出正常
 ORT-XP.exe --selftest        → 退出码 0，14 项检查全通过（含 DPAPI 往返、SQLite 3.8.11、
                                OpenSSL 1.0.2d + PROTOCOL_TLSv1_2、真实库 20 张表）
@@ -67,6 +67,16 @@ ORT-XP.exe --ui-smoke --data-folder "..."  → 退出码 0，7 个窗口逐个 w
 ```
 
 仍然待办：在**真实 XP 机器（或 XP 虚拟机）**上跑一遍（含界面登录与编辑操作）。
+
+## 与主程序的已知差异
+
+| 差异 | 说明 |
+| --- | --- |
+| 收件人分隔符 | XP 端比主程序多认全角逗号「，」、顿号「、」与斜杠「/」。真实库里「负责人」有 187 条写成 `李剛/李志斌`，主程序不拆斜杠 → 这些提醒在两端都发不出去；XP 端拆开后能解析出两位负责人。要完全一致的话主程序也要加这个分隔符 |
+| 邮件口令 | XP 端**不写** `mail.passwordEnc`（那是主程序用**它那台机器**的 DPAPI 加密的，XP 端写进去主程序解不开），口令存在 XP 机器本机（DPAPI）。因此 XP 端发信要用本机口令 |
+| 邮件模板与抄送管理员开关 | `mail.template.*` / `mail.ccAdmin.*` 由主程序设置窗口维护，XP 端只读不改 |
+| 其他设置项 | XP 端设置界面只写 SMTP 相关的那 17 个 `mail.*` 键（多键一次事务），其余设置键不动 |
+| 授权/审核流程 | 不在范围内：XP 端没有审核提交，改动直接落库并写变更日志（主程序会看到这些改动） |
 
 ## 已知打包注意事项
 

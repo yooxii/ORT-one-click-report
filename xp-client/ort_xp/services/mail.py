@@ -24,6 +24,9 @@ from ..db.repositories import PlanRepository
 MAIL_KIND_NOTICE = "Notice"
 MAIL_KIND_WARNING = "Warning"
 
+#: 抄送管理员用的角色名（与主程序 ``UserRole.Administrator`` 一致）
+ADMIN_ROLE = "Administrator"
+
 #: 主程序未自定义模板时使用的内置默认（与主程序资源里的默认模板同义）
 DEFAULT_SUBJECTS = {
     MAIL_KIND_NOTICE: "{{Title}} - ORT实验室管理系统",
@@ -65,11 +68,19 @@ def render_template(text, variables):
 
 
 def split_list(text):
-    """拆分分号/逗号/顿号分隔的地址列表。"""
+    """拆分地址/姓名列表。
+
+    分隔符是主程序的**超集**：主程序只认 ``,`` ``;`` ``；`` 与换行；这里再认全角逗号 ``,``、
+    顿号 ``、`` 与斜杠 ``/`` ``／``。
+
+    为什么加斜杠：真实库里计划「负责人」大量写成 ``李剛/李志斌``（289 条计划里 187 条如此），
+    而主程序不拆斜杠 —— 结果是这些提醒**谁都收不到**（整体当一个人名，解析失败即跳过）。
+    XP 端多拆一个斜杠就能解析出两位负责人；两边要完全一致的话，主程序也要加这个分隔符。
+    """
     if not text:
         return []
     normalized = text
-    for separator in (";", ",", "，", "、"):  # 分号、半角逗号、全角逗号、顿号
+    for separator in (";", "；", ",", "，", "、", "/", "／"):
         normalized = normalized.replace(separator, ";")
     return [item.strip() for item in normalized.split(";") if item.strip()]
 
@@ -117,37 +128,43 @@ class MailService(object):
 
     # ---------------------------------------------------------------- 发送
 
-    def send(self, kind, recipients, subject, body, ref_type=None, ref_key=None, dry_run=False):
-        """发送一封邮件；无论成功失败都写 ``mail_logs``。"""
+    def send(self, kind, recipients, subject, body, ref_type=None, ref_key=None, dry_run=False, cc=None,
+             bypass_dedupe=False):
+        """发送一封邮件；无论成功失败都写 ``mail_logs``。
+
+        顺序与主程序 ``MailService.Send`` 一致：先判可用性 → 再去重 → 最后解析收件人。
+        抄送 = ``mail.ccList`` 固定抄送 + 本次额外抄送（``cc``，如按设置抄送管理员）。
+        """
         ready, reason = self.is_ready()
         if not ready:
             return MailResult(skipped=True, message=reason)
 
-        recipients = self.normalize_recipients(recipients)
-        if not recipients:
-            return MailResult(skipped=True, message="没有有效的收件人地址")
-
-        if ref_type and ref_key:
+        if not bypass_dedupe and ref_type and ref_key:
             days = self.settings.dedupe_days
             if days > 0 and self.was_sent_recently(kind, ref_type, ref_key, days):
                 return MailResult(
                     skipped=True,
                     message="去重：%s 天内已对 %s/%s 发过同类邮件" % (days, ref_type, ref_key),
                     subject=subject,
-                    recipients=recipients,
                 )
+
+        to = self.normalize_recipients(recipients)
+        if not to:
+            return MailResult(skipped=True, message="没有有效的收件人地址", subject=subject)
+        cc_list = self.cc_list_for(to, cc)
+        everyone = to + cc_list
 
         if dry_run:
             return MailResult(
                 success=True,
                 message="dry-run：未真正发送",
                 subject=subject,
-                recipients=recipients,
+                recipients=everyone,
             )
 
         error = ""
         try:
-            self._smtp_send(recipients, subject, body)
+            self._smtp_send(to, cc_list, subject, body)
             success = True
         except Exception as exc:
             success = False
@@ -155,24 +172,56 @@ class MailService(object):
             if self._logger is not None:
                 self._logger.error("邮件发送失败：%s" % error)
 
-        self._write_log(kind, ref_type, ref_key, recipients, subject, success, error)
+        self._write_log(kind, ref_type, ref_key, everyone, subject, success, error)
         if success:
-            return MailResult(success=True, message="已发送", subject=subject, recipients=recipients)
-        return MailResult(success=False, message=error, subject=subject, recipients=recipients)
+            return MailResult(success=True, message="已发送", subject=subject, recipients=everyone)
+        return MailResult(success=False, message=error, subject=subject, recipients=everyone)
 
     def send_test(self, recipient, dry_run=False):
+        """测试邮件：与主程序一样忽略去重（RefType=Settings, RefKey=TestMail）。"""
         subject = "ORT实验室管理系统 XP 客户端 · 测试邮件"
         body = "这是一封测试邮件，用于验证 SMTP 配置。\n\n发送时间：%s" % compat.format_datetime_text(
             datetime.datetime.now()
         )
-        return self.send(MAIL_KIND_NOTICE, [recipient], subject, body, dry_run=dry_run)
+        return self.send(
+            MAIL_KIND_NOTICE,
+            [recipient],
+            subject,
+            body,
+            ref_type="Settings",
+            ref_key="TestMail",
+            dry_run=dry_run,
+            bypass_dedupe=True,
+        )
 
-    def _smtp_send(self, recipients, subject, body):
+    def cc_list_for(self, to, extra=None):
+        """算出抄送地址：固定抄送 + 额外抄送，去掉已经在收件人里的地址。"""
+        result = []
+        seen = dict((address.lower(), True) for address in to or [])
+        candidates = self.normalize_recipients(split_list(self.settings.cc_list))
+        candidates.extend(self.normalize_recipients(extra or []))
+        for address in candidates:
+            key = address.lower()
+            if key in seen:
+                continue
+            seen[key] = True
+            result.append(address)
+        return result
+
+    def cc_for(self, kind):
+        """按设置给出该类型要抄送的管理员邮箱（``mail.ccAdmin.<Kind>`` 开关）。"""
+        if not self.settings.cc_admins.get(kind):
+            return []
+        return self.role_emails(ADMIN_ROLE)
+
+    def _smtp_send(self, recipients, cc_list, subject, body):
         settings = self.settings
         message = MIMEText(body or "", "html" if settings.body_is_html else "plain", "utf-8")
         message["Subject"] = Header(subject or "", "utf-8")
         message["From"] = formataddr((str(Header(settings.from_name or "", "utf-8")), settings.from_address))
         message["To"] = ", ".join(recipients)
+        if cc_list:
+            message["Cc"] = ", ".join(cc_list)
 
         timeout = max(5, settings.timeout_seconds or 30)
         security = (settings.security or "None").strip().lower()
@@ -191,7 +240,7 @@ class MailService(object):
                 server.ehlo()
             if settings.username:
                 server.login(settings.username, settings.password or "")
-            server.sendmail(settings.from_address, recipients, message.as_string())
+            server.sendmail(settings.from_address, recipients + list(cc_list or []), message.as_string())
         finally:
             try:
                 server.quit()
@@ -271,17 +320,25 @@ class MailService(object):
     # ---------------------------------------------------------------- 收件人解析
 
     def normalize_recipients(self, recipients):
+        """收件人规范化：支持「姓名」或「邮箱」，姓名去用户表解析，过滤非法地址并去重。
+
+        与主程序 ``MailService.NormalizeRecipients`` 同序：先按分隔符拆开每一项，
+        能当邮箱用就直接用，否则回落到用户表按显示名/登录名解析。
+        """
         result = []
         seen = {}
-        for item in recipients or []:
-            address = (item or "").strip()
-            if not is_valid_address(address):
-                continue
-            key = address.lower()
-            if key in seen:
-                continue
-            seen[key] = True
-            result.append(address)
+        for raw in recipients or []:
+            for item in split_list(raw):
+                address = item
+                if not is_valid_address(address):
+                    address = self.resolve_user_email(item)
+                if not address or not is_valid_address(address):
+                    continue
+                key = address.strip().lower()
+                if key in seen:
+                    continue
+                seen[key] = True
+                result.append(address.strip())
         return result
 
     def resolve_user_email(self, name_or_username):
@@ -364,8 +421,9 @@ class PlanDeadlineReminder(object):
         plans = self.collect(today)
         summary["candidates"] = len(plans)
         for plan in plans:
-            email = self._mail.resolve_user_email(plan["owner"])
-            if not email:
+            # 计划负责人可能填了多个名字（分号/逗号分隔），与主程序一样逐个解析成邮箱
+            emails = self._mail.normalize_recipients(split_list(plan["owner"]))
+            if not emails:
                 summary["skipped"] += 1
                 summary["details"].append("%s：负责人「%s」没有可用邮箱" % (plan["job_no"], plan["owner"]))
                 continue
@@ -387,12 +445,13 @@ class PlanDeadlineReminder(object):
             )
             result = self._mail.send(
                 MAIL_KIND_WARNING,
-                [email],
+                emails,
                 subject,
                 body,
                 ref_type=self.REF_TYPE,
                 ref_key=plan["job_no"],
                 dry_run=dry_run,
+                cc=self._mail.cc_for(MAIL_KIND_WARNING),
             )
             if result.success:
                 summary["sent"] += 1
@@ -400,5 +459,7 @@ class PlanDeadlineReminder(object):
                 summary["skipped"] += 1
             else:
                 summary["failed"] += 1
-            summary["details"].append("%s → %s：%s" % (plan["job_no"], email, result.message))
+            summary["details"].append(
+                "%s → %s：%s" % (plan["job_no"], ";".join(result.recipients) or "(无收件人)", result.message)
+            )
         return summary
