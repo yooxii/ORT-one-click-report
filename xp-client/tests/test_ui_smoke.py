@@ -116,5 +116,15 @@ class UiSmokeTests(unittest.TestCase):
             selftest.window.destroy()
 
 
+    def test_ui_smoke_helper_passes(self):
+        """打包后的 ``--ui-smoke`` 走的就是这个函数：目标机上一个命令证明界面装得起来。"""
+        from ort_xp.ui import app as ui_app
+
+        passed, text = ui_app.ui_smoke(self.context)
+        self.assertTrue(passed, text)
+        self.assertIn("界面装配自检", text)
+        self.assertNotIn("[失败]", text)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -44,10 +44,11 @@ xp-client/
 │  ├─ compat.py                 # 3.4 兼容层：编码、控制台、.NET 值解析
 │  ├─ config.py                 # 数据目录 / 数据库路径 / app_settings 读取
 │  ├─ dpapi.py                  # DPAPI（ctypes，零依赖）加解密
+│  ├─ fatal.py                  # 启动期失败与未捕获异常的可见化（日志 + 原生弹框）
 │  ├─ logging_setup.py          # 日志（UTF-8 文件 + 控制台安全输出）
 │  ├─ db/                       # 数据层：连接、事务、重试、仓储、表结构
 │  ├─ services/                 # auth（登录）/ mail（SMTP 与到期提醒）
-│  └─ ui/                       # tkinter 界面：登录、主窗口、领用与计划
+│  └─ ui/                       # tkinter 界面：登录、主窗口、领用与计划；first_run.py 负责首次选库
 ├─ tools/                       # 开发/运维脚本（不随程序发布）
 │  ├─ check_env.py              # 环境自检（解释器、依赖、数据库连通性、DPAPI）
 │  ├─ compat_check.py           # Python 3.4 语法/API 下限检查
@@ -77,7 +78,15 @@ python .\tools\verify_roundtrip.py
 
 # 5) 无界面自检（不连界面，验证数据层与邮件配置）
 python -m ort_xp --selftest
+
+# 6) 界面装配自检 / 出错只写日志不弹框
+python -m ort_xp --ui-smoke --data-folder "D:\source\repos\ORT一键报告\bin\Debug\Data"
+python -m ort_xp --no-dialog
 ```
+
+> 不带 `--data-folder` 启动时，程序按 `local_settings.json` → 程序目录 `Data` 找库；
+> 找不到会弹框说明原因，并让你直接选数据文件夹（选完写进 `<程序目录>\Data\local_settings.json`）。
+> 打包后是窗口子系统（没有控制台），**所有启动期失败都会写日志并弹框**，不会「双击没反应」。
 
 ## 与主程序的约定（重要）
 
@@ -95,9 +104,12 @@ python -m ort_xp --selftest
 - [x] 里程碑 0：子项目骨架、环境自检、数据层连通性验证（Python 3.13 直读主程序库成功）
 - [x] 里程碑 2：数据层（仓储 / 变更日志 / 下拉取值）与登录、记住登录
 - [x] 里程碑 3：领用表与计划表的新增/编辑/删除（校验规则与自动编号对齐主程序，改动写变更日志）；
-  61 项单测 + 真实库副本 32 项检查全通过
+  75 项单测 + 真实库副本 32 项检查全通过
+- [x] 启动期故障可见 + 首次运行选库（2026-10-07 实机反馈「双击没反应」后的修复，见
+  [docs/01-环境搭建.md](docs/01-环境搭建.md) 第 9 节）：缺库时不再静默退出、也不再让 sqlite 建空库，
+  改为写日志 + 弹框 + 选择数据文件夹；新增 `--ui-smoke` 与 `--no-dialog`
 - [ ] 里程碑 1：技术验证 —— **打包与本机运行已完成**（`D:\Python34-32` 装好 Python 3.4.4 + PyInstaller 3.3.1，
-  `dist\ORT-XP` 15.3 MB 可运行，3.4 下 66 项单测全绿）；**待办：在真实 XP 机器/虚拟机上跑一遍界面**
+  `dist\ORT-XP` 可运行，3.4 下 75 项单测全绿）；**待办：在真实 XP 机器/虚拟机上跑一遍界面**
 - [ ] 里程碑 3 收尾：界面在 XP 实机上的点击回归、列表点列头排序
 - [ ] 里程碑 4：邮件（SMTP 发送与到期提醒服务已就绪，设置界面写库待做）
 - [ ] 里程碑 5：打包、XP 回归、交付

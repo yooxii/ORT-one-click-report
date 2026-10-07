@@ -1,4 +1,4 @@
-﻿# ORT lab management system - XP lite client - build the XP bundle (PyInstaller 3.3.1)
+# ORT lab management system - XP lite client - build the XP bundle (PyInstaller 3.3.1)
 #
 # ASCII-ONLY ON PURPOSE: this file is written in plain ASCII so it parses the same
 # under Windows PowerShell (ANSI/cp950 default) and PowerShell 7. Chinese notes for
@@ -28,7 +28,7 @@ $ErrorActionPreference = "Continue"
 $root = Split-Path -Parent $PSScriptRoot
 Push-Location $root
 try {
-    Write-Host "== 1/5 check interpreter ==" -ForegroundColor Cyan
+    Write-Host "== 1/6 check interpreter ==" -ForegroundColor Cyan
     & $Python -c "import sys; print('Python %d.%d.%d (%d bit)' % (sys.version_info[0], sys.version_info[1], sys.version_info[2], 64 if sys.maxsize > 2**32 else 32))"
     if ($LASTEXITCODE -ne 0) { throw "cannot run interpreter: $Python" }
 
@@ -38,15 +38,15 @@ try {
         if (-not $SkipCheck) { throw "wrong interpreter version (use -SkipCheck only for troubleshooting)" }
     }
 
-    Write-Host "== 2/5 check PyInstaller ==" -ForegroundColor Cyan
+    Write-Host "== 2/6 check PyInstaller ==" -ForegroundColor Cyan
     & $Python -m PyInstaller --version
     if ($LASTEXITCODE -ne 0) { throw "PyInstaller not available; run tools\install_py34.ps1 first" }
 
-    Write-Host "== 3/5 Python 3.4 syntax floor check ==" -ForegroundColor Cyan
+    Write-Host "== 3/6 Python 3.4 syntax floor check ==" -ForegroundColor Cyan
     & $Python "tools\compat_check.py" "ort_xp" 2>&1 | ForEach-Object { Write-Host $_ }
     if ($LASTEXITCODE -ne 0) { throw "source contains Python 3.4-incompatible syntax" }
 
-    Write-Host "== 4/5 stage sources to an ASCII path ==" -ForegroundColor Cyan
+    Write-Host "== 4/6 stage sources to an ASCII path ==" -ForegroundColor Cyan
     # WHY: PyInstaller 3.3.1 reads the spec and writes its warning log using the system
     # ANSI encoding (cp950 here). This repository lives under a path containing
     # non-ASCII characters (ORT...), which makes the build die with
@@ -57,7 +57,7 @@ try {
     Copy-Item (Join-Path $root "packaging") (Join-Path $StageDir "packaging") -Recurse -Force -ErrorAction Stop
     Write-Host "stage dir: $StageDir"
 
-    Write-Host "== 5/5 build (onedir) ==" -ForegroundColor Cyan
+    Write-Host "== 5/6 build (onedir) ==" -ForegroundColor Cyan
     $buildLog = Join-Path $StageDir "pyinstaller.log"
     Push-Location $StageDir
     try {
@@ -72,6 +72,15 @@ try {
 
     $built = Join-Path $StageDir "dist\ORT-XP"
     if (-not (Test-Path $built)) { throw "no output produced: $built" }
+
+    Write-Host "== 6/6 smoke: run the built exe from the ASCII stage path ==" -ForegroundColor Cyan
+    # WHY the stage path: ORT-XP.exe is a windowed app and refuses to run from a path the
+    # ANSI code page cannot encode (the repo path here contains Chinese). Running it from
+    # the ASCII stage dir proves the bundle loads its own python34/msvcr100/tcl DLLs.
+    $proc = Start-Process -FilePath (Join-Path $built "ORT-XP.exe") -ArgumentList "--version" -PassThru -Wait
+    if ($proc.ExitCode -ne 0) { throw "built exe failed to start (exit code $($proc.ExitCode))" }
+    Write-Host "  ORT-XP.exe --version -> exit 0" -ForegroundColor Green
+
     $target = Join-Path $root "dist\ORT-XP"
     if (Test-Path (Join-Path $root "dist")) { Remove-Item (Join-Path $root "dist") -Recurse -Force -ErrorAction Stop }
     New-Item -ItemType Directory -Path (Join-Path $root "dist") -Force -ErrorAction Stop | Out-Null

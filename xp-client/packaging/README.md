@@ -31,30 +31,39 @@ D:\Python34-32\python.exe -m pip install "pyinstaller==3.3.1"
 > （`--selftest` 时以退出码 2 结束）。
 
 1. 把整个 `ORT-XP` 目录拷到 XP 机器，例如 `C:\ORT-XP`。
-2. 双击 `ORT-XP.exe`；首次运行会提示选择数据文件夹（应与主程序一致）。
-   也可以在 `ORT-XP\Data\local_settings.json` 里预置：
+2. 双击 `ORT-XP.exe`；**首次运行会弹框让你选数据文件夹**（应与主程序一致）。
+   选中的目录（或它的 `Data` 子目录）里必须有 `ort_plans.db`，选完会写进
+   `ORT-XP\Data\local_settings.json`，下次启动直接生效。
+   也可以预先放好这个文件：
 
    ```json
    { "DataFolder": "Z:\\ORT数据", "AteDataPath": null, "EmiDataPath": null }
    ```
 
-   或设环境变量 `ORT_XP_DATA_FOLDER`。
+   或设环境变量 `ORT_XP_DATA_FOLDER`，或在快捷方式里加 `--data-folder "Z:\ORT数据"`（跳过弹框）。
 3. 共享目录必须映射成盘符（SQLite 打不开 `\\服务器\共享\...`）。
 4. `msvcr100.dll`（32 位 VC++2010 运行库）**已经打进包里**（约 774 KB，Microsoft 签名），
    XP 机器上不需要另装运行库。
-5. 排错：窗口子系统看不到控制台，异常会写进 `ORT-XP\Logs\fatal_<时间戳>.log`（UTF-8）并弹框提示；
-   普通运行日志在同目录 `ort_xp.log`。
+5. 排错：窗口子系统看不到控制台，**所有启动期失败都会写日志并弹框**。
+   - 运行日志：`ORT-XP\Logs\ort_xp.log`（UTF-8；`--selftest` / `--ui-smoke` 的结果也写在这里）；
+   - 未捕获异常的完整回溯：`ORT-XP\Logs\fatal_<时间戳>.log`；
+   - 不想让弹框打断脚本时加 `--no-dialog`（或设 `ORT_XP_NO_DIALOG=1`）。
 
 ## 已在本机验证过的内容（2026-10-07）
 
 ```
 Python 3.4.4 (32 bit) + PyInstaller 3.3.1  →  dist\ORT-XP（15.3 MB，917 个文件）
 ORT-XP.exe 的 PE 头 MajorOperatingSystemVersion = 5.1   ← 启动器面向 Windows XP
+Python 3.4.4 下 75 项单测全通过（ORT_XP_UI_TEST=1 时含界面装配与可见性检查）
 ORT-XP.exe --version         → 退出码 0，中文输出正常
 ORT-XP.exe --selftest        → 退出码 0，14 项检查全通过（含 DPAPI 往返、SQLite 3.8.11、
                                OpenSSL 1.0.2d + PROTOCOL_TLSv1_2、真实库 20 张表）
 ORT-XP.exe --check-plans-email → 退出码 0（演练，68 条候选计划，未发信）
-在含简体中文的路径下运行 → 退出码 2，并提示「请把程序放到纯英文/数字路径」
+ORT-XP.exe --ui-smoke --data-folder "..."  → 退出码 0，7 个窗口逐个 winfo_viewable() 通过
+无数据文件夹时双击           → 不再静默退出：日志写 [ERROR]，并弹出「没有找到数据库」对话框
+                               （列出数据文件夹、库路径、4 种解决办法，可直接选文件夹）
+有数据文件夹时双击           → 登录窗口正常显示（已用 PrintWindow 截图确认窗口内容）
+在含简体中文的路径下运行     → 退出码 2，并提示「请把程序放到纯英文/数字路径」
 ```
 
 仍然待办：在**真实 XP 机器（或 XP 虚拟机）**上跑一遍（含界面登录与编辑操作）。
@@ -71,7 +80,14 @@ ORT-XP.exe --check-plans-email → 退出码 0（演练，68 条候选计划，�
 
 ## 排错顺序
 
-1. XP 上先跑 `ORT-XP.exe --selftest`（在命令行里）看自检输出；
-   若没有界面或闪退，日志在 `ORT-XP\Logs\ort_xp.log`（UTF-8）。
-2. 数据层问题看 `docs/02-数据契约.md`（路径解析、日期格式、WAL/共享目录）。
-3. 打包器本身跑不起来时的替代方案见 `docs/01-环境搭建.md` 第 6 节。
+1. XP 上先在**命令行**里跑 `ORT-XP.exe --selftest`：
+   - 从命令行启动时能继承控制台，输出直接看得见；双击启动时输出会写进 `ORT-XP\Logs\ort_xp.log`。
+   - 界面起不起来用 `ORT-XP.exe --ui-smoke --data-folder "..."`（造窗口后立刻退出，退出码 0 = 通过）。
+2. 「双击没反应 / 只写了两行日志」：先看 `Logs\ort_xp.log` 有没有 `[ERROR]` 行 ——
+   没有数据库、路径含当前代码页表示不了的字符、tkinter 装不起来，这三种都会留下 `[ERROR]` 并弹框。
+   2026-10-07 就是把「`Data` 目录不存在 → 静默退出 2」这条补成可见的。
+   如果日志显示数据库已连上、界面却一个窗口都没有（进程活着、响应中），那是
+   **登录窗口 transient 到已 withdraw 的主窗口后被 Tk 一起隐藏**了（Tk 8.6 在 Windows 上的行为），
+   已在 `LoginDialog` 里去掉 transient 修复；`--ui-smoke` 会逐个窗口检查 `winfo_viewable()`。
+3. 数据层问题看 `docs/02-数据契约.md`（路径解析、日期格式、WAL/共享目录）。
+4. 打包器本身跑不起来时的替代方案见 `docs/01-环境搭建.md` 第 6 节。

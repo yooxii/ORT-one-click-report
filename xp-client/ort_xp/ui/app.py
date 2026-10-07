@@ -16,7 +16,7 @@ import datetime
 import tkinter as tk
 from tkinter import messagebox, ttk
 
-from .. import compat, fatal
+from .. import fatal
 from ..services import plan_rules
 from ..services import plans as plans_service
 from ..version import APP_NAME, VERSION, BUILD_STAGE, TARGET_OS, TARGET_PYTHON
@@ -148,7 +148,10 @@ class LoginDialog(object):
         self.window = tk.Toplevel(parent)
         self.window.title("登录 · %s" % APP_NAME)
         self.window.resizable(False, False)
-        self.window.transient(parent)
+        # 这里刻意**不**调用 transient(parent)：登录时主窗口（parent）是 withdraw 状态，
+        # 而 Tk 在 Windows 上会把 master 已隐藏的 transient 窗口一起保持隐藏——
+        # 实测（Tk 8.6，3.4 与 3.13 两个解释器）transient + withdrawn master 的窗口
+        # winfo_viewable() 恒为 0，表现就是「进程活着、屏幕上什么都没有」。
         self.ok = False
         self._build()
         self.window.protocol("WM_DELETE_WINDOW", self._cancel)
@@ -580,10 +583,135 @@ class SelftestWindow(object):
         text.configure(state="disabled")
 
 
+def _smoke_text(steps):
+    lines = ["界面装配自检（只造窗口，不进入主循环）", ""]
+    for name, ok, detail in steps:
+        lines.append("[%s] %s%s" % ("通过" if ok else "失败", name, "" if ok else "：%s" % detail))
+    return "\n".join(lines)
+
+
+def ui_smoke(context):
+    """无人值守的界面装配自检：把主要窗口造出来、确认**看得见**再销毁，返回 ``(ok, 文本)``。
+
+    窗口子系统下没法人工点击，这条命令用来在目标机上证明「界面确实能显示出来」，
+    而不是靠双击碰运气。只检查「造得出来」是不够的：Tk 会把 master 已 withdraw 的
+    transient 窗口一起隐藏，这种问题只有查 ``winfo_viewable()`` 才发现得了。
+    """
+    steps = []
+
+    def _step(name, func):
+        try:
+            func()
+        except Exception as exc:
+            steps.append((name, False, "%s: %s" % (exc.__class__.__name__, exc)))
+        else:
+            steps.append((name, True, ""))
+
+    def _pump(window):
+        """让 Tk 把窗口真正映射出来（不跑 mainloop）。"""
+        try:
+            window.update_idletasks()
+            window.update()
+        except tk.TclError:
+            pass
+
+    def _require_viewable(window, name):
+        _pump(window)
+        if not window.winfo_viewable():
+            raise AssertionError("%s没有显示出来（winfo_viewable() = 0）" % name)
+
+    application = None
+    try:
+        try:
+            application = Application(context)
+        except Exception as exc:
+            steps.append(("根窗口", False, "%s: %s" % (exc.__class__.__name__, exc)))
+            return False, _smoke_text(steps)
+        root = application.root
+
+        def _login():
+            dialog = LoginDialog(root, context)
+            try:
+                _require_viewable(dialog.window, "登录窗口")
+                if not isinstance(dialog.username.get(), str) or not isinstance(dialog.password.get(), str):
+                    raise AssertionError("登录窗口的输入框变量不可用")
+            finally:
+                dialog.window.destroy()
+
+        def _main():
+            application._build_main()
+            root.deiconify()
+            _require_viewable(root, "主窗口")
+
+        def _tabs():
+            for kind in ("requisitions", "plans"):
+                tab = TableTab(root, context, kind)
+                try:
+                    tab.reload()
+                finally:
+                    tab.destroy()
+
+        def _plans_window():
+            window = PlansWindow(root, context)
+            try:
+                _require_viewable(window.window, "领用和计划窗口")
+            finally:
+                window.window.destroy()
+
+        def _form():
+            dialog = FormDialog(
+                root, "界面自检", plans_service.requisition_form_fields(), {"RequisitionNo": "SMOKE-0001"}
+            )
+            try:
+                _require_viewable(dialog.window, "表单对话框")
+                values = dialog.read()
+                if values.get("RequisitionNo") != "SMOKE-0001":
+                    raise AssertionError("表单回读不一致：%r" % (values.get("RequisitionNo"),))
+            finally:
+                dialog.window.destroy()
+
+        def _mail():
+            window = MailWindow(root, context)
+            try:
+                _require_viewable(window.window, "邮件设置窗口")
+                if not window.window.title():
+                    raise AssertionError("邮件设置窗口没有标题")
+            finally:
+                window.window.destroy()
+
+        def _selftest():
+            window = SelftestWindow(root, context)
+            try:
+                _require_viewable(window.window, "环境自检窗口")
+                if not window.window.title():
+                    raise AssertionError("环境自检窗口没有标题")
+            finally:
+                window.window.destroy()
+
+        _step("登录窗口", _login)
+        _step("主窗口", _main)
+        _step("领用表 / 计划表页签", _tabs)
+        _step("领用和计划窗口", _plans_window)
+        _step("表单对话框", _form)
+        _step("邮件设置窗口", _mail)
+        _step("环境自检窗口", _selftest)
+    finally:
+        if application is not None:
+            try:
+                application.root.destroy()
+            except Exception:
+                pass
+    return all(item[1] for item in steps), _smoke_text(steps)
+
+
 def run(context):
     """启动界面；返回进程退出码。"""
     try:
         return Application(context).run()
     except tk.TclError as exc:
-        compat.say_err("无法启动界面（tkinter/Tcl 错误）：%s" % exc)
-        return 2
+        return fatal.report(
+            "无法启动界面",
+            "界面（tkinter/Tcl）启动失败：%s" % exc,
+            context.app_directory,
+            context.logger,
+        )

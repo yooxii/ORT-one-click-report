@@ -6,7 +6,9 @@
     python -m unittest discover -s tests -v
 """
 
+import argparse
 import datetime
+import logging
 import os
 import shutil
 import sqlite3
@@ -21,7 +23,9 @@ for _path in (_PARENT, os.path.join(_PARENT, "tools")):
         sys.path.insert(0, _path)
 
 import compat_check  # noqa: E402
-from ort_xp import compat, config, credentials, dpapi  # noqa: E402
+from ort_xp import __main__ as main_module  # noqa: E402
+from ort_xp import compat, config, credentials, dpapi, fatal, logging_setup  # noqa: E402
+from ort_xp import context as context_module  # noqa: E402
 from ort_xp.db import repositories  # noqa: E402
 from ort_xp.db import schema_generated  # noqa: E402
 from ort_xp.db.connection import Database  # noqa: E402
@@ -29,6 +33,7 @@ from ort_xp.services import auth as auth_service  # noqa: E402
 from ort_xp.services import mail as mail_service  # noqa: E402
 from ort_xp.services import plan_rules  # noqa: E402
 from ort_xp.services import plans as plans_service  # noqa: E402
+from ort_xp.ui import first_run  # noqa: E402
 
 #: 与主程序 AuthService.HashPassword 对应的向量：Base64(SHA256(UTF8("abc123" + "p@ss")))
 PASSWORD_VECTOR_SALT = "abc123"
@@ -1016,6 +1021,100 @@ class FormHelperTests(unittest.TestCase):
         self.assertEqual("2026-10-07", initial["RequisitionDate"])
         self.assertEqual("2609-001", initial["RequisitionNo"])
         self.assertEqual("", initial["Remark"])
+
+
+class StartupFailureTests(unittest.TestCase):
+    """启动期失败必须「看得见」。
+
+    打包后的 exe 是窗口子系统：没有控制台、``sys.stderr`` 是 ``None``，往 stderr 写东西
+    等于没写。踩过的坑就是「双击 exe 只写了两行日志就没反应」——数据目录缺失时 sqlite 会
+    顺手建一个空库，或者直接退出且不解释。这里把这些路径全部钉住。
+    """
+
+    def setUp(self):
+        self.temp_dir = tempfile.mkdtemp(prefix="ort-xp-startup-")
+        self.context = context_module.AppContext(
+            app_directory=self.temp_dir,
+            data_folder=self.temp_dir,
+            logger=logging.getLogger("ort_xp.startup-test"),
+        )
+        # 测试进程里绝不弹消息框（否则会卡住），直接跑完再恢复
+        fatal.set_dialogs_enabled(False)
+
+    def tearDown(self):
+        fatal.set_dialogs_enabled(True)
+        logger = logging.getLogger(logging_setup.LOGGER_NAME)
+        for handler in list(logger.handlers):
+            logger.removeHandler(handler)
+            try:
+                handler.close()
+            except Exception:
+                pass
+        shutil.rmtree(self.temp_dir, ignore_errors=True)
+
+    def test_missing_database_text_names_every_way_out(self):
+        text = main_module.missing_database_text(self.context)
+        self.assertIn(self.context.db_path, text)
+        self.assertIn(self.context.local_settings_path, text)
+        self.assertIn("ort_plans.db", text)
+        self.assertIn("--data-folder", text)
+
+    def test_open_failure_text_keeps_the_reason(self):
+        text = main_module.open_failure_text(self.context, RuntimeError("磁盘满了"))
+        self.assertIn("磁盘满了", text)
+        self.assertIn(self.context.db_path, text)
+
+    def test_report_writes_the_log_without_a_logger(self):
+        self.assertEqual(2, fatal.report("没有找到数据库", "正文：DATA", self.temp_dir))
+        text = compat.read_text(os.path.join(self.temp_dir, "Logs", "ort_xp.log"))
+        self.assertIn("[ERROR]", text)
+        self.assertIn("没有找到数据库：正文：DATA", text)
+
+    def test_report_never_raises_when_the_log_is_unwritable(self):
+        self.assertEqual(2, fatal.report("标题", "正文", os.path.join(self.temp_dir, "no", "such", "dir")))
+
+    def test_dialog_switch_follows_the_env_var(self):
+        os.environ[fatal.NO_DIALOG_ENV] = "1"
+        try:
+            self.assertFalse(fatal.dialogs_enabled())
+        finally:
+            os.environ.pop(fatal.NO_DIALOG_ENV, None)
+        fatal.set_dialogs_enabled(True)
+        self.assertTrue(fatal.dialogs_enabled())
+
+    def test_first_run_finds_database_in_folder_or_its_data_subdir(self):
+        self.assertIsNone(first_run.find_database_folder(self.temp_dir))
+        self.assertIsNone(first_run.find_database_folder(""))
+        empty = os.path.join(self.temp_dir, "empty")
+        compat.ensure_dir(empty)
+        self.assertIsNone(first_run.find_database_folder(empty))
+
+        data_dir = os.path.join(self.temp_dir, "Data")
+        compat.ensure_dir(data_dir)
+        compat.write_text(os.path.join(data_dir, "ort_plans.db"), "")
+        # 用户选到主程序目录（bin\Debug）时，要能自己往下找一层 Data
+        self.assertEqual(data_dir, first_run.find_database_folder(self.temp_dir))
+        self.assertEqual(data_dir, first_run.find_database_folder(data_dir))
+
+        compat.write_text(os.path.join(self.temp_dir, "ort_plans.db"), "")
+        self.assertEqual(self.temp_dir, first_run.find_database_folder(self.temp_dir))
+
+    def test_no_picker_when_the_folder_was_given_or_dialogs_are_off(self):
+        explicit = argparse.Namespace(data_folder="Z:\\ORTData")
+        self.assertIsNone(main_module.choose_data_folder(self.context, explicit, "原因"))
+        implicit = argparse.Namespace(data_folder=None)
+        self.assertIsNone(main_module.choose_data_folder(self.context, implicit, "原因"))
+
+    def test_headless_main_reports_missing_database_and_creates_nothing(self):
+        missing = os.path.join(self.temp_dir, "nope")
+        code = main_module.main(
+            ["--app-dir", self.temp_dir, "--data-folder", missing, "--no-dialog"]
+        )
+        self.assertEqual(2, code)
+        # 关键：不能因为「连得上一个空库」就把程序放进去，也不能凭空造一个库出来
+        self.assertFalse(os.path.isfile(os.path.join(missing, "ort_plans.db")))
+        text = compat.read_text(os.path.join(self.temp_dir, "Logs", "ort_xp.log"))
+        self.assertIn("没有找到数据库", text)
 
 
 class SourceCompatibilityTests(unittest.TestCase):
