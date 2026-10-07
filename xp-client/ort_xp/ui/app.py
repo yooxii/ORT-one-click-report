@@ -157,12 +157,13 @@ class LoginDialog(object):
 
         ttk.Label(frame, text="用户名").grid(row=2, column=0, sticky="e", padx=(0, 8), pady=4)
         self.username = tk.StringVar()
-        ttk.Entry(frame, textvariable=self.username, width=28).grid(row=2, column=1, sticky="we", pady=4)
+        username_entry = ttk.Entry(frame, textvariable=self.username, width=28)
+        username_entry.grid(row=2, column=1, sticky="we", pady=4)
 
         ttk.Label(frame, text="密码").grid(row=3, column=0, sticky="e", padx=(0, 8), pady=4)
         self.password = tk.StringVar()
-        entry = ttk.Entry(frame, textvariable=self.password, show="*", width=28)
-        entry.grid(row=3, column=1, sticky="we", pady=4)
+        password_entry = ttk.Entry(frame, textvariable=self.password, show="*", width=28)
+        password_entry.grid(row=3, column=1, sticky="we", pady=4)
 
         self.remember = tk.BooleanVar(value=False)
         ttk.Checkbutton(frame, text="记住登录（本机 DPAPI 加密）", variable=self.remember).grid(
@@ -179,9 +180,9 @@ class LoginDialog(object):
             self.username.set(remembered[0])
             self.password.set(remembered[1])
             self.remember.set(True)
-            entry.focus_set()
+            password_entry.focus_set()
         else:
-            self.username.focus_set()
+            username_entry.focus_set()
 
         self.window.bind("<Return>", lambda event: self._login())
         self.window.bind("<Escape>", lambda event: self._cancel())
