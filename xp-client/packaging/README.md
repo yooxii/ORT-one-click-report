@@ -4,9 +4,11 @@
 
 PyInstaller 的 Windows 启动器在 3.3 版本时把最低目标系统提到了 Vista 以上，
 **3.3.1 才重新支持 XP 目标**；现代版本（4.x/5.x/6.x）明确要求 Windows 8+。
-XP 上可用的最后一个 CPython 是 3.4.10（3.5 起官方不再支持 XP）。
+XP 上可用的最后一个 CPython 系列是 **3.4**（3.5 起改用 VS2015 的 UCRT，不支持 XP）。
+注意 `python-3.4.10.exe` 并不存在：3.4.5 之后 python.org 只发源码包，
+带 Windows 安装包的最后一版是 **3.4.4**（`python-3.4.4.msi`），本项目的打包机就用它。
 
-因此：**Python 3.4.10（32 位）+ PyInstaller 3.3.1** 是唯一组合。
+因此：**Python 3.4.4（32 位）+ PyInstaller 3.3.1** 是唯一组合。
 
 ## 构建
 
@@ -22,7 +24,13 @@ D:\Python34-32\python.exe -m pip install "pyinstaller==3.3.1"
 
 ## 部署到 XP 机器
 
-1. 把整个 `ORT-XP` 目录拷到 XP 机器（例如 `C:\ORT-XP`）。
+> **硬性要求：程序目录必须是纯 ASCII 路径（例如 `C:\ORT-XP`）。**
+> Windows 下模块加载器用 **ANSI 代码页**编码路径：路径里出现该代码页表示不了的字符
+> （例如本机 cp950 繁体环境下，仓库名里的简体「一键报告」），导入 tkinter 时就会以
+> `UnicodeEncodeError` 崩掉。程序启动时会先自检，遇到这种路径会弹框提示并要求换路径
+> （`--selftest` 时以退出码 2 结束）。
+
+1. 把整个 `ORT-XP` 目录拷到 XP 机器，例如 `C:\ORT-XP`。
 2. 双击 `ORT-XP.exe`；首次运行会提示选择数据文件夹（应与主程序一致）。
    也可以在 `ORT-XP\Data\local_settings.json` 里预置：
 
@@ -32,8 +40,24 @@ D:\Python34-32\python.exe -m pip install "pyinstaller==3.3.1"
 
    或设环境变量 `ORT_XP_DATA_FOLDER`。
 3. 共享目录必须映射成盘符（SQLite 打不开 `\\服务器\共享\...`）。
-4. 若提示缺少 `msvcr100.dll`：把 Python 3.4 安装目录下的 `msvcr100.dll`
-   拷进 `ORT-XP` 目录（正常情况下 PyInstaller 会自动带上）。
+4. `msvcr100.dll`（32 位 VC++2010 运行库）**已经打进包里**（约 774 KB，Microsoft 签名），
+   XP 机器上不需要另装运行库。
+5. 排错：窗口子系统看不到控制台，异常会写进 `ORT-XP\Logs\fatal_<时间戳>.log`（UTF-8）并弹框提示；
+   普通运行日志在同目录 `ort_xp.log`。
+
+## 已在本机验证过的内容（2026-10-07）
+
+```
+Python 3.4.4 (32 bit) + PyInstaller 3.3.1  →  dist\ORT-XP（15.3 MB，917 个文件）
+ORT-XP.exe 的 PE 头 MajorOperatingSystemVersion = 5.1   ← 启动器面向 Windows XP
+ORT-XP.exe --version         → 退出码 0，中文输出正常
+ORT-XP.exe --selftest        → 退出码 0，14 项检查全通过（含 DPAPI 往返、SQLite 3.8.11、
+                               OpenSSL 1.0.2d + PROTOCOL_TLSv1_2、真实库 20 张表）
+ORT-XP.exe --check-plans-email → 退出码 0（演练，68 条候选计划，未发信）
+在含简体中文的路径下运行 → 退出码 2，并提示「请把程序放到纯英文/数字路径」
+```
+
+仍然待办：在**真实 XP 机器（或 XP 虚拟机）**上跑一遍（含界面登录与编辑操作）。
 
 ## 已知打包注意事项
 

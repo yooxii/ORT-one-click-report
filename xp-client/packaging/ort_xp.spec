@@ -1,29 +1,50 @@
 # -*- mode: python -*-
-# ORT 实验室管理系统 · XP 精简客户端 —— PyInstaller 配置
+# ORT lab management system - XP lite client - PyInstaller spec
 #
-# 必须用 PyInstaller 3.3.1–3.4（XP 可用的最后一批启动器）与 Python 3.4.10（32 位）执行：
+# Build (PyInstaller 3.3.1-3.4 + Python 3.4.x 32-bit only):
 #     python -m PyInstaller packaging\ort_xp.spec --noconfirm --clean --distpath dist --workpath build
 #
-# 刻意用 onedir（不是 onefile）：onefile 每次启动都解压到 %TEMP%，
-# 在 XP 的老磁盘与老杀软上既慢又容易被拦。
+# KEEP THIS FILE ASCII-ONLY.
+# PyInstaller 3.3.1 reads the spec with the *locale* encoding (cp950 on a zh-TW/zh-CN
+# machine), so any non-ASCII byte here aborts the build with UnicodeDecodeError.
+# Chinese notes belong in packaging/README.md, not in this file.
+#
+# This spec targets the PyInstaller 3.x spec API: COLLECT needs a.zipfiles, and the
+# SPEC variable does not exist yet (only SPECPATH). Modern PyInstaller 4+ cannot use it.
+#
+# onedir on purpose: onefile unpacks to %TEMP% on every start (slow on XP, AV-prone).
 
 import os
 
-spec_dir = os.path.dirname(os.path.abspath(SPEC))
+try:
+    _spec_file = SPEC  # noqa: F821  (PyInstaller 4+)
+except NameError:
+    _spec_file = os.path.join(SPECPATH, "ort_xp.spec")  # noqa: F821  (PyInstaller 3.x)
+
+spec_dir = os.path.dirname(os.path.abspath(_spec_file))
 project_dir = os.path.dirname(spec_dir)
 
 block_cipher = None
 
 a = Analysis(
-    [os.path.join(project_dir, "ort_xp", "__main__.py")],
+    [os.path.join(project_dir, "packaging", "entry_xp.py")],
     pathex=[project_dir],
     binaries=[],
     datas=[],
-    hiddenimports=["tkinter", "tkinter.ttk", "tkinter.messagebox", "sqlite3", "smtplib", "ssl", "email.mime.text"],
+    hiddenimports=[
+        "tkinter",
+        "tkinter.ttk",
+        "tkinter.messagebox",
+        "sqlite3",
+        "smtplib",
+        "ssl",
+        "email.mime.text",
+    ],
     hookspath=[],
     runtime_hooks=[],
     excludes=[
-        # 本范围用不到的重量级模块，排除后包更小、启动更快
+        # Nothing outside the standard library is used; drop the heavy optional stuff
+        # so the bundle stays small and starts fast on XP.
         "numpy",
         "pandas",
         "matplotlib",
@@ -50,7 +71,6 @@ exe = EXE(
     exclude_binaries=True,
     name="ORT-XP",
     debug=False,
-    bootloader_ignore_signals=False,
     strip=False,
     upx=False,
     console=False,

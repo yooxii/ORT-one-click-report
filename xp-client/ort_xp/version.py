@@ -9,7 +9,7 @@ APP_FOLDER_NAME = "ORT实验室管理系统-XP"
 VERSION = "0.2.0"
 
 #: 目标机环境（写进部署说明与日志）
-TARGET_PYTHON = "3.4.10"
+TARGET_PYTHON = "3.4.4"
 TARGET_OS = "Windows XP SP3 (32 位)"
 
 #: 当前所处的里程碑

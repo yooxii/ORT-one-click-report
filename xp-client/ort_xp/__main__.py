@@ -43,6 +43,26 @@ def main(argv=None):
         return EXIT_FATAL
 
     context = context_module.AppContext(app_directory=args.app_dir, data_folder=args.data_folder)
+
+    # 路径检查：Windows 上模块加载器会用 ANSI 代码页编码路径，中文（尤其是本机 cp950 编不了的
+    # 简体字）会让 tkinter/PyInstaller 加载失败，而且报错很难懂。这里提前给一句人话提示。
+    if not compat.can_encode_path(context.app_directory):
+        message = (
+            "程序所在的目录含有当前系统编码（%s）无法表示的字符：\n%s\n\n"
+            "请把整个程序目录放到纯英文/数字路径下再运行，例如 C:\\ORT-XP。"
+            % (compat.filesystem_encoding(), context.app_directory)
+        )
+        compat.say_err(message)
+        if args.selftest or args.check_plans_email:
+            return EXIT_FATAL
+        try:
+            from . import fatal
+
+            fatal.show_message("程序路径不支持", message)
+        except Exception:
+            pass
+        return EXIT_FATAL
+
     logging_setup.get_logger().info("启动：%s v%s（%s）" % (APP_NAME, VERSION, BUILD_STAGE))
 
     if args.selftest:
@@ -78,4 +98,11 @@ def main(argv=None):
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        sys.exit(main())
+    except SystemExit:
+        raise
+    except Exception:
+        from . import fatal
+
+        sys.exit(fatal.handle(*sys.exc_info()))

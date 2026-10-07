@@ -74,6 +74,7 @@ KEYWORD_RULES = (
 
 _JoinedStr = getattr(ast, "JoinedStr", None)
 _NamedExpr = getattr(ast, "NamedExpr", None)
+_AnnAssign = getattr(ast, "AnnAssign", None)
 _AsyncFunctionDef = getattr(ast, "AsyncFunctionDef", None)
 _AsyncFor = getattr(ast, "AsyncFor", None)
 _AsyncWith = getattr(ast, "AsyncWith", None)
@@ -111,7 +112,7 @@ def _check_node(node, findings, filename):
         report(getattr(node, "lineno", 0), "f-string 是 3.6+，请改用 \"{}\".format() 或 %")
     if _NamedExpr is not None and isinstance(node, _NamedExpr):
         report(getattr(node, "lineno", 0), "海象运算符 := 是 3.8+")
-    if isinstance(node, ast.AnnAssign):
+    if _AnnAssign is not None and isinstance(node, _AnnAssign):
         report(node.lineno, "变量注解（x: int = ...）是 3.6+")
     if _AsyncFunctionDef is not None and isinstance(node, _AsyncFunctionDef):
         report(node.lineno, "async def 是 3.5+")

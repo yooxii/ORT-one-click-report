@@ -237,6 +237,26 @@ class CompatTests(unittest.TestCase):
         self.assertEqual("09:05:03", compat.format_dotnet_date(value, "HH:mm:ss"))
         self.assertEqual("26-10-07", compat.format_dotnet_date(value, "yy-MM-dd"))
 
+    def test_path_encoding_guard(self):
+        """Windows 下 ANSI 代码页编不了的路径要让程序提前报错，而不是崩在加载器里。"""
+        self.assertTrue(compat.can_encode_path("C:\\ORT-XP"))
+        self.assertTrue(compat.can_encode_path(""))
+        self.assertTrue(compat.can_encode_path(None))
+        encoding = compat.filesystem_encoding()
+        if compat.is_windows() and encoding.lower() == "mbcs":
+            # 任何 ANSI 代码页都表示不了 emoji
+            self.assertFalse(compat.can_encode_path(u"D:\\\U0001F600"))
+            probe = u"D:\\source\\ORT\u4e00\u952e\u62a5\u544a"  # 含简体「一键报告」
+            try:
+                probe.encode(encoding)
+                expected = True
+            except UnicodeEncodeError:
+                expected = False
+            self.assertEqual(expected, compat.can_encode_path(probe))
+        else:
+            # Python 3.6+ 的 Windows 文件系统编码是 UTF-8，中文路径本来就没问题
+            self.assertTrue(compat.can_encode_path(u"D:\\ORT\u4e00\u952e\u62a5\u544a"))
+
 
 class DatabaseTests(TempDatabaseTest):
     def test_table_and_column_detection(self):

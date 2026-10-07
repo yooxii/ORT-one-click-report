@@ -16,7 +16,7 @@ import datetime
 import tkinter as tk
 from tkinter import messagebox, ttk
 
-from .. import compat
+from .. import compat, fatal
 from ..services import plan_rules
 from ..services import plans as plans_service
 from ..version import APP_NAME, VERSION, BUILD_STAGE, TARGET_OS, TARGET_PYTHON
@@ -51,8 +51,13 @@ class Application(object):
         self.root.title("%s v%s" % (APP_NAME, VERSION))
         self.root.geometry("820x520")
         self.root.minsize(720, 420)
+        # tkinter 回调里的异常默认只打到 stderr（窗口子系统看不到）→ 交给统一兜底
+        self.root.report_callback_exception = self._on_callback_error
         self._apply_default_font()
         self.root.withdraw()
+
+    def _on_callback_error(self, exc_type, exc_value, tb):
+        fatal.handle(exc_type, exc_value, tb, self.context.app_directory)
 
     # ---------------------------------------------------------------- 启动
 

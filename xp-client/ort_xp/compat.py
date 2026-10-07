@@ -35,7 +35,7 @@ _FALSE_TEXT = ("false", "0", "no", "n", "off", "")
 
 
 def python_version_text():
-    """返回 "3.4.10" 这样的版本字符串。"""
+    """返回 "3.4.4" 这样的版本字符串。"""
     v = sys.version_info
     return "%d.%d.%d" % (v[0], v[1], v[2])
 
@@ -48,7 +48,7 @@ def check_interpreter():
     """
     v = sys.version_info[:2]
     if v < MIN_PYTHON:
-        return False, "需要 Python %d.%d 及以上（XP 目标机请用 3.4.10 32 位），当前 %s" % (
+        return False, "需要 Python %d.%d 及以上（XP 目标机请用 3.4.x 32 位），当前 %s" % (
             MIN_PYTHON[0],
             MIN_PYTHON[1],
             python_version_text(),
@@ -87,12 +87,40 @@ def os_description():
         return "Windows"
 
 
+def filesystem_encoding():
+    """文件系统编码：Windows 上是 ``mbcs``（系统 ANSI 代码页），其它平台为 utf-8。"""
+    return sys.getfilesystemencoding() or "ascii"
+
+
+def can_encode_path(path):
+    """路径能否用文件系统编码表示。
+
+    Windows 下 ``mbcs`` 就是 ANSI 代码页。本机是 cp950（繁体），程序目录里只要出现
+    简体字（例如仓库名「ORT一键报告」），tkinter / PyInstaller 的模块加载器在按 ANSI
+    编码路径时就会抛 ``UnicodeEncodeError``，程序直接起不来。所以启动前先检查并给出人话提示。
+    """
+    if not path:
+        return True
+    try:
+        path.encode(filesystem_encoding())
+        return True
+    except (UnicodeEncodeError, LookupError):
+        return False
+
+
 def python_bits():
     """返回 '32' 或 '64'。"""
     return "64" if sys.maxsize > 2 ** 32 else "32"
 
 
 # --------------------------------------------------------------------------- 输出
+
+
+def _is_tty(stream):
+    try:
+        return bool(stream.isatty())
+    except Exception:
+        return True
 
 
 def _write_safe(stream, text):
@@ -102,6 +130,18 @@ def _write_safe(stream, text):
     try:
         stream.write(line)
     except (UnicodeEncodeError, UnicodeDecodeError):
+        # 重定向到文件/管道时直接写 UTF-8 字节，日志里保留中文（`--selftest` 落盘、
+        # 窗口子系统的重定向输出都是这种情况）；交互式控制台（本机 cp950）则退化为转义，
+        # 避免乱码或二次抛错。
+        if not _is_tty(stream):
+            buffer = getattr(stream, "buffer", None)
+            if buffer is not None:
+                try:
+                    buffer.write(line.encode("utf-8"))
+                    buffer.flush()
+                    return
+                except Exception:
+                    pass
         try:
             encoding = getattr(stream, "encoding", None) or "ascii"
             stream.write(line.encode(encoding, "backslashreplace").decode(encoding, "replace"))

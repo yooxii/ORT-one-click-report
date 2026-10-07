@@ -348,10 +348,14 @@ def verify_edit_services(report, db, repos):
     )
 
     next_order = requisitions.next_return_rt_order(datetime.datetime(2026, 10, 7))
+    # 当月已有记录时序号会往后排 → 按「当月最大值 + 1」算出期望值，而不是写死 01
+    existing_orders = requisitions.existing_return_rt_orders(datetime.datetime(2026, 10, 7))
+    expected_seq = plan_rules.max_trailing_sequence(existing_orders, r"^RTAH2610(\d+)$") + 1
+    expected_order = "RTAH2610%s" % plan_rules.format_sequence(expected_seq)
     report.check(
         "领退：回线RT工令自动编号（当月 MAX+1）",
-        next_order.startswith("RTAH2610") and next_order.endswith("01"),
-        next_order,
+        next_order == expected_order,
+        "%s（当月已有 %d 条，期望 %s）" % (next_order, len(existing_orders), expected_order),
     )
 
     created = requisitions.save(
@@ -392,10 +396,13 @@ def verify_edit_services(report, db, repos):
 
     stages = repos.lookups.stages()
     stage = stages[0] if stages else "DVT"
+    # 测试项目可能是字典表（有值时服务会做字典校验）→ 优先用字典里的第一项
+    test_items = repos.lookups.test_items()
+    test_item = test_items[0] if test_items else "热冲击（XP 编辑验证）"
     plan_created = plan_service.save(
         {
             "ModelName": "31ABCDEFG7H",
-            "TestItem": "热冲击（XP 编辑验证）",
+            "TestItem": test_item,
             "Stage": stage,
             "Owner": "验证人",
             "StartDate": datetime.datetime(2026, 10, 7),
@@ -418,7 +425,7 @@ def verify_edit_services(report, db, repos):
             {
                 "JobNo": job_no,
                 "ModelName": "31ABCDEFG7H",
-                "TestItem": "热冲击（XP 编辑验证）",
+                "TestItem": test_item,
                 "Stage": stage,
                 "StartDate": datetime.datetime(2026, 10, 7),
                 "Remark": "重复工令",
@@ -434,7 +441,7 @@ def verify_edit_services(report, db, repos):
             {
                 "JobNo": job_no,
                 "ModelName": "31ABCDEFG7H",
-                "TestItem": "热冲击（XP 编辑验证）",
+                "TestItem": test_item,
                 "Stage": stage,
                 "StartDate": datetime.datetime(2026, 10, 7),
                 "Status": "Close",
