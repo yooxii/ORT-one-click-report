@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -2518,7 +2518,7 @@
     <value>点「入库」把单据/数量/日期写入这条领退记录</value>
   </data>
   <data name="Common_CopyHint" xml:space="preserve">
-    <value>可选中复制（Ctrl+C）</value>
+    <value>可选中复制（Ctrl+C），或右键单击直接复制该值</value>
   </data>
   <data name="Msg_NoAssociatedPlan" xml:space="preserve">
     <value>这条领退记录没有找到对应的计划表记录，无法同步更新计划；如需建立计划请用「计划表新增」</value>
@@ -2967,5 +2967,86 @@
   </data>
   <data name="Msg_UserNotFound" xml:space="preserve">
     <value>用户不存在</value>
+  </data>
+  <data name="Msg_ValueCopiedFormat" xml:space="preserve">
+    <value>已复制：{0}</value>
+  </data>
+  <data name="Plans_Menu_BatchReturnFormat" xml:space="preserve">
+    <value>批量回线（{0} 条）</value>
+  </data>
+  <data name="Plans_Menu_BatchStockInFormat" xml:space="preserve">
+    <value>批量入库（{0} 条）</value>
+  </data>
+  <data name="Plans_Menu_BatchDeleteFormat" xml:space="preserve">
+    <value>批量删除（{0} 条）</value>
+  </data>
+  <data name="Plans_ToolTip_BatchDelete" xml:space="preserve">
+    <value>选中多条时批量标记删除（暂存，点「提交保存」后生效）</value>
+  </data>
+  <data name="Plans_Batch_ReturnTitle" xml:space="preserve">
+    <value>批量回线（{0} 条记录）</value>
+  </data>
+  <data name="Plans_Batch_StockInTitle" xml:space="preserve">
+    <value>批量入库（{0} 条记录）</value>
+  </data>
+  <data name="Plans_Batch_DeleteTitle" xml:space="preserve">
+    <value>批量标记删除（{0} 条领退记录）</value>
+  </data>
+  <data name="Plans_Batch_PlanDeleteTitle" xml:space="preserve">
+    <value>批量标记删除（{0} 条计划记录）</value>
+  </data>
+  <data name="Plans_Batch_ReturnHint" xml:space="preserve">
+    <value>选中的领退记录将统一写入下面这个回线日期（暂存，点「提交保存」后生效）；已有回线日期的记录会被覆盖。不满足条件的记录（单体去向为报废）自动跳过，原因见清单「本次结果」列。</value>
+  </data>
+  <data name="Plans_Batch_StockInHint" xml:space="preserve">
+    <value>选中的领退记录将统一写入下面这组入库单据/数量/日期（暂存，点「提交保存」后生效）。不满足条件的记录（单体去向为报废、已报废、尚未回线）自动跳过，原因见清单「本次结果」列。</value>
+  </data>
+  <data name="Plans_Batch_DeleteHint" xml:space="preserve">
+    <value>选中的领退记录将全部标记删除（暂存，点「提交保存」后生效）；删除前请核对清单里的信息。</value>
+  </data>
+  <data name="Plans_Batch_PlanDeleteHint" xml:space="preserve">
+    <value>选中的计划记录将全部标记删除（暂存，点「提交保存」后生效）；删除前请核对清单里的信息。</value>
+  </data>
+  <data name="Plans_Batch_SummaryFormat" xml:space="preserve">
+    <value>共选中 {0} 条｜可执行 {1} 条｜跳过 {2} 条｜机种：{3}</value>
+  </data>
+  <data name="Plans_Batch_ModelItemFormat" xml:space="preserve">
+    <value>{0} ×{1}</value>
+  </data>
+  <data name="Plans_Batch_ModelSeparator" xml:space="preserve">
+    <value>、</value>
+  </data>
+  <data name="Plans_Batch_ResultHeader" xml:space="preserve">
+    <value>本次结果</value>
+  </data>
+  <data name="Plans_Batch_StatusOkReturnFormat" xml:space="preserve">
+    <value>将写入回线日期 {0}</value>
+  </data>
+  <data name="Plans_Batch_StatusOkStockInFormat" xml:space="preserve">
+    <value>将写入入库 {0}</value>
+  </data>
+  <data name="Plans_Batch_StatusOkDelete" xml:space="preserve">
+    <value>将标记删除（暂存）</value>
+  </data>
+  <data name="Plans_Batch_StatusSkipFormat" xml:space="preserve">
+    <value>跳过：{0}</value>
+  </data>
+  <data name="Plans_Batch_NotFilled" xml:space="preserve">
+    <value>未填</value>
+  </data>
+  <data name="Plans_Batch_CopyHint" xml:space="preserve">
+    <value>右键单击任一单元格即复制该值</value>
+  </data>
+  <data name="Plans_Msg_BatchReturnAppliedFormat" xml:space="preserve">
+    <value>批量回线：已登记 {0} 条，跳过 {1} 条（暂存，点「提交保存」后生效）</value>
+  </data>
+  <data name="Plans_Msg_BatchStockInAppliedFormat" xml:space="preserve">
+    <value>批量入库：已登记 {0} 条，跳过 {1} 条（{2}；暂存，点「提交保存」后生效）</value>
+  </data>
+  <data name="Plans_Msg_BatchDeleteAppliedFormat" xml:space="preserve">
+    <value>批量标记删除：已标记 {0} 条（暂存，点「提交保存」后生效）</value>
+  </data>
+  <data name="Plans_Msg_BatchNoneApplied" xml:space="preserve">
+    <value>所选记录都不满足条件，未执行任何操作</value>
   </data>
 </root>

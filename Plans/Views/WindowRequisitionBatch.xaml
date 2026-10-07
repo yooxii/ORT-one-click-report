@@ -1,0 +1,152 @@
+<Window x:Class="ORT一键报告.Plans.Views.WindowRequisitionBatch" Background="{DynamicResource WindowBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:lex="http://wpflocalizeextension.codeplex.com"
+        xmlns:conv="clr-namespace:ORT一键报告.Converters"
+        mc:Ignorable="d"
+        Width="1180" Height="640" MinWidth="900" MinHeight="420" ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner">
+
+    <Window.Resources>
+        <conv:SingleLineTextConverter x:Key="SingleLine"/>
+        <!-- 清单单元格：内容居中、无边框，长文本省略号显示并在悬停时给出完整值 -->
+        <Style x:Key="BatchCell" TargetType="DataGridCell">
+            <Setter Property="Padding" Value="2,0"/>
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+        </Style>
+        <Style x:Key="BatchText" TargetType="TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="TextAlignment" Value="Center"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+            <Setter Property="ToolTip" Value="{Binding RelativeSource={RelativeSource Self}, Path=Text}"/>
+        </Style>
+        <!-- 本次结果列：可执行绿色（与「已结案」同色），跳过用红字说明原因 -->
+        <Style x:Key="BatchStatusText" TargetType="TextBlock" BasedOn="{StaticResource BatchText}">
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Eligible}" Value="False">
+                    <Setter Property="Foreground" Value="{DynamicResource StatusPendingBrush}"/>
+                    <Setter Property="FontWeight" Value="Normal"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Eligible}" Value="True">
+                    <Setter Property="Foreground" Value="{DynamicResource StatusClosedBrush}"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!--操作说明（按批量类型在代码里切换文字）-->
+        <TextBlock x:Name="txt_hint" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}"/>
+
+        <!--汇总：选中条数、可执行/跳过条数、机种分布-->
+        <Border Grid.Row="1" Margin="0,6,0,6" Padding="8,4" CornerRadius="{DynamicResource CornerRadiusSmall}"
+                Background="{DynamicResource CardBackgroundBrush}">
+            <TextBlock x:Name="txt_summary" TextWrapping="Wrap" FontWeight="Bold"/>
+        </Border>
+
+        <!--清单：选中记录的全部关键信息（右键单击任一单元格即复制该值）-->
+        <DataGrid x:Name="dg_items" Grid.Row="2"
+                  AutoGenerateColumns="False" CanUserAddRows="False" CanUserSortColumns="False"
+                  CanUserReorderColumns="True" IsReadOnly="True"
+                  HeadersVisibility="Column" GridLinesVisibility="All"
+                  SelectionMode="Single" SelectionUnit="Cell"
+                  ClipboardCopyMode="None" FrozenColumnCount="1"
+                  CellStyle="{StaticResource BatchCell}"
+                  VirtualizingPanel.IsVirtualizing="True">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="{lex:Loc Plans_Batch_ResultHeader}" Binding="{Binding Status}"
+                                    SortMemberPath="Status" Width="260"
+                                    ElementStyle="{StaticResource BatchStatusText}"/>
+                <DataGridTextColumn Header="{lex:Loc Plans_RequisitionDateTC}" SortMemberPath="RequisitionDate" Width="90"
+                                    Binding="{Binding Item.RequisitionDate, StringFormat={}{0:yyyy/M/d}}" ElementStyle="{StaticResource BatchText}"/>
+                <DataGridTextColumn Header="{lex:Loc Plans_RequisitionDocNo}" SortMemberPath="RequisitionNo" Width="120"
+                                    Binding="{Binding Item.RequisitionNo}" ElementStyle="{StaticResource BatchText}"/>
+                <DataGridTextColumn Header="{lex:Loc Plans_ModelNameTC}" SortMemberPath="ModelName" Width="130"
+                                    Binding="{Binding Item.ModelName}" ElementStyle="{StaticResource BatchText}"/>
+                <DataGridTextColumn Header="{lex:Loc Plans_IssueQty}" SortMemberPath="OutQty" Width="75"
+                                    Binding="{Binding Item.OutQty}" ElementStyle="{StaticResource BatchText}"/>
+                <DataGridTextColumn Header="{lex:Loc Plans_Disposition}" SortMemberPath="Disposition" Width="75"
+                                    Binding="{Binding Item.Disposition}" ElementStyle="{StaticResource BatchText}"/>
+                <DataGridTextColumn Header="{lex:Loc Plans_SN}" SortMemberPath="SN" Width="180"
+                                    Binding="{Binding Item.SN, Converter={StaticResource SingleLine}}" ElementStyle="{StaticResource BatchText}"/>
+                <DataGridTextColumn Header="{lex:Loc Plans_DC}" SortMemberPath="DC" Width="50"
+                                    Binding="{Binding Item.DC}" ElementStyle="{StaticResource BatchText}"/>
+                <DataGridTextColumn Header="{lex:Loc Plans_REV}" SortMemberPath="Rev" Width="50"
+                                    Binding="{Binding Item.Rev}" ElementStyle="{StaticResource BatchText}"/>
+                <DataGridTextColumn Header="{lex:Loc Plans_WorkOrder}" SortMemberPath="WorkOrder" Width="140"
+                                    Binding="{Binding Item.WorkOrder}" ElementStyle="{StaticResource BatchText}"/>
+                <DataGridTextColumn Header="{lex:Loc Plans_ReturnRTOrder}" SortMemberPath="ReturnRtOrder" Width="110"
+                                    Binding="{Binding Item.ReturnRtOrder}" ElementStyle="{StaticResource BatchText}"/>
+                <DataGridTextColumn Header="{lex:Loc Plans_ReturnQty}" SortMemberPath="ReturnQty" Width="75"
+                                    Binding="{Binding Item.ReturnQty}" ElementStyle="{StaticResource BatchText}"/>
+                <DataGridTextColumn Header="{lex:Loc Plans_Line}" SortMemberPath="LineNo" Width="55"
+                                    Binding="{Binding Item.LineNo}" ElementStyle="{StaticResource BatchText}"/>
+                <DataGridTextColumn Header="{lex:Loc Plans_ReturnDate}" SortMemberPath="ReturnDate" Width="90"
+                                    Binding="{Binding Item.ReturnDate, StringFormat={}{0:yyyy/M/d}}" ElementStyle="{StaticResource BatchText}"/>
+                <DataGridTextColumn Header="{lex:Loc Plans_StockInNo}" SortMemberPath="StockInNo" Width="110"
+                                    Binding="{Binding Item.StockInNo}" ElementStyle="{StaticResource BatchText}"/>
+                <DataGridTextColumn Header="{lex:Loc Plans_StockInQty}" SortMemberPath="StockInQty" Width="75"
+                                    Binding="{Binding Item.StockInQty}" ElementStyle="{StaticResource BatchText}"/>
+                <DataGridTextColumn Header="{lex:Loc Plans_StockInDate}" SortMemberPath="StockInDate" Width="90"
+                                    Binding="{Binding Item.StockInDate, StringFormat={}{0:yyyy/M/d}}" ElementStyle="{StaticResource BatchText}"/>
+                <DataGridTextColumn Header="{lex:Loc Plans_ScrapNo}" SortMemberPath="ScrapNo" Width="110"
+                                    Binding="{Binding Item.ScrapNo}" ElementStyle="{StaticResource BatchText}"/>
+                <DataGridTextColumn Header="{lex:Loc Plans_ScrapQty}" SortMemberPath="ScrapQty" Width="75"
+                                    Binding="{Binding Item.ScrapQty}" ElementStyle="{StaticResource BatchText}"/>
+                <DataGridTextColumn Header="{lex:Loc Plans_ScrapDate}" SortMemberPath="ScrapDate" Width="90"
+                                    Binding="{Binding Item.ScrapDate, StringFormat={}{0:yyyy/M/d}}" ElementStyle="{StaticResource BatchText}"/>
+                <DataGridTextColumn Header="{lex:Loc Admin_Remark}" SortMemberPath="Remark" Width="150"
+                                    Binding="{Binding Item.Remark, Converter={StaticResource SingleLine}}" ElementStyle="{StaticResource BatchText}"/>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <!--要写入的值：回线只用日期；入库用单据/数量/日期（按批量类型在代码里切换可见性）-->
+        <WrapPanel x:Name="panel_inputs" Grid.Row="3" Orientation="Horizontal" Margin="0,10,0,0">
+            <StackPanel x:Name="panel_return" Orientation="Horizontal">
+                <Label Content="{lex:Loc Plans_ReturnDate}" VerticalContentAlignment="Center"
+                       Style="{StaticResource RequiredFieldLabel}"/>
+                <DatePicker x:Name="dp_returnDate" Width="150" Margin="5,0,0,0" VerticalContentAlignment="Center"
+                            SelectedDateChanged="BatchInput_Changed"/>
+            </StackPanel>
+            <StackPanel x:Name="panel_stockin" Orientation="Horizontal">
+                <Label Content="{lex:Loc Plans_StockInNo}" VerticalContentAlignment="Center"
+                       Style="{StaticResource RequiredFieldLabel}"/>
+                <TextBox x:Name="txt_stockInNo" Width="150" Margin="5,0,10,0" VerticalContentAlignment="Center"
+                         TextChanged="BatchInput_Changed"/>
+                <Label Content="{lex:Loc Plans_StockInQty}" VerticalContentAlignment="Center"
+                       Style="{StaticResource RequiredFieldLabel}"/>
+                <TextBox x:Name="txt_stockInQty" Width="70" Margin="5,0,10,0" VerticalContentAlignment="Center"
+                         TextChanged="BatchInput_Changed"/>
+                <Label Content="{lex:Loc Plans_StockInDate}" VerticalContentAlignment="Center"
+                       Style="{StaticResource RequiredFieldLabel}"/>
+                <DatePicker x:Name="dp_stockInDate" Width="150" Margin="5,0,0,0" VerticalContentAlignment="Center"
+                            SelectedDateChanged="BatchInput_Changed"/>
+            </StackPanel>
+        </WrapPanel>
+
+        <Grid Grid.Row="4" Margin="0,12,0,0">
+            <TextBlock Text="{lex:Loc Plans_Batch_CopyHint}" VerticalAlignment="Center" TextWrapping="Wrap"
+                       Foreground="{DynamicResource TextSecondaryBrush}"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button x:Name="btn_confirm" Width="110" Click="Btn_Confirm_Click" IsDefault="True"/>
+                <Button Content="{lex:Loc Common_Cancel}" Width="90" Margin="10,0,0,0" Click="Btn_Cancel_Click" IsCancel="True"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>

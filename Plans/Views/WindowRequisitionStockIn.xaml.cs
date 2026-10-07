@@ -1,5 +1,6 @@
 using ORT一键报告.Models;
 using ORT一键报告.Services;
+using ORT一键报告.Utils;
 using System;
 using System.Windows;
 
@@ -36,6 +37,8 @@ namespace ORT一键报告.Plans.Views
             txt_stockInNo.Text = req?.StockInNo ?? "";
             txt_stockInQty.Text = req?.StockInQty ?? "";
             dp_stockInDate.SelectedDate = req?.StockInDate ?? DateTime.Today;
+            // 上面几个只读值：右键单击即复制该值（入库单据/数量/日期是输入框，保持系统默认行为）
+            RightClickCopy.AttachReadOnlyText(this);
         }
 
         private void Btn_StockIn_Click(object sender, RoutedEventArgs e)

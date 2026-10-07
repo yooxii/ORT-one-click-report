@@ -1,5 +1,6 @@
 using ORT一键报告.Models;
 using ORT一键报告.Services;
+using ORT一键报告.Utils;
 using System;
 using System.Windows;
 
@@ -25,6 +26,8 @@ namespace ORT一键报告.Plans.Views
             txt_sampleSize.Text = plan?.SampleSize ?? "";
             // 日期默认当前日期；该计划已有归还日期时沿用，方便修正
             dp_returnDate.SelectedDate = plan?.UnitReturnDate ?? DateTime.Today;
+            // 上面几个只读值：右键单击即复制该值
+            RightClickCopy.AttachReadOnlyText(this);
         }
 
         private void Btn_Return_Click(object sender, RoutedEventArgs e)

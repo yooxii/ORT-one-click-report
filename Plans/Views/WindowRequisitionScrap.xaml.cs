@@ -73,6 +73,9 @@ namespace ORT一键报告.Plans.Views
             dp_scrapDate.SelectedDate = req?.ScrapDate ?? DateTime.Today;
             txt_hint.Text = LanguageService.Get(needsReview ? "ReqScrap_HintReview" : "ReqScrap_Hint");
 
+            // 上面几个只读值：右键单击即复制该值（报废单据/数量与序列号清单是输入区，保持系统默认行为）
+            RightClickCopy.AttachReadOnlyText(this);
+
             LoadRequisitionSns();
         }
 

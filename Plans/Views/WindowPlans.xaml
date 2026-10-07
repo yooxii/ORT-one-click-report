@@ -204,12 +204,14 @@
                     <DataGrid.ContextMenu>
                         <ContextMenu>
                             <MenuItem Header="{lex:Loc Plans_EditDialog}" Click="Menu_EditRequisition_Click"/>
-                            <MenuItem Header="{lex:Loc Plans_MarkDelete}" Click="Menu_DeleteRequisition_Click"/>
+                            <MenuItem x:Name="menu_req_delete" Header="{lex:Loc Plans_MarkDelete}" Click="Menu_DeleteRequisition_Click"
+                                      ToolTip="{lex:Loc Plans_ToolTip_BatchDelete}"/>
                             <Separator/>
-                            <!--回线/入库：只在领退表右键菜单里（写入该条记录，需点「提交保存」才入库）-->
-                            <MenuItem Header="{lex:Loc Plans_Menu_ReturnLine}" Click="Menu_RequisitionReturn_Click"
+                            <!--回线/入库：只在领退表右键菜单里（写入该条记录，需点「提交保存」才入库）；
+                                多选时表头由代码改为「批量回线（N 条）」，动作对选中的整批记录生效-->
+                            <MenuItem x:Name="menu_req_return" Header="{lex:Loc Plans_Menu_ReturnLine}" Click="Menu_RequisitionReturn_Click"
                                       ToolTip="{lex:Loc ReqReturn_Hint}"/>
-                            <MenuItem Header="{lex:Loc Plans_Menu_StockIn}" Click="Menu_RequisitionStockIn_Click"
+                            <MenuItem x:Name="menu_req_stockin" Header="{lex:Loc Plans_Menu_StockIn}" Click="Menu_RequisitionStockIn_Click"
                                       ToolTip="{lex:Loc ReqStockIn_Hint}"/>
                             <MenuItem Header="{lex:Loc Plans_Menu_Scrap}" Click="Menu_RequisitionScrap_Click"
                                       ToolTip="{lex:Loc ReqScrap_Hint}"/>
@@ -371,7 +373,8 @@
                     <DataGrid.ContextMenu>
                         <ContextMenu>
                             <MenuItem Header="{lex:Loc Plans_EditDialog}" Click="Menu_EditPlan_Click"/>
-                            <MenuItem Header="{lex:Loc Plans_MarkDelete}" Click="Menu_DeletePlan_Click"/>
+                            <MenuItem x:Name="menu_plan_delete" Header="{lex:Loc Plans_MarkDelete}" Click="Menu_DeletePlan_Click"
+                                      ToolTip="{lex:Loc Plans_ToolTip_BatchDelete}"/>
                             <Separator/>
                             <MenuItem Header="{lex:Loc Plans_OpenReportFolder}" Click="Menu_OpenReportFolder_Click" ToolTip="{lex:Loc Plans_ToolTip_OpenFolder}"/>
                             <MenuItem Header="{lex:Loc Plans_OpenOverview}" Click="Menu_OpenReportOverview_Click" ToolTip="{lex:Loc Plans_ToolTip_OpenOverview}"/>

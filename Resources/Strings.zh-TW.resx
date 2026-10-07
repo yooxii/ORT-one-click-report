@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -2518,7 +2518,7 @@
     <value>點「入庫」把單據/數量/日期寫入這筆領退記錄</value>
   </data>
   <data name="Common_CopyHint" xml:space="preserve">
-    <value>可選取複製（Ctrl+C）</value>
+    <value>可選取複製（Ctrl+C），或按右鍵直接複製該值</value>
   </data>
   <data name="Msg_NoAssociatedPlan" xml:space="preserve">
     <value>這筆領退記錄沒有找到對應的計劃表記錄，無法同步更新計劃；如需建立計劃請用「計劃表新增」</value>
@@ -2967,5 +2967,86 @@
   </data>
   <data name="Msg_UserNotFound" xml:space="preserve">
     <value>使用者不存在</value>
+  </data>
+  <data name="Msg_ValueCopiedFormat" xml:space="preserve">
+    <value>已複製：{0}</value>
+  </data>
+  <data name="Plans_Menu_BatchReturnFormat" xml:space="preserve">
+    <value>批量回線（{0} 條）</value>
+  </data>
+  <data name="Plans_Menu_BatchStockInFormat" xml:space="preserve">
+    <value>批量入庫（{0} 條）</value>
+  </data>
+  <data name="Plans_Menu_BatchDeleteFormat" xml:space="preserve">
+    <value>批量刪除（{0} 條）</value>
+  </data>
+  <data name="Plans_ToolTip_BatchDelete" xml:space="preserve">
+    <value>選中多條時批量標記刪除（暫存，點「提交保存」後生效）</value>
+  </data>
+  <data name="Plans_Batch_ReturnTitle" xml:space="preserve">
+    <value>批量回線（{0} 條記錄）</value>
+  </data>
+  <data name="Plans_Batch_StockInTitle" xml:space="preserve">
+    <value>批量入庫（{0} 條記錄）</value>
+  </data>
+  <data name="Plans_Batch_DeleteTitle" xml:space="preserve">
+    <value>批量標記刪除（{0} 條領退記錄）</value>
+  </data>
+  <data name="Plans_Batch_PlanDeleteTitle" xml:space="preserve">
+    <value>批量標記刪除（{0} 條計劃記錄）</value>
+  </data>
+  <data name="Plans_Batch_ReturnHint" xml:space="preserve">
+    <value>選中的領退記錄將統一寫入下面這個回線日期（暫存，點「提交保存」後生效）；已有回線日期的記錄會被覆蓋。不符合條件的記錄（單體去向為報廢）自動跳過，原因見清單「本次結果」欄。</value>
+  </data>
+  <data name="Plans_Batch_StockInHint" xml:space="preserve">
+    <value>選中的領退記錄將統一寫入下面這組入庫單據/數量/日期（暫存，點「提交保存」後生效）。不符合條件的記錄（單體去向為報廢、已報廢、尚未回線）自動跳過，原因見清單「本次結果」欄。</value>
+  </data>
+  <data name="Plans_Batch_DeleteHint" xml:space="preserve">
+    <value>選中的領退記錄將全部標記刪除（暫存，點「提交保存」後生效）；刪除前請核對清單裡的資訊。</value>
+  </data>
+  <data name="Plans_Batch_PlanDeleteHint" xml:space="preserve">
+    <value>選中的計劃記錄將全部標記刪除（暫存，點「提交保存」後生效）；刪除前請核對清單裡的資訊。</value>
+  </data>
+  <data name="Plans_Batch_SummaryFormat" xml:space="preserve">
+    <value>共選中 {0} 條｜可執行 {1} 條｜跳過 {2} 條｜機種：{3}</value>
+  </data>
+  <data name="Plans_Batch_ModelItemFormat" xml:space="preserve">
+    <value>{0} ×{1}</value>
+  </data>
+  <data name="Plans_Batch_ModelSeparator" xml:space="preserve">
+    <value>、</value>
+  </data>
+  <data name="Plans_Batch_ResultHeader" xml:space="preserve">
+    <value>本次結果</value>
+  </data>
+  <data name="Plans_Batch_StatusOkReturnFormat" xml:space="preserve">
+    <value>將寫入回線日期 {0}</value>
+  </data>
+  <data name="Plans_Batch_StatusOkStockInFormat" xml:space="preserve">
+    <value>將寫入入庫 {0}</value>
+  </data>
+  <data name="Plans_Batch_StatusOkDelete" xml:space="preserve">
+    <value>將標記刪除（暫存）</value>
+  </data>
+  <data name="Plans_Batch_StatusSkipFormat" xml:space="preserve">
+    <value>跳過：{0}</value>
+  </data>
+  <data name="Plans_Batch_NotFilled" xml:space="preserve">
+    <value>未填</value>
+  </data>
+  <data name="Plans_Batch_CopyHint" xml:space="preserve">
+    <value>按右鍵單擊任一儲存格即複製該值</value>
+  </data>
+  <data name="Plans_Msg_BatchReturnAppliedFormat" xml:space="preserve">
+    <value>批量回線：已登記 {0} 條，跳過 {1} 條（暫存，點「提交保存」後生效）</value>
+  </data>
+  <data name="Plans_Msg_BatchStockInAppliedFormat" xml:space="preserve">
+    <value>批量入庫：已登記 {0} 條，跳過 {1} 條（{2}；暫存，點「提交保存」後生效）</value>
+  </data>
+  <data name="Plans_Msg_BatchDeleteAppliedFormat" xml:space="preserve">
+    <value>批量標記刪除：已標記 {0} 條（暫存，點「提交保存」後生效）</value>
+  </data>
+  <data name="Plans_Msg_BatchNoneApplied" xml:space="preserve">
+    <value>所選記錄都不符合條件，未執行任何操作</value>
   </data>
 </root>

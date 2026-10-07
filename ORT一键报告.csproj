@@ -115,6 +115,8 @@
     <Compile Include="Converters\SettingTemplateSelector.cs" />
     <Compile Include="Converters\InverseBoolConverter.cs" />
     <Compile Include="Converters\ChangedStyleConverter.cs" />
+    <Compile Include="Converters\SingleLineTextConverter.cs" />
+    <Compile Include="Utils\RightClickCopy.cs" />
     <Compile Include="Models\Report.cs" />
     <Compile Include="Models\Settings.cs" />
     <Compile Include="Services\FileService.cs" />
@@ -203,6 +205,7 @@
     <Compile Include="Services\PlanExcelService.cs" />
     <Compile Include="Plans\ViewModels\PlansViewModel.cs" />
     <Compile Include="Plans\ViewModels\FlowViewModel.cs" />
+    <Compile Include="Plans\ViewModels\RequisitionBatchRules.cs" />
     <Compile Include="Plans\Views\FilterDropDown.xaml.cs">
       <DependentUpon>FilterDropDown.xaml</DependentUpon>
     </Compile>
@@ -230,6 +233,15 @@
     <Compile Include="Plans\Views\WindowPlanUnitReturn.xaml.cs">
       <DependentUpon>WindowPlanUnitReturn.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Plans\Views\WindowRequisitionBatch.xaml.cs">
+      <DependentUpon>WindowRequisitionBatch.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Plans\Views\WindowPlanBatchDelete.xaml.cs">
+      <DependentUpon>WindowPlanBatchDelete.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Plans\Views\PlanFieldText.cs" />
+    <Compile Include="Plans\Views\RequisitionBatchRow.cs" />
+    <Compile Include="Plans\Views\PlanBatchRow.cs" />
     <Compile Include="Utils\SmartTableExtractor.cs" />
     <Compile Include="Utils\SnVerification.cs" />
     <Compile Include="Reports\ViewModels\BaseReportPageViewModel.cs" />
@@ -467,6 +479,14 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Plans\Views\WindowPlanUnitReturn.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Plans\Views\WindowRequisitionBatch.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Plans\Views\WindowPlanBatchDelete.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

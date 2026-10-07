@@ -60,6 +60,7 @@
     <Compile Include="KindAndResourceTests.cs" />
     <Compile Include="PathAndFileUtilTests.cs" />
     <Compile Include="PlanValidationTests.cs" />
+    <Compile Include="RequisitionBatchRulesTests.cs" />
     <Compile Include="SnVerificationTests.cs" />
   </ItemGroup>
   <ItemGroup>

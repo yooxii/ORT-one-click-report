@@ -1,5 +1,6 @@
 using ORT一键报告.Models;
 using ORT一键报告.Services;
+using ORT一键报告.Utils;
 using System;
 using System.Windows;
 
@@ -25,6 +26,8 @@ namespace ORT一键报告.Plans.Views
             txt_line.Text = req?.LineNo ?? "";
             // 日期默认当前日期；该记录已有回线日期时沿用，方便修正
             dp_returnDate.SelectedDate = req?.ReturnDate ?? DateTime.Today;
+            // 上面几个只读值：右键单击即复制该值
+            RightClickCopy.AttachReadOnlyText(this);
         }
 
         private void Btn_Return_Click(object sender, RoutedEventArgs e)

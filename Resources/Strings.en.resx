@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -2518,7 +2518,7 @@ Build the plan index now (compress repeated text into shared templates)?</value>
     <value>Click Stock In to write the document/qty/date into this record</value>
   </data>
   <data name="Common_CopyHint" xml:space="preserve">
-    <value>Selectable, copy with Ctrl+C</value>
+    <value>Selectable, copy with Ctrl+C, or right-click to copy this value</value>
   </data>
   <data name="Msg_NoAssociatedPlan" xml:space="preserve">
     <value>No linked plan row was found for this requisition, so plan sync is not possible; use Add Plan instead</value>
@@ -2967,5 +2967,86 @@ Exit now and discard them?</value>
   </data>
   <data name="Msg_UserNotFound" xml:space="preserve">
     <value>User not found</value>
+  </data>
+  <data name="Msg_ValueCopiedFormat" xml:space="preserve">
+    <value>Copied: {0}</value>
+  </data>
+  <data name="Plans_Menu_BatchReturnFormat" xml:space="preserve">
+    <value>Batch return ({0} records)</value>
+  </data>
+  <data name="Plans_Menu_BatchStockInFormat" xml:space="preserve">
+    <value>Batch stock-in ({0} records)</value>
+  </data>
+  <data name="Plans_Menu_BatchDeleteFormat" xml:space="preserve">
+    <value>Batch delete ({0} records)</value>
+  </data>
+  <data name="Plans_ToolTip_BatchDelete" xml:space="preserve">
+    <value>With multiple rows selected, marks them all for deletion (staged; applied after Save)</value>
+  </data>
+  <data name="Plans_Batch_ReturnTitle" xml:space="preserve">
+    <value>Batch return ({0} records)</value>
+  </data>
+  <data name="Plans_Batch_StockInTitle" xml:space="preserve">
+    <value>Batch stock-in ({0} records)</value>
+  </data>
+  <data name="Plans_Batch_DeleteTitle" xml:space="preserve">
+    <value>Batch delete ({0} requisition records)</value>
+  </data>
+  <data name="Plans_Batch_PlanDeleteTitle" xml:space="preserve">
+    <value>Batch delete ({0} plan records)</value>
+  </data>
+  <data name="Plans_Batch_ReturnHint" xml:space="preserve">
+    <value>All selected requisitions get the return date below (staged; applied after Save). Existing return dates are overwritten. Rows that do not qualify (disposition = scrap) are skipped; the reason is shown in the Result column.</value>
+  </data>
+  <data name="Plans_Batch_StockInHint" xml:space="preserve">
+    <value>All selected requisitions get the stock-in no./qty/date below (staged; applied after Save). Rows that do not qualify (scrap disposition, already scrapped, no return date yet) are skipped; the reason is shown in the Result column.</value>
+  </data>
+  <data name="Plans_Batch_DeleteHint" xml:space="preserve">
+    <value>All selected requisitions will be marked for deletion (staged; applied after Save). Check the list before confirming.</value>
+  </data>
+  <data name="Plans_Batch_PlanDeleteHint" xml:space="preserve">
+    <value>All selected plans will be marked for deletion (staged; applied after Save). Check the list before confirming.</value>
+  </data>
+  <data name="Plans_Batch_SummaryFormat" xml:space="preserve">
+    <value>Selected {0} | Applicable {1} | Skipped {2} | Models: {3}</value>
+  </data>
+  <data name="Plans_Batch_ModelItemFormat" xml:space="preserve">
+    <value>{0} ×{1}</value>
+  </data>
+  <data name="Plans_Batch_ModelSeparator" xml:space="preserve">
+    <value>, </value>
+  </data>
+  <data name="Plans_Batch_ResultHeader" xml:space="preserve">
+    <value>Result</value>
+  </data>
+  <data name="Plans_Batch_StatusOkReturnFormat" xml:space="preserve">
+    <value>Return date → {0}</value>
+  </data>
+  <data name="Plans_Batch_StatusOkStockInFormat" xml:space="preserve">
+    <value>Stock-in → {0}</value>
+  </data>
+  <data name="Plans_Batch_StatusOkDelete" xml:space="preserve">
+    <value>Will be marked for deletion (staged)</value>
+  </data>
+  <data name="Plans_Batch_StatusSkipFormat" xml:space="preserve">
+    <value>Skipped: {0}</value>
+  </data>
+  <data name="Plans_Batch_NotFilled" xml:space="preserve">
+    <value>not set</value>
+  </data>
+  <data name="Plans_Batch_CopyHint" xml:space="preserve">
+    <value>Right-click any cell to copy its value</value>
+  </data>
+  <data name="Plans_Msg_BatchReturnAppliedFormat" xml:space="preserve">
+    <value>Batch return: {0} updated, {1} skipped (staged; applied after Save)</value>
+  </data>
+  <data name="Plans_Msg_BatchStockInAppliedFormat" xml:space="preserve">
+    <value>Batch stock-in: {0} updated, {1} skipped ({2}; staged, applied after Save)</value>
+  </data>
+  <data name="Plans_Msg_BatchDeleteAppliedFormat" xml:space="preserve">
+    <value>Batch delete: {0} marked (staged; applied after Save)</value>
+  </data>
+  <data name="Plans_Msg_BatchNoneApplied" xml:space="preserve">
+    <value>None of the selected records qualify; nothing was changed.</value>
   </data>
 </root>

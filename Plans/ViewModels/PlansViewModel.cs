@@ -1279,6 +1279,38 @@ namespace ORT一键报告.Plans.ViewModels
             {
                 return;
             }
+            RemoveRequisitionCore(req);
+            NotifyPendingChanged();
+            StatusMessage = PendingText;
+        }
+
+        /// <summary>
+        /// 批量标记删除领退记录（已在批量窗口统一确认，这里不再逐条询问）：
+        /// 未入库的新增记录直接从列表移除，已有记录进待删除表，点「提交保存」时生效
+        /// </summary>
+        public void DeleteRequisitions(IEnumerable<Requisition> items)
+        {
+            if (!CanGridEdit || items == null)
+            {
+                return;
+            }
+            int count = 0;
+            foreach (Requisition req in items.Where(r => r != null).ToList())
+            {
+                RemoveRequisitionCore(req);
+                count++;
+            }
+            if (count == 0)
+            {
+                return;
+            }
+            NotifyPendingChanged();
+            StatusMessage = PendingText;
+        }
+
+        /// <summary>单条领退记录的标记删除（不含确认与状态刷新）</summary>
+        private void RemoveRequisitionCore(Requisition req)
+        {
             if (req.Id == 0)
             {
                 _pendingReqAdded.Remove(req);
@@ -1289,8 +1321,6 @@ namespace ORT一键报告.Plans.ViewModels
                 _pendingReqDeleted[req.Id] = req;
                 Requisitions.Remove(req);
             }
-            NotifyPendingChanged();
-            StatusMessage = PendingText;
         }
 
         private void DeletePlan(object parameter)
@@ -1307,6 +1337,38 @@ namespace ORT一键报告.Plans.ViewModels
             {
                 return;
             }
+            RemovePlanCore(plan);
+            NotifyPendingChanged();
+            StatusMessage = PendingText;
+        }
+
+        /// <summary>
+        /// 批量标记删除计划记录（已在批量窗口统一确认，这里不再逐条询问）：
+        /// 未入库的新增记录直接从列表移除，已有记录进待删除表，点「提交保存」时生效
+        /// </summary>
+        public void DeletePlans(IEnumerable<Plan> items)
+        {
+            if (!CanGridEdit || items == null)
+            {
+                return;
+            }
+            int count = 0;
+            foreach (Plan plan in items.Where(p => p != null).ToList())
+            {
+                RemovePlanCore(plan);
+                count++;
+            }
+            if (count == 0)
+            {
+                return;
+            }
+            NotifyPendingChanged();
+            StatusMessage = PendingText;
+        }
+
+        /// <summary>单条计划记录的标记删除（不含确认与状态刷新）</summary>
+        private void RemovePlanCore(Plan plan)
+        {
             if (plan.Id == 0)
             {
                 _pendingPlanAdded.Remove(plan);
@@ -1317,8 +1379,6 @@ namespace ORT一键报告.Plans.ViewModels
                 _pendingPlanDeleted[plan.Id] = plan;
                 Plans.Remove(plan);
             }
-            NotifyPendingChanged();
-            StatusMessage = PendingText;
         }
 
         private void OpenSnFile(object parameter)

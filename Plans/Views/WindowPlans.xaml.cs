@@ -66,6 +66,8 @@ namespace ORT一键报告.Plans.Views
             {
                 BuildSortMenu(menu_req_sort, dg_requisitions);
                 BuildColumnMenu(menu_req_columns, dg_requisitions);
+                // 多选时「回线/入库/标记删除」改成批量文案（带条数）
+                UpdateBatchMenuHeaders();
             };
             dg_plans.ContextMenuOpening += (s, e) =>
             {
@@ -73,6 +75,7 @@ namespace ORT一键报告.Plans.Views
                 BuildColumnMenu(menu_plan_columns, dg_plans);
                 // 已有报告的记录：入口改成「查看报告模板」（打开报告文件夹里的报告文件）
                 UpdateTemplateMenuItem();
+                UpdateBatchMenuHeaders();
             };
             Closing += (s, e) =>
             {
@@ -1026,7 +1029,14 @@ namespace ORT一键报告.Plans.Views
             _vm.StatusMessage = _vm.PendingText;
         }
 
-        /* ###############################  右键单元格定位  ################################ */
+        /* ###############################  右键单元格定位与多选捕获  ################################ */
+
+        /// <summary>
+        /// 右键菜单打开瞬间的选中记录（右键按下时抓取）。多选（≥2 条）时「回线/入库/标记删除」
+        /// 改为批量动作；抓取一次而不是在菜单打开时读，可避免 WPF 右键改动选择集导致丢多选。
+        /// </summary>
+        private List<Requisition> _reqContextSelection = [];
+        private List<Plan> _planContextSelection = [];
 
         private void Dg_Requisitions_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
         {
@@ -1034,6 +1044,7 @@ namespace ORT一键报告.Plans.Views
             {
                 return;
             }
+            _reqContextSelection = MultiSelectionUnderMouse<Requisition>(dg_requisitions, e);
             SelectCellUnderMouse(sender as DataGrid, e);
         }
 
@@ -1043,7 +1054,47 @@ namespace ORT一键报告.Plans.Views
             {
                 return;
             }
+            _planContextSelection = MultiSelectionUnderMouse<Plan>(dg_plans, e);
             SelectCellUnderMouse(sender as DataGrid, e);
+        }
+
+        /// <summary>
+        /// 右键落在「已多选的其中一行」内时返回整批选中记录（按表内顺序）；否则返回空列表
+        /// （视为单条操作）。落在未选中的行上仍按单条处理，与常见表格一致。
+        /// </summary>
+        private static List<T> MultiSelectionUnderMouse<T>(DataGrid grid, MouseButtonEventArgs e) where T : class
+        {
+            if (grid == null || grid.SelectedItems.Count < 2 || e.OriginalSource is not DependencyObject source)
+            {
+                return [];
+            }
+            DataGridRow row = FindAncestor<DataGridRow>(source);
+            if (row?.Item is not T item || !grid.SelectedItems.Contains(item))
+            {
+                return [];
+            }
+            return [.. grid.SelectedItems.OfType<T>().OrderBy(x => grid.Items.IndexOf(x))];
+        }
+
+        /// <summary>
+        /// 右键菜单表头：多选时改成批量文案并带上条数（单选时恢复单条文案）
+        /// </summary>
+        private void UpdateBatchMenuHeaders()
+        {
+            int reqCount = _reqContextSelection.Count;
+            menu_req_return.Header = reqCount >= 2
+                ? string.Format(LanguageService.Get("Plans_Menu_BatchReturnFormat"), reqCount)
+                : LanguageService.Get("Plans_Menu_ReturnLine");
+            menu_req_stockin.Header = reqCount >= 2
+                ? string.Format(LanguageService.Get("Plans_Menu_BatchStockInFormat"), reqCount)
+                : LanguageService.Get("Plans_Menu_StockIn");
+            menu_req_delete.Header = reqCount >= 2
+                ? string.Format(LanguageService.Get("Plans_Menu_BatchDeleteFormat"), reqCount)
+                : LanguageService.Get("Plans_MarkDelete");
+            int planCount = _planContextSelection.Count;
+            menu_plan_delete.Header = planCount >= 2
+                ? string.Format(LanguageService.Get("Plans_Menu_BatchDeleteFormat"), planCount)
+                : LanguageService.Get("Plans_MarkDelete");
         }
 
         /// <summary>
@@ -1130,6 +1181,12 @@ namespace ORT一键报告.Plans.Views
 
         private void Menu_DeleteRequisition_Click(object sender, RoutedEventArgs e)
         {
+            // 多选：批量标记删除（先弹出清单核对）
+            if (_reqContextSelection.Count >= 2)
+            {
+                BatchDeleteRequisitions(_reqContextSelection);
+                return;
+            }
             if (dg_requisitions.SelectedItem is Requisition req)
             {
                 _vm.DeleteRequisitionCommand.Execute(req);
@@ -1138,10 +1195,124 @@ namespace ORT一键报告.Plans.Views
 
         private void Menu_DeletePlan_Click(object sender, RoutedEventArgs e)
         {
+            // 多选：批量标记删除（先弹出清单核对）
+            if (_planContextSelection.Count >= 2)
+            {
+                BatchDeletePlans(_planContextSelection);
+                return;
+            }
             if (dg_plans.SelectedItem is Plan plan)
             {
                 _vm.DeletePlanCommand.Execute(plan);
             }
+        }
+
+        /* ###############################  批量动作（多选时）  ################################ */
+
+        /// <summary>
+        /// 批量动作前的表格编辑权限检查（与单元格编辑、单条动作同一权限），无权限时提示并返回 false
+        /// </summary>
+        private bool EnsureGridEditPermission()
+        {
+            if (_vm.CanGridEdit)
+            {
+                return true;
+            }
+            _ = MessageBox.Show(LanguageService.Get("Plans_Msg_NoEditPermission"), LanguageService.Get("Cap_Info"));
+            return false;
+        }
+
+        /// <summary>
+        /// 批量标记删除领退记录：批量窗口列出整批记录的全部关键信息供核对，
+        /// 确认后统一标记删除（暂存，「提交保存」后生效）
+        /// </summary>
+        private void BatchDeleteRequisitions(List<Requisition> records)
+        {
+            if (!EnsureGridEditPermission())
+            {
+                return;
+            }
+            WindowRequisitionBatch window = new(RequisitionBatchMode.Delete, records) { Owner = this };
+            if (window.ShowDialog() != true)
+            {
+                return;
+            }
+            _vm.DeleteRequisitions(window.Targets);
+            _vm.StatusMessage = string.Format(LanguageService.Get("Plans_Msg_BatchDeleteAppliedFormat"), window.Targets.Count);
+            _logger.Info($"批量标记删除领退记录：{window.Targets.Count} 条");
+        }
+
+        /// <summary>
+        /// 批量标记删除计划记录：批量窗口列出整批计划的关键信息供核对，
+        /// 确认后统一标记删除（暂存，「提交保存」后生效）
+        /// </summary>
+        private void BatchDeletePlans(List<Plan> records)
+        {
+            if (!EnsureGridEditPermission())
+            {
+                return;
+            }
+            WindowPlanBatchDelete window = new(records) { Owner = this };
+            if (window.ShowDialog() != true)
+            {
+                return;
+            }
+            _vm.DeletePlans(window.Targets);
+            _vm.StatusMessage = string.Format(LanguageService.Get("Plans_Msg_BatchDeleteAppliedFormat"), window.Targets.Count);
+            _logger.Info($"批量标记删除计划记录：{window.Targets.Count} 条");
+        }
+
+        /// <summary>
+        /// 批量回线：整批记录统一写入批量窗口里选定的回线日期（暂存，「提交保存」后生效）；
+        /// 不满足条件的记录（单体去向为报废）自动跳过，跳过条数在状态栏与窗口清单里给出
+        /// </summary>
+        private void BatchRequisitionReturn(List<Requisition> records)
+        {
+            if (!EnsureGridEditPermission())
+            {
+                return;
+            }
+            WindowRequisitionBatch window = new(RequisitionBatchMode.Return, records) { Owner = this };
+            if (window.ShowDialog() != true)
+            {
+                return;
+            }
+            foreach (Requisition req in window.Targets)
+            {
+                req.ReturnDate = window.ReturnDate;
+            }
+            _vm.NotifyPendingChanged();
+            _vm.StatusMessage = string.Format(LanguageService.Get("Plans_Msg_BatchReturnAppliedFormat"),
+                window.Targets.Count, window.SkippedCount);
+            _logger.Info($"批量回线登记：写入 {window.Targets.Count} 条，跳过 {window.SkippedCount} 条，回线日期={window.ReturnDate:yyyy/M/d}");
+        }
+
+        /// <summary>
+        /// 批量入库：整批记录统一写入批量窗口里填写的入库单据/数量/日期（暂存，「提交保存」后生效）；
+        /// 不满足条件的记录（报废去向、已报废、未回线）自动跳过
+        /// </summary>
+        private void BatchRequisitionStockIn(List<Requisition> records)
+        {
+            if (!EnsureGridEditPermission())
+            {
+                return;
+            }
+            WindowRequisitionBatch window = new(RequisitionBatchMode.StockIn, records) { Owner = this };
+            if (window.ShowDialog() != true)
+            {
+                return;
+            }
+            foreach (Requisition req in window.Targets)
+            {
+                req.StockInNo = window.StockInNo;
+                req.StockInQty = window.StockInQty;
+                req.StockInDate = window.StockInDate;
+            }
+            _vm.NotifyPendingChanged();
+            string values = $"{window.StockInNo} / {window.StockInQty} / {window.StockInDate:yyyy/M/d}";
+            _vm.StatusMessage = string.Format(LanguageService.Get("Plans_Msg_BatchStockInAppliedFormat"),
+                window.Targets.Count, window.SkippedCount, values);
+            _logger.Info($"批量入库登记：写入 {window.Targets.Count} 条，跳过 {window.SkippedCount} 条，{values}");
         }
 
         /* ###############################  右键菜单：回线 / 入库（仅领退表）  ################################ */
@@ -1156,6 +1327,12 @@ namespace ORT一键报告.Plans.Views
         /// </summary>
         private void Menu_RequisitionReturn_Click(object sender, RoutedEventArgs e)
         {
+            // 多选：整批登记同一个回线日期
+            if (_reqContextSelection.Count >= 2)
+            {
+                BatchRequisitionReturn(_reqContextSelection);
+                return;
+            }
             Requisition req = CurrentRequisition;
             if (!CanApplyInlineEdit(req))
             {
@@ -1185,6 +1362,12 @@ namespace ORT一键报告.Plans.Views
         /// </summary>
         private void Menu_RequisitionStockIn_Click(object sender, RoutedEventArgs e)
         {
+            // 多选：整批登记同一组入库单据/数量/日期
+            if (_reqContextSelection.Count >= 2)
+            {
+                BatchRequisitionStockIn(_reqContextSelection);
+                return;
+            }
             Requisition req = CurrentRequisition;
             if (!CanApplyInlineEdit(req))
             {
@@ -1235,12 +1418,7 @@ namespace ORT一键报告.Plans.Views
                 _ = MessageBox.Show(LanguageService.Get("Plans_Msg_SelectRequisition"), LanguageService.Get("Cap_Info"));
                 return false;
             }
-            if (!_vm.CanGridEdit)
-            {
-                _ = MessageBox.Show(LanguageService.Get("Plans_Msg_NoEditPermission"), LanguageService.Get("Cap_Info"));
-                return false;
-            }
-            return true;
+            return EnsureGridEditPermission();
         }
 
         /* ###############################  右键菜单：报废登记 / 查看流程  ################################ */
@@ -1917,17 +2095,17 @@ namespace ORT一键报告.Plans.Views
 
         private void Menu_CopyReqCell_Click(object sender, RoutedEventArgs e)
         {
-            if (dg_requisitions.CurrentCell.Column != null && dg_requisitions.SelectedItem is Requisition req)
+            if (dg_requisitions.CurrentCell.Column != null && CurrentRequisition is { } req)
             {
-                Clipboard.SetText(GetRequisitionFieldValue(req, dg_requisitions.CurrentCell.Column.SortMemberPath) ?? "");
+                Clipboard.SetText(PlanFieldText.RequisitionText(req, dg_requisitions.CurrentCell.Column.SortMemberPath) ?? "");
             }
         }
 
         private void Menu_CopyPlanCell_Click(object sender, RoutedEventArgs e)
         {
-            if (dg_plans.CurrentCell.Column != null && dg_plans.SelectedItem is Plan plan)
+            if (dg_plans.CurrentCell.Column != null && CurrentPlan is { } plan)
             {
-                Clipboard.SetText(GetPlanFieldValue(plan, dg_plans.CurrentCell.Column.SortMemberPath) ?? "");
+                Clipboard.SetText(PlanFieldText.PlanText(plan, dg_plans.CurrentCell.Column.SortMemberPath) ?? "");
             }
         }
 
@@ -2055,46 +2233,6 @@ namespace ORT一键报告.Plans.Views
                 p.JobNo, p.Product, p.Customer, p.ModelName, p.Stage, p.TestItem, p.SampleSize,
                 p.TestPeriod, p.Owner, p.StartDate?.ToString("yyyy/M/d"), p.EndDate?.ToString("yyyy/M/d"),
                 p.Status, p.Remark);
-
-        private static string GetRequisitionFieldValue(Requisition r, string field) => field switch
-        {
-            nameof(Requisition.RequisitionDate) => r.RequisitionDate?.ToString("yyyy/M/d"),
-            nameof(Requisition.RequisitionNo) => r.RequisitionNo,
-            nameof(Requisition.ModelName) => r.ModelName,
-            nameof(Requisition.OutQty) => r.OutQty,
-            nameof(Requisition.SN) => r.SN ?? r.SnFilePath,
-            nameof(Requisition.DC) => r.DC,
-            nameof(Requisition.Rev) => r.Rev,
-            nameof(Requisition.WorkOrder) => r.WorkOrder,
-            nameof(Requisition.ReturnRtOrder) => r.ReturnRtOrder,
-            nameof(Requisition.ReturnQty) => r.ReturnQty,
-            nameof(Requisition.LineNo) => r.LineNo,
-            nameof(Requisition.ReturnDate) => r.ReturnDate?.ToString("yyyy/M/d"),
-            nameof(Requisition.StockInNo) => r.StockInNo,
-            nameof(Requisition.StockInQty) => r.StockInQty,
-            nameof(Requisition.StockInDate) => r.StockInDate?.ToString("yyyy/M/d"),
-            nameof(Requisition.Remark) => r.Remark,
-            _ => null
-        };
-
-        private static string GetPlanFieldValue(Plan p, string field) => field switch
-        {
-            nameof(Plan.JobNo) => p.JobNo,
-            nameof(Plan.Product) => p.Product,
-            nameof(Plan.Customer) => p.Customer,
-            nameof(Plan.ModelName) => p.ModelName,
-            nameof(Plan.Stage) => p.Stage,
-            nameof(Plan.TestItem) => p.TestItem,
-            nameof(Plan.SampleSize) => p.SampleSize,
-            nameof(Plan.TestPeriod) => p.TestPeriod,
-            nameof(Plan.Owner) => p.Owner,
-            nameof(Plan.StartDate) => p.StartDate?.ToString("yyyy/M/d"),
-            nameof(Plan.EndDate) => p.EndDate?.ToString("yyyy/M/d"),
-            nameof(Plan.Status) => p.Status,
-            nameof(Plan.ReportStatus) => p.ReportStatus,
-            nameof(Plan.Remark) => p.Remark,
-            _ => null
-        };
 
         private string SetRequisitionFieldValue(Requisition r, string field, string value)
         {
