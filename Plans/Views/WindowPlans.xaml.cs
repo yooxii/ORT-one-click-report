@@ -1360,6 +1360,8 @@ namespace ORT一键报告.Plans.Views
             dg_requisitions.SelectionChanged -= Dg_Requisitions_BatchPick;
             dg_requisitions.PreviewMouseLeftButtonDown -= Dg_Requisitions_BatchPickMouse;
             _batchWindow = null;
+            // 表格里可能还留着没结束的单元格编辑，先收掉再刷新（否则 CollectionView 拒绝 Refresh）
+            EndGridEdit(dg_requisitions);
             _vm.SetRequisitionQuickFilter(null, null);
             dg_requisitions.UnselectAll();
         }
@@ -1370,7 +1372,29 @@ namespace ORT一键报告.Plans.Views
             dg_plans.SelectionChanged -= Dg_Plans_BatchPick;
             dg_plans.PreviewMouseLeftButtonDown -= Dg_Plans_BatchPickMouse;
             _batchWindow = null;
+            EndGridEdit(dg_plans);
             dg_plans.UnselectAll();
+        }
+
+        /// <summary>
+        /// 收掉表格上还没结束的单元格编辑事务：处于 AddNew/EditItem 事务时刷新视图会被拒绝
+        /// （批量窗口关闭会触发一次刷新，此时若用户刚点开过单元格编辑器就会抛异常）
+        /// </summary>
+        private void EndGridEdit(DataGrid grid)
+        {
+            try
+            {
+                if (grid == null)
+                {
+                    return;
+                }
+                _ = grid.CancelEdit(DataGridEditingUnit.Cell);
+                _ = grid.CancelEdit(DataGridEditingUnit.Row);
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn($"结束表格编辑事务失败: {ex.Message}");
+            }
         }
 
         /* ###############################  右键菜单：回线 / 入库（仅领退表）  ################################ */

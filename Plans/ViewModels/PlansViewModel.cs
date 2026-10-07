@@ -315,7 +315,7 @@ namespace ORT一键报告.Plans.ViewModels
         public void SetRequisitionQuickFilter(Func<Requisition, bool> predicate, string hintFormat)
         {
             _requisitionQuickFilter = predicate;
-            RequisitionsView.Refresh();
+            SafeRefresh(RequisitionsView);
             QuickFilterHint = predicate == null
                 ? null
                 : string.Format(hintFormat ?? "{0}", RequisitionsView.OfType<Requisition>().Count());
@@ -325,6 +325,35 @@ namespace ORT一键报告.Plans.ViewModels
         private RelayCommand _clearQuickFilterCommand;
         /// <summary>清除临时筛选（批量登记结束时同步调用）</summary>
         public ICommand ClearQuickFilterCommand => _clearQuickFilterCommand ??= new RelayCommand(() => SetRequisitionQuickFilter(null, null));
+
+        /// <summary>
+        /// 安全刷新表格视图：单元格正在编辑（或新增行）时 AddNew/EditItem 事务还没结束，
+        /// CollectionView 不允许 Refresh，直接调用会抛 InvalidOperationException。
+        /// 这里改为下一个消息循环重试（事务结束后即可刷新），最多重试 5 次；
+        /// 仍失败只记日志、不打断用户操作（视图会在后续任意一次刷新时同步）。
+        /// 场景：批量登记窗口关闭时会清掉临时筛选并刷新，若此刻用户正在主表格里编辑单元格就会走到这里。
+        /// </summary>
+        internal static void SafeRefresh(ICollectionView view, int retry = 5)
+        {
+            if (view == null)
+            {
+                return;
+            }
+            try
+            {
+                view.Refresh();
+            }
+            catch (InvalidOperationException ex)
+            {
+                if (retry <= 0)
+                {
+                    LogManager.GetCurrentClassLogger().Warn($"表格视图刷新失败（编辑事务未结束）：{ex.Message}");
+                    return;
+                }
+                Dispatcher dispatcher = Application.Current?.Dispatcher ?? Dispatcher.CurrentDispatcher;
+                dispatcher.BeginInvoke(new Action(() => SafeRefresh(view, retry - 1)), DispatcherPriority.Background);
+            }
+        }
 
         /* ###############################  列筛选（表头右键菜单）  ################################ */
 
@@ -425,12 +454,12 @@ namespace ORT一键报告.Plans.ViewModels
         {
             if (planTable)
             {
-                PlansView.Refresh();
+                SafeRefresh(PlansView);
                 UpdateStatusCounts();
             }
             else
             {
-                RequisitionsView.Refresh();
+                SafeRefresh(RequisitionsView);
             }
         }
 
@@ -509,8 +538,8 @@ namespace ORT一键报告.Plans.ViewModels
             {
                 _searchTimer.Stop();
                 // 同一个搜索框：领退表与计划表一起刷新
-                PlansView.Refresh();
-                RequisitionsView.Refresh();
+                SafeRefresh(PlansView);
+                SafeRefresh(RequisitionsView);
                 UpdateStatusCounts();
             };
 
@@ -557,7 +586,7 @@ namespace ORT一键报告.Plans.ViewModels
             view.SortDescriptions.Add(string.IsNullOrWhiteSpace(propertyName)
                 ? new SortDescription(defaultProperty, ListSortDirection.Descending)
                 : new SortDescription(propertyName, direction));
-            view.Refresh();
+            SafeRefresh(view);
         }
 
         /* ###############################  命令  ################################ */
@@ -676,8 +705,8 @@ namespace ORT一键报告.Plans.ViewModels
                 {
                     _planOriginals[plan.Id] = ClonePlan(plan);
                 }
-                PlansView.Refresh();
-                RequisitionsView.Refresh();
+                SafeRefresh(PlansView);
+                SafeRefresh(RequisitionsView);
                 UpdateStatusCounts();
                 OnPropertyChanged(nameof(HasPendingChanges));
                 OnPropertyChanged(nameof(PendingText));
@@ -891,7 +920,7 @@ namespace ORT一键报告.Plans.ViewModels
                 {
                     _planOriginals[plan.Id] = ClonePlan(plan);
                 }
-                PlansView.Refresh();
+                SafeRefresh(PlansView);
                 UpdateStatusCounts();
                 OnPropertyChanged(nameof(HasPendingChanges));
                 OnPropertyChanged(nameof(PendingText));

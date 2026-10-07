@@ -82,7 +82,7 @@
                   AutoGenerateColumns="False" CanUserAddRows="False" CanUserSortColumns="False"
                   CanUserReorderColumns="False" IsReadOnly="True"
                   HeadersVisibility="Column" GridLinesVisibility="All"
-                  SelectionMode="Extended" SelectionUnit="Cell"
+                  SelectionMode="Extended" SelectionUnit="FullRow"
                   ClipboardCopyMode="None"
                   CellStyle="{StaticResource BatchCell}"
                   SelectionChanged="Dg_Items_SelectionChanged"

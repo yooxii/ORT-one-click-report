@@ -67,6 +67,11 @@ namespace ORT一键报告.Plans.Views
         private void Btn_Remove_Click(object sender, RoutedEventArgs e)
         {
             List<Plan> picked = [.. dg_items.SelectedItems.OfType<Plan>()];
+            // 兜底：整行选中没生效时至少撤掉光标所在的那一行
+            if (picked.Count == 0 && dg_items.CurrentItem is Plan current)
+            {
+                picked.Add(current);
+            }
             if (picked.Count == 0)
             {
                 return;
