@@ -3065,10 +3065,10 @@ Exit now and discard them?</value>
     <value>Controls what happens when the main window is closed and whether the app starts with Windows. These settings are stored on this computer only and are not shared through the data folder.</value>
   </data>
   <data name="Settings_MinimizeToTray" xml:space="preserve">
-    <value>Ask to minimize to background when closing the main window</value>
+    <value>Minimize to background</value>
   </data>
   <data name="Settings_MinimizeToTrayHint" xml:space="preserve">
-    <value>When enabled, closing the main window first asks whether to keep running in the background or to exit. Minimizing sends the window to the notification area, frees memory once, and keeps the app running (automatic scans and mail reminders continue). Double-click the tray icon to restore the window; right-click it to exit.</value>
+    <value>Checked: closing the main window keeps the app running in the notification area (memory is freed once) while automatic scans and mail reminders continue; double-click the tray icon to restore the window, right-click it to show the window or exit. Unchecked: closing the main window exits the program. A one-time tip appears when minimizing, at most once a day.</value>
   </data>
   <data name="Settings_AutoStart" xml:space="preserve">
     <value>Start with Windows (current user)</value>
@@ -3099,16 +3099,7 @@ Programs on a remote path (network share or mapped network drive) cannot start w
     <value>Minimized to background</value>
   </data>
   <data name="Main_TrayBalloonText" xml:space="preserve">
-    <value>The app is still running in the background (automatic scans and mail reminders continue). Double-click the tray icon to restore the window.</value>
-  </data>
-  <data name="Main_MinimizeAskMessage" xml:space="preserve">
-    <value>Keep running in the background?
-Yes = move to the notification area, free memory once and keep running;
-No = exit the program.
-(This prompt can be turned off in Settings > Background.)</value>
-  </data>
-  <data name="Main_MinimizeAskTitle" xml:space="preserve">
-    <value>Close main window</value>
+    <value>The app is still running in the background (automatic scans and mail reminders continue). Double-click the tray icon to restore the window. If you do not need this, clear "Minimize to background" in Settings > Background and closing the main window will exit the program.</value>
   </data>
   <data name="Main_TrayTip" xml:space="preserve">
     <value>ORT Lab Management System (running in the background; double-click to restore)</value>

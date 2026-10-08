@@ -144,11 +144,26 @@ namespace ORT一键报告.Services
             LocalSettingsStore.Update(s => s.Background = background);
         }
 
-        /// <summary>关闭主窗口时是否询问最小化到后台</summary>
+        /// <summary>关闭主窗口时是否最小化到后台（勾选＝最小化，未勾选＝直接关闭）</summary>
         public bool MinimizeToTrayOnClose => GetBackgroundSettings().MinimizeToTrayOnClose;
 
         /// <summary>开机自启是否登记为「直接进后台」</summary>
         public bool StartToBackground => GetBackgroundSettings().AutoStartToBackground;
+
+        /// <summary>
+        /// 上次弹出「已最小化到后台」提示的日期（yyyy-MM-dd；没弹过返回 null）
+        /// </summary>
+        public string GetLastTrayTipDate() => GetBackgroundSettings().LastTrayTipDate;
+
+        /// <summary>
+        /// 记录「已最小化到后台」提示的日期，用于「每天只提醒一次」
+        /// </summary>
+        public void SetLastTrayTipDate(string date)
+            => LocalSettingsStore.Update(s =>
+            {
+                s.Background ??= new BackgroundSettings();
+                s.Background.LastTrayTipDate = date;
+            });
 
         /* ###############################  数据库设置（app_settings 表）  ################################ */
 

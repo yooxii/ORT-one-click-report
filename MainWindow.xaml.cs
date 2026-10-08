@@ -115,15 +115,35 @@ namespace ORT一键报告
                 // 界面相关的托管对象（图片、表格、报告预览等）暂时用不到了，回收并把工作集还给系统
                 MemoryTrimmer.Trim("最小化到后台");
                 _logger.Info("已最小化到后台（托盘）");
-                _trayIcon?.ShowBalloonTip(4000,
-                    LanguageService.Get("Main_TrayBalloonTitle"),
-                    LanguageService.Get("Main_TrayBalloonText"),
-                    WinForms.ToolTipIcon.Info);
+                ShowBackgroundTipIfDue();
             }
             catch (Exception ex)
             {
                 _logger.Warn($"最小化到后台失败: {ex.Message}");
             }
+        }
+
+        /// <summary>
+        /// 最小化到后台后弹一次托盘气泡，提示用户可在设置里关掉这个行为；
+        /// 「每天只提醒一次」：记住上次弹出的日期，同一天再最小化就不打扰了。
+        /// </summary>
+        private void ShowBackgroundTipIfDue()
+        {
+            if (_trayIcon == null)
+            {
+                return;
+            }
+            string today = DateTime.Today.ToString("yyyy-MM-dd");
+            if (string.Equals(_appSettings.GetLastTrayTipDate(), today, StringComparison.Ordinal))
+            {
+                return;
+            }
+            _trayIcon.ShowBalloonTip(5000,
+                LanguageService.Get("Main_TrayBalloonTitle"),
+                LanguageService.Get("Main_TrayBalloonText"),
+                WinForms.ToolTipIcon.Info);
+            _appSettings.SetLastTrayTipDate(today);
+            _logger.Info($"已提示最小化到后台（{today}，当天不再重复提示）");
         }
 
         /// <summary>
@@ -165,9 +185,9 @@ namespace ORT一键报告
         }
 
         /// <summary>
-        /// 主窗口关闭：先问是「最小化到后台」还是「退出程序」。
-        /// 「是」＝收进托盘并清理内存（取消本次关闭）；「否」＝退出程序；直接叉掉对话框＝什么都不做。
-        /// 用户关闭了「关闭时询问」或不希望拦截（托盘退出、注销、系统结束）时直接退出。
+        /// 主窗口关闭：按设置里的「最小化到后台」直接决定行为——
+        /// 勾选＝收进托盘继续运行（取消本次关闭），未勾选＝直接退出程序，都不再弹询问框。
+        /// 托盘「退出程序」、注销、系统结束会话这三种情况始终直接退出。
         /// </summary>
         private void MainWindow_Closing(object sender, CancelEventArgs e)
         {
@@ -185,17 +205,8 @@ namespace ORT一键报告
                 _exitRequested = true;
                 return;
             }
-            MessageBoxResult result = MessageBox.Show(this,
-                LanguageService.Get("Main_MinimizeAskMessage"),
-                LanguageService.Get("Main_MinimizeAskTitle"),
-                MessageBoxButton.YesNo, MessageBoxImage.Question);
-            if (result == MessageBoxResult.Yes)
-            {
-                e.Cancel = true;
-                MinimizeToBackground();
-                return;
-            }
-            _exitRequested = true;
+            e.Cancel = true;
+            MinimizeToBackground();
         }
 
         /// <summary>

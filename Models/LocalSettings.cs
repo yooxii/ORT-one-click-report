@@ -51,7 +51,7 @@ namespace ORT一键报告.Models
     /// </summary>
     public class BackgroundSettings
     {
-        /// <summary>关闭主窗口时询问是否最小化到后台（托盘），默认开启</summary>
+        /// <summary>关闭主窗口时最小化到后台（托盘）；未勾选则直接关闭程序。默认勾选</summary>
         public bool MinimizeToTrayOnClose { get; set; } = true;
 
         /// <summary>开机自启（当前用户，无需管理员权限）</summary>
@@ -59,5 +59,11 @@ namespace ORT一键报告.Models
 
         /// <summary>开机自启时直接进后台（托盘），不弹出主窗口</summary>
         public bool AutoStartToBackground { get; set; }
+
+        /// <summary>
+        /// 上次弹出「已最小化到后台」提示的日期（yyyy-MM-dd）：同一天只提醒一次，
+        /// 避免把程序留在后台的人天天被气泡打扰
+        /// </summary>
+        public string LastTrayTipDate { get; set; }
     }
 }
