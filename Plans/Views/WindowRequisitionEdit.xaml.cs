@@ -1,5 +1,6 @@
 using NLog;
 using ORT一键报告.Models;
+using ORT一键报告.Plans.ViewModels;
 using ORT一键报告.Services;
 using ORT一键报告.Utils;
 using System;
@@ -42,6 +43,40 @@ namespace ORT一键报告.Plans.Views
         /// </summary>
         private string _autoJobNo;
         private string _autoReturnRt;
+
+        /// <summary>
+        /// 最近一次由完工令（Work Order）自动补全的 D/C 与线别：
+        /// 改完工令时若字段内容还是它（用户没手动改过）就跟着刷新
+        /// </summary>
+        private string _autoDc;
+        private string _autoLineNo;
+
+        /// <summary>
+        /// 本窗口已保存（含「保存并继续」的前几条）的工作编号 / 回线RT工令：
+        /// 这些还只在内存里、库中查不到，重新生成时要跳过，避免连续录入重号
+        /// </summary>
+        private readonly HashSet<string> _issuedJobNos = new(StringComparer.OrdinalIgnoreCase);
+        private readonly HashSet<string> _issuedReturnRt = new(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// 本窗口「保存并继续」刚存过的「机种 → 版本」：提示优先用它，其次才是库里的历史记录
+        /// </summary>
+        private readonly Dictionary<string, string> _sessionRevByModel = new(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// 当前机种最近一次使用过的版本（版本输入框留空时保存就用它），没有历史时为 null
+        /// </summary>
+        private string _suggestedRev;
+
+        /// <summary>
+        /// 版本提示对应的机种文本（机种没变就不重复查库）
+        /// </summary>
+        private string _revHintModel;
+
+        /// <summary>
+        /// 程序化改字段（加载/重置）期间置位：抑制机种、完工令等联动的自动判定，避免和随后赋的原值打架
+        /// </summary>
+        private bool _suppressAuto;
 
         /// <summary>
         /// 构造的领退记录结果（由调用方处理：暂存或提审）
@@ -90,6 +125,9 @@ namespace ORT一键报告.Plans.Views
             // 回线RT工令：由「单体去向」驱动——入库才需要（启用且保存时必填），报废禁用并留空
             cb_disposition.SelectionChanged += (s, e) => ApplyDispositionState();
             ApplyDispositionState();
+
+            // 「保存并继续」只在新增时有意义（编辑模式保存后表单没有下一条可录）
+            btn_saveAndContinue.Visibility = editTarget == null ? Visibility.Visible : Visibility.Collapsed;
 
             // 领用日期变化：开始时间跟着走；工作编号/回线RT工令还是自动生成的那个（没手动改过）就一起刷新
             dp_reqDate.SelectedDateChanged += (s, e) => OnReqDateChanged();
@@ -213,60 +251,167 @@ namespace ORT一键报告.Plans.Views
 
         private void LoadFromRequisition(Requisition req)
         {
-            dp_reqDate.SelectedDate = req.RequisitionDate;
-            txt_reqNo.Text = req.RequisitionNo;
-            txt_model.Text = req.ModelName;
-            txt_outQty.Text = req.OutQty;
-            txt_rev.Text = req.Rev;
-            txt_workOrder.Text = req.WorkOrder;
-            txt_dc.Text = req.DC;
-            txt_lineNo.Text = req.LineNo;
-            // 单体去向：入库/报废（旧记录可能为空，保存时按必填校验拦截）
-            SetCombo(cb_disposition, req.Disposition);
-            // 回线RT工令：按单体去向决定是否启用（报废时禁用并清空，保存即归位）
-            txt_returnRt.Text = req.ReturnRtOrder ?? "";
-            ApplyDispositionState();
-            if (!string.IsNullOrWhiteSpace(req.SnFilePath))
+            // 回填期间抑制联动：机种/完工令的自动判定不能盖掉库里存的原值（回填完再单独补空字段）
+            _suppressAuto = true;
+            try
             {
-                rb_snFile.IsChecked = true;
-                _uploadedSnFile = _db.ResolveAttachmentPath(req.SnFilePath);
-                txt_snFileName.Text = req.SnFilePath;
+                dp_reqDate.SelectedDate = req.RequisitionDate;
+                txt_reqNo.Text = req.RequisitionNo;
+                txt_model.Text = req.ModelName;
+                txt_outQty.Text = req.OutQty;
+                txt_rev.Text = req.Rev;
+                txt_workOrder.Text = req.WorkOrder;
+                txt_dc.Text = req.DC;
+                txt_lineNo.Text = req.LineNo;
+                // 单体去向：入库/报废（旧记录可能为空，保存时按必填校验拦截）
+                SetCombo(cb_disposition, req.Disposition);
+                // 回线RT工令：按单体去向决定是否启用（报废时禁用并清空，保存即归位）
+                txt_returnRt.Text = req.ReturnRtOrder ?? "";
+                ApplyDispositionState();
+                if (!string.IsNullOrWhiteSpace(req.SnFilePath))
+                {
+                    rb_snFile.IsChecked = true;
+                    _uploadedSnFile = _db.ResolveAttachmentPath(req.SnFilePath);
+                    txt_snFileName.Text = req.SnFilePath;
+                }
+                else
+                {
+                    txt_sn.Text = req.SN;
+                }
             }
-            else
+            finally
             {
-                txt_sn.Text = req.SN;
+                _suppressAuto = false;
             }
+            UpdateRevHint();
             AutoFillFromWorkOrder();
         }
 
         /* ###############################  自动补全  ################################ */
 
         /// <summary>
-        /// 从 Work Order 自动补全 D/C（倒数第三位起的两位）与 線別（倒数第六位起的三位）；仅填充空字段，允许手动修改
+        /// 从 Work Order 自动补全 D/C（倒数第三位起的两位）与 線別（倒数第六位起的三位）：
+        /// 只填空字段，以及「上一次自动带出来、用户没手改过」的值（改工令会跟着刷新）；用户手改过的不覆盖。
         /// </summary>
         private void AutoFillFromWorkOrder()
         {
-            string wo = txt_workOrder?.Text?.Trim();
-            if (string.IsNullOrWhiteSpace(wo) || wo.Length < 6)
+            if (_suppressAuto || txt_workOrder == null || txt_lineNo == null || txt_dc == null)
             {
                 return;
             }
-            // 線別：倒数第六位起的三位字符串
-            if (string.IsNullOrWhiteSpace(txt_lineNo.Text))
+            string wo = txt_workOrder.Text?.Trim();
+            if (string.IsNullOrWhiteSpace(wo) || wo.Length < 6)
             {
-                txt_lineNo.Text = wo.Substring(wo.Length - 6, 3);
+                // 工令清空或太短：把上一次自动带出的值一并清掉（用户手改过的不动）
+                ClearAutoFilled(txt_lineNo, ref _autoLineNo);
+                ClearAutoFilled(txt_dc, ref _autoDc);
+                return;
+            }
+            // 線別：倒数第六位起的三位字符串
+            string lineNo = RequisitionEditRules.LineNoFromWorkOrder(wo);
+            if (lineNo != null && CanOverwrite(txt_lineNo.Text, _autoLineNo))
+            {
+                txt_lineNo.Text = lineNo;
+                _autoLineNo = lineNo;
             }
             // D/C：倒数第三位起的两位
-            if (string.IsNullOrWhiteSpace(txt_dc.Text) && wo.Length >= 3)
+            string dc = RequisitionEditRules.DcFromWorkOrder(wo);
+            if (dc != null && CanOverwrite(txt_dc.Text, _autoDc))
             {
-                txt_dc.Text = wo.Substring(wo.Length - 3, 2);
+                txt_dc.Text = dc;
+                _autoDc = dc;
             }
             UpdateAutoPlan();
         }
 
         /// <summary>
-        /// 生成工作编号 RT{年月}{编号}，并记住这个自动生成的值（改日期时据此判断是否跟随刷新）；
-        /// force=true 时（点标签）日期缺失会给出提示
+        /// 能否覆盖：字段为空，或内容仍是上一次自动补全的值（用户没手改过）
+        /// </summary>
+        private static bool CanOverwrite(string current, string autoValue)
+            => string.IsNullOrWhiteSpace(current)
+               || (autoValue != null && string.Equals(current.Trim(), autoValue, StringComparison.Ordinal));
+
+        /// <summary>
+        /// 清掉上一次自动补全写入的值（内容已被用户改过则保留）
+        /// </summary>
+        private static void ClearAutoFilled(System.Windows.Controls.TextBox box, ref string autoValue)
+        {
+            if (autoValue != null && string.Equals(box.Text?.Trim(), autoValue, StringComparison.Ordinal))
+            {
+                box.Text = "";
+            }
+            autoValue = null;
+        }
+
+        /// <summary>
+        /// 「版本」输入框的最近版本提示：按当前机种查最近一次用过的版本（本窗口刚存过的优先），
+        /// 显示为输入框里的水印文字；用户不填时保存就用它
+        /// </summary>
+        private void UpdateRevHint()
+        {
+            string model = txt_model?.Text?.Trim();
+            if (model != _revHintModel)
+            {
+                _revHintModel = model;
+                _suggestedRev = null;
+                if (!string.IsNullOrWhiteSpace(model))
+                {
+                    // 本窗口「保存并继续」刚存过的版本最"近"，优先于库里的历史
+                    _ = _sessionRevByModel.TryGetValue(model, out _suggestedRev);
+                    if (_suggestedRev == null)
+                    {
+                        long selfId = _editTarget?.Id ?? 0;
+                        List<Requisition> rows = _db.FreeSql.Select<Requisition>()
+                            .Where(r => r.ModelName == model && r.Id != selfId)
+                            .OrderByDescending(r => r.RequisitionDate)
+                            .OrderByDescending(r => r.Id)
+                            .ToList();
+                        _suggestedRev = rows.Select(r => r.Rev?.Trim())
+                            .FirstOrDefault(rev => !string.IsNullOrWhiteSpace(rev));
+                    }
+                }
+            }
+            RefreshRevHintVisual();
+        }
+
+        /// <summary>
+        /// 刷新版本提示水印：输入框为空且有历史版本时显示（有内容就藏起来）
+        /// </summary>
+        private void RefreshRevHintVisual()
+        {
+            if (txt_revHint == null || txt_rev == null)
+            {
+                return;
+            }
+            string hint = _suggestedRev == null
+                ? null
+                : string.Format(LocalizationHelper.Get("ReqEdit_LastRevHintFormat"), _suggestedRev);
+            bool show = hint != null && string.IsNullOrWhiteSpace(txt_rev.Text);
+            txt_revHint.Text = show ? hint : "";
+            txt_revHint.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+            txt_rev.ToolTip = hint;
+        }
+
+        /// <summary>
+        /// 机种联动「单体去向」：机种名称以 W 开头 → 报废，其余 → 入库（用户仍可手动改）
+        /// </summary>
+        private void ApplyDispositionFromModel()
+        {
+            if (_suppressAuto)
+            {
+                return;
+            }
+            string model = txt_model?.Text?.Trim();
+            if (string.IsNullOrWhiteSpace(model) || cb_disposition == null)
+            {
+                return;
+            }
+            SetCombo(cb_disposition, RequisitionEditRules.DispositionFromModel(model));
+        }
+
+        /// <summary>
+        /// 生成工作编号 RT{年月}{编号}（跳过本窗口已经发出去的号），
+        /// 并记住这个自动生成的值（改日期时据此判断是否跟随刷新）
         /// </summary>
         private void RegenerateJobNo(bool force)
         {
@@ -278,7 +423,7 @@ namespace ORT一键报告.Plans.Views
                 }
                 return;
             }
-            txt_jobNo.Text = _excelService.GenerateJobNo(dt, "RT");
+            txt_jobNo.Text = GenerateUniqueJobNo(dt);
             _autoJobNo = txt_jobNo.Text.Trim();
         }
 
@@ -301,8 +446,45 @@ namespace ORT一键报告.Plans.Views
                 }
                 return;
             }
-            txt_returnRt.Text = _excelService.GenerateReturnRtOrder(dt);
+            txt_returnRt.Text = GenerateUniqueReturnRt(dt);
             _autoReturnRt = txt_returnRt.Text.Trim();
+        }
+
+        /// <summary>
+        /// 按当月已有编号生成工作编号；与本窗口本次会话已发出的编号重号时往后顺延
+        /// （「保存并继续」连续录入时这些号还没落库，否则会连出两个一样的号）
+        /// </summary>
+        private string GenerateUniqueJobNo(DateTime date)
+        {
+            string jobNo = _excelService.GenerateJobNo(date, "RT");
+            while (_issuedJobNos.Contains(jobNo))
+            {
+                string next = RequisitionEditRules.NextJobNo(jobNo);
+                if (next == null)
+                {
+                    break;
+                }
+                jobNo = next;
+            }
+            return jobNo;
+        }
+
+        /// <summary>
+        /// 按当月已有回线工令生成编号；与本窗口本次会话已发出的编号重号时往后顺延
+        /// </summary>
+        private string GenerateUniqueReturnRt(DateTime date)
+        {
+            string returnRt = _excelService.GenerateReturnRtOrder(date);
+            while (_issuedReturnRt.Contains(returnRt))
+            {
+                string next = RequisitionEditRules.NextReturnRtOrder(returnRt);
+                if (next == null)
+                {
+                    break;
+                }
+                returnRt = next;
+            }
+            return returnRt;
         }
 
         /// <summary>
@@ -391,7 +573,24 @@ namespace ORT一键报告.Plans.Views
 
         /* ###############################  事件函数  ################################ */
 
+        /// <summary>
+        /// 机种变化：带出产品别/客户别、按机种判定单体去向，并刷新「最近版本」提示
+        /// </summary>
         private void Txt_Model_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+        {
+            if (txt_product == null)
+            {
+                return;
+            }
+            ApplyDispositionFromModel();
+            UpdateRevHint();
+            UpdateAutoPlan();
+        }
+
+        /// <summary>
+        /// 领出数量变化：样品数还是空的就跟着填（判单体去向只看机种，不在这里重复判定）
+        /// </summary>
+        private void Txt_OutQty_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
         {
             if (txt_product == null)
             {
@@ -399,6 +598,18 @@ namespace ORT一键报告.Plans.Views
             }
             UpdateAutoPlan();
         }
+
+        /// <summary>
+        /// Work Order 变化：立即补全 D/C（界面上显示为周期）与线别
+        /// </summary>
+        private void Txt_WorkOrder_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+            => AutoFillFromWorkOrder();
+
+        /// <summary>
+        /// 版本输入框变化：有内容时隐藏「最近版本」水印提示
+        /// </summary>
+        private void Txt_Rev_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+            => RefreshRevHintVisual();
 
         private void SnMode_Changed(object sender, RoutedEventArgs e)
         {
@@ -456,7 +667,18 @@ namespace ORT一键报告.Plans.Views
             UpdateAutoPlan();
         }
 
-        private void Btn_Save_Click(object sender, RoutedEventArgs e)
+        private void Btn_Save_Click(object sender, RoutedEventArgs e) => SaveOnce(false);
+
+        /// <summary>
+        /// 「保存并继续」：先像「保存」一样存下当前这条，再把表单清空留在窗口里录下一条
+        /// </summary>
+        private void Btn_SaveAndContinue_Click(object sender, RoutedEventArgs e) => SaveOnce(true);
+
+        /// <summary>
+        /// 保存当前这条领退（及同步的计划表记录）：continueAfterSave=true 时保存后重置表单留在窗口，
+        /// false 时触发 Saved 事件后关闭窗口。本方法只构造结果，写库/提审由调用方处理。
+        /// </summary>
+        private void SaveOnce(bool continueAfterSave)
         {
             // 必填校验
             if (dp_reqDate.SelectedDate == null)
@@ -479,7 +701,13 @@ namespace ORT一键报告.Plans.Views
                 _ = MessageBox.Show(LocalizationHelper.Get("Msg_FillQty"), LanguageService.Get("Cap_Info"));
                 return;
             }
-            if (string.IsNullOrWhiteSpace(txt_rev.Text))
+            // 版本：留空时用「最近一次该机种的版本」提示值（输入框里有水印），提示也没有才要求填写
+            string rev = txt_rev.Text?.Trim();
+            if (string.IsNullOrWhiteSpace(rev))
+            {
+                rev = _suggestedRev;
+            }
+            if (string.IsNullOrWhiteSpace(rev))
             {
                 _ = MessageBox.Show(LocalizationHelper.Get("Msg_FillRev"), LanguageService.Get("Cap_Info"));
                 return;
@@ -521,7 +749,7 @@ namespace ORT一键报告.Plans.Views
                 txt_returnRt.Focus();
                 return;
             }
-            if (returnRt != null && IsReturnRtDuplicated(returnRt))
+            if (returnRt != null && (_issuedReturnRt.Contains(returnRt) || IsReturnRtDuplicated(returnRt)))
             {
                 _ = MessageBox.Show(string.Format(LocalizationHelper.Get("Msg_ReturnRtExistsFormat"), returnRt),
                     LanguageService.Get("Cap_Info"));
@@ -557,7 +785,7 @@ namespace ORT一键报告.Plans.Views
                 }
                 // 工作编号：允许手动指定，留空时按领用日期自动生成 RT{年月}{编号}
                 jobNo = string.IsNullOrWhiteSpace(txt_jobNo.Text)
-                    ? _excelService.GenerateJobNo(dp_reqDate.SelectedDate ?? DateTime.Today, "RT")
+                    ? GenerateUniqueJobNo(dp_reqDate.SelectedDate ?? DateTime.Today)
                     : txt_jobNo.Text.Trim();
                 string jobNoError = PlanValidation.ValidateJobNo(jobNo);
                 if (jobNoError != null)
@@ -566,7 +794,8 @@ namespace ORT一键报告.Plans.Views
                     return;
                 }
                 long planId = _associatedPlan?.Id ?? 0;
-                if (_db.FreeSql.Select<Plan>().Where(p => p.JobNo == jobNo && p.Id != planId).Any())
+                if (_issuedJobNos.Contains(jobNo)
+                    || _db.FreeSql.Select<Plan>().Where(p => p.JobNo == jobNo && p.Id != planId).Any())
                 {
                     _ = MessageBox.Show(string.Format(LocalizationHelper.Get("Msg_JobNoExistsFormat"), jobNo),
                         LanguageService.Get("Cap_Info"));
@@ -590,7 +819,7 @@ namespace ORT一键报告.Plans.Views
             req.RequisitionNo = txt_reqNo.Text.Trim();
             req.ModelName = txt_model.Text.Trim();
             req.OutQty = txt_outQty.Text.Trim();
-            req.Rev = txt_rev.Text.Trim();
+            req.Rev = rev;
             req.WorkOrder = txt_workOrder.Text.Trim();
             req.DC = txt_dc.Text.Trim();
             req.LineNo = txt_lineNo.Text.Trim();
@@ -652,14 +881,88 @@ namespace ORT一键报告.Plans.Views
                 plan.EndDate = dp_endDate.SelectedDate;
                 plan.Status = plan.Status ?? "Ongoing";
                 plan.ReportStatus = cb_reportStatus.SelectedItem as string;
+                // 备注：默认写「工令」（Work Order），已有备注的关联计划不覆盖
+                if (string.IsNullOrWhiteSpace(plan.Remark))
+                {
+                    plan.Remark = req.WorkOrder;
+                }
                 plan.UpdatedBy = _permission.CurrentUser;
                 plan.UpdatedAt = DateTime.Now;
                 PlanResult = plan;
             }
 
-            // 非模态窗口：触发 Saved 事件后关闭，由调用方处理暂存/提审
+            // 记下这条已经发出去的编号/版本：这些还只在内存里（库中查不到），
+            // 「保存并继续」的下一条要据此避重，版本提示也优先用它
+            if (!string.IsNullOrWhiteSpace(jobNo))
+            {
+                _ = _issuedJobNos.Add(jobNo);
+            }
+            if (!string.IsNullOrWhiteSpace(returnRt))
+            {
+                _ = _issuedReturnRt.Add(returnRt);
+            }
+            if (!string.IsNullOrWhiteSpace(req.ModelName) && !string.IsNullOrWhiteSpace(req.Rev))
+            {
+                _sessionRevByModel[req.ModelName.Trim()] = req.Rev.Trim();
+            }
+
+            // 非模态窗口：触发 Saved 事件，由调用方处理暂存/提审；
+            // 「保存并继续」把表单清空留在窗口里录下一条，「保存」则关闭
             Saved?.Invoke(RequisitionResult, PlanResult, _editTarget?.Id ?? 0);
-            Close();
+            if (continueAfterSave)
+            {
+                ResetForNextEntry();
+            }
+            else
+            {
+                Close();
+            }
+        }
+
+        /// <summary>
+        /// 「保存并继续」后的表单重置：清空上一条的内容（保留领用日期与计划同步区的选择/展开状态），
+        /// 并重新按当前日期生成工作编号（跳过刚存的那条，避免重号）
+        /// </summary>
+        private void ResetForNextEntry()
+        {
+            _suppressAuto = true;
+            try
+            {
+                _associatedPlan = null;
+                _autoJobNo = null;
+                _autoReturnRt = null;
+                _autoDc = null;
+                _autoLineNo = null;
+                _uploadedSnFile = null;
+
+                txt_reqNo.Text = "";
+                txt_model.Text = "";
+                txt_outQty.Text = "";
+                txt_rev.Text = "";
+                txt_workOrder.Text = "";
+                txt_dc.Text = "";
+                txt_lineNo.Text = "";
+                txt_returnRt.Text = "";
+                txt_sn.Text = "";
+                txt_snFileName.Text = "";
+                rb_snInput.IsChecked = true;
+                // 单体去向回到未选，等下一个机种进来再按规则判定
+                cb_disposition.SelectedItem = null;
+                txt_jobNo.Text = "";
+                txt_sampleSize.Text = "";
+                txt_product.Text = "";
+                txt_customer.Text = "";
+                // 保留：领用日期、计划同步区（测试项目/阶段/报告状态/负责人/试验时间/结束日期）与展开状态
+                _revHintModel = null;
+                UpdateRevHint();
+            }
+            finally
+            {
+                _suppressAuto = false;
+            }
+            // 按保留的日期补齐开始时间/工作编号等
+            UpdateAutoPlan();
+            txt_reqNo.Focus();
         }
         
         private void Btn_Cancel_Click(object sender, RoutedEventArgs e)

@@ -29,6 +29,12 @@
   <data name="Common_Save" xml:space="preserve">
     <value>保存</value>
   </data>
+  <data name="Common_SaveAndContinue" xml:space="preserve">
+    <value>保存并继续</value>
+  </data>
+  <data name="Common_SaveAndContinueHint" xml:space="preserve">
+    <value>保存当前这条并清空表单，留在窗口里继续录入下一条</value>
+  </data>
   <data name="Common_Apply" xml:space="preserve">
     <value>应用</value>
   </data>
@@ -2459,6 +2465,15 @@
   </data>
   <data name="ReqEdit_PlanSyncRequired" xml:space="preserve">
     <value>已展开「计划表同步信息」，下列字段（含「其他」）均为必填</value>
+  </data>
+  <data name="ReqEdit_LastRevHintFormat" xml:space="preserve">
+    <value>最近版本：{0}（留空即用此版本）</value>
+  </data>
+  <data name="ReqEdit_ModelDispositionHint" xml:space="preserve">
+    <value>机种名称以 W 开头时单体去向自动判为报废，其余为入库（可手动改）</value>
+  </data>
+  <data name="ReqEdit_WorkOrderHint" xml:space="preserve">
+    <value>填好完工令后自动带出线别与 D/C（周期）</value>
   </data>
   <data name="Msg_SnDuplicateFormat" xml:space="preserve">
     <value>序列号存在重复：{0}。是否重新输入？（是=返回修改，否=继续保存）</value>

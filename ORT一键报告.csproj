@@ -211,6 +211,7 @@
     <Compile Include="Plans\ViewModels\PlansViewModel.cs" />
     <Compile Include="Plans\ViewModels\FlowViewModel.cs" />
     <Compile Include="Plans\ViewModels\RequisitionBatchRules.cs" />
+    <Compile Include="Plans\ViewModels\RequisitionEditRules.cs" />
     <Compile Include="Plans\Views\FilterDropDown.xaml.cs">
       <DependentUpon>FilterDropDown.xaml</DependentUpon>
     </Compile>

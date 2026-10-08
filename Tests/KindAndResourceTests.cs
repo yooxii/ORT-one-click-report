@@ -60,6 +60,8 @@ namespace ORT一键报告.Tests
                 "Plans_UnitReturn", "Plans_Menu_UnitReturn", "Plans_Menu_GoToPlan", "Plans_Menu_GoToReq",
                 "Msg_StockInNeedReturn", "Msg_StockInAfterScrap", "Msg_ScrapAfterStockIn",
                 "Plans_Disposition", "ReqEdit_Disposition", "Msg_SelectDisposition",
+                "Common_SaveAndContinue", "Common_SaveAndContinueHint",
+                "ReqEdit_LastRevHintFormat", "ReqEdit_ModelDispositionHint", "ReqEdit_WorkOrderHint",
             ];
             foreach (string key in keys)
             {

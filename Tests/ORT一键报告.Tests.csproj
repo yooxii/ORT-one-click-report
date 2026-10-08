@@ -62,6 +62,7 @@
     <Compile Include="PlanValidationTests.cs" />
     <Compile Include="PlansViewRefreshTests.cs" />
     <Compile Include="RequisitionBatchRulesTests.cs" />
+    <Compile Include="RequisitionEditRulesTests.cs" />
     <Compile Include="SnVerificationTests.cs" />
     <Compile Include="StartupManagerTests.cs" />
   </ItemGroup>
