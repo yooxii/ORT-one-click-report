@@ -37,6 +37,9 @@ namespace ORT一键报告.Reports.Views
         /// <summary>正在用代码回填三个计划文本框（此时不要把内容写回测试项）</summary>
         private bool _syncingPlan;
 
+        /// <summary>本次载入时找到的该机种已有报告（用作模板；没有则为 null）</summary>
+        private ExistingReportInfo _existingReport;
+
         public WindowReportTemplate()
         {
             InitializeComponent();
@@ -67,8 +70,7 @@ namespace ORT一键报告.Reports.Views
                 txt_output.Text = _settings.ReportDir ?? "";
                 dp_start.SelectedDate = DateTime.Today;
                 txt_stage.Text = PlanStage.MP;
-                txt_period.Text = "WK" + DateTime.Today.Year.ToString("0000").Substring(2)
-                    + ReportTemplateService.GetIsoWeek(DateTime.Today).ToString("00");
+                txt_period.Text = ReportTemplateService.FormatWeekPeriod(null);
             }
             catch (Exception ex)
             {
@@ -110,26 +112,48 @@ namespace ORT一键报告.Reports.Views
                     {
                         dp_start.SelectedDate = requisition.RequisitionDate.Value;
                     }
-                    string week = Report.ParseWeekTag(plan.JobNo) ?? Report.ParseWeekTag(requisition.ReturnRtOrder ?? "");
-                    if (!string.IsNullOrWhiteSpace(week))
-                    {
-                        txt_period.Text = week;
-                    }
                 }
-                else
-                {
-                    string week = Report.ParseWeekTag(plan.JobNo);
-                    if (!string.IsNullOrWhiteSpace(week))
-                    {
-                        txt_period.Text = week;
-                    }
-                }
+                // 周期与领用表一致：领用表的周期列（D/C，如 2633）前面加 WK；
+                // 没有领用记录时再退回计划表工作编号里的 WK####
+                txt_period.Text = PeriodFromRequisition(requisition?.DC)
+                    ?? Report.ParseWeekTag(plan.JobNo)
+                    ?? ReportTemplateService.FormatWeekPeriod(null);
             }
             finally
             {
                 _loading = false;
             }
-            LoadPlanByModel(plan.ModelName, true);
+            LoadPlanByModel(plan.ModelName, true, requisition);
+        }
+
+        /* ###############################  周期  ################################ */
+
+        /// <summary>领用表"周期"列（D/C，如 2633）→ 界面上的 WK 周期（WK2633）；取不到返回 null</summary>
+        private static string PeriodFromRequisition(string dc)
+            => string.IsNullOrWhiteSpace(dc) ? null : ReportTemplateService.FormatWeekPeriod(dc.Trim());
+
+        /// <summary>
+        /// 该机种最近一条领用记录（用于取领用表的周期）；库里没有记录时返回 null
+        /// </summary>
+        private Requisition FindLatestRequisition(string modelName)
+        {
+            if (string.IsNullOrWhiteSpace(modelName))
+            {
+                return null;
+            }
+            try
+            {
+                return _db.FreeSql.Select<Requisition>()
+                    .Where(r => r.ModelName == modelName)
+                    .OrderByDescending(r => r.RequisitionDate)
+                    .OrderByDescending(r => r.Id)
+                    .First();
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn($"查询领用表记录失败: {ex.Message}");
+                return null;
+            }
         }
 
         /* ###############################  计划载入  ################################ */
@@ -142,7 +166,7 @@ namespace ORT一键报告.Reports.Views
             }
             if (cb_model.SelectedItem is string model)
             {
-                LoadPlanByModel(model, false);
+                LoadPlanByModel(model, false, null);
             }
         }
 
@@ -154,14 +178,16 @@ namespace ORT一键报告.Reports.Views
                 ToastService.Show(LanguageService.Get("ReportTemplate_Msg_ModelRequired"), ToastType.Warning);
                 return;
             }
-            LoadPlanByModel(model, true);
+            LoadPlanByModel(model, true, null);
         }
 
         /// <summary>
-        /// 载入机种的测试计划到测试项列表（测试计划文本取自"计划模板 + 机种差异"的执行结果）
+        /// 载入机种的测试计划到测试项列表：优先取该机种已有报告的 Waterfall 安排，
+        /// 没有已有报告时退回"计划模板 + 机种差异"的执行结果。
         /// </summary>
         /// <param name="overwrite">true=覆盖已调整过的测试项</param>
-        private void LoadPlanByModel(string modelName, bool overwrite)
+        /// <param name="requisition">领用记录（非空时序列号/工令/版本/周期以领用表为准）</param>
+        private void LoadPlanByModel(string modelName, bool overwrite, Requisition requisition)
         {
             if (string.IsNullOrWhiteSpace(modelName))
             {
@@ -174,6 +200,19 @@ namespace ORT一键报告.Reports.Views
                 if (!overwrite && _items.Count > 0)
                 {
                     return; // 用户已手工调整过，不静默覆盖
+                }
+                // 周期与领用表一致：优先取该机种最近一条领用记录的周期列（D/C）
+                requisition ??= FindLatestRequisition(modelName);
+                string period = PeriodFromRequisition(requisition?.DC);
+                if (!string.IsNullOrWhiteSpace(period))
+                {
+                    txt_period.Text = period;
+                }
+                // 测试计划优先从该机种已有报告里读：Waterfall 上写着上次实际怎么排的，
+                // 拿不到（没有已有报告 / 报告里没有安排）时再退回测试计划表
+                if (TryLoadFromExistingReport(modelName, overwrite, requisition))
+                {
+                    return;
                 }
                 List<TestPlan> plans = _planService.GetPlans()
                     .Where(p => string.Equals(p.ModelName, modelName, StringComparison.CurrentCultureIgnoreCase))
@@ -213,6 +252,191 @@ namespace ORT一键报告.Reports.Views
                 _logger.Error(ex, "载入机种测试计划失败");
                 ToastService.Show(string.Format(LanguageService.Get("ReportTemplate_Msg_FailedFormat"), ex.Message), ToastType.Warning);
             }
+        }
+
+        /* ###############################  已有报告  ################################ */
+
+        /// <summary>
+        /// 找该机种已有报告（报告根目录下周期号最大的那份）：
+        /// 测试计划（含排期）取其 Waterfall，Cover 的客户/版本/阶段与序列号/工令一并带出。
+        /// 找到可用安排返回 true。
+        /// </summary>
+        /// <param name="requisition">领用记录（非空时以领用表为准，已有报告的字段只作冲突提示）</param>
+        private bool TryLoadFromExistingReport(string modelName, bool overwrite, Requisition requisition)
+        {
+            _existingReport = null;
+            string root = txt_output.Text?.Trim();
+            if (string.IsNullOrWhiteSpace(root) || !Directory.Exists(root))
+            {
+                return false;
+            }
+            try
+            {
+                ExistingReportInfo report = _templateService.FindExistingReport(root, modelName);
+                if (report == null || report.Items.Count == 0)
+                {
+                    return false;
+                }
+                if (!overwrite && _items.Count > 0)
+                {
+                    return false; // 用户已手工调整过：本次不改列表，也不用它当模板
+                }
+                _existingReport = report;
+                _items.Clear();
+                Dictionary<string, string> categories = LoadTestCategories();
+                foreach (ExistingScheduleItem scheduled in report.Items)
+                {
+                    _items.Add(new ReportTemplateItem
+                    {
+                        TestItemName = scheduled.TestItemName,
+                        Category = ResolveCategory(categories, scheduled.TestItemName, null),
+                        Start = scheduled.Start,
+                        End = scheduled.End
+                    });
+                }
+                // 测试计划文本：同名测试项取计划模板/测试项目表里维护的写法
+                FillPlanTextsFromCatalog();
+                ApplyExistingReportInfo(report, requisition);
+                _logger.Info($"测试计划取自已有报告（WK{report.Week}）：{report.OverviewFile}");
+                ToastService.Show(string.Format(LanguageService.Get("ReportTemplate_Msg_ExistingReportUsedFormat"),
+                    Path.GetFileName(report.Folder)), ToastType.Info);
+                dg_items.Items.Refresh();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "载入已有报告的测试安排失败");
+                _existingReport = null;
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 把已有报告的信息填进界面：序列号/工令/起始日期只在界面还空着时补，
+        /// 客户/版本/阶段与周期有冲突时以领用表（+计划表）为准，并把冲突汇总提示出来。
+        /// </summary>
+        private void ApplyExistingReportInfo(ExistingReportInfo report, Requisition requisition)
+        {
+            if (report == null)
+            {
+                return;
+            }
+            List<string> conflicts = [];
+            // 已有报告当作新周期的模板用，周期号本身不是"冲突项"
+            if (!string.IsNullOrWhiteSpace(report.Week))
+            {
+                txt_period.Text = ReportTemplateService.FormatWeekPeriod(report.Week);
+            }
+            if (!string.IsNullOrWhiteSpace(report.Customer)
+                && !string.Equals(txt_customer.Text?.Trim(), report.Customer.Trim(), StringComparison.OrdinalIgnoreCase))
+            {
+                if (string.IsNullOrWhiteSpace(txt_customer.Text))
+                {
+                    txt_customer.Text = report.Customer.Trim();
+                }
+                else
+                {
+                    conflicts.Add(string.Format(LanguageService.Get("ReportTemplate_ConflictFieldFormat"),
+                        LanguageService.Get("ReportTemplate_Customer"), report.Customer.Trim(), txt_customer.Text.Trim()));
+                }
+            }
+            if (!string.IsNullOrWhiteSpace(report.Revision)
+                && !string.Equals(txt_revision.Text?.Trim(), report.Revision.Trim(), StringComparison.OrdinalIgnoreCase))
+            {
+                if (string.IsNullOrWhiteSpace(txt_revision.Text))
+                {
+                    txt_revision.Text = report.Revision.Trim();
+                }
+                else
+                {
+                    conflicts.Add(string.Format(LanguageService.Get("ReportTemplate_ConflictFieldFormat"),
+                        LanguageService.Get("ReportTemplate_Revision"), report.Revision.Trim(), txt_revision.Text.Trim()));
+                }
+            }
+            if (!string.IsNullOrWhiteSpace(report.Stage)
+                && !string.Equals(PlanStage.Normalize(txt_stage.Text), PlanStage.Normalize(report.Stage), StringComparison.OrdinalIgnoreCase))
+            {
+                // 阶段已由计划表带出时保留（计划表为准），只提示
+                if (string.IsNullOrWhiteSpace(txt_stage.Text))
+                {
+                    txt_stage.Text = report.Stage;
+                }
+                else
+                {
+                    conflicts.Add(string.Format(LanguageService.Get("ReportTemplate_ConflictFieldFormat"),
+                        LanguageService.Get("ReportTemplate_Stage"), report.Stage, txt_stage.Text.Trim()));
+                }
+            }
+
+            if (requisition != null)
+            {
+                // 领用表为准：序列号/工令/版本/周期/起始日期
+                string dcPeriod = PeriodFromRequisition(requisition.DC);
+                if (!string.IsNullOrWhiteSpace(dcPeriod)
+                    && !string.Equals(dcPeriod, txt_period.Text?.Trim(), StringComparison.OrdinalIgnoreCase))
+                {
+                    conflicts.Add(string.Format(LanguageService.Get("ReportTemplate_ConflictFieldFormat"),
+                        LanguageService.Get("ReportTemplate_Period"), txt_period.Text?.Trim(), dcPeriod));
+                    txt_period.Text = dcPeriod;
+                }
+                if (!string.IsNullOrWhiteSpace(requisition.Rev))
+                {
+                    txt_revision.Text = requisition.Rev.Trim();
+                }
+                if (!string.IsNullOrWhiteSpace(requisition.SN))
+                {
+                    txt_sns.Text = requisition.SN;
+                }
+                if (!string.IsNullOrWhiteSpace(requisition.WorkOrder))
+                {
+                    txt_workOrder.Text = requisition.WorkOrder;
+                }
+                if (requisition.RequisitionDate.HasValue)
+                {
+                    dp_start.SelectedDate = requisition.RequisitionDate.Value;
+                }
+            }
+            else
+            {
+                if (txt_sns.Text?.Length == 0 && report.SerialNumbers.Count > 0)
+                {
+                    txt_sns.Text = string.Join(Environment.NewLine, report.SerialNumbers);
+                }
+                if (txt_workOrder.Text?.Length == 0 && report.WorkOrders.Count > 0)
+                {
+                    txt_workOrder.Text = string.Join(",", report.WorkOrders);
+                }
+                if (!dp_start.SelectedDate.HasValue && report.StartDate.HasValue)
+                {
+                    dp_start.SelectedDate = report.StartDate.Value;
+                }
+            }
+
+            if (conflicts.Count > 0)
+            {
+                MessageBox.Show(string.Format(LanguageService.Get("ReportTemplate_Msg_ConflictFormat"), string.Join(Environment.NewLine, conflicts)),
+                    LanguageService.Get("Cap_Info"), MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
+
+        /// <summary>
+        /// 测试计划文本：同名测试项取"计划模板 / 测试项目表"里的写法（报告 Waterfall 里只有测试项目名）
+        /// </summary>
+        private void FillPlanTextsFromCatalog()
+        {
+            List<PlanItemTemplate> templates = _planService.GetTemplates();
+            Dictionary<string, string> categories = LoadTestCategories();
+            foreach (ReportTemplateItem item in _items)
+            {
+                string key = PlanIndexService.NameKey(item.TestItemName);
+                PlanItemTemplate template = templates.FirstOrDefault(t => PlanIndexService.NameKey(t.TestItemName) == key);
+                item.Category = ResolveCategory(categories, item.TestItemName, template?.Category);
+                item.SamplingPlan = template?.SamplingPlan;
+                item.TestCondition = template?.TestCondition;
+                item.PassCriterion = template?.PassCriterion;
+                item.Remark = template?.Remark;
+            }
+            SortItemsByStart();
         }
 
         /// <summary>
@@ -753,7 +977,9 @@ namespace ORT一键报告.Reports.Views
                     Items = _items.ToList(),
                     OutputRoot = output,
                     CreatedBy = _permission.CurrentUser,
-                    PlanNote = null
+                    PlanNote = null,
+                    // 载入时找到过该机种已有报告：概览以它为骨架（服务端还会再确认一次）
+                    UseExistingReport = _existingReport != null
                 };
                 // 计划备注（ORT Plan 表末的 Note）从计划里带出
                 TestPlan plan = _planService.GetPlans().FirstOrDefault(p =>

@@ -59,18 +59,86 @@ namespace ORT一键报告.Services
             }
         }
 
-        /// <summary>由周期小时数折算的天数</summary>
+        /// <summary>
+        /// 由周期小时数折算的天数。
+        /// 超过 24 小时的试验按"跨天"算：168 小时（7 天整）会横跨 8 天、
+        /// 24 小时横跨 2 天，与 Cover 上"Burn In 起始日 +7 天"的算法一致；
+        /// 不超过 24 小时的仍按 1 天。
+        /// </summary>
         public int PeriodDays
         {
             get
             {
-                if (!double.TryParse(PeriodHours, out double hours) || hours <= 0)
+                double hours;
+                if (!double.TryParse(PeriodHours, out hours))
+                {
+                    hours = 0;
+                }
+                if (hours <= 0)
                 {
                     return 1;
                 }
-                return Math.Max(1, (int)Math.Ceiling(hours / 24.0));
+                // 不超过 24 小时占 1 天
+                if (hours <= 24)
+                {
+                    return 1;
+                }
+                int wholeDays = (int)Math.Ceiling(hours / 24.0);
+                return wholeDays + 1;
             }
         }
+    }
+
+    /// <summary>
+    /// 该机种已有报告的测试安排（从已有报告概览的 Waterfall 表读出来的一列测试）
+    /// </summary>
+    public class ExistingScheduleItem
+    {
+        /// <summary>测试项目名</summary>
+        public string TestItemName { get; set; }
+
+        /// <summary>开始日期</summary>
+        public DateTime Start { get; set; }
+
+        /// <summary>结束日期</summary>
+        public DateTime End { get; set; }
+    }
+
+    /// <summary>
+    /// 该机种已有报告概览里读到的信息（用作新报告的模板：
+    /// Cover 的客户/版本/阶段、Waterfall 的序列号/工令/起始日期与测试安排）
+    /// </summary>
+    public class ExistingReportInfo
+    {
+        /// <summary>报告文件夹</summary>
+        public string Folder { get; set; }
+
+        /// <summary>报告概览 Excel</summary>
+        public string OverviewFile { get; set; }
+
+        /// <summary>文件夹名里解析到的周期号（WK#### 的 4 位数字）</summary>
+        public string Week { get; set; }
+
+        /// <summary>Cover 上的客户别</summary>
+        public string Customer { get; set; }
+
+        /// <summary>Cover 上的版本</summary>
+        public string Revision { get; set; }
+
+        /// <summary>Cover 上的产品阶段（已归并为 MP/NPI）</summary>
+        public string Stage { get; set; }
+
+        /// <summary>Waterfall 上的序列号</summary>
+        public List<string> SerialNumbers { get; set; } = [];
+
+        /// <summary>Waterfall 上的工令（每行一个）</summary>
+        public List<string> WorkOrders { get; set; } = [];
+
+        /// <summary>Waterfall 上的测试起始日期</summary>
+        public DateTime? StartDate { get; set; }
+
+        /// <summary>Waterfall 上的测试安排（按开始日期升序）</summary>
+        public List<ExistingScheduleItem> Items { get; set; } = [];
     }
 
     /// <summary>
@@ -116,6 +184,13 @@ namespace ORT一键报告.Services
 
         /// <summary>计划备注（ORT Plan 表末 Note 一行的说明）</summary>
         public string PlanNote { get; set; }
+
+        /// <summary>
+        /// 概览是否来自该机种的已有报告（true=以已有报告为模板生成）。
+        /// 为 true 时 Cover 会清掉模板里按 7 天周期算的签署日期公式（避免显示 1900/1/0），
+        /// 并把 TestStatus 里每项测试的 total 列（UNITS UNDER TEST）置空。
+        /// </summary>
+        public bool UseExistingReport { get; set; }
     }
 
     /// <summary>
@@ -205,9 +280,86 @@ namespace ORT一键报告.Services
         /// <summary>模板目录名（程序目录 Templates 下）</summary>
         public const string TemplateFolderName = "# ORT Test Report (WK#)_#";
 
-        /// <summary>模板目录完整路径</summary>
+        /// <summary>
+        /// 模板目录完整路径（含模板工作簿的那一层，用 Content_Types.xml 判断，别只看目录是否存在——
+        /// 有些宿主目录下也有个空的 Templates）。
+        /// 顺序：程序目录 → 已加载程序集目录 / 当前目录（含往上几层）→ 宿主 BaseDirectory。
+        /// 测试运行器按字节加载程序集时 BaseDirectory 是宿主目录，靠后两者兜到真正的程序目录。
+        /// </summary>
         public static string TemplateDir
-            => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Templates", TemplateFolderName);
+        {
+            get
+            {
+                List<string> roots = [];
+                string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+                try
+                {
+                    AddCandidateRoot(roots, Path.GetDirectoryName(typeof(ReportTemplateService).Assembly.Location));
+                    AddCandidateRoot(roots, Directory.GetCurrentDirectory());
+                    // 所有已加载程序集的目录也作为起点，再往上找几层，兜到真正的程序目录 / 源码目录
+                    foreach (System.Reflection.Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
+                    {
+                        try
+                        {
+                            AddCandidateRoot(roots, Path.GetDirectoryName(assembly.Location));
+                        }
+                        catch (Exception)
+                        {
+                            // 动态程序集没有 Location，跳过
+                        }
+                    }
+                    foreach (string start in roots.ToArray())
+                    {
+                        DirectoryInfo dir = string.IsNullOrWhiteSpace(start) ? null : new DirectoryInfo(start);
+                        for (int i = 0; i < 3 && dir != null; i++, dir = dir.Parent)
+                        {
+                            AddCandidateRoot(roots, dir.FullName);
+                        }
+                    }
+                    AddCandidateRoot(roots, baseDir ?? "");
+                }
+                catch (Exception)
+                {
+                    // 目录探测失败就走下面的兜底路径
+                }
+                foreach (string root in roots)
+                {
+                    string candidate = Path.Combine(root, "Templates", TemplateFolderName);
+                    if (ContainsTemplateWorkbook(candidate))
+                    {
+                        return candidate;
+                    }
+                }
+                return Path.Combine(roots.Count > 0 ? roots[0] : "", "Templates", TemplateFolderName);
+            }
+        }
+
+        /// <summary>
+        /// 该目录是不是真的模板目录（里面有报告概览工作簿）。
+        /// 不能只看目录是否存在：有些宿主目录下也有个空的 Templates。
+        /// </summary>
+        private static bool ContainsTemplateWorkbook(string dir)
+        {
+            try
+            {
+                return Directory.Exists(dir)
+                    && Directory.GetFiles(dir, "*.xls*")
+                        .Any(f => !Path.GetFileName(f).StartsWith("~$", StringComparison.Ordinal));
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>把非空目录加进候选（去重）</summary>
+        private static void AddCandidateRoot(List<string> roots, string dir)
+        {
+            if (!string.IsNullOrWhiteSpace(dir) && !roots.Contains(dir, StringComparer.OrdinalIgnoreCase))
+            {
+                roots.Add(dir);
+            }
+        }
 
         /* ###############################  排期  ################################ */
 
@@ -247,7 +399,9 @@ namespace ORT一键报告.Services
         /* ###############################  生成  ################################ */
 
         /// <summary>
-        /// 生成报告模板：复制模板文件夹 → 写入 Cover/ORT Plan/Waterfall/TestStatus
+        /// 生成报告模板：复制模板文件夹 → 写入 Cover/ORT Plan/Waterfall/TestStatus。
+        /// 概览的骨架优先用「该机种已有报告里周期号最大的那一份」，
+        /// 没有已有报告时才用 Templates 下的空白模板。
         /// </summary>
         public ReportTemplateResult Generate(ReportTemplateRequest request)
         {
@@ -276,24 +430,47 @@ namespace ORT一键报告.Services
                 string targetFolder = Path.Combine(request.OutputRoot, folderName);
                 CopyDirectory(TemplateDir, targetFolder);
 
-                string templateWorkbook = Directory.GetFiles(targetFolder, "*.xls*")
-                    .Where(f => !Path.GetFileName(f).StartsWith("~$", StringComparison.Ordinal))
-                    .OrderByDescending(f => f.EndsWith(".xlsx", StringComparison.OrdinalIgnoreCase))
-                    .FirstOrDefault();
-                if (templateWorkbook == null)
+                // 已有同名机种的报告时以它为骨架：概览里带着上次的 Cover / ORT Plan / 配图等，
+                // 下面几步再按本次数据改写；找不到就沿用模板文件夹里带来的空白模板。
+                // UseExistingReport 以这里探测到的结果为准（调用方可能给的是载入时的旧状态）
+                ExistingReportInfo existing = FindExistingReport(request.OutputRoot, request.ModelName);
+                request.UseExistingReport = existing != null;
+                if (existing != null)
+                {
+                    _logger.Info($"报告模板：机种 {request.ModelName} 使用已有报告作模板（WK{existing.Week}）{existing.OverviewFile}");
+                }
+
+                string overviewName = $"{request.ModelName} ORT Test Report (WK{week}).xlsx";
+                string overviewPath = Path.Combine(targetFolder, overviewName);
+                string sourceWorkbook = existing?.OverviewFile;
+                if (string.IsNullOrWhiteSpace(sourceWorkbook) || !File.Exists(sourceWorkbook))
+                {
+                    // 退回模板文件夹带来的空白模板
+                    sourceWorkbook = Directory.GetFiles(targetFolder, "*.xls*")
+                        .Where(f => !Path.GetFileName(f).StartsWith("~$", StringComparison.Ordinal))
+                        .OrderByDescending(f => f.EndsWith(".xlsx", StringComparison.OrdinalIgnoreCase))
+                        .FirstOrDefault();
+                }
+                if (sourceWorkbook == null)
                 {
                     result.Message = "模板文件夹里没有找到报告概览 Excel";
                     return result;
                 }
-                string overviewName = $"{request.ModelName} ORT Test Report (WK{week}).xlsx";
-                string overviewPath = Path.Combine(targetFolder, overviewName);
-                if (!string.Equals(templateWorkbook, overviewPath, StringComparison.OrdinalIgnoreCase))
+                if (!string.Equals(sourceWorkbook, overviewPath, StringComparison.OrdinalIgnoreCase))
                 {
                     if (File.Exists(overviewPath))
                     {
                         File.Delete(overviewPath);
                     }
-                    File.Move(templateWorkbook, overviewPath);
+                    // 已有报告的概览在别的目录里，复制过来；空白模板文件则直接改名
+                    if (string.Equals(Path.GetDirectoryName(sourceWorkbook), targetFolder, StringComparison.OrdinalIgnoreCase))
+                    {
+                        File.Move(sourceWorkbook, overviewPath);
+                    }
+                    else
+                    {
+                        File.Copy(sourceWorkbook, overviewPath, true);
+                    }
                 }
 
                 XSSFWorkbook wb = ExcelNpoi.OpenRead(overviewPath);
@@ -350,6 +527,14 @@ namespace ORT一键报告.Services
             return DateTime.Today.Year.ToString("0000").Substring(2) + GetIsoWeek(DateTime.Today).ToString("00");
         }
 
+        /// <summary>
+        /// 界面上的周期文本：统一写成 WK####。
+        /// 传入领用表的周期列（D/C，如 2633）或 WK2633 都归一成 WK2633；
+        /// 取不到 4 位周号时用当前年份+ISO 周序号。
+        /// </summary>
+        public static string FormatWeekPeriod(string period)
+            => "WK" + ExtractWeek(period);
+
         /// <summary>ISO 周号（.NET Framework 没有 ISOWeek）</summary>
         public static int GetIsoWeek(DateTime date)
         {
@@ -389,11 +574,460 @@ namespace ORT一键报告.Services
         private static bool IsLegacyFile(string fileName)
             => fileName.Equals("setup_info.json", StringComparison.OrdinalIgnoreCase);
 
+        /* ###############################  已有报告  ################################ */
+
+        /// <summary>
+        /// 报告文件夹名是否属于该机种（{机种} ORT Test Report (WK…)，容忍 "(" 前多一个空格）
+        /// </summary>
+        private static bool IsReportFolderOfModel(string folderName, string modelName)
+        {
+            if (string.IsNullOrWhiteSpace(folderName) || string.IsNullOrWhiteSpace(modelName))
+            {
+                return false;
+            }
+            string name = NormalizeFolderText(folderName);
+            // 归一化后没有空格，前缀也必须是"机种名 + ORTTESTREPORT(WK"
+            return name.StartsWith(NormalizeFolderText(modelName) + "ORTTESTREPORT(WK", StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>报告文件夹名归一化：去掉空格转大写（"FSG061-930G ORT Test Report (WK2609) RT260422" → "FSG061-930GORTTESTREPORT(WK2609)RT260422"）</summary>
+        private static string NormalizeFolderText(string text)
+            => Regex.Replace((text ?? "").ToUpperInvariant(), @"\s+", "");
+
+        /// <summary>
+        /// 从报告文件夹名里取周期号（WK#### 的 4 位数字，如 …(WK2609) → "2609"）；取不到返回 null
+        /// </summary>
+        private static string WeekOfFolder(string folderName)
+        {
+            Match match = Regex.Match(folderName ?? "", @"\(WK\s*(\d{4})", RegexOptions.IgnoreCase);
+            return match.Success ? match.Groups[1].Value : null;
+        }
+
+        /// <summary>
+        /// 查该机种已有报告的文件夹（报告根目录下 {@code 机种 ORT Test Report (WK####)} 这类），
+        /// 取周期号最大的那一份；没有返回 null。按目录深度 4 层以内扫描（与报告扫描一致）。
+        /// </summary>
+        public static string FindExistingReportFolder(string outputRoot, string modelName)
+        {
+            if (string.IsNullOrWhiteSpace(outputRoot) || !Directory.Exists(outputRoot) || string.IsNullOrWhiteSpace(modelName))
+            {
+                return null;
+            }
+            string best = null;
+            string bestWeek = null;
+            try
+            {
+                foreach (string dir in EnumerateDirectoriesForReport(outputRoot, 4))
+                {
+                    string name = Path.GetFileName(dir);
+                    string week = WeekOfFolder(name);
+                    if (week == null || !IsReportFolderOfModel(name, modelName))
+                    {
+                        continue;
+                    }
+                    // 先比周期号，再比文件夹名，保证结果稳定
+                    if (best == null
+                        || string.CompareOrdinal(week, bestWeek) > 0
+                        || (string.Equals(week, bestWeek, StringComparison.Ordinal) && string.CompareOrdinal(name, Path.GetFileName(best)) > 0))
+                    {
+                        best = dir;
+                        bestWeek = week;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.GetCurrentClassLogger().Warn($"扫描已有报告文件夹失败（{outputRoot}）：{ex.Message}");
+            }
+            return best;
+        }
+
+        /// <summary>按层枚举子目录（只读，出错就停在该层）</summary>
+        private static IEnumerable<string> EnumerateDirectoriesForReport(string root, int maxDepth)
+        {
+            if (maxDepth <= 0)
+            {
+                yield break;
+            }
+            string[] children;
+            try
+            {
+                children = Directory.GetDirectories(root);
+            }
+            catch (Exception)
+            {
+                yield break;
+            }
+            foreach (string child in children)
+            {
+                yield return child;
+                foreach (string descendant in EnumerateDirectoriesForReport(child, maxDepth - 1))
+                {
+                    yield return descendant;
+                }
+            }
+        }
+
+        /// <summary>
+        /// 读该机种已有报告的概览（Cover 的客户/版本/阶段、Waterfall 的序列号/工令/起止日期与测试安排）。
+        /// 没有已有报告 / 读不出来时返回 null。
+        /// </summary>
+        public ExistingReportInfo FindExistingReport(string outputRoot, string modelName)
+        {
+            string folder = FindExistingReportFolder(outputRoot, modelName);
+            return string.IsNullOrWhiteSpace(folder) ? null : ReadExistingReport(folder);
+        }
+
+        /// <summary>读一份已有报告文件夹里的概览（见 <see cref="FindExistingReport"/>）</summary>
+        public static ExistingReportInfo ReadExistingReport(string folder)
+        {
+            ExistingReportInfo info = new() { Folder = folder, Week = WeekOfFolder(Path.GetFileName(folder)) };
+            string overview = null;
+            try
+            {
+                overview = Directory.GetFiles(folder, "*.xls*")
+                    .Where(f => !Path.GetFileName(f).StartsWith("~$", StringComparison.Ordinal))
+                    .OrderByDescending(f => f.EndsWith(".xlsx", StringComparison.OrdinalIgnoreCase))
+                    .FirstOrDefault();
+            }
+            catch (Exception)
+            {
+                return info;
+            }
+            if (overview == null)
+            {
+                return info;
+            }
+            info.OverviewFile = overview;
+            IWorkbook wb = null;
+            try
+            {
+                wb = ExcelNpoi.OpenAny(overview);
+                ISheet cover = FindSheetByName(wb, "cover") ?? ExcelNpoi.SheetAt(wb, 0);
+                ReadCoverInfo(cover, info);
+                ISheet waterfall = FindSheetByName(wb, "waterfall") ?? ExcelNpoi.SheetAt(wb, 2);
+                ReadWaterfallInfo(waterfall, info);
+            }
+            catch (Exception ex)
+            {
+                LogManager.GetCurrentClassLogger().Warn($"读取已有报告概览失败（{overview}）：{ex.Message}");
+            }
+            finally
+            {
+                wb?.Close();
+            }
+            return info;
+        }
+
+        /// <summary>按名称关键字找工作表（忽略大小写与空格）</summary>
+        private static ISheet FindSheetByName(IWorkbook wb, string keyword)
+        {
+            if (wb == null || string.IsNullOrWhiteSpace(keyword))
+            {
+                return null;
+            }
+            for (int i = 0; i < wb.NumberOfSheets; i++)
+            {
+                string name = wb.GetSheetName(i);
+                if (!string.IsNullOrWhiteSpace(name)
+                    && name.ToLowerInvariant().Replace(" ", "").Contains(keyword.Replace(" ", "")))
+                {
+                    return wb.GetSheetAt(i);
+                }
+            }
+            return null;
+        }
+
+        /// <summary>Cover 上的客户/版本/阶段（标签在 E 列，取值在标签右边第一格）</summary>
+        private static void ReadCoverInfo(ISheet cover, ExistingReportInfo info)
+        {
+            if (cover == null)
+            {
+                return;
+            }
+            info.Customer = LabelValue(cover, "Customer");
+            info.Revision = LabelValue(cover, "Revision");
+            string stage = LabelValue(cover, "Product Stage");
+            if (!string.IsNullOrWhiteSpace(stage))
+            {
+                // 试产阶段（EVT/DVT/PVT…）统一归并成 NPI，与报告索引口径一致
+                info.Stage = PlanStage.Normalize(stage);
+            }
+        }
+
+        /// <summary>找含该标签的单元格，返回其右侧第一个非空单元格文本</summary>
+        private static string LabelValue(ISheet sheet, string label)
+        {
+            DataCell cell = FindCellByValue(sheet, label);
+            if (cell == null)
+            {
+                return null;
+            }
+            for (int c = cell.Column + 1; c <= ExcelNpoi.LastColumn(sheet); c++)
+            {
+                string value = ExcelNpoi.CellText(sheet, cell.Row, c);
+                if (!string.IsNullOrWhiteSpace(value))
+                {
+                    return value.Trim();
+                }
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Waterfall 上的序列号、工令、起始日期与测试安排（每项测试的起止日期）。
+        /// 版式：row3 星期 / row4 日期（第一列是起始日期）、row7 起每行一个序列号；
+        /// 序列号写在"日期行的第一个日期单元格所在列"，同一行的右侧是各测试项名称（合并到排期最后一天）。
+        /// 表头与数据行的相对位置在不同版本里会差 1〜2 行，所以按内容（日期 / 序列号 / 测试项）定位
+        /// </summary>
+        private static void ReadWaterfallInfo(ISheet sheet, ExistingReportInfo info)
+        {
+            if (sheet == null)
+            {
+                return;
+            }
+            int lastRow = ExcelNpoi.LastRow(sheet);
+            int lastColumn = ExcelNpoi.LastColumn(sheet);
+            if (lastRow < 5 || lastColumn < 5)
+            {
+                return;
+            }
+
+            // 1. 日期行：数据区里第一个含日期的行（模板里是 row4）
+            int dateRow = 0;
+            DateTime? startDate = null;
+            for (int r = 3; r <= Math.Min(lastRow, 8); r++)
+            {
+                for (int c = 3; c <= lastColumn; c++)
+                {
+                    DateTime? candidate = DateAt(sheet, r, c);
+                    if (!candidate.HasValue)
+                    {
+                        continue;
+                    }
+                    dateRow = r;
+                    startDate = candidate;
+                    break;
+                }
+                if (dateRow > 0)
+                {
+                    break;
+                }
+            }
+            if (dateRow == 0)
+            {
+                return;
+            }
+            info.StartDate = startDate;
+
+            // 2. 测试名称行：日期行下面、"名称列"里写了文字（测试项目名）最多的那一行。
+            //    只看含字母的单元格：日序号（1、2、3…）那一行数字很多，不能算进来
+            int itemRow = 0;
+            int itemRowHits = 0;
+            for (int r = dateRow + 1; r <= Math.Min(lastRow, dateRow + 4); r++)
+            {
+                int hits = 0;
+                for (int c = 4; c <= lastColumn; c++)
+                {
+                    if (HasLetters(ExcelNpoi.CellText(sheet, r, c)))
+                    {
+                        hits++;
+                    }
+                }
+                if (hits > itemRowHits)
+                {
+                    itemRowHits = hits;
+                    itemRow = r;
+                }
+            }
+            if (itemRow == 0 || itemRowHits == 0)
+            {
+                return;
+            }
+
+            // 3. 序列号列 = 序列号块所在列：从测试名称行起，第一条"连续有值"的那一列就是写着序列号的那列
+            //    （序列号与测试项名写在同一批行上）
+            int snColumn = 0;
+            int startSnRow = 0;
+            int lastSnRow = 0;
+            for (int c = 4; c <= lastColumn && snColumn == 0; c++)
+            {
+                int first = 0;
+                int last = 0;
+                for (int r = itemRow; r <= lastRow; r++)
+                {
+                    if (string.IsNullOrWhiteSpace(ExcelNpoi.CellText(sheet, r, c)))
+                    {
+                        continue;
+                    }
+                    if (first == 0)
+                    {
+                        first = r;
+                    }
+                    else if (r > last + 1)
+                    {
+                        break; // 序列号是连续的一段，中间空一行就结束
+                    }
+                    last = r;
+                }
+                if (first > 0)
+                {
+                    snColumn = c;
+                    startSnRow = first;
+                    lastSnRow = last > 0 ? last : first;
+                }
+            }
+            if (snColumn == 0)
+            {
+                return;
+            }
+            // 序列号块的上界：测试名称行里最后一个有测试项的行（模板里序列号与测试项写在同一批行上，
+            // 更下面的行是工令）
+            int lastItemNameRow = itemRow;
+            for (int r = itemRow + 1; r <= lastRow; r++)
+            {
+                bool hasItem = false;
+                for (int c = snColumn + 1; c <= lastColumn; c++)
+                {
+                    if (HasLetters(ExcelNpoi.CellText(sheet, r, c)))
+                    {
+                        hasItem = true;
+                        break;
+                    }
+                }
+                if (hasItem)
+                {
+                    lastItemNameRow = r;
+                }
+            }
+            if (lastItemNameRow < lastSnRow)
+            {
+                lastSnRow = lastItemNameRow;
+            }
+            for (int r = startSnRow; r <= lastSnRow; r++)
+            {
+                string sn = ExcelNpoi.CellText(sheet, r, snColumn);
+                if (!string.IsNullOrWhiteSpace(sn))
+                {
+                    info.SerialNumbers.Add(sn.Trim());
+                }
+            }
+            // 工令：紧跟在最后一个序列号下面（与生成时"序列号行数 + 工令行"的写法对应）
+            for (int r = lastSnRow + 1; r <= lastSnRow + 8 && r <= lastRow; r++)
+            {
+                string value = ExcelNpoi.CellText(sheet, r, snColumn);
+                if (string.IsNullOrWhiteSpace(value))
+                {
+                    break;
+                }
+                info.WorkOrders.Add(value.Trim());
+            }
+
+            // 4. 测试安排：名称行右侧每一项测试 + 它合并到的最后一列对应的日期（只认名称行，别重复数下面几行）
+            for (int c = snColumn + 1; c <= lastColumn; c++)
+            {
+                string name = ExcelNpoi.CellText(sheet, itemRow, c);
+                if (string.IsNullOrWhiteSpace(name))
+                {
+                    continue;
+                }
+                // 合并到第几列就排到哪一天；没合并的按一天算
+                int endColumn = c;
+                foreach (CellRangeAddress region in sheet.MergedRegions)
+                {
+                    if (region.FirstRow == itemRow - 1 && region.FirstColumn == c - 1)
+                    {
+                        endColumn = Math.Max(endColumn, region.LastColumn + 1);
+                        break;
+                    }
+                }
+                DateTime? start = DateAt(sheet, dateRow, c);
+                DateTime? end = DateAt(sheet, dateRow, endColumn) ?? start;
+                if (!start.HasValue || !end.HasValue)
+                {
+                    continue;
+                }
+                info.Items.Add(new ExistingScheduleItem
+                {
+                    TestItemName = name.Trim(),
+                    Start = start.Value.Date,
+                    End = end.Value.Date
+                });
+            }
+            info.Items = info.Items.OrderBy(i => i.Start).ThenBy(i => i.End).ToList();
+            if (info.StartDate == null && info.Items.Count > 0)
+            {
+                info.StartDate = info.Items.Min(i => i.Start);
+            }
+        }
+
+        /// <summary>文本里是否含字母（用来区分"测试项目名"与"日期/序号/数量"这类纯数字内容）</summary>
+        private static bool HasLetters(string text)
+        {
+            foreach (char ch in text ?? "")
+            {
+                if (char.IsLetter(ch))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>取某个日期单元格的日期值（日期格式/文本都能认；取不到返回 null）</summary>
+        private static DateTime? DateAt(ISheet sheet, int row1, int col1)
+        {
+            ICell cell = ExcelNpoi.ExistingCell(sheet, row1, col1);
+            if (cell == null)
+            {
+                return null;
+            }
+            try
+            {
+                if (cell.CellType == CellType.Numeric && DateUtil.IsCellDateFormatted(cell))
+                {
+                    return cell.DateCellValue?.Date;
+                }
+            }
+            catch (Exception)
+            {
+                // 取不到就退回文本解析
+            }
+            return ParseDateText(ExcelNpoi.CellText(sheet, row1, col1));
+        }
+
+        /// <summary>解析日期文本（2026/4/20、2026-04-20、2026年4月20日…）；解析失败返回 null</summary>
+        private static DateTime? ParseDateText(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return null;
+            }
+            Match match = Regex.Match(text, @"(\d{4})\s*[年/\-.]\s*(\d{1,2})\s*[月/\-.]\s*(\d{1,2})");
+            if (match.Success
+                && int.TryParse(match.Groups[1].Value, out int year)
+                && int.TryParse(match.Groups[2].Value, out int month)
+                && int.TryParse(match.Groups[3].Value, out int day))
+            {
+                try
+                {
+                    return new DateTime(year, month, day);
+                }
+                catch (Exception)
+                {
+                    return null;
+                }
+            }
+            return null;
+        }
+
         /* ###############################  Cover  ################################ */
 
         /// <summary>
         /// Cover：Customer / Model Name / Revision / Product Stage 写在 J12/J14/J16/J18
-        /// （与 setup_info.json 及已完成报告一致），日期一类公式保持原样自动计算。
+        /// （与 setup_info.json 及已完成报告一致）；日期一类公式保持原样自动计算，
+        /// 但以已有报告为骨架时，模板里"按 7 天周期算签署日期"的公式引用会随之失效，
+        /// 这里把它们清掉，避免新报告上显示 1900/1/0 这类日期。
         /// </summary>
         private static void WriteCover(IWorkbook wb, ReportTemplateRequest request)
         {
@@ -406,6 +1040,19 @@ namespace ORT一键报告.Services
             ExcelNpoi.SetCell(sheet, 14, 10, request.ModelName ?? "");
             ExcelNpoi.SetCell(sheet, 16, 10, request.Revision ?? "");
             ExcelNpoi.SetCell(sheet, 18, 10, string.IsNullOrWhiteSpace(request.Stage) ? PlanStage.MP : request.Stage);
+            if (request.UseExistingReport)
+            {
+                // N28 / N29 / N31：Tested By / Approved By 的签署日期（模板里是公式，签收时手工填实际日期）
+                foreach (int row in new[] { 28, 29, 31 })
+                {
+                    ICell cell = ExcelNpoi.ExistingCell(sheet, row, 14);
+                    if (cell != null && cell.CellType == CellType.Formula)
+                    {
+                        cell.SetCellFormula(null);
+                        cell.SetCellValue((string)null);
+                    }
+                }
+            }
         }
 
         /* ###############################  ORT Plan  ################################ */
@@ -1096,7 +1743,16 @@ namespace ORT一键报告.Services
                     ExcelNpoi.SetCell(sheet, row, 2, itemNo);
                     ExcelNpoi.SetCell(sheet, row, 3, $"{categoryNo}.{itemNo}");
                     ExcelNpoi.SetCell(sheet, row, 4, item.TestItemName ?? "");
-                    ExcelNpoi.SetCell(sheet, row, 5, request.SerialNumbers?.Count ?? 0);
+                    // E 列（UNITS UNDER TEST）就是每项测试的 total 列：
+                    // 以已有报告为模板时先置空，等测试过程中录入实际数量
+                    if (request.UseExistingReport)
+                    {
+                        ExcelNpoi.SetCell(sheet, row, 5, (string)null);
+                    }
+                    else
+                    {
+                        ExcelNpoi.SetCell(sheet, row, 5, request.SerialNumbers?.Count ?? 0);
+                    }
                     // 已测/失败/未测先置 0，测试过程中由使用者填写；比率用 IFERROR 兜住除零
                     ExcelNpoi.SetCell(sheet, row, 6, 0d);
                     ExcelNpoi.SetCell(sheet, row, 7, 0d);

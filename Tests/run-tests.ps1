@@ -9,7 +9,8 @@
 #        覆盖 SetUp/TearDown/Test/TestCase 四类特性（当前测试集用到的全部形态）。
 
 param(
-    [string]$TestDll = (Join-Path $PSScriptRoot 'bin\Debug\ORT一键报告.Tests.dll')
+    [string]$TestDll = (Join-Path $PSScriptRoot 'bin\Debug\ORT一键报告.Tests.dll'),
+    [switch]$Explicit
 )
 
 $ErrorActionPreference = 'Stop'
@@ -34,6 +35,11 @@ $resolver = [System.ResolveEventHandler]{
 }
 [System.AppDomain]::CurrentDomain.add_AssemblyResolve($resolver)
 
+# 程序集按字节加载后 AppDomain.BaseDirectory 仍是宿主(powershell.exe)的目录、
+# 且 Assembly.Location 为空，被测代码（如报告模板服务）找 Templates 等随输出目录复制的
+# 资源就会落空。这里显式把工作目录切到测试输出目录，等价于直接跑测试程序集的情形。
+[System.IO.Directory]::SetCurrentDirectory((Resolve-Path $binDir).Path)
+
 $testAsm = [System.Reflection.Assembly]::Load([System.IO.File]::ReadAllBytes((Resolve-Path $TestDll)))
 
 # 触发 nunit.framework 加载（测试程序集引用它，首次访问类型时经由上面的解析器字节加载）
@@ -53,6 +59,7 @@ $testAttr = $nunitAsm.GetType('NUnit.Framework.TestAttribute')
 $testCaseAttr = $nunitAsm.GetType('NUnit.Framework.TestCaseAttribute')
 $setUpAttr = $nunitAsm.GetType('NUnit.Framework.SetUpAttribute')
 $tearDownAttr = $nunitAsm.GetType('NUnit.Framework.TearDownAttribute')
+$explicitAttr = $nunitAsm.GetType('NUnit.Framework.ExplicitAttribute')
 
 $pass = 0
 $fail = 0
@@ -85,12 +92,21 @@ function Invoke-Case($type, $setUpMethods, $tearDownMethods, $method, $caseArgs,
 }
 
 $script:total = 0
+$skipped = 0
 foreach ($type in $testAsm.GetTypes() | Where-Object { $_.IsClass -and $_.GetCustomAttributes($fixtureAttr, $true).Count -gt 0 }) {
+    if (-not $Explicit -and $type.GetCustomAttributes($explicitAttr, $true).Count -gt 0) {
+        Write-Host ("■ {0} [explicit, pass -Explicit to run]" -f $type.Name) -ForegroundColor DarkGray
+        continue
+    }
     $setUpMethods = @($type.GetMethods($flags) | Where-Object { $_.GetCustomAttributes($setUpAttr, $true).Count -gt 0 })
     $tearDownMethods = @($type.GetMethods($flags) | Where-Object { $_.GetCustomAttributes($tearDownAttr, $true).Count -gt 0 })
     Write-Host ("■ {0}" -f $type.Name) -ForegroundColor Cyan
 
     foreach ($method in $type.GetMethods($flags) | Where-Object { $_.IsPublic -and -not $_.IsStatic }) {
+        if (-not $Explicit -and $method.GetCustomAttributes($explicitAttr, $true).Count -gt 0) {
+            $skipped++
+            continue
+        }
         $cases = @($method.GetCustomAttributes($testCaseAttr, $true))
         if ($cases.Count -gt 0) {
             foreach ($case in $cases) {
@@ -109,7 +125,9 @@ foreach ($type in $testAsm.GetTypes() | Where-Object { $_.IsClass -and $_.GetCus
 }
 
 Write-Host ''
-Write-Host ("========== 结果：共 {0} 个用例，通过 {1}，失败 {2} ==========" -f $script:total, $script:pass, $script:fail) -ForegroundColor Yellow
+$skipText = ''
+if ($skipped -gt 0) { $skipText = '，跳过显式 ' + $skipped }
+Write-Host ("========== 结果：共 {0} 个用例，通过 {1}，失败 {2}{3} ==========" -f $script:total, $script:pass, $script:fail, $skipText) -ForegroundColor Yellow
 if ($fail -gt 0) {
     $failures | ForEach-Object { Write-Host $_ -ForegroundColor Red }
     exit 1

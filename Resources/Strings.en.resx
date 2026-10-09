@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -2339,6 +2339,15 @@ Build the plan index now (compress repeated text into shared templates)?</value>
   <data name="ReportTemplate_Close" xml:space="preserve">
     <value>Close</value>
   </data>
+  <data name="ReportTemplate_Msg_ExistingReportUsedFormat" xml:space="preserve">
+    <value>Existing report found for this model; the test plan and Cover info were taken from: {0}</value>
+  </data>
+  <data name="ReportTemplate_Msg_ConflictFormat" xml:space="preserve">
+    <value>Differences from the existing report were resolved with the requisition as the source of truth: "{0}"</value>
+  </data>
+  <data name="ReportTemplate_ConflictFieldFormat" xml:space="preserve">
+    <value>{0}: existing report "{1}" -&gt; requisition "{2}"</value>
+  </data>
   <data name="ReportTemplate_Item" xml:space="preserve">
     <value>Test Item</value>
   </data>
@@ -2367,7 +2376,7 @@ Build the plan index now (compress repeated text into shared templates)?</value>
     <value>End</value>
   </data>
   <data name="ReportTemplate_PlanHours" xml:space="preserve">
-    <value>Total Hours</value>
+    <value>Total Days</value>
   </data>
   <data name="ReportTemplate_MoveUp" xml:space="preserve">
     <value>Move Up</value>

@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -2339,6 +2339,15 @@
   <data name="ReportTemplate_Close" xml:space="preserve">
     <value>关闭</value>
   </data>
+  <data name="ReportTemplate_Msg_ExistingReportUsedFormat" xml:space="preserve">
+    <value>已找到该机种已有报告，测试计划与 Cover 信息取自：{0}</value>
+  </data>
+  <data name="ReportTemplate_Msg_ConflictFormat" xml:space="preserve">
+    <value>已有报告与领用表不一致的地方已按领用表为准：「{0}」</value>
+  </data>
+  <data name="ReportTemplate_ConflictFieldFormat" xml:space="preserve">
+    <value>{0}：已有报告「{1}」→ 领用表「{2}」</value>
+  </data>
   <data name="ReportTemplate_Item" xml:space="preserve">
     <value>测试项目</value>
   </data>
@@ -2367,7 +2376,7 @@
     <value>结束日期</value>
   </data>
   <data name="ReportTemplate_PlanHours" xml:space="preserve">
-    <value>周期合计(小时)</value>
+    <value>周期合计(天)</value>
   </data>
   <data name="ReportTemplate_MoveUp" xml:space="preserve">
     <value>上移</value>
