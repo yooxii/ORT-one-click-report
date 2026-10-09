@@ -1,0 +1,96 @@
+<Window x:Class="ORT一键报告.Plans.Views.WindowReturnRtCheck" Background="{DynamicResource WindowBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:lex="http://wpflocalizeextension.codeplex.com"
+        xmlns:conv="clr-namespace:ORT一键报告.Converters"
+        mc:Ignorable="d"
+        Title="{lex:Loc ReturnRtCheck_Title}" Width="1000" Height="520" MinWidth="820" MinHeight="360"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
+
+    <Window.Resources>
+        <conv:SingleLineTextConverter x:Key="SingleLine"/>
+        <!--单元格：居中、无边框，长文本省略号显示并在悬停时给出完整值-->
+        <Style x:Key="CheckCell" TargetType="DataGridCell">
+            <Setter Property="Padding" Value="2,0"/>
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+        </Style>
+        <Style x:Key="CheckText" TargetType="TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="TextAlignment" Value="Center"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+            <Setter Property="ToolTip" Value="{Binding RelativeSource={RelativeSource Self}, Path=Text}"/>
+        </Style>
+        <!--问题列左对齐：文案较长，居中反而不好读-->
+        <Style x:Key="CheckIssueText" TargetType="TextBlock" BasedOn="{StaticResource CheckText}">
+            <Setter Property="TextAlignment" Value="Left"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!--结论说明（代码里填「共检查 N 条、发现 M 条」）-->
+        <TextBlock x:Name="txt_summary" TextWrapping="Wrap"/>
+
+        <!--问题清单：右键单击任一单元格即复制该值-->
+        <DataGrid x:Name="dg_issues" Grid.Row="1" Margin="0,8,0,0"
+                  AutoGenerateColumns="False" CanUserAddRows="False" CanUserSortColumns="True"
+                  CanUserReorderColumns="False" IsReadOnly="True"
+                  HeadersVisibility="Column" GridLinesVisibility="All"
+                  SelectionMode="Extended" SelectionUnit="FullRow"
+                  ClipboardCopyMode="None"
+                  CellStyle="{StaticResource CheckCell}"
+                  VirtualizingPanel.IsVirtualizing="True">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="{lex:Loc Plans_RequisitionDateTC}" SortMemberPath="RequisitionDate" Width="85"
+                                    Binding="{Binding RequisitionDate, StringFormat={}{0:yyyy/M/d}}"
+                                    ElementStyle="{StaticResource CheckText}"/>
+                <!--回线日期：历史数据里有按它编号的，判异常时两个日期一起看-->
+                <DataGridTextColumn Header="{lex:Loc Plans_ReturnDate}" SortMemberPath="ReturnDate" Width="85"
+                                    Binding="{Binding ReturnDate, StringFormat={}{0:yyyy/M/d}}"
+                                    ElementStyle="{StaticResource CheckText}"/>
+                <DataGridTextColumn Header="{lex:Loc Plans_RequisitionDocNo}" SortMemberPath="RequisitionNo" Width="145"
+                                    Binding="{Binding RequisitionNo}" ElementStyle="{StaticResource CheckText}"/>
+                <DataGridTextColumn Header="{lex:Loc Plans_ModelNameTC}" SortMemberPath="ModelName" Width="150"
+                                    Binding="{Binding ModelName}" ElementStyle="{StaticResource CheckText}"/>
+                <DataGridTextColumn Header="{lex:Loc Plans_ReturnRTOrder}" SortMemberPath="ReturnRtOrder" Width="130"
+                                    Binding="{Binding ReturnRtOrder, Converter={StaticResource SingleLine}}"
+                                    ElementStyle="{StaticResource CheckText}"/>
+                <!--建议编号：只有「月段不符」才有值，其余留空-->
+                <DataGridTextColumn Header="{lex:Loc ReturnRtCheck_Suggested}" SortMemberPath="SuggestedCode" Width="125"
+                                    Binding="{Binding SuggestedCode}" ElementStyle="{StaticResource CheckText}"/>
+                <DataGridTextColumn Header="{lex:Loc ReturnRtCheck_Issue}" SortMemberPath="IssueText" Width="*" MinWidth="180"
+                                    Binding="{Binding IssueText}" ElementStyle="{StaticResource CheckIssueText}"/>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <!--没有问题时给出「一切正常」的提示，并隐藏清单-->
+        <TextBlock x:Name="txt_clean" Grid.Row="1" Margin="0,14,0,0" TextWrapping="Wrap"
+                   Text="{lex:Loc ReturnRtCheck_Clean}" Visibility="Collapsed"
+                   Foreground="{DynamicResource TextSecondaryBrush}"/>
+
+        <Grid Grid.Row="2" Margin="0,12,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock x:Name="txt_hint" Text="{lex:Loc Plans_Batch_CopyHint}" VerticalAlignment="Center"
+                       TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}"/>
+            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <Button x:Name="btn_copyAll" Content="{lex:Loc ReturnRtCheck_CopyAll}" Padding="10,3" Click="Btn_CopyAll_Click"/>
+                <Button Content="{lex:Loc Common_Close}" Width="90" Margin="10,0,0,0" Click="Btn_Close_Click" IsCancel="True"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>

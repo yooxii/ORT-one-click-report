@@ -15,7 +15,7 @@
     <MapFileExtensions>true</MapFileExtensions>
     <PublisherName>Lucas Li%28AcBel ORT%29</PublisherName>
     <ApplicationRevision>0</ApplicationRevision>
-    <ApplicationVersion>0.6.0.1</ApplicationVersion>
+    <ApplicationVersion>0.6.0.2</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <CreateDesktopShortcut>true</CreateDesktopShortcut>
     <PublishWizardCompleted>true</PublishWizardCompleted>
@@ -212,6 +212,7 @@
     <Compile Include="Plans\ViewModels\FlowViewModel.cs" />
     <Compile Include="Plans\ViewModels\RequisitionBatchRules.cs" />
     <Compile Include="Plans\ViewModels\RequisitionEditRules.cs" />
+    <Compile Include="Plans\ViewModels\ReturnRtCodeCheck.cs" />
     <Compile Include="Plans\Views\FilterDropDown.xaml.cs">
       <DependentUpon>FilterDropDown.xaml</DependentUpon>
     </Compile>
@@ -244,6 +245,9 @@
     </Compile>
     <Compile Include="Plans\Views\WindowPlanBatchDelete.xaml.cs">
       <DependentUpon>WindowPlanBatchDelete.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Plans\Views\WindowReturnRtCheck.xaml.cs">
+      <DependentUpon>WindowReturnRtCheck.xaml</DependentUpon>
     </Compile>
     <Compile Include="Plans\Views\PlanFieldText.cs" />
     <Compile Include="Utils\SmartTableExtractor.cs" />
@@ -491,6 +495,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Plans\Views\WindowPlanBatchDelete.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Plans\Views\WindowReturnRtCheck.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

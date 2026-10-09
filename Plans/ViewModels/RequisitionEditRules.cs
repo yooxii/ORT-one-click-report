@@ -96,5 +96,90 @@ namespace ORT一键报告.Plans.ViewModels
             int next = sequence + 1;
             return match.Groups["head"].Value + (next >= 100 ? next.ToString() : next.ToString("D2"));
         }
+
+        /* ###############################  编号体检  ################################ */
+
+        /// <summary>
+        /// 取出回线RT工令里的年月段（RTAH 之后的四位 yyMM）；不是「RTAH + 四位年月 + 序号」的形状返回 null。
+        /// </summary>
+        public static string ReturnRtYearMonth(string returnRtOrder)
+        {
+            Match match = ReturnRtPattern.Match((returnRtOrder ?? "").Trim());
+            return match.Success ? match.Groups["head"].Value.Substring("RTAH".Length) : null;
+        }
+
+        /// <summary>
+        /// 体检单条回线RT工令，返回（问题类型, 建议编号）；正常返回 null：
+        /// - 空值 → 正常（还没登记回线，编号本来就可以为空）；
+        /// - 不是「RTAH + 四位年月 + 序号」的形状 → 格式无法识别（建议编号为 null）；
+        /// - 年月段与领用日期、回线日期**都对不上** → 月段不符（建议编号保留原序号、换成领用日期的年月）；
+        /// - 两个日期都为空时无从判断年月，只做格式检查。
+        ///
+        /// 之所以「对上一个就算正常」：历史数据里两种口径都存在——
+        /// 有的按领用日期编号（与本程序现在的自动编号一致），有的按回线日期编号（3 月领用、4 月回线就是 4 月的号）。
+        /// 只比领用日期会把后一种全判成异常；实测 186 条里「与回线日期一致」89 条、「与领用日期一致」82 条，
+        /// 两个都对不上的才是真异常。
+        /// </summary>
+        public static (ReturnRtCodeIssueKind Kind, string SuggestedCode)? InspectReturnRt(
+            string returnRtOrder, DateTime? requisitionDate, DateTime? returnDate)
+        {
+            string value = (returnRtOrder ?? "").Trim();
+            if (value.Length == 0)
+            {
+                return null;
+            }
+            Match match = ReturnRtPattern.Match(value);
+            if (!match.Success)
+            {
+                return (ReturnRtCodeIssueKind.UnrecognizedFormat, null);
+            }
+            string codeYearMonth = match.Groups["head"].Value.Substring("RTAH".Length);
+            string requisitionYearMonth = requisitionDate?.ToString("yyMM");
+            string returnYearMonth = returnDate?.ToString("yyMM");
+            if (requisitionYearMonth == null && returnYearMonth == null)
+            {
+                return null;
+            }
+            if (string.Equals(codeYearMonth, requisitionYearMonth, StringComparison.Ordinal)
+                || string.Equals(codeYearMonth, returnYearMonth, StringComparison.Ordinal))
+            {
+                return null;
+            }
+            // 建议编号按领用日期（与本程序自动编号的口径一致）；没有领用日期时才退回回线日期
+            string useYearMonth = requisitionYearMonth ?? returnYearMonth;
+            // 只换年月段、原样保留序号位数（001 这种三位写法也照旧）
+            return (ReturnRtCodeIssueKind.MonthMismatch, "RTAH" + useYearMonth + match.Groups["seq"].Value);
+        }
+    }
+
+    /// <summary>回线RT工令编号体检发现的问题类型</summary>
+    public enum ReturnRtCodeIssueKind
+    {
+        /// <summary>编号里的年月段与领用日期、回线日期都对不上（如 1 月的记录写成 RTAH2610…）</summary>
+        MonthMismatch,
+
+        /// <summary>值不是「RTAH + 四位年月 + 序号」的形状（例如填成了说明文字）</summary>
+        UnrecognizedFormat
+    }
+
+    /// <summary>一条回线RT工令编号体检结果（只读展示用）</summary>
+    public sealed class ReturnRtCodeIssue
+    {
+        public long Id { get; set; }
+        public DateTime? RequisitionDate { get; set; }
+
+        /// <summary>回线日期（历史数据里有的按它编号，判异常时要一起看）</summary>
+        public DateTime? ReturnDate { get; set; }
+
+        public string RequisitionNo { get; set; }
+        public string ModelName { get; set; }
+        public string ReturnRtOrder { get; set; }
+        public ReturnRtCodeIssueKind Kind { get; set; }
+
+        /// <summary>编号里实际写的年月（yyMM；格式认不出为 null）</summary>
+        public string CodeYearMonth { get; set; }
+
+        /// <summary>建议改成这个编号（仅「月段不符」时有值）</summary>
+        public string SuggestedCode { get; set; }
     }
 }

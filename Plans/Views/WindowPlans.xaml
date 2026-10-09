@@ -123,6 +123,10 @@
                           ToolTip="{lex:Loc Plans_ToolTip_FilterStockInPending}"/>
                 <MenuItem Header="{lex:Loc Plans_Menu_BatchDelete}" Click="Menu_BatchDelete_Click"
                           ToolTip="{lex:Loc Plans_ToolTip_BatchDelete}"/>
+                <Separator/>
+                <!--数据体检：领退表「回线RT工令」编号月段与领用日期不符、或不是编号形状的历史脏数据（只读提示）-->
+                <MenuItem Header="{lex:Loc Plans_Menu_ReturnRtCheck}" Click="Menu_ReturnRtCheck_Click"
+                          ToolTip="{lex:Loc Plans_ToolTip_ReturnRtCheck}"/>
             </MenuItem>
             <MenuItem Header="{lex:Loc Common_View}">
                 <MenuItem x:Name="menu_view_toolbar" Header="{lex:Loc Menu_Toolbar}" IsCheckable="True" Click="Menu_View_Toggle_Click"/>

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -820,6 +820,39 @@
   </data>
   <data name="ReviewDetail_OldEmpty" xml:space="preserve">
     <value>（原来为空）</value>
+  </data>
+  <data name="ReturnRtCheck_Title" xml:space="preserve">
+    <value>回线工令编号检查</value>
+  </data>
+  <data name="Plans_Menu_ReturnRtCheck" xml:space="preserve">
+    <value>回线工令编号检查…</value>
+  </data>
+  <data name="Plans_ToolTip_ReturnRtCheck" xml:space="preserve">
+    <value>检查领退表的「回线RT工令」：编号年月与领用日期、回线日期都对不上，或不是编号形状的历史数据（只提示，不改数据）</value>
+  </data>
+  <data name="ReturnRtCheck_Summary" xml:space="preserve">
+    <value>共检查 {0} 条领退记录，发现 {1} 条编号异常。</value>
+  </data>
+  <data name="ReturnRtCheck_MonthMismatch" xml:space="preserve">
+    <value>编号年月 {0} 与领用/回线日期都不符</value>
+  </data>
+  <data name="ReturnRtCheck_BadFormat" xml:space="preserve">
+    <value>不是「RTAH + 年月 + 序号」的编号</value>
+  </data>
+  <data name="ReturnRtCheck_Suggested" xml:space="preserve">
+    <value>建议编号</value>
+  </data>
+  <data name="ReturnRtCheck_Issue" xml:space="preserve">
+    <value>问题</value>
+  </data>
+  <data name="ReturnRtCheck_Clean" xml:space="preserve">
+    <value>没有发现问题：所有「回线RT工令」的编号年月都与领用日期一致。</value>
+  </data>
+  <data name="ReturnRtCheck_CopyAll" xml:space="preserve">
+    <value>复制清单</value>
+  </data>
+  <data name="ReturnRtCheck_Copied" xml:space="preserve">
+    <value>已复制 {0} 条问题记录</value>
   </data>
   <data name="ReviewDetail_RawData" xml:space="preserve">
     <value>原始数据</value>

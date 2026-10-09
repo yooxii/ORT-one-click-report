@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -820,6 +820,39 @@
   </data>
   <data name="ReviewDetail_OldEmpty" xml:space="preserve">
     <value>(was empty)</value>
+  </data>
+  <data name="ReturnRtCheck_Title" xml:space="preserve">
+    <value>Return RT Code Check</value>
+  </data>
+  <data name="Plans_Menu_ReturnRtCheck" xml:space="preserve">
+    <value>Return RT code check…</value>
+  </data>
+  <data name="Plans_ToolTip_ReturnRtCheck" xml:space="preserve">
+    <value>Check Return RT codes: month segment matching neither the requisition nor the return date, or not a code at all (report only, no data changes)</value>
+  </data>
+  <data name="ReturnRtCheck_Summary" xml:space="preserve">
+    <value>Scanned {0} requisition records, found {1} with a code problem.</value>
+  </data>
+  <data name="ReturnRtCheck_MonthMismatch" xml:space="preserve">
+    <value>Code month {0} matches neither the requisition nor the return date</value>
+  </data>
+  <data name="ReturnRtCheck_BadFormat" xml:space="preserve">
+    <value>Not an "RTAH + year-month + sequence" code</value>
+  </data>
+  <data name="ReturnRtCheck_Suggested" xml:space="preserve">
+    <value>Suggested code</value>
+  </data>
+  <data name="ReturnRtCheck_Issue" xml:space="preserve">
+    <value>Problem</value>
+  </data>
+  <data name="ReturnRtCheck_Clean" xml:space="preserve">
+    <value>No problems found: every Return RT code matches its requisition date.</value>
+  </data>
+  <data name="ReturnRtCheck_CopyAll" xml:space="preserve">
+    <value>Copy list</value>
+  </data>
+  <data name="ReturnRtCheck_Copied" xml:space="preserve">
+    <value>Copied {0} problem records</value>
   </data>
   <data name="ReviewDetail_RawData" xml:space="preserve">
     <value>Raw Data</value>

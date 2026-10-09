@@ -1260,6 +1260,21 @@ namespace ORT一键报告.Plans.Views
             StartRequisitionBatch(RequisitionBatchMode.Delete);
         }
 
+        /// <summary>
+        /// 工具菜单「回线工令编号检查」：扫描领退表的回线RT工令，列出月段与领用日期不符、
+        /// 以及不是编号形状的记录（只读提示，不改数据）。
+        /// </summary>
+        private void Menu_ReturnRtCheck_Click(object sender, RoutedEventArgs e)
+        {
+            DatabaseService db = App.ServiceProvider.GetRequiredService<DatabaseService>();
+            (int scanned, List<ReturnRtCodeIssue> issues) = ReturnRtCodeCheck.Find(db);
+            WindowReturnRtCheck window = new(issues, scanned)
+            {
+                Owner = this
+            };
+            _ = window.ShowDialog();
+        }
+
         /// <summary>临时筛选提示条上的「取消筛选」</summary>
         private void Btn_ClearQuickFilter_Click(object sender, RoutedEventArgs e)
         {
