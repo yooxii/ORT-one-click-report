@@ -3101,7 +3101,7 @@ Exit now and discard them?</value>
     <value>Minimize to background</value>
   </data>
   <data name="Settings_MinimizeToTrayHint" xml:space="preserve">
-    <value>Checked: closing the main window keeps the app running in the notification area (memory is freed once) while automatic scans and mail reminders continue; double-click the tray icon to restore the window, right-click it to show the window or exit. Unchecked: closing the main window exits the program. A one-time tip appears when minimizing, at most once a day.</value>
+    <value>Checked: closing the main window keeps the app running in the notification area (memory is freed once) while automatic scans and mail reminders continue; right-click the tray icon to show the window or exit. Unchecked: closing the main window exits the program. A one-time tip appears when minimizing, at most once a day.</value>
   </data>
   <data name="Settings_AutoStart" xml:space="preserve">
     <value>Start with Windows (current user)</value>
@@ -3132,10 +3132,10 @@ Programs on a remote path (network share or mapped network drive) cannot start w
     <value>Minimized to background</value>
   </data>
   <data name="Main_TrayBalloonText" xml:space="preserve">
-    <value>The app is still running in the background (automatic scans and mail reminders continue). Double-click the tray icon to restore the window. If you do not need this, clear "Minimize to background" in Settings > Background and closing the main window will exit the program.</value>
+    <value>The app is still running in the background (automatic scans and mail reminders continue). Right-click the tray icon to show the window. If you do not need this, clear "Minimize to background" in Settings > Background and closing the main window will exit the program.</value>
   </data>
   <data name="Main_TrayTip" xml:space="preserve">
-    <value>ORT Lab Management System (running in the background; double-click to restore)</value>
+    <value>ORT Lab Management System (running in the background; right-click to show the window)</value>
   </data>
   <data name="Msg_AlreadyRunning" xml:space="preserve">
     <value>The program is already running: its window has been brought to the front, so this launch is skipped.</value>

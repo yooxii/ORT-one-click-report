@@ -111,7 +111,6 @@ namespace ORT一键报告
                 ShowInTaskbar = false;
                 EnsureTrayIcon();
                 _inBackground = true;
-                UpdateTrayText();
                 // 界面相关的托管对象（图片、表格、报告预览等）暂时用不到了，回收并把工作集还给系统
                 MemoryTrimmer.Trim("最小化到后台");
                 _logger.Info("已最小化到后台（托盘）");
@@ -124,8 +123,12 @@ namespace ORT一键报告
         }
 
         /// <summary>
-        /// 最小化到后台后弹一次托盘气泡，提示用户可在设置里关掉这个行为；
+        /// 最小化到后台后弹一次托盘气球提示，告知用户可在设置里关掉这个行为；
         /// 「每天只提醒一次」：记住上次弹出的日期，同一天再最小化就不打扰了。
+        ///
+        /// 刻意**延迟**约 1.5 秒再弹：第一次最小化时托盘图标是刚创建的，
+        /// 立刻弹气球会抢走刚落到图标上的鼠标交互——用户这时右键点不开菜单、双击也像没反应。
+        /// 等图标在托盘里稳定下来再提示，鼠标就能正常操作。
         /// </summary>
         private void ShowBackgroundTipIfDue()
         {
@@ -138,16 +141,38 @@ namespace ORT一键报告
             {
                 return;
             }
-            _trayIcon.ShowBalloonTip(5000,
-                LanguageService.Get("Main_TrayBalloonTitle"),
-                LanguageService.Get("Main_TrayBalloonText"),
-                WinForms.ToolTipIcon.Info);
+            // 先把日期记下，避免提示排队期间反复最小化导致弹多次
             _appSettings.SetLastTrayTipDate(today);
-            _logger.Info($"已提示最小化到后台（{today}，当天不再重复提示）");
+
+            System.Windows.Threading.DispatcherTimer timer = new()
+            {
+                Interval = TimeSpan.FromMilliseconds(1500)
+            };
+            timer.Tick += (s, e) =>
+            {
+                timer.Stop();
+                if (_trayIcon == null)
+                {
+                    return;
+                }
+                try
+                {
+                    _trayIcon.ShowBalloonTip(5000,
+                        LanguageService.Get("Main_TrayBalloonTitle"),
+                        LanguageService.Get("Main_TrayBalloonText"),
+                        WinForms.ToolTipIcon.Info);
+                    _logger.Info($"已提示最小化到后台（{today}，当天不再重复提示）");
+                }
+                catch (Exception ex)
+                {
+                    _logger.Warn($"弹出最小化提示失败: {ex.Message}");
+                }
+            };
+            timer.Start();
         }
 
         /// <summary>
-        /// 从托盘恢复主窗口（重复启动程序、双击托盘图标、托盘菜单都走这里）
+        /// 从托盘恢复主窗口（托盘菜单「显示主窗口」、重复启动程序时走这里）
         /// </summary>
         public void RestoreFromBackground()
         {
@@ -210,7 +235,8 @@ namespace ORT一键报告
         }
 
         /// <summary>
-        /// 按需创建托盘图标（最小化到后台时才需要；用户关掉后台运行后不再创建）
+        /// 按需创建托盘图标（最小化到后台时才需要；用户关掉后台运行后不再创建）。
+        /// 只保留右键菜单这一个入口：双击图标不再打开主窗口（避免误触把窗口弹出来）。
         /// </summary>
         private void EnsureTrayIcon()
         {
@@ -223,7 +249,6 @@ namespace ORT一键报告
                 Icon = LoadTrayIcon(),
                 Visible = true
             };
-            _trayIcon.DoubleClick += (s, e) => RestoreFromBackground();
             BuildTrayMenu();
             // 设置里改字体/语言/开机自启后托盘菜单跟着刷新
             _appSettings.SettingsChanged += OnSettingsChangedForTray;

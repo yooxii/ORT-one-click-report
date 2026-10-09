@@ -3101,7 +3101,7 @@
     <value>最小化到背景</value>
   </data>
   <data name="Settings_MinimizeToTrayHint" xml:space="preserve">
-    <value>勾選：關閉主視窗時不結束，收進右下角通知區域繼續執行（順手清理一次記憶體），自動掃描與郵件提醒照常執行；連按兩下通知區域圖示恢復視窗，按右鍵可顯示主視窗或結束程式。不勾選：關閉主視窗即直接結束程式。最小化時右下角會彈一次提示，同一天只彈一次。</value>
+    <value>勾選：關閉主視窗時不結束，收進右下角通知區域繼續執行（順手清理一次記憶體），自動掃描與郵件提醒照常執行；按右鍵可顯示主視窗或結束程式。不勾選：關閉主視窗即直接結束程式。最小化時右下角會彈一次提示，同一天只彈一次。</value>
   </data>
   <data name="Settings_AutoStart" xml:space="preserve">
     <value>開機自動啟動（目前使用者）</value>
@@ -3132,10 +3132,10 @@
     <value>已最小化到背景</value>
   </data>
   <data name="Main_TrayBalloonText" xml:space="preserve">
-    <value>程式仍在背景執行（自動掃描、郵件提醒照常執行），連按兩下通知區域圖示可恢復視窗。如不需要，可在「設定 → 背景執行」裡取消勾選「最小化到背景」，之後關閉主視窗就會直接結束程式。</value>
+    <value>程式仍在背景執行（自動掃描、郵件提醒照常執行），按右鍵可顯示主視窗。如不需要，可在「設定 → 背景執行」裡取消勾選「最小化到背景」，之後關閉主視窗就會直接結束程式。</value>
   </data>
   <data name="Main_TrayTip" xml:space="preserve">
-    <value>ORT實驗室管理系統（在背景執行，連按兩下恢復視窗）</value>
+    <value>ORT實驗室管理系統（在背景執行，按右鍵可顯示主視窗）</value>
   </data>
   <data name="Msg_AlreadyRunning" xml:space="preserve">
     <value>程式已經開啟：已把它的視窗顯示出來，本次不再重複啟動。</value>
