@@ -34,6 +34,7 @@ whenToUse: "每当一轮对话开始、准备读代码或改文件之前；或�
 
 - `$env:GIT_TERMINAL_PROMPT='0'; git fetch origin <当前分支> --prune`
   - 受限沙箱下凭据助手可能起不来，报错形如 `sh.exe: *** fatal error - couldn't create signal pipe` 或 `fatal: could not read Username for 'https://github.com'`。这不是仓库坏了，用 `sandbox_permissions: danger-full-access` 重跑**同一条** `git fetch`，justification 写「Git 凭据助手在受限沙箱下无法创建命名管道，需要它完成远端状态查询」。
+  - 另一种受限表现：`error: cannot open '.git/FETCH_HEAD': Permission denied`（或 `.git` 下任何写入被拒，而工作区其他位置正常可写）。已确认这既不是仓库损坏也不是文件权限问题（用户对 `.git` 本就有完全控制），是本会话沙箱令牌处于 **Low 完整性级别**、`.git` 不在其可写范围。**处置同上**：用 `danger-full-access` 重跑同一条命令。注意该模式下 `git add` / `commit` / `push` 同样要写 `.git`，所以本轮收尾的提交推送也要走完整权限。不要为此去改 ACL。
   - 网络偶发失败（本机走 127.0.0.1:7897 代理，常见 `SSL_ERROR_SYSCALL`）：重试一次；仍失败就跳过这步，在汇报里写明「未取到远端状态」。
 - `git status -sb` —— 看 `[ahead N]` / `[behind N]`。
 - `git log --oneline HEAD..origin/<当前分支>` —— 列出**远端有、本地没有**的新提交（真正意义上的「最新更改」）。
