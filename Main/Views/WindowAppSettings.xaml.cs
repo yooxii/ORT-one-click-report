@@ -19,12 +19,14 @@ namespace ORT一键报告.Main.Views
     /// </summary>
     public partial class WindowAppSettings : Window
     {
+        private readonly NLog.Logger _logger = NLog.LogManager.GetCurrentClassLogger();
         private readonly AppSettingsService _settings;
         private readonly IPathService _pathService;
         private readonly IPermissionService _permission;
         private readonly MailService _mail;
         private readonly MailNotifier _mailNotifier;
         private readonly DatabaseService _db;
+        private readonly DatabaseBackupService _backup;
 
         /// <summary>邮件模板编辑器：类型代码 → 主题/正文输入框</summary>
         private readonly Dictionary<string, TextBox> _mailSubjectBoxes = [];
@@ -78,6 +80,7 @@ namespace ORT一键报告.Main.Views
             _mail = App.ServiceProvider.GetRequiredService<MailService>();
             _mailNotifier = App.ServiceProvider.GetRequiredService<MailNotifier>();
             _db = App.ServiceProvider.GetRequiredService<DatabaseService>();
+            _backup = App.ServiceProvider.GetRequiredService<DatabaseBackupService>();
             _isAdmin = _permission.Can("admin.manage");
 
             CollectSections();
@@ -107,7 +110,7 @@ namespace ORT一键报告.Main.Views
         /// </summary>
         private void HideAdminOnlySections()
         {
-            foreach (string tag in new[] { "sec_mail", "sec_mail_template", "sec_dbpath", "sec_planindex", "sec_reportscan" })
+            foreach (string tag in new[] { "sec_mail", "sec_mail_template", "sec_dbpath", "sec_planindex", "sec_reportscan", "sec_backup" })
             {
                 int index = _sections.FindIndex(section => section.Tag == tag);
                 if (index >= 0)
@@ -139,6 +142,7 @@ namespace ORT一键报告.Main.Views
             _sections.Add(("sec_mail_template", sec_mail_template));
             _sections.Add(("sec_planindex", sec_planindex));
             _sections.Add(("sec_reportscan", sec_reportscan));
+            _sections.Add(("sec_backup", sec_backup));
             _sections.Add(("sec_background", sec_background));
         }
 
@@ -556,8 +560,64 @@ namespace ORT一键报告.Main.Views
             txt_reportScanIdle.Text = _settings.GetInt(ReportScanScheduler.SettingIdleSecondsKey,
                 ReportScanScheduler.DefaultIdleSeconds).ToString();
 
+            // 数据库备份：定时策略与备份文件夹（仅管理员界面可见）
+            if (_isAdmin)
+            {
+                chk_backupAuto.IsChecked = _settings.GetBool(DatabaseBackupService.SettingAutoKey, true);
+                txt_backupFolder.Text = _settings.GetText(DatabaseBackupService.SettingFolderKey) ?? "";
+                RefreshBackupLast();
+            }
+
             // 后台运行（本机设置，所有用户可见）
             LoadBackgroundValues();
+        }
+
+        /* ###############################  数据库备份（仅管理员）  ################################ */
+
+        /// <summary>
+        /// 刷新「最近备份」提示：没有备份时提示默认备份文件夹在哪里
+        /// </summary>
+        private void RefreshBackupLast()
+        {
+            try
+            {
+                List<DatabaseBackupEntry> entries = _backup.ListBackups();
+                txt_backupLast.Text = entries.Count == 0
+                    ? string.Format(LanguageService.Get("Backup_Settings_NoBackupFormat"), _backup.ResolveBackupRoot())
+                    : string.Format(LanguageService.Get("Backup_LastFormat"), entries[0].CreatedAt.ToString("yyyy/M/d HH:mm"));
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn($"读取备份清单失败: {ex.Message}");
+                txt_backupLast.Text = "";
+            }
+        }
+
+        /// <summary>选择备份文件夹</summary>
+        private void Btn_BackupFolderBrowse_Click(object sender, RoutedEventArgs e)
+        {
+            string current = FolderUtil.Normalize(txt_backupFolder.Text);
+            string chosen = _pathService.OpenPathDialog(LanguageService.Get("Backup_Settings_Folder"),
+                null, string.IsNullOrEmpty(current) ? _backup.DefaultBackupRoot : current, isDir: true);
+            if (!string.IsNullOrWhiteSpace(chosen))
+            {
+                txt_backupFolder.Text = chosen;
+            }
+        }
+
+        /// <summary>恢复默认备份文件夹（清空＝数据库同级的 Backups）</summary>
+        private void Btn_BackupFolderDefault_Click(object sender, RoutedEventArgs e)
+        {
+            txt_backupFolder.Text = "";
+            txt_backupLast.Text = string.Format(LanguageService.Get("Backup_Settings_NoBackupFormat"), _backup.DefaultBackupRoot);
+        }
+
+        /// <summary>打开「数据库快照与还原」窗口</summary>
+        private void Btn_BackupOpen_Click(object sender, RoutedEventArgs e)
+        {
+            WindowBackup window = new() { Owner = this };
+            _ = window.ShowDialog();
+            RefreshBackupLast();
         }
 
         /* ###############################  后台运行（本机）  ################################ */
@@ -756,6 +816,18 @@ namespace ORT一键报告.Main.Views
                 }
                 _settings.SetBool(ReportScanScheduler.SettingAutoKey, chk_reportScanAuto.IsChecked == true);
                 _settings.SetInt(ReportScanScheduler.SettingIdleSecondsKey, scanIdleSeconds);
+
+                // 数据库备份：定时开关与备份文件夹（非管理员界面未载入，不得回写）
+                _settings.SetBool(DatabaseBackupService.SettingAutoKey, chk_backupAuto.IsChecked == true);
+                string backupFolder = FolderUtil.Normalize(txt_backupFolder.Text);
+                if (!string.IsNullOrEmpty(backupFolder) && !FolderUtil.TryPrepare(backupFolder, out string backupFolderError))
+                {
+                    _ = MessageBox.Show(string.Format(LanguageService.Get("Msg_DataFolderInvalidFormat"), backupFolderError),
+                        LanguageService.Get("Cap_Error"), MessageBoxButton.OK, MessageBoxImage.Warning);
+                    txt_backupFolder.Focus();
+                    return false;
+                }
+                _settings.SetText(DatabaseBackupService.SettingFolderKey, backupFolder ?? "");
             }
             if (_isAdmin)
             {

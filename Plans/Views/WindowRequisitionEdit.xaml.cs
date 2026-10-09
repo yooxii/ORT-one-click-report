@@ -59,6 +59,13 @@ namespace ORT一键报告.Plans.Views
         private readonly HashSet<string> _issuedReturnRt = new(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
+        /// 工作编号查重（由调用方传入）：以表格当前数据为准（含暂存新增/修改），
+        /// 这样「把某条记录的编号改大一位后，再用原来的编号新增」不会被库里的旧值挡住。
+        /// 为空时退化为只查数据库。
+        /// </summary>
+        private readonly Func<string, long, bool> _jobNoTaken;
+
+        /// <summary>
         /// 本窗口「保存并继续」刚存过的「机种 → 版本」：提示优先用它，其次才是库里的历史记录
         /// </summary>
         private readonly Dictionary<string, string> _sessionRevByModel = new(StringComparer.OrdinalIgnoreCase);
@@ -116,7 +123,8 @@ namespace ORT一键报告.Plans.Views
 
         public WindowRequisitionEdit(DatabaseService db, IPermissionService permission, AdminService admin,
             PlanExcelService excelService, Requisition editTarget = null,
-            string defaultTestItem = null, string defaultStage = null)
+            string defaultTestItem = null, string defaultStage = null,
+            Func<string, long, bool> jobNoTaken = null)
         {
             InitializeComponent();
             _db = db;
@@ -124,6 +132,7 @@ namespace ORT一键报告.Plans.Views
             _admin = admin;
             _excelService = excelService;
             _editTarget = editTarget;
+            _jobNoTaken = jobNoTaken;
 
             Title = editTarget == null ? "领退表新增" : "领退表编辑";
 
@@ -704,7 +713,7 @@ namespace ORT一键报告.Plans.Views
         }
 
         /// <summary>
-        /// 刷新机种名称补全提示：把候选名称减去已输入部分，剩下的后半段作为输入框里的水印显示
+        /// 刷新机种名称补全提示：把候选名称减去已输入部分，剩下的后半段作为输入框里的水印显示。
         /// </summary>
         private void UpdateModelCompletion()
         {
@@ -718,33 +727,44 @@ namespace ORT一键报告.Plans.Views
                 ? null
                 : RequisitionEditRules.ModelSuggestion(GetModelCandidates(), typed);
             _modelSuggestion = suggestion;
-            if (suggestion == null)
+            if (suggestion == null || !TryPlaceModelHint(typed))
             {
                 txt_modelHint.Text = "";
                 txt_modelHint.Visibility = Visibility.Collapsed;
                 return;
             }
             txt_modelHint.Text = suggestion.Substring(typed.Length);
-            txt_modelHint.Margin = new Thickness(MeasureCaretOffset(typed), 0, 0, 0);
             txt_modelHint.Visibility = Visibility.Visible;
         }
 
         /// <summary>
-        /// 水印提示的横向位置：输入框边框 + 内边距 + 已输入文本的宽度（让提示正好接在文字后面）
+        /// 把补全提示摆到输入框里光标所在的位置：位置直接问输入框「这个字符画在哪里」
+        /// （<see cref="System.Windows.Controls.TextBox.GetRectFromCharacterIndex"/>），
+        /// 字体、内边距、横向滚动都由输入框自己算，提示与正在输入的文字严格对齐。
+        /// 光标被滚出可见区域、或取不到位置时返回 false（不显示提示）。
         /// </summary>
-        private double MeasureCaretOffset(string text)
+        private bool TryPlaceModelHint(string typed)
         {
-            double offset = txt_model.BorderThickness.Left + txt_model.Padding.Left;
-            if (string.IsNullOrEmpty(text))
+            try
             {
-                return offset;
+                // 刚输入的字符要等布局更新后位置才准
+                txt_model.UpdateLayout();
+                int index = typed.Length > 0 ? typed.Length - 1 : 0;
+                Rect caret = txt_model.GetRectFromCharacterIndex(index, typed.Length > 0);
+                if (caret.IsEmpty || caret.Left < 0 || caret.Left > txt_model.ActualWidth)
+                {
+                    return false;
+                }
+                txt_modelHint.HorizontalAlignment = HorizontalAlignment.Left;
+                txt_modelHint.VerticalAlignment = VerticalAlignment.Top;
+                txt_modelHint.Margin = new Thickness(caret.Left, caret.Top, 0, 0);
+                return true;
             }
-            var typeface = new System.Windows.Media.Typeface(txt_model.FontFamily, txt_model.FontStyle,
-                txt_model.FontWeight, txt_model.FontStretch);
-            var formatted = new System.Windows.Media.FormattedText(text, System.Globalization.CultureInfo.CurrentUICulture,
-                FlowDirection.LeftToRight, typeface, txt_model.FontSize, System.Windows.Media.Brushes.Black,
-                System.Windows.Media.VisualTreeHelper.GetDpi(this).PixelsPerDip);
-            return offset + formatted.WidthIncludingTrailingWhitespace + 1;
+            catch (Exception ex)
+            {
+                _logger.Warn($"计算机种补全提示位置失败: {ex.Message}");
+                return false;
+            }
         }
 
         /// <summary>
@@ -970,10 +990,15 @@ namespace ORT一键报告.Plans.Views
                     return;
                 }
                 long planId = _associatedPlan?.Id ?? 0;
-                if (_issuedJobNos.Contains(jobNo)
-                    || _db.FreeSql.Select<Plan>().Where(p => p.JobNo == jobNo && p.Id != planId).Any())
+                // 查重口径：优先用调用方给的「表格当前数据」（含暂存修改），拿不到才只看数据库
+                bool jobNoExists = _issuedJobNos.Contains(jobNo)
+                    || (_jobNoTaken != null
+                        ? _jobNoTaken(jobNo, planId)
+                        : _db.FreeSql.Select<Plan>().Where(p => p.JobNo == jobNo && p.Id != planId).Any());
+                if (jobNoExists)
                 {
-                    _ = MessageBox.Show(string.Format(LocalizationHelper.Get("Msg_JobNoExistsFormat"), jobNo),
+                    _ = MessageBox.Show(string.Format(LocalizationHelper.Get(
+                            _jobNoTaken != null ? "Msg_JobNoTakenInListFormat" : "Msg_JobNoExistsFormat"), jobNo),
                         LanguageService.Get("Cap_Info"));
                     return;
                 }

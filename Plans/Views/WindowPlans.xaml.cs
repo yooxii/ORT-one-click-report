@@ -106,10 +106,85 @@ namespace ORT一键报告.Plans.Views
                 _vm.RememberSearch();
                 // 退订对单例报告扫描服务的订阅，避免旧 ViewModel 被长期引用
                 _vm.ReportScanCompleted -= OnReportScanCompleted;
+                _vm.RequisitionStaged -= OnRequisitionStaged;
+                _vm.PlanStaged -= OnPlanStaged;
                 _vm.DetachScanEvents();
             };
             // 报告文件夹扫描完成后，提示用户建立计划索引（每个窗口实例只提示一次）
             _vm.ReportScanCompleted += OnReportScanCompleted;
+            // 新增窗口保存后：把这条「待提交」的新记录滚动到可见处并选中（提交前的预览）
+            _vm.RequisitionStaged += OnRequisitionStaged;
+            _vm.PlanStaged += OnPlanStaged;
+        }
+
+        /* ###############################  新增暂存后的定位预览  ################################ */
+
+        private void OnRequisitionStaged(Requisition req) => RevealStagedRecord(req, isPlan: false);
+
+        private void OnPlanStaged(Plan plan) => RevealStagedRecord(plan, isPlan: true);
+
+        /// <summary>
+        /// 新增窗口保存后把刚暂存的记录显示出来：切到对应页签、必要时清掉挡住它的
+        /// 搜索/列筛选/临时筛选，选中并滚动到可见处，再提示「点提交保存才正式生效」。
+        /// 延迟到下一个消息循环执行——刚插入的行要等布局跑一遍才能滚动到它。
+        /// </summary>
+        private void RevealStagedRecord(object record, bool isPlan)
+        {
+            if (record == null)
+            {
+                return;
+            }
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                try
+                {
+                    if (!IsLoaded)
+                    {
+                        return;
+                    }
+                    tabs.SelectedIndex = isPlan ? 1 : 0;
+                    ICollectionView view = isPlan ? _vm.PlansView : _vm.RequisitionsView;
+                    DataGrid grid = isPlan ? dg_plans : dg_requisitions;
+                    bool cleared = false;
+                    if (!view.Contains(record))
+                    {
+                        // 被搜索关键字 / 列筛选 / 批量登记的临时筛选挡住了：先清掉再显示
+                        if (!string.IsNullOrWhiteSpace(_vm.SearchKeyword))
+                        {
+                            _vm.ClearSearch();
+                            cleared = true;
+                        }
+                        if ((isPlan ? _vm.PlanFilters : _vm.ReqFilters).Count > 0)
+                        {
+                            _vm.ClearAllFilters(isPlan);
+                            cleared = true;
+                        }
+                        if (!isPlan && _vm.IsQuickFilterActive)
+                        {
+                            _vm.SetRequisitionQuickFilter(null, null);
+                            cleared = true;
+                        }
+                        PlansViewModel.SafeRefresh(view);
+                    }
+                    if (isPlan && record is Plan plan)
+                    {
+                        _vm.SelectedPlan = plan;
+                    }
+                    else if (record is Requisition req)
+                    {
+                        _vm.SelectedRequisition = req;
+                    }
+                    grid.ScrollIntoView(record);
+                    grid.UpdateLayout();
+                    string text = LanguageService.Get(cleared ? "Plans_StagedPreviewCleared" : "Plans_StagedPreview");
+                    _vm.StatusMessage = text;
+                    ToastService.Show(text, ToastType.Info);
+                }
+                catch (Exception ex)
+                {
+                    _logger.Warn($"展示暂存的新记录失败: {ex.Message}");
+                }
+            }), DispatcherPriority.Background);
         }
 
         /* ###############################  计划索引提示  ################################ */
@@ -888,6 +963,9 @@ namespace ORT一键报告.Plans.Views
         /// <summary>下拉编辑开始时的快照（行、属性、原值），用于结束时判断是否修改并提示</summary>
         private (Plan item, string prop, string original)? _planComboEditSnapshot;
 
+        /// <summary>工作编号编辑开始时的原值：用来判断是否改过、改重了要还原</summary>
+        private (Plan item, string jobNo)? _planJobNoSnapshot;
+
         private static string GetPropString(object obj, string prop)
             => obj?.GetType().GetProperty(prop)?.GetValue(obj)?.ToString();
 
@@ -899,6 +977,9 @@ namespace ORT一键报告.Plans.Views
             string prop = e.Column.SortMemberPath;
             _planComboEditSnapshot = e.Row.Item is Plan plan && prop != null && PlanComboColumns.Contains(prop)
                 ? (plan, prop, GetPropString(plan, prop))
+                : null;
+            _planJobNoSnapshot = e.Row.Item is Plan jobPlan && prop == nameof(Plan.JobNo)
+                ? (jobPlan, jobPlan.JobNo)
                 : null;
         }
 
@@ -997,7 +1078,23 @@ namespace ORT一键报告.Plans.Views
                     e.Cancel = true;
                     return;
                 }
+                // 工作编号不能与表格里其它记录重复（含尚未提交的修改）；
+                // 绑定是 PropertyChanged，值在输入时就已写进记录，改重了要还原原值
+                if (_planJobNoSnapshot is { } jobNoSnap && ReferenceEquals(jobNoSnap.item, plan)
+                    && !string.Equals(jobNoSnap.jobNo?.Trim(), plan.JobNo?.Trim(), StringComparison.OrdinalIgnoreCase)
+                    && _vm.IsJobNoTaken(plan.JobNo, plan.Id))
+                {
+                    string entered = plan.JobNo?.Trim();
+                    plan.JobNo = jobNoSnap.jobNo;
+                    _planJobNoSnapshot = null;
+                    _ = MessageBox.Show(string.Format(LanguageService.Get("Msg_JobNoTakenInListFormat"), entered),
+                        LanguageService.Get("Cap_Info"));
+                    e.Cancel = true;
+                    _vm.NotifyPendingChanged();
+                    return;
+                }
             }
+            _planJobNoSnapshot = null;
             if (column == "Status")
             {
                 string error = _vm.ValidateField("Status", plan.Status);
@@ -1466,6 +1563,11 @@ namespace ORT一键报告.Plans.Views
                     foreach (Requisition req in window.Targets)
                     {
                         req.ReturnDate = window.ReturnDate;
+                        // 回线数量：没登记过的按领用数量记（与单条回线窗口的默认值一致）
+                        if (string.IsNullOrWhiteSpace(req.ReturnQty))
+                        {
+                            req.ReturnQty = req.OutQty;
+                        }
                     }
                     _vm.StatusMessage = string.Format(LanguageService.Get("Plans_Msg_BatchReturnAppliedFormat"),
                         window.Targets.Count, window.SkippedCount);
@@ -1562,10 +1664,12 @@ namespace ORT一键报告.Plans.Views
             }
             _vm.SelectedRequisition = req;
             req.ReturnDate = window.ReturnDate;
+            // 回线数量：窗口里可编辑，默认为领用数量（留空时也按领用数量记）
+            req.ReturnQty = string.IsNullOrWhiteSpace(window.ReturnQty) ? req.OutQty : window.ReturnQty;
             _vm.NotifyPendingChanged();
             _vm.StatusMessage = string.Format(LanguageService.Get("Plans_Msg_ReturnAppliedFormat"),
                 window.ReturnDate.ToString("yyyy/M/d"));
-            _logger.Info($"回线登记：{req.RequisitionNo} 回线日期={window.ReturnDate:yyyy/M/d}");
+            _logger.Info($"回线登记：{req.RequisitionNo} 回线日期={window.ReturnDate:yyyy/M/d} 回线数量={req.ReturnQty}");
         }
 
         /// <summary>

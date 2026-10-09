@@ -45,6 +45,7 @@
                     </TreeViewItem>
                     <TreeViewItem Header="{lex:Loc PlanIndex_Settings_Title}" Tag="sec_planindex"/>
                     <TreeViewItem Header="{lex:Loc ReportScan_SettingsTitle}" Tag="sec_reportscan"/>
+                    <TreeViewItem Header="{lex:Loc Backup_Settings_Title}" Tag="sec_backup"/>
                     <TreeViewItem Header="{lex:Loc Settings_Background}" Tag="sec_background"/>
                 </TreeView>
             </DockPanel>
@@ -462,6 +463,37 @@
                         </StackPanel>
                         <TextBlock Text="{lex:Loc ReportScan_IdleSecondsHint}" Foreground="{DynamicResource TextSecondaryBrush}"
                                    TextWrapping="Wrap" Margin="0,4,0,0"/>
+                    </StackPanel>
+                </Border>
+
+                <!--数据库备份（仅管理员）：定时全量/增量、备份文件夹、快照与还原入口-->
+                <Border x:Name="sec_backup" Padding="0,10">
+                    <StackPanel>
+                        <TextBlock Text="{lex:Loc Backup_Settings_Title}" FontSize="16" FontWeight="SemiBold"/>
+                        <TextBlock Text="{lex:Loc Backup_Settings_Hint}" Foreground="{DynamicResource TextSecondaryBrush}"
+                                   TextWrapping="Wrap" Margin="0,2,0,8"/>
+                        <CheckBox x:Name="chk_backupAuto" Content="{lex:Loc Backup_Settings_Auto}" Margin="0,2,0,8"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" SharedSizeGroup="SettingsLabel"/>
+                                <ColumnDefinition Width="*" MinWidth="140"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{lex:Loc Backup_Settings_Folder}" VerticalAlignment="Center"/>
+                            <TextBox x:Name="txt_backupFolder" Grid.Column="1" Margin="6,0,0,0" VerticalContentAlignment="Center"
+                                     ToolTip="{lex:Loc Backup_Settings_FolderHint}"/>
+                            <Button x:Name="btn_backupFolderBrowse" Grid.Column="2" Content="{lex:Loc Common_BrowseEllipsis}"
+                                    Margin="6,0,0,0" Padding="6,3" Click="Btn_BackupFolderBrowse_Click"/>
+                            <Button x:Name="btn_backupFolderDefault" Grid.Column="3" Content="{lex:Loc Backup_Settings_Default}"
+                                    Margin="6,0,0,0" Padding="8,3" Click="Btn_BackupFolderDefault_Click"
+                                    ToolTip="{lex:Loc Backup_Settings_FolderHint}"/>
+                            <Button x:Name="btn_backupOpen" Grid.Column="4" Content="{lex:Loc Backup_Settings_Open}"
+                                    Margin="12,0,0,0" Padding="10,3" Click="Btn_BackupOpen_Click"/>
+                        </Grid>
+                        <TextBlock x:Name="txt_backupLast" Foreground="{DynamicResource TextSecondaryBrush}"
+                                   TextWrapping="Wrap" Margin="0,6,0,0"/>
                     </StackPanel>
                 </Border>
 

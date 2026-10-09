@@ -64,6 +64,18 @@ namespace ORT一键报告.Tests
                 "ReqEdit_LastRevHintFormat", "ReqEdit_ModelHint", "ReqEdit_WorkOrderHint",
                 "ReqEdit_QtySyncHint", "ReqEdit_PlanRemarkHint",
                 "Plans_SearchHistory", "Plans_SearchHistoryHint", "Plans_SearchHistoryEmpty", "Plans_SearchClearHint",
+                "Backup_Title", "Backup_Hint", "Backup_Folder", "Backup_OpenFolder", "Backup_FullNow",
+                "Backup_IncrementalNow", "Backup_Col_Time", "Backup_Col_Kind", "Backup_Col_Size",
+                "Backup_Col_Changed", "Backup_Col_Base", "Backup_Col_File", "Backup_Col_State",
+                "Backup_Kind_Full", "Backup_Kind_Incremental", "Backup_State_Ok", "Backup_Restore",
+                "Backup_Delete", "Backup_RestoreTitle", "Backup_RestoreConfirm", "Backup_RestoreBusy",
+                "Backup_RestoreDoneTitle", "Backup_RestoreDone", "Backup_DeleteConfirm", "Backup_NoSelection",
+                "Backup_Busy", "Backup_LastFormat", "Backup_None", "Backup_DeletedFormat",
+                "Backup_DeletedPartialFormat", "Backup_Settings_Title", "Backup_Settings_Hint",
+                "Backup_Settings_Auto", "Backup_Settings_Folder", "Backup_Settings_FolderHint",
+                "Backup_Settings_Default", "Backup_Settings_Open", "Backup_Settings_NoBackupFormat",
+                "ReqReturn_QtyHint", "Plans_StagedPreview", "Plans_StagedPreviewCleared",
+                "Msg_JobNoTakenInListFormat",
             ];
             foreach (string key in keys)
             {

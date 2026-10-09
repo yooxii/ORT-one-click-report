@@ -126,6 +126,8 @@ namespace ORT一键报告
                 services.AddSingleton<TestPlanService>();
                 services.AddSingleton<PlanIndexService>();
                 services.AddSingleton<PlanIndexScheduler>();
+                services.AddSingleton<DatabaseBackupService>();
+                services.AddSingleton<DatabaseBackupScheduler>();
                 services.AddSingleton<ReportStatusReader>();
                 services.AddSingleton<ReportScanService>();
                 services.AddSingleton<ReportScanScheduler>();
@@ -235,6 +237,18 @@ namespace ORT一键报告
                 catch (Exception ex)
                 {
                     logger.Warn($"启动闲置报告扫描失败: {ex.Message}");
+                }
+
+                // 主窗口显示后启动数据库定时备份（每周一次全量 + 每天一次增量）
+                try
+                {
+                    DatabaseBackupScheduler backupScheduler = ServiceProvider.GetRequiredService<DatabaseBackupScheduler>();
+                    backupScheduler.Finished += message => ToastService.Show(message, ORT一键报告.Main.Views.ToastType.Info);
+                    backupScheduler.Start();
+                }
+                catch (Exception ex)
+                {
+                    logger.Warn($"启动数据库定时备份失败: {ex.Message}");
                 }
             }
             catch (Exception ex)

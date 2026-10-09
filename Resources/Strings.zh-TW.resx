@@ -3209,4 +3209,130 @@
   <data name="Main_TrayAutoStart" xml:space="preserve">
     <value>開機自動啟動</value>
   </data>
+  <data name="Backup_Title" xml:space="preserve">
+    <value>資料庫快照與還原</value>
+  </data>
+  <data name="Backup_Hint" xml:space="preserve">
+    <value>每週自動做一次全量備份、每天自動做一次增量備份；備份預設放在資料庫同級的 Backups 資料夾（只備份資料庫本身，附件與配圖不在內）。還原會用選定的快照取代目前資料庫，取代前自動先備份目前資料庫。</value>
+  </data>
+  <data name="Backup_Folder" xml:space="preserve">
+    <value>備份資料夾</value>
+  </data>
+  <data name="Backup_OpenFolder" xml:space="preserve">
+    <value>開啟資料夾</value>
+  </data>
+  <data name="Backup_FullNow" xml:space="preserve">
+    <value>立即全量備份</value>
+  </data>
+  <data name="Backup_IncrementalNow" xml:space="preserve">
+    <value>立即增量備份</value>
+  </data>
+  <data name="Backup_Col_Time" xml:space="preserve">
+    <value>備份時間</value>
+  </data>
+  <data name="Backup_Col_Kind" xml:space="preserve">
+    <value>類型</value>
+  </data>
+  <data name="Backup_Col_Size" xml:space="preserve">
+    <value>大小</value>
+  </data>
+  <data name="Backup_Col_Changed" xml:space="preserve">
+    <value>變更行數</value>
+  </data>
+  <data name="Backup_Col_Base" xml:space="preserve">
+    <value>基準備份</value>
+  </data>
+  <data name="Backup_Col_File" xml:space="preserve">
+    <value>檔案</value>
+  </data>
+  <data name="Backup_Col_State" xml:space="preserve">
+    <value>狀態</value>
+  </data>
+  <data name="Backup_Kind_Full" xml:space="preserve">
+    <value>全量</value>
+  </data>
+  <data name="Backup_Kind_Incremental" xml:space="preserve">
+    <value>增量</value>
+  </data>
+  <data name="Backup_State_Ok" xml:space="preserve">
+    <value>可還原</value>
+  </data>
+  <data name="Backup_Restore" xml:space="preserve">
+    <value>還原選取</value>
+  </data>
+  <data name="Backup_Delete" xml:space="preserve">
+    <value>刪除選取</value>
+  </data>
+  <data name="Backup_RestoreTitle" xml:space="preserve">
+    <value>確認還原</value>
+  </data>
+  <data name="Backup_RestoreConfirm" xml:space="preserve">
+    <value>確認把資料庫還原到 {0} 的{1}備份？還原會用該快照取代目前資料庫（會先自動備份目前資料庫），完成後需要重新啟動程式；其它電腦上開著的程式請先關閉。</value>
+  </data>
+  <data name="Backup_RestoreBusy" xml:space="preserve">
+    <value>正在還原，請稍候…</value>
+  </data>
+  <data name="Backup_RestoreDoneTitle" xml:space="preserve">
+    <value>還原完成</value>
+  </data>
+  <data name="Backup_RestoreDone" xml:space="preserve">
+    <value>{0}。程式需要關閉並重新開啟才能使用還原後的資料，現在將結束程式。</value>
+  </data>
+  <data name="Backup_DeleteConfirm" xml:space="preserve">
+    <value>確認刪除選取的 {0} 份備份檔案？（只刪備份檔案，不影響資料庫）</value>
+  </data>
+  <data name="Backup_NoSelection" xml:space="preserve">
+    <value>請先在清單中選擇一份備份</value>
+  </data>
+  <data name="Backup_Busy" xml:space="preserve">
+    <value>正在備份，請稍候…</value>
+  </data>
+  <data name="Backup_LastFormat" xml:space="preserve">
+    <value>最近備份：{0}</value>
+  </data>
+  <data name="Backup_None" xml:space="preserve">
+    <value>還沒有備份檔案；備份預設放在資料庫同級的 Backups 資料夾</value>
+  </data>
+  <data name="Backup_DeletedFormat" xml:space="preserve">
+    <value>已刪除 {0} 份備份</value>
+  </data>
+  <data name="Backup_DeletedPartialFormat" xml:space="preserve">
+    <value>已刪除 {0} 份，{1} 份刪除失敗</value>
+  </data>
+  <data name="Backup_Settings_Title" xml:space="preserve">
+    <value>資料庫備份</value>
+  </data>
+  <data name="Backup_Settings_Hint" xml:space="preserve">
+    <value>每週自動一次全量備份、每天自動一次增量備份（預設備份在資料庫同級的 Backups 資料夾；只備份資料庫本身，附件與配圖不在內）。還原請用「快照與還原」。</value>
+  </data>
+  <data name="Backup_Settings_Auto" xml:space="preserve">
+    <value>自動定時備份（每週一次全量、每天一次增量）</value>
+  </data>
+  <data name="Backup_Settings_Folder" xml:space="preserve">
+    <value>備份資料夾</value>
+  </data>
+  <data name="Backup_Settings_FolderHint" xml:space="preserve">
+    <value>留空＝資料庫同級的 Backups 資料夾</value>
+  </data>
+  <data name="Backup_Settings_Default" xml:space="preserve">
+    <value>恢復預設</value>
+  </data>
+  <data name="Backup_Settings_Open" xml:space="preserve">
+    <value>快照與還原…</value>
+  </data>
+  <data name="Backup_Settings_NoBackupFormat" xml:space="preserve">
+    <value>還沒有備份檔案；目前備份資料夾：{0}</value>
+  </data>
+  <data name="ReqReturn_QtyHint" xml:space="preserve">
+    <value>預設為領用數量，可修改</value>
+  </data>
+  <data name="Plans_StagedPreview" xml:space="preserve">
+    <value>已暫存新記錄（表格中高亮的那一行），點「提交保存」後正式生效</value>
+  </data>
+  <data name="Plans_StagedPreviewCleared" xml:space="preserve">
+    <value>已暫存新記錄；為顯示它，已清除目前的搜尋關鍵字與欄篩選</value>
+  </data>
+  <data name="Msg_JobNoTakenInListFormat" xml:space="preserve">
+    <value>工作編號 [{0}] 已被表格中的記錄占用（含尚未提交的修改）</value>
+  </data>
 </root>

@@ -15,7 +15,7 @@
     <MapFileExtensions>true</MapFileExtensions>
     <PublisherName>Lucas Li%28AcBel ORT%29</PublisherName>
     <ApplicationRevision>0</ApplicationRevision>
-    <ApplicationVersion>0.6.0.2</ApplicationVersion>
+    <ApplicationVersion>0.6.1.0</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <CreateDesktopShortcut>true</CreateDesktopShortcut>
     <PublishWizardCompleted>true</PublishWizardCompleted>
@@ -135,6 +135,7 @@
     <Compile Include="Models\TestCategories.cs" />
     <Compile Include="Models\AdminCatalogs.cs" />
     <Compile Include="Models\AppSettings.cs" />
+    <Compile Include="Models\DatabaseBackup.cs" />
     <Compile Include="Utils\PlanValidation.cs" />
     <Compile Include="Services\AuthService.cs" />
     <Compile Include="Services\AdminService.cs" />
@@ -206,6 +207,8 @@
       <DependentUpon>WindowReviewDetail.xaml</DependentUpon>
     </Compile>
     <Compile Include="Services\DatabaseService.cs" />
+    <Compile Include="Services\DatabaseBackupService.cs" />
+    <Compile Include="Services\DatabaseBackupScheduler.cs" />
     <Compile Include="Services\PermissionService.cs" />
     <Compile Include="Services\PlanExcelService.cs" />
     <Compile Include="Plans\ViewModels\PlansViewModel.cs" />
@@ -328,6 +331,9 @@
     </Compile>
     <Compile Include="Main\Views\WindowChangelog.xaml.cs">
       <DependentUpon>WindowChangelog.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Main\Views\WindowBackup.xaml.cs">
+      <DependentUpon>WindowBackup.xaml</DependentUpon>
     </Compile>
     <Compile Include="Reports\Views\UserControlDataGrid.xaml.cs">
       <DependentUpon>UserControlDataGrid.xaml</DependentUpon>
@@ -455,6 +461,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Main\Views\WindowChangelog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Main\Views\WindowBackup.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

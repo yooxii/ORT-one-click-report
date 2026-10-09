@@ -422,6 +422,80 @@ namespace ORT一键报告.Services
                 : Path.Combine(OleDir, relativeOrAbsolute);
         }
 
+        /// <summary>
+        /// 还原用：释放数据库连接，把数据库文件替换成给定的文件（并清掉 -wal/-shm/-journal 旁挂文件）。
+        /// 原库先改名再复制新库，复制失败会把原库改回来，不会出现「新库没写上、旧库也没了」；
+        /// 替换后本实例的连接已释放、不能再使用，调用方必须重启程序。
+        /// 其它电脑仍开着程序时数据库文件被占用，会抛出带说明的异常（还原中止，数据不受影响）。
+        /// </summary>
+        public void ReplaceDatabaseFile(string newDbFile)
+        {
+            if (string.IsNullOrWhiteSpace(newDbFile) || !File.Exists(newDbFile))
+            {
+                throw new FileNotFoundException("要还原的数据库文件不存在", newDbFile);
+            }
+            DisposeFreeSqlQuietly();
+            DatabaseBackupService.ClearSqlitePools();
+
+            string oldName = DbPath + ".before-restore";
+            DeleteSidecarFiles();
+            TryDeleteFile(oldName);
+            try
+            {
+                File.Move(DbPath, oldName);
+            }
+            catch (Exception ex)
+            {
+                throw new IOException(
+                    $"数据库文件无法替换（{DbPath}）：{ex.Message}{Environment.NewLine}" +
+                    "最常见的原因是还有别的电脑开着本程序占用着数据库文件；请先让其它客户端退出程序后重试。", ex);
+            }
+            try
+            {
+                File.Copy(newDbFile, DbPath, true);
+            }
+            catch (Exception ex)
+            {
+                // 复制失败：把原库改回原名，保证不会两头空
+                try
+                {
+                    File.Move(oldName, DbPath);
+                }
+                catch (Exception rollback)
+                {
+                    _logger.Error(rollback, $"还原失败后回滚数据库文件也失败：{oldName} → {DbPath}");
+                }
+                throw new IOException($"写入还原后的数据库文件失败：{ex.Message}", ex);
+            }
+            DatabaseBackupService.ClearSqlitePools();
+            DeleteSidecarFiles();
+            TryDeleteFile(oldName);
+            _logger.Warn($"数据库文件已替换为还原文件：{newDbFile} → {DbPath}（需要重启程序）");
+        }
+
+        /// <summary>删除数据库旁挂的日志文件（WAL/SHM/回滚日志）</summary>
+        private void DeleteSidecarFiles()
+        {
+            TryDeleteFile(DbPath + "-wal");
+            TryDeleteFile(DbPath + "-shm");
+            TryDeleteFile(DbPath + "-journal");
+        }
+
+        private static void TryDeleteFile(string path)
+        {
+            try
+            {
+                if (File.Exists(path))
+                {
+                    File.Delete(path);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.GetCurrentClassLogger().Warn($"删除文件失败（{path}）: {ex.Message}");
+            }
+        }
+
         public void Dispose()
         {
             FreeSql?.Dispose();

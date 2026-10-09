@@ -3209,4 +3209,130 @@ Programs on a remote path (network share or mapped network drive) cannot start w
   <data name="Main_TrayAutoStart" xml:space="preserve">
     <value>Start with Windows</value>
   </data>
+  <data name="Backup_Title" xml:space="preserve">
+    <value>Database Snapshots &amp; Restore</value>
+  </data>
+  <data name="Backup_Hint" xml:space="preserve">
+    <value>A full backup is taken once a week and an incremental backup once a day; backups go to the Backups folder next to the database (database only - attachments and plan images are not included). Restoring replaces the current database with the selected snapshot; the current database is backed up first.</value>
+  </data>
+  <data name="Backup_Folder" xml:space="preserve">
+    <value>Backup folder</value>
+  </data>
+  <data name="Backup_OpenFolder" xml:space="preserve">
+    <value>Open folder</value>
+  </data>
+  <data name="Backup_FullNow" xml:space="preserve">
+    <value>Full backup now</value>
+  </data>
+  <data name="Backup_IncrementalNow" xml:space="preserve">
+    <value>Incremental backup now</value>
+  </data>
+  <data name="Backup_Col_Time" xml:space="preserve">
+    <value>Time</value>
+  </data>
+  <data name="Backup_Col_Kind" xml:space="preserve">
+    <value>Type</value>
+  </data>
+  <data name="Backup_Col_Size" xml:space="preserve">
+    <value>Size</value>
+  </data>
+  <data name="Backup_Col_Changed" xml:space="preserve">
+    <value>Changed rows</value>
+  </data>
+  <data name="Backup_Col_Base" xml:space="preserve">
+    <value>Base backup</value>
+  </data>
+  <data name="Backup_Col_File" xml:space="preserve">
+    <value>File</value>
+  </data>
+  <data name="Backup_Col_State" xml:space="preserve">
+    <value>State</value>
+  </data>
+  <data name="Backup_Kind_Full" xml:space="preserve">
+    <value>Full</value>
+  </data>
+  <data name="Backup_Kind_Incremental" xml:space="preserve">
+    <value>Incremental</value>
+  </data>
+  <data name="Backup_State_Ok" xml:space="preserve">
+    <value>Restorable</value>
+  </data>
+  <data name="Backup_Restore" xml:space="preserve">
+    <value>Restore selected</value>
+  </data>
+  <data name="Backup_Delete" xml:space="preserve">
+    <value>Delete selected</value>
+  </data>
+  <data name="Backup_RestoreTitle" xml:space="preserve">
+    <value>Confirm restore</value>
+  </data>
+  <data name="Backup_RestoreConfirm" xml:space="preserve">
+    <value>Restore the database to the {1} backup of {0}? The current database will be replaced by that snapshot (it is backed up first) and the program must be restarted afterwards. Close the program on other computers first.</value>
+  </data>
+  <data name="Backup_RestoreBusy" xml:space="preserve">
+    <value>Restoring, please wait...</value>
+  </data>
+  <data name="Backup_RestoreDoneTitle" xml:space="preserve">
+    <value>Restore complete</value>
+  </data>
+  <data name="Backup_RestoreDone" xml:space="preserve">
+    <value>{0}. The program must be closed and reopened to use the restored data, so it will exit now.</value>
+  </data>
+  <data name="Backup_DeleteConfirm" xml:space="preserve">
+    <value>Delete the {0} selected backup file(s)? (Only the backup files are removed; the database is untouched.)</value>
+  </data>
+  <data name="Backup_NoSelection" xml:space="preserve">
+    <value>Select a backup in the list first</value>
+  </data>
+  <data name="Backup_Busy" xml:space="preserve">
+    <value>Backing up, please wait...</value>
+  </data>
+  <data name="Backup_LastFormat" xml:space="preserve">
+    <value>Latest backup: {0}</value>
+  </data>
+  <data name="Backup_None" xml:space="preserve">
+    <value>No backup files yet; backups go to the Backups folder next to the database</value>
+  </data>
+  <data name="Backup_DeletedFormat" xml:space="preserve">
+    <value>Deleted {0} backup(s)</value>
+  </data>
+  <data name="Backup_DeletedPartialFormat" xml:space="preserve">
+    <value>Deleted {0}, failed to delete {1}</value>
+  </data>
+  <data name="Backup_Settings_Title" xml:space="preserve">
+    <value>Database backup</value>
+  </data>
+  <data name="Backup_Settings_Hint" xml:space="preserve">
+    <value>One full backup a week and one incremental backup a day (to the Backups folder next to the database by default; database only - attachments and plan images are not included). Use "Snapshots &amp; Restore" to restore.</value>
+  </data>
+  <data name="Backup_Settings_Auto" xml:space="preserve">
+    <value>Automatic backups (full weekly, incremental daily)</value>
+  </data>
+  <data name="Backup_Settings_Folder" xml:space="preserve">
+    <value>Backup folder</value>
+  </data>
+  <data name="Backup_Settings_FolderHint" xml:space="preserve">
+    <value>Empty = the Backups folder next to the database</value>
+  </data>
+  <data name="Backup_Settings_Default" xml:space="preserve">
+    <value>Reset to default</value>
+  </data>
+  <data name="Backup_Settings_Open" xml:space="preserve">
+    <value>Snapshots &amp; Restore...</value>
+  </data>
+  <data name="Backup_Settings_NoBackupFormat" xml:space="preserve">
+    <value>No backup files yet; current backup folder: {0}</value>
+  </data>
+  <data name="ReqReturn_QtyHint" xml:space="preserve">
+    <value>Defaults to the issued quantity; editable</value>
+  </data>
+  <data name="Plans_StagedPreview" xml:space="preserve">
+    <value>New record staged (the highlighted row); click "Submit Save" to commit it</value>
+  </data>
+  <data name="Plans_StagedPreviewCleared" xml:space="preserve">
+    <value>New record staged; the current search keyword and column filters were cleared so it is visible</value>
+  </data>
+  <data name="Msg_JobNoTakenInListFormat" xml:space="preserve">
+    <value>Job number [{0}] is already used by a record in the table (including uncommitted edits)</value>
+  </data>
 </root>

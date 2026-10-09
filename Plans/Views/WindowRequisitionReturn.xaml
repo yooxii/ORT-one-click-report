@@ -32,9 +32,10 @@
         <TextBox x:Name="txt_returnRt" Grid.Row="1" Grid.Column="1" Margin="5" IsReadOnly="True" BorderThickness="0"
                  Background="Transparent" ToolTip="{lex:Loc Common_CopyHint}"/>
 
+        <!--回线数量：可编辑，默认为领用数量（原有回线数量优先）-->
         <Label Grid.Row="2" Content="{lex:Loc Plans_ReturnQty}" VerticalContentAlignment="Center"/>
-        <TextBox x:Name="txt_returnQty" Grid.Row="2" Grid.Column="1" Margin="5" IsReadOnly="True" BorderThickness="0"
-                 Background="Transparent" ToolTip="{lex:Loc Common_CopyHint}"/>
+        <TextBox x:Name="txt_returnQty" Grid.Row="2" Grid.Column="1" Margin="5" VerticalContentAlignment="Center"
+                 ToolTip="{lex:Loc ReqReturn_QtyHint}"/>
 
         <Label Grid.Row="3" Content="{lex:Loc Plans_Line}" VerticalContentAlignment="Center"/>
         <TextBox x:Name="txt_line" Grid.Row="3" Grid.Column="1" Margin="5" IsReadOnly="True" BorderThickness="0"

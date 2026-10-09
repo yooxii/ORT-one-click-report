@@ -222,6 +222,15 @@ namespace ORT一键报告.Plans.ViewModels
             ? string.Format(LanguageService.Get("Plans_PendingFormat"), _pendingReqAdded.Count, _pendingPlanAdded.Count, DetectPlanModifiedCount() + DetectReqModifiedCount(), _pendingPlanDeleted.Count + _pendingReqDeleted.Count)
             : LanguageService.Get("Plans_NoPending");
 
+        /// <summary>
+        /// 领退记录已暂存（新增窗口保存后触发）：界面据此把这条「待提交」的记录滚动到可见处选中，
+        /// 相当于提交前先在表格里预览一眼。
+        /// </summary>
+        public event Action<Requisition> RequisitionStaged;
+
+        /// <summary>计划记录已暂存（新增窗口保存后触发），与 <see cref="RequisitionStaged"/> 同理</summary>
+        public event Action<Plan> PlanStaged;
+
         /* ###############################  字典  ################################ */
 
         /// <summary>
@@ -1152,6 +1161,30 @@ namespace ORT一键报告.Plans.ViewModels
         }
 
         /// <summary>
+        /// 工作编号是否已被占用：以表格里当前的数据为准——包含尚未提交的新增与修改、已标记删除的不算，
+        /// 另外把「打开窗口之后其它电脑新写入、我们内存里还没有」的记录也算上。
+        /// 这样「把某条记录的编号改大一位后，再用原来的编号新增」不会被数据库里的旧值挡住。
+        /// <paramref name="selfId"/> 为正在编辑的记录 Id（新增传 0）。
+        /// </summary>
+        public bool IsJobNoTaken(string jobNo, long selfId)
+        {
+            string value = jobNo?.Trim();
+            if (string.IsNullOrEmpty(value))
+            {
+                return false;
+            }
+            if (Plans.Any(p => !(selfId > 0 && p.Id == selfId)
+                && string.Equals(p.JobNo?.Trim(), value, StringComparison.OrdinalIgnoreCase)))
+            {
+                return true;
+            }
+            // 其它客户端在我们加载之后新增的记录：只比对我们内存里没有的 Id
+            List<long> knownIds = [.. Plans.Select(p => p.Id)];
+            return _db.FreeSql.Select<Plan>().Where(p => p.JobNo == value).ToList(p => p.Id)
+                .Any(id => id != selfId && !knownIds.Contains(id));
+        }
+
+        /// <summary>
         /// 机种联动：输入机种名称后自动带出产品别/客户别（仅填充空字段）。
         /// 查询规则：产品别 = 机种名开始 2 位代码，客户别 = 机种名第 8 位起的 2 位代码；代码映射缺失时回退机种映射表。
         /// </summary>
@@ -1235,7 +1268,7 @@ namespace ORT一键报告.Plans.ViewModels
             // 「转为领用」路径由下面的 PrefillFromPlan 直接带入计划的值，不需要默认值覆盖。
             (string testItem, string stage) = prefillPlan == null ? GetMostUsedPlanDefaults() : (null, null);
             Views.WindowRequisitionEdit editWindow = new(_db, _permission, _adminService, _excelService,
-                null, testItem, stage);
+                null, testItem, stage, IsJobNoTaken);
             if (prefillPlan != null)
             {
                 editWindow.PrefillFromPlan(prefillPlan);
@@ -1268,6 +1301,9 @@ namespace ORT一键报告.Plans.ViewModels
                     StatusMessage = planResult == null
                         ? LanguageService.Get("Plans_Msg_AddRequisitionNoPlan")
                         : PendingText;
+                    // 通知界面把这条待提交的新记录滚动到可见处并选中（提交前的预览）。
+                    // 同步建立的计划表记录不再单独抢焦点：领退记录才是这次录入的主体。
+                    RequisitionStaged?.Invoke(reqResult);
                 }
             };
             editWindow.Show();
@@ -1283,7 +1319,7 @@ namespace ORT一键报告.Plans.ViewModels
             // 默认预选当前计划表里用得最多的测试项目与阶段（计划表为空时不预选）
             (string testItem, string stage) = GetMostUsedPlanDefaults();
             Views.WindowPlanDirectEdit editWindow = new(_db, _permission, _adminService, _excelService,
-                null, testItem, stage);
+                null, testItem, stage, IsJobNoTaken);
             // 「转为领用」：把计划表窗口里填好的内容带进领退表新增窗口，
             // 保存后由领用流程建立 RT 计划（当前这个 QRT 计划不入库，直接关掉）
             editWindow.ConvertToRequisitionRequested += planDraft => AddRequisition(planDraft);
@@ -1302,6 +1338,8 @@ namespace ORT一键报告.Plans.ViewModels
                     Plans.Insert(0, planResult);
                     NotifyPendingChanged();
                     StatusMessage = PendingText;
+                    // 通知界面把这条待提交的新记录滚动到可见处并选中（提交前的预览）
+                    PlanStaged?.Invoke(planResult);
                 }
             };
             editWindow.Show();
@@ -1314,7 +1352,8 @@ namespace ORT一键报告.Plans.ViewModels
                 return;
             }
             Requisition target = SelectedRequisition;
-            Views.WindowRequisitionEdit editWindow = new(_db, _permission, _adminService, _excelService, target);
+            Views.WindowRequisitionEdit editWindow = new(_db, _permission, _adminService, _excelService, target,
+                null, null, IsJobNoTaken);
             editWindow.Saved += (reqResult, planResult, editId) =>
             {
                 if (NeedsReview)
@@ -1354,7 +1393,8 @@ namespace ORT一键报告.Plans.ViewModels
                 return;
             }
             Plan target = SelectedPlan;
-            Views.WindowPlanDirectEdit editWindow = new(_db, _permission, _adminService, _excelService, target);
+            Views.WindowPlanDirectEdit editWindow = new(_db, _permission, _adminService, _excelService, target,
+                null, null, IsJobNoTaken);
             editWindow.Saved += (planResult, editId) =>
             {
                 if (NeedsReview)
@@ -1634,20 +1674,28 @@ namespace ORT一键报告.Plans.ViewModels
                 string op = _permission.CurrentUser;
                 int added = 0, modified = 0, deleted = 0;
 
-                foreach (Plan plan in _pendingPlanAdded)
+                // 先做整体校验，避免写到一半失败（数据库上工作编号是唯一索引）：
+                // 1) 必填；2) 本次新增或改过编号的记录之间/与表格里的记录不能重号
+                if (FindMissingRequired() is string missing)
                 {
-                    if (plan == null)
-                    {
-                        continue;
-                    }
-                    if (string.IsNullOrWhiteSpace(plan.JobNo))
-                    {
-                        StatusMessage = "存在未填写工作編號的计划空行，请补充或删除后再提交";
-                        return;
-                    }
-                    plan.Id = _db.FreeSql.Insert(plan).ExecuteIdentity();
-                    WritePlanLog("新增", plan.Id, $"新增计划 {plan.JobNo} ({plan.ModelName})", null, plan, op);
-                    added++;
+                    StatusMessage = missing;
+                    _ = System.Windows.MessageBox.Show(missing, LanguageService.Get("Cap_Info"));
+                    return;
+                }
+                if (FindJobNoConflict() is string conflict)
+                {
+                    StatusMessage = string.Format(LanguageService.Get("Msg_JobNoExistsFormat"), conflict);
+                    _ = System.Windows.MessageBox.Show(StatusMessage, LanguageService.Get("Cap_Info"));
+                    return;
+                }
+
+                // 写入顺序：先删、再改、最后新增——先删掉的不再占用工作编号，
+                // 改编号腾出来的编号也能被本次新增用上（否则会撞唯一索引）
+                foreach (KeyValuePair<long, Plan> kv in _pendingPlanDeleted)
+                {
+                    _db.FreeSql.Delete<Plan>().Where(p => p.Id == kv.Key).ExecuteAffrows();
+                    WritePlanLog("删除", kv.Key, $"删除计划 {kv.Value.JobNo} ({kv.Value.ModelName})", kv.Value, null, op);
+                    deleted++;
                 }
                 foreach (Plan plan in Plans.Where(p => p.Id > 0))
                 {
@@ -1659,23 +1707,22 @@ namespace ORT一键报告.Plans.ViewModels
                     WritePlanLog("编辑", plan.Id, $"编辑计划 {plan.JobNo} ({plan.ModelName})", before, plan, op);
                     modified++;
                 }
-                foreach (KeyValuePair<long, Plan> kv in _pendingPlanDeleted)
+                foreach (Plan plan in _pendingPlanAdded)
                 {
-                    _db.FreeSql.Delete<Plan>().Where(p => p.Id == kv.Key).ExecuteAffrows();
-                    WritePlanLog("删除", kv.Key, $"删除计划 {kv.Value.JobNo} ({kv.Value.ModelName})", kv.Value, null, op);
-                    deleted++;
+                    if (plan == null)
+                    {
+                        continue;
+                    }
+                    plan.Id = _db.FreeSql.Insert(plan).ExecuteIdentity();
+                    WritePlanLog("新增", plan.Id, $"新增计划 {plan.JobNo} ({plan.ModelName})", null, plan, op);
+                    added++;
                 }
 
-                foreach (Requisition req in _pendingReqAdded)
+                foreach (KeyValuePair<long, Requisition> kv in _pendingReqDeleted)
                 {
-                    if (string.IsNullOrWhiteSpace(req.RequisitionNo))
-                    {
-                        StatusMessage = "存在未填写領料單据號的领退空行，请补充或删除后再提交";
-                        return;
-                    }
-                    req.Id = _db.FreeSql.Insert(req).ExecuteIdentity();
-                    WriteReqLog("新增", req.Id, $"新增领退 {req.RequisitionNo} ({req.ModelName})", null, req, op);
-                    added++;
+                    _db.FreeSql.Delete<Requisition>().Where(r => r.Id == kv.Key).ExecuteAffrows();
+                    WriteReqLog("删除", kv.Key, $"删除领退 {kv.Value.RequisitionNo} ({kv.Value.ModelName})", kv.Value, null, op);
+                    deleted++;
                 }
                 foreach (Requisition req in Requisitions.Where(r => r.Id > 0))
                 {
@@ -1687,11 +1734,15 @@ namespace ORT一键报告.Plans.ViewModels
                     WriteReqLog("编辑", req.Id, $"编辑领退 {req.RequisitionNo} ({req.ModelName})", before, req, op);
                     modified++;
                 }
-                foreach (KeyValuePair<long, Requisition> kv in _pendingReqDeleted)
+                foreach (Requisition req in _pendingReqAdded)
                 {
-                    _db.FreeSql.Delete<Requisition>().Where(r => r.Id == kv.Key).ExecuteAffrows();
-                    WriteReqLog("删除", kv.Key, $"删除领退 {kv.Value.RequisitionNo} ({kv.Value.ModelName})", kv.Value, null, op);
-                    deleted++;
+                    if (req == null)
+                    {
+                        continue;
+                    }
+                    req.Id = _db.FreeSql.Insert(req).ExecuteIdentity();
+                    WriteReqLog("新增", req.Id, $"新增领退 {req.RequisitionNo} ({req.ModelName})", null, req, op);
+                    added++;
                 }
 
                 _logger.Info($"提交保存: 新增{added} 修改{modified} 删除{deleted} 操作人={op}");
@@ -1704,6 +1755,48 @@ namespace ORT一键报告.Plans.ViewModels
                 StatusMessage = $"保存失败: {ex.Message}";
                 _ = System.Windows.MessageBox.Show($"保存失败:\n{ex.Message}", LanguageService.Get("Cap_Error"));
             }
+        }
+
+        /// <summary>提交前的必填校验：返回第一条不满足的说明（都满足返回 null）</summary>
+        private string FindMissingRequired()
+        {
+            if (_pendingPlanAdded.Any(p => p == null || string.IsNullOrWhiteSpace(p.JobNo)))
+            {
+                return "存在未填写工作編號的计划空行，请补充或删除后再提交";
+            }
+            if (_pendingReqAdded.Any(r => r == null || string.IsNullOrWhiteSpace(r.RequisitionNo)))
+            {
+                return "存在未填写領料單据號的领退空行，请补充或删除后再提交";
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// 提交前的工作编号重号检查（返回冲突的编号或 null）。
+        /// 只检查本次「新增或改过编号」的记录：历史数据里本来就存在的重号不在此列，
+        /// 否则会把人卡在无法保存的老数据上。
+        /// </summary>
+        private string FindJobNoConflict()
+        {
+            List<Plan> candidates = [.. _pendingPlanAdded.Where(p => p != null && !string.IsNullOrWhiteSpace(p.JobNo))];
+            foreach (Plan plan in Plans.Where(p => p != null && p.Id > 0 && !string.IsNullOrWhiteSpace(p.JobNo)))
+            {
+                if (_planOriginals.TryGetValue(plan.Id, out Plan before)
+                    && !string.Equals(plan.JobNo.Trim(), before.JobNo?.Trim(), StringComparison.OrdinalIgnoreCase))
+                {
+                    candidates.Add(plan);
+                }
+            }
+            foreach (Plan candidate in candidates)
+            {
+                string jobNo = candidate.JobNo.Trim();
+                if (Plans.Any(p => !ReferenceEquals(p, candidate)
+                    && string.Equals(p.JobNo?.Trim(), jobNo, StringComparison.OrdinalIgnoreCase)))
+                {
+                    return jobNo;
+                }
+            }
+            return null;
         }
 
         private void WritePlanLog(string action, long planId, string summary, Plan before, Plan after, string op)

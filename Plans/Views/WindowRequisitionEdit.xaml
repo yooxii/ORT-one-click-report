@@ -34,8 +34,9 @@
                 <TextBox x:Name="txt_reqNo" Grid.Column="3" Margin="3"/>
 
                 <Label Content="{lex:Loc ReqEdit_ModelName}" Grid.Row="1"/>
-                <!--机种名称：输入时以水印提示已有名称的后半段，按 Tab 补全；以 W 开头的机种自动判为报废-->
-                <Grid Grid.Row="1" Grid.Column="1" Margin="3">
+                <!--机种名称：输入时以水印提示已有名称的后半段，按 Tab 补全；以 W 开头的机种自动判为报废。
+                     水印位置由代码按输入框自己的光标矩形摆放，Grid 裁剪避免提示越出输入框-->
+                <Grid Grid.Row="1" Grid.Column="1" Margin="3" ClipToBounds="True">
                     <TextBox x:Name="txt_model" TextChanged="Txt_Model_TextChanged"
                              PreviewKeyDown="Txt_Model_PreviewKeyDown" ToolTip="{lex:Loc ReqEdit_ModelHint}"/>
                     <TextBlock x:Name="txt_modelHint" IsHitTestVisible="False" VerticalAlignment="Center"
@@ -50,7 +51,7 @@
                 <!--版本输入框：填入机种后以水印提示「最近版本：xxx」，留空保存即用该版本-->
                 <Grid Grid.Row="2" Grid.Column="1" Margin="3">
                     <TextBox x:Name="txt_rev" TextChanged="Txt_Rev_TextChanged"/>
-                    <TextBlock x:Name="txt_revHint" IsHitTestVisible="False" Margin="6,0,4,0"
+                    <TextBlock x:Name="txt_revHint" IsHitTestVisible="False" Margin="5,0,4,0"
                                VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
                                Foreground="{DynamicResource TextSecondaryBrush}" Visibility="Collapsed"/>
                 </Grid>

@@ -23,6 +23,12 @@ namespace ORT一键报告.Plans.Views
         private readonly Plan _editTarget;
 
         /// <summary>
+        /// 工作编号查重（由调用方传入）：以表格当前数据为准（含暂存新增/修改）；
+        /// 为空时退化为只查数据库。
+        /// </summary>
+        private readonly Func<string, long, bool> _jobNoTaken;
+
+        /// <summary>
         /// 最近一次由程序生成的工作编号：改日期时若编号还是它（用户没改过）就跟着刷新，手动改过的不覆盖
         /// </summary>
         private string _autoJobNo;
@@ -46,7 +52,8 @@ namespace ORT一键报告.Plans.Views
 
         public WindowPlanDirectEdit(DatabaseService db, IPermissionService permission, AdminService admin,
             PlanExcelService excelService, Plan editTarget = null,
-            string defaultTestItem = null, string defaultStage = null)
+            string defaultTestItem = null, string defaultStage = null,
+            Func<string, long, bool> jobNoTaken = null)
         {
             InitializeComponent();
             _db = db;
@@ -54,6 +61,7 @@ namespace ORT一键报告.Plans.Views
             _admin = admin;
             _excelService = excelService;
             _editTarget = editTarget;
+            _jobNoTaken = jobNoTaken;
 
             Title = editTarget == null ? "计划表新增（非领用）" : "计划表编辑";
             // 「转为领用」只在新增时有意义（编辑时已有记录，改走领用要走领退表编辑）
@@ -240,9 +248,14 @@ namespace ORT一键报告.Plans.Views
                 return;
             }
             long selfId = _editTarget?.Id ?? 0;
-            if (_db.FreeSql.Select<Plan>().Where(p => p.JobNo == jobNo && p.Id != selfId).Any())
+            bool taken = _jobNoTaken != null
+                ? _jobNoTaken(jobNo, selfId)
+                : _db.FreeSql.Select<Plan>().Where(p => p.JobNo == jobNo && p.Id != selfId).Any();
+            if (taken)
             {
-                _ = MessageBox.Show(string.Format(LocalizationHelper.Get("Msg_JobNoExistsFormat"), jobNo), LanguageService.Get("Cap_Info"));
+                _ = MessageBox.Show(string.Format(LocalizationHelper.Get(
+                        _jobNoTaken != null ? "Msg_JobNoTakenInListFormat" : "Msg_JobNoExistsFormat"), jobNo),
+                    LanguageService.Get("Cap_Info"));
                 return;
             }
 

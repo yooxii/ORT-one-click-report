@@ -3209,4 +3209,130 @@
   <data name="Main_TrayAutoStart" xml:space="preserve">
     <value>开机自启动</value>
   </data>
+  <data name="Backup_Title" xml:space="preserve">
+    <value>数据库快照与还原</value>
+  </data>
+  <data name="Backup_Hint" xml:space="preserve">
+    <value>每周自动做一次全量备份、每天自动做一次增量备份；备份默认放在数据库同级的 Backups 文件夹（只备份数据库本身，附件与配图不在内）。还原会用选定的快照替换当前数据库，替换前自动先备份当前数据库。</value>
+  </data>
+  <data name="Backup_Folder" xml:space="preserve">
+    <value>备份文件夹</value>
+  </data>
+  <data name="Backup_OpenFolder" xml:space="preserve">
+    <value>打开文件夹</value>
+  </data>
+  <data name="Backup_FullNow" xml:space="preserve">
+    <value>立即全量备份</value>
+  </data>
+  <data name="Backup_IncrementalNow" xml:space="preserve">
+    <value>立即增量备份</value>
+  </data>
+  <data name="Backup_Col_Time" xml:space="preserve">
+    <value>备份时间</value>
+  </data>
+  <data name="Backup_Col_Kind" xml:space="preserve">
+    <value>类型</value>
+  </data>
+  <data name="Backup_Col_Size" xml:space="preserve">
+    <value>大小</value>
+  </data>
+  <data name="Backup_Col_Changed" xml:space="preserve">
+    <value>变更行数</value>
+  </data>
+  <data name="Backup_Col_Base" xml:space="preserve">
+    <value>基准备份</value>
+  </data>
+  <data name="Backup_Col_File" xml:space="preserve">
+    <value>文件</value>
+  </data>
+  <data name="Backup_Col_State" xml:space="preserve">
+    <value>状态</value>
+  </data>
+  <data name="Backup_Kind_Full" xml:space="preserve">
+    <value>全量</value>
+  </data>
+  <data name="Backup_Kind_Incremental" xml:space="preserve">
+    <value>增量</value>
+  </data>
+  <data name="Backup_State_Ok" xml:space="preserve">
+    <value>可还原</value>
+  </data>
+  <data name="Backup_Restore" xml:space="preserve">
+    <value>还原选中</value>
+  </data>
+  <data name="Backup_Delete" xml:space="preserve">
+    <value>删除选中</value>
+  </data>
+  <data name="Backup_RestoreTitle" xml:space="preserve">
+    <value>确认还原</value>
+  </data>
+  <data name="Backup_RestoreConfirm" xml:space="preserve">
+    <value>确认把数据库还原到 {0} 的{1}备份？还原会用该快照替换当前数据库（会先自动备份当前数据库），完成后需要重启程序；其它电脑上开着的程序请先关闭。</value>
+  </data>
+  <data name="Backup_RestoreBusy" xml:space="preserve">
+    <value>正在还原，请稍候…</value>
+  </data>
+  <data name="Backup_RestoreDoneTitle" xml:space="preserve">
+    <value>还原完成</value>
+  </data>
+  <data name="Backup_RestoreDone" xml:space="preserve">
+    <value>{0}。程序需要关闭并重新打开才能使用还原后的数据，现在将退出程序。</value>
+  </data>
+  <data name="Backup_DeleteConfirm" xml:space="preserve">
+    <value>确认删除选中的 {0} 份备份文件？（只删备份文件，不影响数据库）</value>
+  </data>
+  <data name="Backup_NoSelection" xml:space="preserve">
+    <value>请先在列表中选择一份备份</value>
+  </data>
+  <data name="Backup_Busy" xml:space="preserve">
+    <value>正在备份，请稍候…</value>
+  </data>
+  <data name="Backup_LastFormat" xml:space="preserve">
+    <value>最近备份：{0}</value>
+  </data>
+  <data name="Backup_None" xml:space="preserve">
+    <value>还没有备份文件；备份默认放在数据库同级的 Backups 文件夹</value>
+  </data>
+  <data name="Backup_DeletedFormat" xml:space="preserve">
+    <value>已删除 {0} 份备份</value>
+  </data>
+  <data name="Backup_DeletedPartialFormat" xml:space="preserve">
+    <value>已删除 {0} 份，{1} 份删除失败</value>
+  </data>
+  <data name="Backup_Settings_Title" xml:space="preserve">
+    <value>数据库备份</value>
+  </data>
+  <data name="Backup_Settings_Hint" xml:space="preserve">
+    <value>每周自动一次全量备份、每天自动一次增量备份（默认备份在数据库同级的 Backups 文件夹；只备份数据库本身，附件与配图不在内）。还原请用「快照与还原」。</value>
+  </data>
+  <data name="Backup_Settings_Auto" xml:space="preserve">
+    <value>自动定时备份（每周一次全量、每天一次增量）</value>
+  </data>
+  <data name="Backup_Settings_Folder" xml:space="preserve">
+    <value>备份文件夹</value>
+  </data>
+  <data name="Backup_Settings_FolderHint" xml:space="preserve">
+    <value>留空＝数据库同级的 Backups 文件夹</value>
+  </data>
+  <data name="Backup_Settings_Default" xml:space="preserve">
+    <value>恢复默认</value>
+  </data>
+  <data name="Backup_Settings_Open" xml:space="preserve">
+    <value>快照与还原…</value>
+  </data>
+  <data name="Backup_Settings_NoBackupFormat" xml:space="preserve">
+    <value>还没有备份文件；当前备份文件夹：{0}</value>
+  </data>
+  <data name="ReqReturn_QtyHint" xml:space="preserve">
+    <value>默认为领用数量，可修改</value>
+  </data>
+  <data name="Plans_StagedPreview" xml:space="preserve">
+    <value>已暂存新记录（表格中高亮的那一行），点「提交保存」后正式生效</value>
+  </data>
+  <data name="Plans_StagedPreviewCleared" xml:space="preserve">
+    <value>已暂存新记录；为显示它，已清除当前的搜索关键字与列筛选</value>
+  </data>
+  <data name="Msg_JobNoTakenInListFormat" xml:space="preserve">
+    <value>工作编号 [{0}] 已被表格中的记录占用（含尚未提交的修改）</value>
+  </data>
 </root>
