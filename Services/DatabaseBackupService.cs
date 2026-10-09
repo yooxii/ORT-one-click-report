@@ -144,7 +144,7 @@ namespace ORT一键报告.Services
             {
                 return DatabaseBackupResult.Fail($"备份文件夹不可用：{folderError}");
             }
-            using FileStream lockFile = TryAcquireLock(root);
+            using BackupLock lockFile = TryAcquireLock(root);
             if (lockFile == null)
             {
                 return DatabaseBackupResult.Ok("另一个备份任务正在执行，本次跳过", false);
@@ -197,7 +197,7 @@ namespace ORT一键报告.Services
             {
                 return CreateFullBackup($"{reason}（还没有基准备份，先做全量）");
             }
-            using FileStream lockFile = TryAcquireLock(root);
+            using BackupLock lockFile = TryAcquireLock(root);
             if (lockFile == null)
             {
                 return DatabaseBackupResult.Ok("另一个备份任务正在执行，本次跳过", false);
@@ -382,7 +382,7 @@ namespace ORT一键报告.Services
                 return DatabaseBackupResult.Fail($"无法还原：备份文件夹不可用（{folderError}）");
             }
             // 整个还原过程独占备份目录里的锁：期间不允许其它备份/还原插进来
-            using FileStream lockFile = TryAcquireLock(root);
+            using BackupLock lockFile = TryAcquireLock(root);
             if (lockFile == null)
             {
                 return DatabaseBackupResult.Fail("无法还原：另一个备份或还原任务正在执行，请稍后再试");
@@ -641,14 +641,14 @@ namespace ORT一键报告.Services
         }
 
         /// <summary>备份目录里的互斥锁（多台电脑同时到点时只让一台执行）；拿不到返回 null</summary>
-        private static FileStream TryAcquireLock(string root)
+        private static BackupLock TryAcquireLock(string root)
         {
             string path = Path.Combine(root, LockFileName);
             for (int attempt = 0; attempt < 2; attempt++)
             {
                 try
                 {
-                    return new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None);
+                    return new BackupLock(path, new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None));
                 }
                 catch (IOException)
                 {
@@ -674,6 +674,46 @@ namespace ORT一键报告.Services
                 }
             }
             return null;
+        }
+
+        /// <summary>
+        /// 备份/还原期间独占备份目录的锁：持有一个独占打开的锁文件，释放时关掉并删掉它
+        /// （不删的话残留文件会把后面 30 分钟内的备份全挡掉）。
+        /// </summary>
+        private sealed class BackupLock : IDisposable
+        {
+            private readonly string _path;
+            private FileStream _stream;
+
+            public BackupLock(string path, FileStream stream)
+            {
+                _path = path;
+                _stream = stream;
+            }
+
+            public void Dispose()
+            {
+                try
+                {
+                    _stream?.Dispose();
+                }
+                catch (Exception ex)
+                {
+                    LogManager.GetCurrentClassLogger().Warn($"释放备份锁失败: {ex.Message}");
+                }
+                _stream = null;
+                try
+                {
+                    if (File.Exists(_path))
+                    {
+                        File.Delete(_path);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    LogManager.GetCurrentClassLogger().Warn($"删除备份锁文件失败: {ex.Message}");
+                }
+            }
         }
 
         private static void TryDelete(string path)
