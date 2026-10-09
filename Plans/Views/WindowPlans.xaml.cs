@@ -62,6 +62,7 @@ namespace ORT一键报告.Plans.Views
             Loaded += (s, e) =>
             {
                 RestoreColumnState();
+                _vm.LoadSearchHistory();
                 _vm.Refresh();
                 // 菜单子项必须在菜单展开之前就存在：WPF 对没有子项的 MenuItem 不会展开，
                 // 也就不会触发 SubmenuOpened（否则「排序/显示隐藏列」点开是空的）
@@ -101,6 +102,8 @@ namespace ORT一键报告.Plans.Views
                     return;
                 }
                 SaveColumnState();
+                // 关窗口时把当前搜索关键字记进「最近搜索」（本机保存）
+                _vm.RememberSearch();
                 // 退订对单例报告扫描服务的订阅，避免旧 ViewModel 被长期引用
                 _vm.ReportScanCompleted -= OnReportScanCompleted;
                 _vm.DetachScanEvents();
@@ -1262,6 +1265,55 @@ namespace ORT一键报告.Plans.Views
         {
             _stockInPendingFilterActive = false;
             _vm.SetRequisitionQuickFilter(null, null);
+        }
+
+        /* ###############################  搜索栏（清空 / 最近搜索）  ################################ */
+
+        /// <summary>搜索框里按回车：把当前关键字记进「最近搜索」</summary>
+        private void Txt_Search_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                _vm.RememberSearch();
+                e.Handled = true;
+            }
+        }
+
+        /// <summary>「清除」：清空搜索关键字，回到显示全部记录</summary>
+        private void Btn_ClearSearch_Click(object sender, RoutedEventArgs e)
+        {
+            _vm.ClearSearch();
+            txt_search.Focus();
+        }
+
+        /// <summary>「最近搜索」：点开列出本机保存的历史关键字，选中即套用</summary>
+        private void Btn_SearchHistory_Click(object sender, RoutedEventArgs e)
+        {
+            ContextMenu menu = new();
+            if (_vm.SearchHistory.Count == 0)
+            {
+                menu.Items.Add(new MenuItem
+                {
+                    Header = LanguageService.Get("Plans_SearchHistoryEmpty"),
+                    IsEnabled = false
+                });
+            }
+            else
+            {
+                foreach (string keyword in _vm.SearchHistory)
+                {
+                    MenuItem item = new() { Header = keyword, ToolTip = keyword };
+                    item.Click += (s, args) =>
+                    {
+                        _vm.ApplySearchHistory(keyword);
+                        txt_search.Focus();
+                    };
+                    menu.Items.Add(item);
+                }
+            }
+            menu.PlacementTarget = btn_searchHistory;
+            menu.Placement = PlacementMode.Bottom;
+            menu.IsOpen = true;
         }
 
         /// <summary>

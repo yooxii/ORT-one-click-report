@@ -185,8 +185,16 @@
                         </TextBlock>
                     </Border>
                 </StackPanel>
+                <!--搜索工具：最近搜索记忆（本机保存）+ 清空关键字；必须排在搜索框之前（DockPanel 最后一个子元素填充剩余宽度）-->
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" Margin="6,0,0,3">
+                    <Button x:Name="btn_searchHistory" Content="{lex:Loc Plans_SearchHistory}" Padding="8,2"
+                            Click="Btn_SearchHistory_Click" ToolTip="{lex:Loc Plans_SearchHistoryHint}"/>
+                    <Button Content="{lex:Loc Common_Clear}" Padding="8,2" Margin="6,0,0,0"
+                            Click="Btn_ClearSearch_Click" ToolTip="{lex:Loc Plans_SearchClearHint}"/>
+                </StackPanel>
                 <TextBox x:Name="txt_search" MinWidth="200" Margin="0,0,0,3" VerticalContentAlignment="Center"
                          Text="{Binding SearchKeyword, UpdateSourceTrigger=PropertyChanged}"
+                         KeyDown="Txt_Search_KeyDown"
                          ToolTip="{lex:Loc Plans_SearchHint}"/>
             </DockPanel>
             <!--批量登记进行中：提示当前筛出的是哪一批记录，可一键取消筛选（结束批量登记也会自动取消）-->

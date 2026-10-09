@@ -1,5 +1,7 @@
 using ORT一键报告.Models;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace ORT一键报告.Plans.ViewModels
@@ -33,12 +35,36 @@ namespace ORT一键报告.Plans.ViewModels
         }
 
         /// <summary>
-        /// D/C（界面上显示为「周期」）：完工令「倒数第三位起的两位」；不足 3 位返回 null。
+        /// D/C（界面上显示为「周期」）：年份后两位 + 完工令「倒数第三位起的两位」，
+        /// 例如 26 年第 33 周 → 2633；完工令不足 3 位返回 null。
         /// </summary>
-        public static string DcFromWorkOrder(string workOrder)
+        public static string DcFromWorkOrder(string workOrder, int year)
         {
             string wo = (workOrder ?? "").Trim();
-            return wo.Length >= 3 ? wo.Substring(wo.Length - 3, 2) : null;
+            return wo.Length >= 3
+                ? (year % 100).ToString("D2") + wo.Substring(wo.Length - 3, 2)
+                : null;
+        }
+
+        /* ###############################  机种名称补全  ################################ */
+
+        /// <summary>
+        /// 机种名称补全候选：已有名称里第一个「以已输入内容开头且比它更长」的（不区分大小写、忽略首尾空白）。
+        /// 命中多个时取最短的（最贴近已输入内容），长度相同按字典序，保证结果稳定；没有候选返回 null。
+        /// </summary>
+        public static string ModelSuggestion(IEnumerable<string> candidates, string typed)
+        {
+            string text = (typed ?? "").Trim();
+            if (candidates == null || text.Length == 0)
+            {
+                return null;
+            }
+            return candidates.Where(c => !string.IsNullOrWhiteSpace(c))
+                .Select(c => c.Trim())
+                .Where(c => c.Length > text.Length && c.StartsWith(text, StringComparison.OrdinalIgnoreCase))
+                .OrderBy(c => c.Length)
+                .ThenBy(c => c, StringComparer.OrdinalIgnoreCase)
+                .FirstOrDefault();
         }
 
         /* ###############################  编号递增  ################################ */

@@ -34,10 +34,17 @@
                 <TextBox x:Name="txt_reqNo" Grid.Column="3" Margin="3"/>
 
                 <Label Content="{lex:Loc ReqEdit_ModelName}" Grid.Row="1"/>
-                <TextBox x:Name="txt_model" Grid.Row="1" Grid.Column="1" Margin="3" TextChanged="Txt_Model_TextChanged"
-                         ToolTip="{lex:Loc ReqEdit_ModelDispositionHint}"/>
+                <!--机种名称：输入时以水印提示已有名称的后半段，按 Tab 补全；以 W 开头的机种自动判为报废-->
+                <Grid Grid.Row="1" Grid.Column="1" Margin="3">
+                    <TextBox x:Name="txt_model" TextChanged="Txt_Model_TextChanged"
+                             PreviewKeyDown="Txt_Model_PreviewKeyDown" ToolTip="{lex:Loc ReqEdit_ModelHint}"/>
+                    <TextBlock x:Name="txt_modelHint" IsHitTestVisible="False" VerticalAlignment="Center"
+                               TextTrimming="CharacterEllipsis"
+                               Foreground="{DynamicResource TextSecondaryBrush}" Visibility="Collapsed"/>
+                </Grid>
                 <Label Content="{lex:Loc ReqEdit_QtyTC}" Grid.Row="1" Grid.Column="2"/>
-                <TextBox x:Name="txt_outQty" Grid.Row="1" Grid.Column="3" Margin="3" TextChanged="Txt_OutQty_TextChanged"/>
+                <TextBox x:Name="txt_outQty" Grid.Row="1" Grid.Column="3" Margin="3" TextChanged="Txt_OutQty_TextChanged"
+                         ToolTip="{lex:Loc ReqEdit_QtySyncHint}"/>
 
                 <Label Content="REV.*" Grid.Row="2"/>
                 <!--版本输入框：填入机种后以水印提示「最近版本：xxx」，留空保存即用该版本-->
@@ -129,7 +136,8 @@
                                ToolTip="{lex:Loc PlanEdit_RefreshJobNoHint}" MouseLeftButtonUp="Lbl_JobNo_Click"/>
                         <TextBox x:Name="txt_jobNo" Grid.Row="2" Grid.Column="1" Margin="3" ToolTip="{lex:Loc ReqEdit_AutoGenRT}"/>
                         <Label Content="{lex:Loc PlanEdit_SampleQty}" Grid.Row="2" Grid.Column="2"/>
-                        <TextBox x:Name="txt_sampleSize" Grid.Row="2" Grid.Column="3" Margin="3" ToolTip="{lex:Loc ReqEdit_QtyHint}"/>
+                        <TextBox x:Name="txt_sampleSize" Grid.Row="2" Grid.Column="3" Margin="3"
+                                 TextChanged="Txt_SampleSize_TextChanged" ToolTip="{lex:Loc ReqEdit_QtySyncHint}"/>
 
                         <Label Content="{lex:Loc Plans_ProductType}" Grid.Row="3"/>
                         <TextBox x:Name="txt_product" Grid.Row="3" Grid.Column="1" Margin="3" ToolTip="{lex:Loc ReqEdit_ModelNameHint}"/>
@@ -141,7 +149,7 @@
                     </Grid>
                 </GroupBox>
 
-                <!--其他：负责人 / 试验时间 / 结束日期，已并入「计划表同步信息」折叠区（只在同步计划时才需要填）-->
+                <!--其他：负责人 / 试验时间 / 结束日期 / 备注，已并入「计划表同步信息」折叠区（只在同步计划时才需要填）-->
                 <GroupBox Header="{lex:Loc PlanEdit_Other}" Margin="0,5,0,0" Padding="5">
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -151,7 +159,7 @@
                             <ColumnDefinition/>
                         </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
-                            <RowDefinition/><RowDefinition/>
+                            <RowDefinition/><RowDefinition/><RowDefinition/>
                         </Grid.RowDefinitions>
                         <Label Content="{lex:Loc Plans_Owner}"/>
                         <TextBox x:Name="txt_owner" Grid.Column="1" Margin="3" ToolTip="{lex:Loc PlanEdit_TestItemHint}"/>
@@ -160,6 +168,12 @@
 
                         <Label Content="{lex:Loc PlanEdit_EndDate}" Grid.Row="1"/>
                         <DatePicker x:Name="dp_endDate" Grid.Row="1" Grid.Column="1" Margin="3" ToolTip="{lex:Loc PlanEdit_EndDateHint}"/>
+
+                        <!--备注：默认写工令（Work Order），可改；已有关联计划时带出原备注-->
+                        <Label Content="{lex:Loc Admin_Remark}" Grid.Row="2"/>
+                        <TextBox x:Name="txt_remark" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="3" Margin="3"
+                                 TextWrapping="WrapWithOverflow" AcceptsReturn="True" Height="50"
+                                 VerticalScrollBarVisibility="Auto" ToolTip="{lex:Loc ReqEdit_PlanRemarkHint}"/>
                     </Grid>
                 </GroupBox>
             </StackPanel>

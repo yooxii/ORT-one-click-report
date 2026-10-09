@@ -61,7 +61,9 @@ namespace ORT一键报告.Tests
                 "Msg_StockInNeedReturn", "Msg_StockInAfterScrap", "Msg_ScrapAfterStockIn",
                 "Plans_Disposition", "ReqEdit_Disposition", "Msg_SelectDisposition",
                 "Common_SaveAndContinue", "Common_SaveAndContinueHint",
-                "ReqEdit_LastRevHintFormat", "ReqEdit_ModelDispositionHint", "ReqEdit_WorkOrderHint",
+                "ReqEdit_LastRevHintFormat", "ReqEdit_ModelHint", "ReqEdit_WorkOrderHint",
+                "ReqEdit_QtySyncHint", "ReqEdit_PlanRemarkHint",
+                "Plans_SearchHistory", "Plans_SearchHistoryHint", "Plans_SearchHistoryEmpty", "Plans_SearchClearHint",
             ];
             foreach (string key in keys)
             {

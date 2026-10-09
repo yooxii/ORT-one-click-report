@@ -292,6 +292,102 @@ namespace ORT一键报告.Plans.ViewModels
             }
         }
 
+        /* ###############################  最近搜索记忆  ################################ */
+
+        /// <summary>最近搜索最多保留的条数</summary>
+        public const int MaxSearchHistory = 10;
+
+        /// <summary>
+        /// 最近搜索过的关键字（最新在前，保存在本机设置里，重启后仍在）
+        /// </summary>
+        public ObservableCollection<string> SearchHistory { get; } = [];
+
+        /// <summary>是否有可选的搜索记忆（界面据此禁用/提示「最近搜索」按钮）</summary>
+        public bool HasSearchHistory => SearchHistory.Count > 0;
+
+        /// <summary>
+        /// 把一条搜索关键字记进历史：去重（不区分大小写）、最新在前、最多 <paramref name="max"/> 条。
+        /// 纯函数（就地修改传入的列表），便于单元测试。
+        /// </summary>
+        public static void RememberSearchTerm(IList<string> history, string keyword, int max = MaxSearchHistory)
+        {
+            if (history == null)
+            {
+                return;
+            }
+            string term = (keyword ?? "").Trim();
+            if (term.Length == 0)
+            {
+                return;
+            }
+            for (int i = history.Count - 1; i >= 0; i--)
+            {
+                if (string.Equals(history[i]?.Trim(), term, StringComparison.OrdinalIgnoreCase))
+                {
+                    history.RemoveAt(i);
+                }
+            }
+            history.Insert(0, term);
+            while (history.Count > Math.Max(1, max))
+            {
+                history.RemoveAt(history.Count - 1);
+            }
+        }
+
+        /// <summary>
+        /// 载入本机保存的最近搜索（窗口打开时调用一次）
+        /// </summary>
+        public void LoadSearchHistory()
+        {
+            SearchHistory.Clear();
+            foreach (string term in LocalSettingsStore.Read().PlanSearchHistory ?? [])
+            {
+                string clean = term?.Trim();
+                if (!string.IsNullOrWhiteSpace(clean) && !SearchHistory.Contains(clean, StringComparer.OrdinalIgnoreCase))
+                {
+                    SearchHistory.Add(clean);
+                }
+            }
+            OnPropertyChanged(nameof(HasSearchHistory));
+        }
+
+        /// <summary>
+        /// 记住当前搜索关键字（回车搜索、点选历史、关闭窗口时调用）：写进记忆并持久化到本机设置
+        /// </summary>
+        public void RememberSearch()
+        {
+            List<string> history = [.. SearchHistory];
+            RememberSearchTerm(history, SearchKeyword);
+            if (history.SequenceEqual(SearchHistory, StringComparer.Ordinal))
+            {
+                return;   // 没有变化就不落盘
+            }
+            SearchHistory.Clear();
+            foreach (string term in history)
+            {
+                SearchHistory.Add(term);
+            }
+            OnPropertyChanged(nameof(HasSearchHistory));
+            LocalSettingsStore.Update(s => s.PlanSearchHistory = history);
+        }
+
+        /// <summary>
+        /// 用一条搜索记忆过滤（点「最近搜索」里的条目）：同时把它提到最前
+        /// </summary>
+        public void ApplySearchHistory(string keyword)
+        {
+            SearchKeyword = keyword;
+            RememberSearch();
+        }
+
+        /// <summary>
+        /// 清空搜索关键字（搜索栏的「清除」按钮）
+        /// </summary>
+        public void ClearSearch()
+        {
+            SearchKeyword = "";
+        }
+
         /* ###############################  临时筛选（批量登记）  ################################ */
 
         /// <summary>领退表的临时筛选（批量回线/入库时把待办记录筛出来）；为空表示不筛</summary>

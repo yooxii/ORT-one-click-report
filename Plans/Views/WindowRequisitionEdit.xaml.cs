@@ -79,6 +79,26 @@ namespace ORT一键报告.Plans.Views
         private bool _suppressAuto;
 
         /// <summary>
+        /// 领出数量 ↔ 样品数 互相同步中：防止两个 TextChanged 相互触发
+        /// </summary>
+        private bool _syncingQuantity;
+
+        /// <summary>
+        /// 机种名称补全候选（已有的机种名称 + 机种映射字典），首次用到时载入一次
+        /// </summary>
+        private List<string> _modelCandidates;
+
+        /// <summary>
+        /// 当前可用的机种补全结果（按 Tab 补全成它）；为空表示没有候选
+        /// </summary>
+        private string _modelSuggestion;
+
+        /// <summary>
+        /// 最近一次由完工令自动写入的备注（改工令时若备注还是它、或为空就跟着刷新）
+        /// </summary>
+        private string _autoRemark;
+
+        /// <summary>
         /// 构造的领退记录结果（由调用方处理：暂存或提审）
         /// </summary>
         public Requisition RequisitionResult { get; private set; }
@@ -165,6 +185,9 @@ namespace ORT一键报告.Plans.Views
             {
                 RegenerateReturnRt(false);
             }
+            // 完工令相关的自动值（D/C 的年份）与「入库自动生成回线RT工令」跟着日期刷新
+            AutoFillFromWorkOrder();
+            ApplyDispositionState();
             UpdateAutoPlan();
         }
 
@@ -197,6 +220,7 @@ namespace ORT一键报告.Plans.Views
             txt_owner.Text = plan.Owner ?? "";
             txt_testPeriod.Text = plan.TestPeriod ?? "";
             dp_endDate.SelectedDate = plan.EndDate;
+            txt_remark.Text = plan.Remark ?? "";
             // 机种/测试项目联动补齐产品别、客户别、负责人、结束日期等空字段
             UpdateAutoPlan();
         }
@@ -227,12 +251,13 @@ namespace ORT一键报告.Plans.Views
             SetCombo(cb_reportStatus, _associatedPlan.ReportStatus);
             dp_startDate.SelectedDate = _associatedPlan.StartDate;
             txt_jobNo.Text = _associatedPlan.JobNo;
-            txt_sampleSize.Text = _associatedPlan.SampleSize;
+            // 样品数与领出数量保持一致：这里不再带出计划里存的样品数，保存时按领出数量写回
             txt_product.Text = _associatedPlan.Product;
             txt_customer.Text = _associatedPlan.Customer;
             txt_owner.Text = _associatedPlan.Owner;
             txt_testPeriod.Text = _associatedPlan.TestPeriod;
             dp_endDate.SelectedDate = _associatedPlan.EndDate;
+            txt_remark.Text = _associatedPlan.Remark ?? "";
         }
 
         private static void SetCombo(System.Windows.Controls.ComboBox combo, string value)
@@ -290,16 +315,38 @@ namespace ORT一键报告.Plans.Views
         /* ###############################  自动补全  ################################ */
 
         /// <summary>
-        /// 从 Work Order 自动补全 D/C（倒数第三位起的两位）与 線別（倒数第六位起的三位）：
+        /// 从 Work Order 自动补全 D/C（年份后两位 + 倒数第三位起的两位，如 2633）与 線別（倒数第六位起的三位），
+        /// 并给计划表的「备注」默认写工令：
         /// 只填空字段，以及「上一次自动带出来、用户没手改过」的值（改工令会跟着刷新）；用户手改过的不覆盖。
         /// </summary>
         private void AutoFillFromWorkOrder()
         {
-            if (_suppressAuto || txt_workOrder == null || txt_lineNo == null || txt_dc == null)
+            if (_suppressAuto || txt_workOrder == null)
             {
                 return;
             }
             string wo = txt_workOrder.Text?.Trim();
+            // 备注：默认写工令（用户改过、或已有关联计划带出的备注就不动）
+            if (txt_remark != null)
+            {
+                if (string.IsNullOrWhiteSpace(wo))
+                {
+                    if (_autoRemark != null && string.Equals(txt_remark.Text?.Trim(), _autoRemark, StringComparison.Ordinal))
+                    {
+                        txt_remark.Text = "";
+                    }
+                    _autoRemark = null;
+                }
+                else if (CanOverwrite(txt_remark.Text, _autoRemark))
+                {
+                    txt_remark.Text = wo;
+                    _autoRemark = wo;
+                }
+            }
+            if (txt_lineNo == null || txt_dc == null)
+            {
+                return;
+            }
             if (string.IsNullOrWhiteSpace(wo) || wo.Length < 6)
             {
                 // 工令清空或太短：把上一次自动带出的值一并清掉（用户手改过的不动）
@@ -314,8 +361,9 @@ namespace ORT一键报告.Plans.Views
                 txt_lineNo.Text = lineNo;
                 _autoLineNo = lineNo;
             }
-            // D/C：倒数第三位起的两位
-            string dc = RequisitionEditRules.DcFromWorkOrder(wo);
+            // D/C（界面上显示为「周期」）：年份后两位 + 倒数第三位起的两位，如 26 年第 33 周 → 2633
+            int year = (dp_reqDate.SelectedDate ?? DateTime.Today).Year;
+            string dc = RequisitionEditRules.DcFromWorkOrder(wo, year);
             if (dc != null && CanOverwrite(txt_dc.Text, _autoDc))
             {
                 txt_dc.Text = dc;
@@ -488,7 +536,7 @@ namespace ORT一键报告.Plans.Views
         }
 
         /// <summary>
-        /// 单体去向驱动回线RT工令输入框：入库=需要回线（启用、保存时必填）；
+        /// 单体去向驱动回线RT工令输入框：入库=需要回线（启用、自动生成一个可改的工令、保存时必填）；
         /// 报废=无需回线（禁用并清空，避免留下无意义工令）
         /// </summary>
         private void ApplyDispositionState()
@@ -503,6 +551,12 @@ namespace ORT一键报告.Plans.Views
             {
                 txt_returnRt.Text = "";
                 _autoReturnRt = null;
+                return;
+            }
+            // 入库：自动生成回线RT工令（已填内容不动，仍可点标签重生成或直接改）
+            if (string.IsNullOrWhiteSpace(txt_returnRt.Text) && dp_reqDate?.SelectedDate != null)
+            {
+                RegenerateReturnRt(false);
             }
         }
 
@@ -574,7 +628,7 @@ namespace ORT一键报告.Plans.Views
         /* ###############################  事件函数  ################################ */
 
         /// <summary>
-        /// 机种变化：带出产品别/客户别、按机种判定单体去向，并刷新「最近版本」提示
+        /// 机种变化：带出产品别/客户别、按机种判定单体去向、刷新「最近版本」提示与名称补全
         /// </summary>
         private void Txt_Model_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
         {
@@ -584,11 +638,12 @@ namespace ORT一键报告.Plans.Views
             }
             ApplyDispositionFromModel();
             UpdateRevHint();
+            UpdateModelCompletion();
             UpdateAutoPlan();
         }
 
         /// <summary>
-        /// 领出数量变化：样品数还是空的就跟着填（判单体去向只看机种，不在这里重复判定）
+        /// 领出数量变化：样品数跟着一起变（两者始终一致）
         /// </summary>
         private void Txt_OutQty_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
         {
@@ -596,7 +651,128 @@ namespace ORT一键报告.Plans.Views
             {
                 return;
             }
+            SyncQuantity(txt_outQty, txt_sampleSize);
             UpdateAutoPlan();
+        }
+
+        /// <summary>
+        /// 样品数变化：领出数量跟着一起变（两者始终一致）
+        /// </summary>
+        private void Txt_SampleSize_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+        {
+            if (txt_product == null)
+            {
+                return;
+            }
+            SyncQuantity(txt_sampleSize, txt_outQty);
+        }
+
+        /// <summary>
+        /// 把数量同步到另一个框（样品数 ↔ 领出数量）：加锁避免两个 TextChanged 相互触发
+        /// </summary>
+        private void SyncQuantity(System.Windows.Controls.TextBox source, System.Windows.Controls.TextBox target)
+        {
+            if (_syncingQuantity || source == null || target == null)
+            {
+                return;
+            }
+            _syncingQuantity = true;
+            try
+            {
+                target.Text = source.Text;
+            }
+            finally
+            {
+                _syncingQuantity = false;
+            }
+        }
+
+        /// <summary>
+        /// 机种名称输入时的补全提示：水印显示已有名称的后半段，按 Tab 补全成完整名称
+        /// </summary>
+        private void Txt_Model_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (e.Key != System.Windows.Input.Key.Tab || string.IsNullOrEmpty(_modelSuggestion))
+            {
+                return;
+            }
+            txt_model.Text = _modelSuggestion;
+            txt_model.CaretIndex = txt_model.Text.Length;
+            _modelSuggestion = null;
+            UpdateModelCompletion();
+            e.Handled = true;   // 补全时不切走焦点
+        }
+
+        /// <summary>
+        /// 刷新机种名称补全提示：把候选名称减去已输入部分，剩下的后半段作为输入框里的水印显示
+        /// </summary>
+        private void UpdateModelCompletion()
+        {
+            if (_suppressAuto || txt_modelHint == null || txt_model == null)
+            {
+                return;
+            }
+            string typed = txt_model.Text ?? "";
+            // 首尾有空白时补全位置对不上，直接不提示
+            string suggestion = typed.Length == 0 || typed != typed.Trim()
+                ? null
+                : RequisitionEditRules.ModelSuggestion(GetModelCandidates(), typed);
+            _modelSuggestion = suggestion;
+            if (suggestion == null)
+            {
+                txt_modelHint.Text = "";
+                txt_modelHint.Visibility = Visibility.Collapsed;
+                return;
+            }
+            txt_modelHint.Text = suggestion.Substring(typed.Length);
+            txt_modelHint.Margin = new Thickness(MeasureCaretOffset(typed), 0, 0, 0);
+            txt_modelHint.Visibility = Visibility.Visible;
+        }
+
+        /// <summary>
+        /// 水印提示的横向位置：输入框边框 + 内边距 + 已输入文本的宽度（让提示正好接在文字后面）
+        /// </summary>
+        private double MeasureCaretOffset(string text)
+        {
+            double offset = txt_model.BorderThickness.Left + txt_model.Padding.Left;
+            if (string.IsNullOrEmpty(text))
+            {
+                return offset;
+            }
+            var typeface = new System.Windows.Media.Typeface(txt_model.FontFamily, txt_model.FontStyle,
+                txt_model.FontWeight, txt_model.FontStretch);
+            var formatted = new System.Windows.Media.FormattedText(text, System.Globalization.CultureInfo.CurrentUICulture,
+                FlowDirection.LeftToRight, typeface, txt_model.FontSize, System.Windows.Media.Brushes.Black,
+                System.Windows.Media.VisualTreeHelper.GetDpi(this).PixelsPerDip);
+            return offset + formatted.WidthIncludingTrailingWhitespace + 1;
+        }
+
+        /// <summary>
+        /// 已有的机种名称（机种映射字典 + 领退表/计划表里出现过的机种），首次用到时载入一次
+        /// </summary>
+        private List<string> GetModelCandidates()
+        {
+            if (_modelCandidates != null)
+            {
+                return _modelCandidates;
+            }
+            List<string> candidates = [];
+            void Add(IEnumerable<string> values)
+            {
+                foreach (string value in values ?? [])
+                {
+                    string name = value?.Trim();
+                    if (!string.IsNullOrWhiteSpace(name) && !candidates.Contains(name, StringComparer.OrdinalIgnoreCase))
+                    {
+                        candidates.Add(name);
+                    }
+                }
+            }
+            Add(_admin.GetModelMappings().Select(m => m.ModelName));
+            Add(_db.FreeSql.Select<Plan>().ToList(p => p.ModelName));
+            Add(_db.FreeSql.Select<Requisition>().ToList(r => r.ModelName));
+            _modelCandidates = candidates;
+            return _modelCandidates;
         }
 
         /// <summary>
@@ -869,10 +1045,8 @@ namespace ORT一键报告.Plans.Views
                 plan.TestItem = cb_testItem.SelectedItem as string;
                 plan.StartDate = dp_startDate.SelectedDate ?? dp_reqDate.SelectedDate;
                 plan.Stage = cb_stage.SelectedItem as string;
-                // 样品数留空时：新增按领出数量兜底；编辑保持原值（不把原有空值改成领出数量）
-                plan.SampleSize = string.IsNullOrWhiteSpace(txt_sampleSize.Text)
-                    ? (_editTarget == null ? req.OutQty : null)
-                    : txt_sampleSize.Text.Trim();
+                // 样品数与领出数量保持一致（表单里两者互相同步，保存时以领出数量为准）
+                plan.SampleSize = string.IsNullOrWhiteSpace(req.OutQty) ? null : req.OutQty;
                 plan.ModelName = req.ModelName;
                 plan.Product = string.IsNullOrWhiteSpace(txt_product.Text) ? null : txt_product.Text.Trim();
                 plan.Customer = string.IsNullOrWhiteSpace(txt_customer.Text) ? null : txt_customer.Text.Trim();
@@ -881,11 +1055,8 @@ namespace ORT一键报告.Plans.Views
                 plan.EndDate = dp_endDate.SelectedDate;
                 plan.Status = plan.Status ?? "Ongoing";
                 plan.ReportStatus = cb_reportStatus.SelectedItem as string;
-                // 备注：默认写「工令」（Work Order），已有备注的关联计划不覆盖
-                if (string.IsNullOrWhiteSpace(plan.Remark))
-                {
-                    plan.Remark = req.WorkOrder;
-                }
+                // 备注：表单里默认写「工令」（Work Order），用户清空就留空
+                plan.Remark = string.IsNullOrWhiteSpace(txt_remark.Text) ? null : txt_remark.Text.Trim();
                 plan.UpdatedBy = _permission.CurrentUser;
                 plan.UpdatedAt = DateTime.Now;
                 PlanResult = plan;
@@ -933,6 +1104,8 @@ namespace ORT一键报告.Plans.Views
                 _autoReturnRt = null;
                 _autoDc = null;
                 _autoLineNo = null;
+                _autoRemark = null;
+                _modelSuggestion = null;
                 _uploadedSnFile = null;
 
                 txt_reqNo.Text = "";
@@ -952,6 +1125,9 @@ namespace ORT一键报告.Plans.Views
                 txt_sampleSize.Text = "";
                 txt_product.Text = "";
                 txt_customer.Text = "";
+                txt_remark.Text = "";
+                txt_modelHint.Text = "";
+                txt_modelHint.Visibility = Visibility.Collapsed;
                 // 保留：领用日期、计划同步区（测试项目/阶段/报告状态/负责人/试验时间/结束日期）与展开状态
                 _revHintModel = null;
                 UpdateRevHint();

@@ -41,26 +41,29 @@ namespace ORT一键报告.Tests
         /* ###############################  完工令补全  ################################ */
 
         [Test]
-        public void 完工令_线别取倒数第六位起三位_DC取倒数第三位起两位()
+        public void 完工令_线别取倒数第六位起三位_DC取年份后两位加周别()
         {
             const string workOrder = "WK2601THRSA1";   // 下标 6..8=THR，下标 9..10=SA
             Assert.That(RequisitionEditRules.LineNoFromWorkOrder(workOrder), Is.EqualTo("THR"));
-            Assert.That(RequisitionEditRules.DcFromWorkOrder(workOrder), Is.EqualTo("SA"));
+            // D/C（周期）= 年份后两位 + 倒数第三位起的两位（末尾一位是校验位，不取）
+            Assert.That(RequisitionEditRules.DcFromWorkOrder(workOrder, 2026), Is.EqualTo("26SA"));
+            Assert.That(RequisitionEditRules.DcFromWorkOrder("WK2601THR331", 2026), Is.EqualTo("2633"));
+            Assert.That(RequisitionEditRules.DcFromWorkOrder("WK2601THR331", 2031), Is.EqualTo("3133"));
         }
 
         [Test]
         public void 完工令_首尾空白不影响解析()
         {
             Assert.That(RequisitionEditRules.LineNoFromWorkOrder("  WK2601THRSA1 "), Is.EqualTo("THR"));
-            Assert.That(RequisitionEditRules.DcFromWorkOrder("  WK2601THRSA1 "), Is.EqualTo("SA"));
+            Assert.That(RequisitionEditRules.DcFromWorkOrder("  WK2601THR331 ", 2026), Is.EqualTo("2633"));
         }
 
         [Test]
         public void 完工令_太短时取不到补全值()
         {
             Assert.That(RequisitionEditRules.LineNoFromWorkOrder("12345"), Is.Null);
-            Assert.That(RequisitionEditRules.DcFromWorkOrder("12"), Is.Null);
-            Assert.That(RequisitionEditRules.DcFromWorkOrder("123"), Is.EqualTo("12"));
+            Assert.That(RequisitionEditRules.DcFromWorkOrder("12", 2026), Is.Null);
+            Assert.That(RequisitionEditRules.DcFromWorkOrder("123", 2026), Is.EqualTo("2612"));
         }
 
         [TestCase(null)]
@@ -68,7 +71,29 @@ namespace ORT一键报告.Tests
         public void 完工令_为空时取不到补全值(string workOrder)
         {
             Assert.That(RequisitionEditRules.LineNoFromWorkOrder(workOrder), Is.Null);
-            Assert.That(RequisitionEditRules.DcFromWorkOrder(workOrder), Is.Null);
+            Assert.That(RequisitionEditRules.DcFromWorkOrder(workOrder, 2026), Is.Null);
+        }
+
+        /* ###############################  机种名称补全  ################################ */
+
+        private static readonly string[] Models = ["WAQ2601001", "WAQ26010012", "DAQ2601001"];
+
+        [Test]
+        public void 机种补全_取最短的以输入开头的已有名称()
+        {
+            Assert.That(RequisitionEditRules.ModelSuggestion(Models, "WAQ"), Is.EqualTo("WAQ2601001"));
+            Assert.That(RequisitionEditRules.ModelSuggestion(Models, "WAQ2601001"), Is.EqualTo("WAQ26010012"));
+            Assert.That(RequisitionEditRules.ModelSuggestion(Models, "waq2601"), Is.EqualTo("WAQ2601001"));   // 不区分大小写
+            Assert.That(RequisitionEditRules.ModelSuggestion(Models, " WAQ2601 "), Is.EqualTo("WAQ2601001")); // 首尾空白忽略
+        }
+
+        [Test]
+        public void 机种补全_没有更长候选时不提示()
+        {
+            Assert.That(RequisitionEditRules.ModelSuggestion(Models, "WAQ26010012"), Is.Null);  // 已完整
+            Assert.That(RequisitionEditRules.ModelSuggestion(Models, "XYZ"), Is.Null);          // 没有匹配
+            Assert.That(RequisitionEditRules.ModelSuggestion(Models, ""), Is.Null);             // 没输入
+            Assert.That(RequisitionEditRules.ModelSuggestion(null, "WAQ"), Is.Null);            // 没有候选
         }
 
         /* ###############################  编号递增  ################################ */

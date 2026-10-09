@@ -9,7 +9,8 @@ namespace ORT一键报告.Models
     /// 1) 数据文件夹位置（数据库/附件/配图等全部数据都放在那里，可在远程共享上）；
     /// 2) ATE / EMI 源数据路径（各台电脑自己的目录）；
     /// 3)（旧位置遗留、仅用于迁移）登录 cookie 字段——凭据已改存到当前用户目录 %LocalAppData%（见 LoginCredentialStore）；
-    /// 4) 计划表列布局。
+    /// 4) 计划表列布局；
+    /// 5) 最近搜索记忆（搜索框的历史关键字）。
     /// 其余设置（界面、邮件、业务路径等）随数据库放在数据文件夹里，多台电脑共用。
     /// 反序列化时缺失的项一律保持默认值，因此旧版本文件（或手工精简过的文件）都能读。
     /// </summary>
@@ -38,6 +39,9 @@ namespace ORT一键报告.Models
 
         /// <summary>计划表列布局（"requisitions" / "plans" → 列键列表）</summary>
         public Dictionary<string, List<string>> PlansLayout { get; set; }
+
+        /// <summary>最近搜索记忆（领退表/计划表共用搜索框，最新在前，最多 10 条）</summary>
+        public List<string> PlanSearchHistory { get; set; }
 
         /// <summary>后台运行设置（本机：最小化到后台 / 开机自启）</summary>
         public BackgroundSettings Background { get; set; } = new BackgroundSettings();

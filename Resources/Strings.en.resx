@@ -191,6 +191,18 @@
   <data name="Plans_SearchHint" xml:space="preserve">
     <value>Searches both the return and plan tables: model, work number, doc no., S/N, etc.</value>
   </data>
+  <data name="Plans_SearchHistory" xml:space="preserve">
+    <value>Recent</value>
+  </data>
+  <data name="Plans_SearchHistoryHint" xml:space="preserve">
+    <value>Pick a previously used keyword (kept on this PC)</value>
+  </data>
+  <data name="Plans_SearchHistoryEmpty" xml:space="preserve">
+    <value>No search history yet</value>
+  </data>
+  <data name="Plans_SearchClearHint" xml:space="preserve">
+    <value>Clear the search keyword and show all records</value>
+  </data>
   <data name="Plans_RequisitionFilter" xml:space="preserve">
     <value>Return table filters</value>
   </data>
@@ -2469,11 +2481,17 @@ Build the plan index now (compress repeated text into shared templates)?</value>
   <data name="ReqEdit_LastRevHintFormat" xml:space="preserve">
     <value>Last revision: {0} (leave blank to use it)</value>
   </data>
-  <data name="ReqEdit_ModelDispositionHint" xml:space="preserve">
-    <value>A model starting with W defaults to Scrap, otherwise Stock-in (can be changed)</value>
+  <data name="ReqEdit_ModelHint" xml:space="preserve">
+    <value>A model starting with W defaults to Scrap, otherwise Stock-in (changeable); existing model names are suggested while typing — press Tab to complete</value>
+  </data>
+  <data name="ReqEdit_QtySyncHint" xml:space="preserve">
+    <value>Issue quantity and the plan's sample size stay in sync: editing either one updates the other</value>
+  </data>
+  <data name="ReqEdit_PlanRemarkHint" xml:space="preserve">
+    <value>Remark of the plan record, defaults to the work order; editable</value>
   </data>
   <data name="ReqEdit_WorkOrderHint" xml:space="preserve">
-    <value>Filling the work order auto-fills line and D/C (period)</value>
+    <value>Filling the work order auto-fills line and D/C (period = 2-digit year + week, e.g. 2633)</value>
   </data>
   <data name="Msg_SnDuplicateFormat" xml:space="preserve">
     <value>Duplicate serial numbers: {0}. Re-enter? (Yes = go back and fix, No = save anyway)</value>

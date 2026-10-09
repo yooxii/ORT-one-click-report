@@ -191,6 +191,18 @@
   <data name="Plans_SearchHint" xml:space="preserve">
     <value>同時搜尋領退表與計劃表：機種、工作編號、單號、S/N 等</value>
   </data>
+  <data name="Plans_SearchHistory" xml:space="preserve">
+    <value>最近搜尋</value>
+  </data>
+  <data name="Plans_SearchHistoryHint" xml:space="preserve">
+    <value>點開選擇以前搜過的關鍵字（存在本機，重啟後仍在）</value>
+  </data>
+  <data name="Plans_SearchHistoryEmpty" xml:space="preserve">
+    <value>暫無搜尋記錄</value>
+  </data>
+  <data name="Plans_SearchClearHint" xml:space="preserve">
+    <value>清空搜尋關鍵字，顯示全部記錄</value>
+  </data>
   <data name="Plans_RequisitionFilter" xml:space="preserve">
     <value>領退表篩選</value>
   </data>
@@ -2469,11 +2481,17 @@
   <data name="ReqEdit_LastRevHintFormat" xml:space="preserve">
     <value>最近版本：{0}（留空即用此版本）</value>
   </data>
-  <data name="ReqEdit_ModelDispositionHint" xml:space="preserve">
-    <value>機種名稱以 W 開頭時單體去向自動判為報廢，其餘為入庫（可手動改）</value>
+  <data name="ReqEdit_ModelHint" xml:space="preserve">
+    <value>機種名稱以 W 開頭時單體去向自動判為報廢，其餘為入庫（可手動改）；輸入時提示已有的機種名稱，按 Tab 補全</value>
+  </data>
+  <data name="ReqEdit_QtySyncHint" xml:space="preserve">
+    <value>領出數量與計劃表的樣品數同步：改任一個，另一個跟著變</value>
+  </data>
+  <data name="ReqEdit_PlanRemarkHint" xml:space="preserve">
+    <value>計劃表的備註，預設寫工令（Work Order），可修改</value>
   </data>
   <data name="ReqEdit_WorkOrderHint" xml:space="preserve">
-    <value>填好完工令後自動帶出線別與 D/C（週期）</value>
+    <value>填好工令後自動帶出線別與 D/C（週期 = 年份後兩位 + 週別，如 2633）</value>
   </data>
   <data name="Msg_SnDuplicateFormat" xml:space="preserve">
     <value>序號有重複：{0}。是否重新輸入？（是=返回修改，否=繼續儲存）</value>
