@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <title>大肥鱼表情包</title>
+  <g transform="translate(0,-14)">
+  <g transform="rotate(0.0 256 300)">
+    <!-- 尾巴 -->
+    <path d="M404 300 C440 268 468 262 486 276 C470 292 470 308 486 324 C468 338 440 332 404 300 Z"
+          fill="#7cc6ee" stroke="#1b1b1b" stroke-width="8" stroke-linejoin="round"/>
+    <!-- 头顶小鳍（小莫西干） -->
+    <path d="M240 138 C252 110 276 96 294 116 C272 124 258 136 250 152 Z"
+          fill="#7cc6ee" stroke="#1b1b1b" stroke-width="8" stroke-linejoin="round"/>
+    <!-- 呆毛 -->
+    <path d="M206 148 C200 122 216 104 232 112 C218 122 214 134 220 152"
+          fill="none" stroke="#1b1b1b" stroke-width="8" stroke-linecap="round"/>
+    <!-- 身体 -->
+    <ellipse cx="252" cy="300" rx="168" ry="152" fill="#9ed8f6" stroke="#1b1b1b" stroke-width="9"/>
+    <!-- 肚皮 -->
+    <ellipse cx='244' cy='340' rx='112' ry='94' fill='#fff6e5' stroke='#1b1b1b' stroke-width='7'/>
+    <!-- 两侧小鳍 -->
+    <path d="M104 300 C74 292 52 306 50 326 C70 336 94 330 110 316 Z"
+          fill="#7cc6ee" stroke="#1b1b1b" stroke-width="8" stroke-linejoin="round"/>
+    <path d="M400 336 C428 328 452 342 456 362 C436 372 412 364 396 350 Z"
+          fill="#7cc6ee" stroke="#1b1b1b" stroke-width="8" stroke-linejoin="round"/>
+  </g>
+    
+    <circle cx="198" cy="240" r="31" fill="#ffffff" stroke="#1b1b1b" stroke-width="7"/>
+    <circle cx="198" cy="240" r="21" fill="#1b1b1b"/>
+    <circle cx="186" cy="226" r="10" fill="#ffffff"/>
+    <circle cx="208" cy="254" r="5" fill="#ffffff"/>
+    <circle cx="318" cy="240" r="31" fill="#ffffff" stroke="#1b1b1b" stroke-width="7"/>
+    <circle cx="318" cy="240" r="21" fill="#1b1b1b"/>
+    <circle cx="306" cy="226" r="10" fill="#ffffff"/>
+    <circle cx="328" cy="254" r="5" fill="#ffffff"/>
+    <ellipse cx="132" cy="322" rx="29" ry="18" fill="#ffb3c1" opacity="0.95"/>
+    <ellipse cx="384" cy="322" rx="29" ry="18" fill="#ffb3c1" opacity="0.95"/>
+    <path d="M236 318 C246 332 258 332 268 318 C278 332 290 332 300 318"
+          fill="none" stroke="#1b1b1b" stroke-width="9" stroke-linecap="round"/>
+    <!-- 小笔记本 -->
+    <rect x="186" y="382" width="164" height="18" rx="8" fill="#d0d0d0" stroke="#1b1b1b" stroke-width="7"/>
+    <rect x="176" y="356" width="184" height="28" rx="9" fill="#e4e4e4" stroke="#1b1b1b" stroke-width="7"/>
+    <path d="M196 370 L238 370" stroke="#1b1b1b" stroke-width="5" stroke-linecap="round" opacity="0.55"/>
+    <path d="M196 380 L226 380" stroke="#1b1b1b" stroke-width="5" stroke-linecap="round" opacity="0.55"/>
+    <!-- 打字的小鳍 -->
+    <path d="M186 340 C164 330 146 340 148 356 C160 372 184 366 194 350 Z"
+          fill="#7cc6ee" stroke="#1b1b1b" stroke-width="7" stroke-linejoin="round"/>
+    <path d="M352 340 C374 330 392 340 390 356 C378 372 354 366 344 350 Z"
+          fill="#7cc6ee" stroke="#1b1b1b" stroke-width="7" stroke-linejoin="round"/>
+    <!-- 灵感小火花 -->
+    <path d="M420 224 L426 240 L442 246 L426 252 L420 268 L414 252 L398 246 L414 240 Z" fill="#ffe066" stroke="#1b1b1b" stroke-width="5"/>
+  </g>
+  
+  <text x="256" y="478" text-anchor="middle" font-size="52"
+        font-family="'Microsoft YaHei UI','Microsoft YaHei','Noto Sans SC',sans-serif"
+        font-weight="900" fill="#1b1b1b" stroke="#ffffff" stroke-width="10"
+        paint-order="stroke" stroke-linejoin="round">本鱼在工作哦</text>
+</svg>
