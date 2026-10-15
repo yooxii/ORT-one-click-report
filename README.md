@@ -236,6 +236,8 @@ Utils/                   Excel/Word/PDF 处理、校验、内存清理等工具
 Themes/ Resources/       主题与本地化资源（Strings.resx + zh-CN / zh-TW / en）
 Tests/                   NUnit 单元测试与运行脚本
 Templates/               报告模板（随生成复制到输出目录）
+docs/architecture/       架构图与架构说明（C4 Structurizr DSL + 业务流 Graphviz DOT + 证据索引）
+xp-client/               Windows XP 精简客户端（Python 子项目，共用同一个数据库）
 更新日志.md               面向用户的版本更新记录（随生成复制到输出目录）
 修改记录.md               按日期的开发变更记录（实现细节）
 ```
@@ -291,5 +293,6 @@ Templates/               报告模板（随生成复制到输出目录）
 | [更新日志.md](更新日志.md) | 面向用户的版本更新记录（新功能、行为变化、缺陷修复） |
 | [修改记录.md](修改记录.md) | 按日期的开发变更要点 |
 | [AGENTS.md](AGENTS.md) | 仓库协作约定（每轮对话的 Git 检查/提交规范、版本发布与打包、构建与验证方式） |
+| [docs/architecture/architecture-understanding.md](docs/architecture/architecture-understanding.md) | 当前架构理解（业务能力、五级角色与权限矩阵、容器与组件、领域实体、状态口径、端到端主路径）；配套 `system-model.structurizr.dsl`（C4 图源码）、`business-flow.dot`（业务流图源码）、`system-model.evidence.md`（逐条证据与行号） |
 | [tools/make-release.ps1](tools/make-release.ps1) | 发布打包脚本（Release + zip） |
 | [xp-client/README.md](xp-client/README.md) | 面向 Windows XP 客户端的 Python 只读版本（打包与部署） |

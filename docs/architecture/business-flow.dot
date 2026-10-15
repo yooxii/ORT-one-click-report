@@ -1,0 +1,203 @@
+// ORT实验室管理系统 — 端到端业务主路径（当前状态）
+// 生成日期：2026-10-15｜对应程序集版本 0.6.2.0
+// 由 architecture-visualization 技能族 system-modeler + graphviz 产出。
+// 配套：system-model.structurizr.dsl（C4 结构）、system-model.evidence.md（逐条证据与行号）。
+//
+// 读图约定：
+//   实线 = 代码直接证实的路径；虚线 = 未证实 / 待验证 / 结构观察，不是已确认行为。
+//   标签以 "UI:" 开头的节点只证明界面提供了该入口，不代表后端效果已验证。
+//   圆柱体 = 数据落库；便签形 = 外部文件。
+
+digraph ort_business_flow {
+    charset="utf-8";
+    rankdir=TB;
+    compound=true;
+    newrank=true;
+    graph [fontname="Microsoft YaHei", fontsize=13, labeljust="l", labelloc="t", color="#8fa4b8", style=rounded];
+    node  [fontname="Microsoft YaHei", fontsize=11, shape=box, style="rounded,filled", fillcolor="#eef3f9", color="#5b7fa6"];
+    edge  [fontname="Microsoft YaHei", fontsize=10, color="#5b7fa6"];
+
+    // ==================== 角色 ====================
+    tech    [label="技术员 / 管理员", shape=ellipse, fillcolor="#1f6f8b", fontcolor="#ffffff", style=filled];
+    general [label="普通用户", shape=ellipse, fillcolor="#1f6f8b", fontcolor="#ffffff", style=filled];
+    revwr   [label="审核员 / 管理员", shape=ellipse, fillcolor="#1f6f8b", fontcolor="#ffffff", style=filled];
+
+    // ==================== ① 数据进入系统 ====================
+    subgraph cluster_intake {
+        label="① 数据进入系统（Excel 导入 / 手工登记）";
+        fillcolor="#f7fafd"; style="rounded,filled"; color="#a8bdd1";
+
+        xls_req  [label="领用表 Excel\n成品領用記錄", shape=note, fillcolor="#fdf3d8", color="#c8a94e"];
+        xls_plan [label="计划表 Excel\nORT Test Schedule", shape=note, fillcolor="#fdf3d8", color="#c8a94e"];
+
+        imp_req [label="导入领用表\n表头在前 10 行内按去空白关键字定位\n年份可从文件名提取\nS/N 列内嵌 OLE 附件提取到 OleFiles\n公式脏数据统一改写为 #N/A", fillcolor="#dbe7f5"];
+        imp_plan [label="导入计划表\n按工作編號 upsert\n导入后顺带同步客户 / 产品 / 测试项目字典", fillcolor="#dbe7f5"];
+
+        merge_rule [label="多条件关联匹配\n先按領料單据號查库，未命中再按工令兜底\n仍无工令记录时按日期 + 机种兜底合并", shape=box, fillcolor="#e8f0e4", color="#6f9464"];
+
+        ui_add [label="UI: 新增领用 / 新增计划窗口\n工令自动带出线别与周期\n机种名称与版本按水印提示补全\n单体去向按机种名首字母自动判定（W 开头为报废）", fillcolor="#dbe7f5"];
+    }
+
+    // ==================== ② 暂存与提交 ====================
+    subgraph cluster_commit {
+        label="② 暂存 → 提交保存（界面改动不立即写库）";
+        fillcolor="#f7fafd"; style="rounded,filled"; color="#a8bdd1";
+
+        staged [label="暂存区（内存）\n新增行高亮为待提交\n表格自动切页签并滚动定位到新行", fillcolor="#fff0e0", color="#c08a3e"];
+
+        validate [label="提交前整体校验\n必填项、工作编号格式与重号\n重号按表格当前数据（含未提交修改）判定", shape=box, fillcolor="#e8f0e4", color="#6f9464"];
+
+        writeback [label="写入数据库\n顺序：先删 → 再改 → 后增（避开唯一索引）\n每条改动逐条写计划变更日志", shape=cylinder, fillcolor="#dff0e4", color="#4f8a63"];
+
+        need_review [label="是否需要提审？\nPlanEditNeedsReview：\n仅普通用户为真", shape=diamond, fillcolor="#fdf3d8", color="#c8a94e"];
+    }
+
+    // ==================== ③ 审核 ====================
+    subgraph cluster_review {
+        label="③ 计划变更审核（普通用户改动的必经分支）";
+        fillcolor="#f7fafd"; style="rounded,filled"; color="#a8bdd1";
+
+        req_queue [label="审核请求队列\nreview_requests\n审核按钮上显示待审条数", shape=cylinder, fillcolor="#dff0e4", color="#4f8a63"];
+
+        ui_review [label="UI: 审核详情\n逐字段与库中现值比对，标出旧值 → 新值\n审计字段与界面计算字段不展示\n完整 JSON 收在可折叠的原始数据区", fillcolor="#dbe7f5"];
+
+        decided [label="通过 / 驳回", shape=diamond, fillcolor="#fdf3d8", color="#c8a94e"];
+        applied [label="通过后落库并写变更日志", shape=cylinder, fillcolor="#dff0e4", color="#4f8a63"];
+        rejected [label="驳回：改动不生效\n流程窗口标为已驳回", fillcolor="#f6e2e2", color="#b06a6a"];
+    }
+
+    // ==================== ④ 样品终态登记 ====================
+    subgraph cluster_disposition {
+        label="④ 样品终态登记（流程依赖：无回线不能入库，报废与入库互斥）";
+        fillcolor="#f7fafd"; style="rounded,filled"; color="#a8bdd1";
+
+        disposition [label="单体去向\n入库 / 报废（必填）\n旧数据按有无回线RT工令自动归位", shape=diamond, fillcolor="#fdf3d8", color="#c8a94e"];
+
+        retline [label="回线登记\n回线RT工令格式 RTAH + 年月 + 编号，不可重复\n回线数量默认按领用数量，可编辑\n批量回线：工具菜单筛出未登记回线的入库记录", fillcolor="#dbe7f5"];
+        stockin [label="入库登记\n要求已登记回线\n筛选待入库后可逐条登记并跳下一条", fillcolor="#dbe7f5"];
+        scrap [label="报废登记\n需提供序列号清单，与领用清单逐条核对\n多一个 / 少一个 / 清单内重复都列差异并阻止\n技术员及以上直接生效，普通用户提审", fillcolor="#dbe7f5"];
+        unitback [label="单体归还（其他部门申请测试流程）\n计划表同步显示归还日期", fillcolor="#dbe7f5"];
+
+        flowwin [label="UI: 流程窗口\n按登记数据与报告扫描结果标出各步骤状态\n已完成 / 进行中 / 未到达 / 无需 / 已驳回", fillcolor="#dbe7f5"];
+    }
+
+    // ==================== ⑤ 报告产出 ====================
+    subgraph cluster_report {
+        label="⑤ 报告产出（两条独立路径）";
+        fillcolor="#f7fafd"; style="rounded,filled"; color="#a8bdd1";
+
+        tpl_entry [label="报告模板工具\n入口：计划右键 / 主窗口工具菜单", fillcolor="#dbe7f5"];
+        tpl_source [label="骨架来源\n优先找同机种周期号最大的已有报告概览\n读不到才退回机种测试计划从头生成", shape=diamond, fillcolor="#fdf3d8", color="#c8a94e"];
+        tpl_sched [label="自动排期\n跳过周末\n超 24 小时按跨天计天数（Burn In 168 小时跨 8 天）\n周期取领用表 D/C，写成 WK2633 形式", fillcolor="#e8f0e4", color="#6f9464"];
+        tpl_conflict [label="冲突以领用表为准\n客户别 / 版本 / 产品阶段 / 周期不一致时按领用表填写\n生成前逐条提示冲突项", fillcolor="#e8f0e4", color="#6f9464"];
+        tpl_out [label="整目录复制模板到报告夹\n写 Cover / ORT Plan / Waterfall / TestStatus 四表\n以已有报告为骨架时 TestStatus 的 total 列先置空", fillcolor="#dbe7f5"];
+
+        onekey [label="UI: 一键报告\nThermal Shock / Burn In / EMI / ATE\n从计划右键携带匹配到的计划、领退记录与报告夹预填\n领退匹配：备注含RT工令 → 含工令 → 机种 + 日期", fillcolor="#dbe7f5"];
+        onekey_fill [label="按模板 setup 表的单元格地址\n写表头信息与本次测试数据（含图片、ATE 数据、结论）\n保存路径由保存对话框决定", fillcolor="#dbe7f5"];
+        ole_embed [label="保存后用 Excel COM 嵌 OLE 附件\n需要本机装 Excel", fillcolor="#f0e6f5", color="#8a6aa0"];
+
+        templates_dir [label="Templates 报告模板目录\n随程序发布并复制到输出目录", shape=note, fillcolor="#fdf3d8", color="#c8a94e"];
+        report_dir [label="报告文件夹\n各机种报告目录（需含 Report 子目录与概览 xls）\n路径由设置项 ReportDir 决定", shape=folder, fillcolor="#fdf3d8", color="#c8a94e"];
+    }
+
+    // ==================== ⑥ 报告扫描回写 ====================
+    subgraph cluster_scan {
+        label="⑥ 报告扫描回写报告状态（后台自动，可中断）";
+        fillcolor="#f7fafd"; style="rounded,filled"; color="#a8bdd1";
+
+        coord [label="高耗时任务互斥协调\n一键报告 / 计划索引 / 报告扫描同一时间只跑一个\n切换时先取消旧任务、弹等待窗、等收尾再启动", fillcolor="#fff0e0", color="#c08a3e"];
+        scan [label="扫描报告夹\n闲置默认 300 秒触发，调度器每 30 秒轮询\n递归 4 层枚举目录，目录名包含工作编号即匹配", fillcolor="#dbe7f5"];
+        status_read [label="读报告概览 TestStatus 表\n前 10 行定位表头，逐个测试项判定\nUNITS UNDER TEST == TOTAL + FAIL 则该项完成", fillcolor="#e8f0e4", color="#6f9464"];
+        status_calc [label="全部满足 → 已完成\n否则 → 进行中（含全 0 未开始）\n找不到表 / 表头 / 测试项行 → 不改动", shape=diamond, fillcolor="#fdf3d8", color="#c8a94e"];
+        links_write [label="report_links 全量刷新", shape=cylinder, fillcolor="#dff0e4", color="#4f8a63"];
+        status_write [label="plans.ReportStatus 增量回写\n用户手工设为无要求后不再覆盖\n改回其他值则下次扫描重新接管", shape=cylinder, fillcolor="#dff0e4", color="#4f8a63"];
+    }
+
+    // ==================== ⑦ 到期提醒 ====================
+    subgraph cluster_mail {
+        label="⑦ 到期提醒（唯一网络出站）";
+        fillcolor="#f7fafd"; style="rounded,filled"; color="#a8bdd1";
+
+        mail_timer [label="主窗口内定时器\n周期检查计划到期并后台发送\n设置窗口可手动立即检查并发送警告", fillcolor="#dbe7f5"];
+        mail_send [label="按模板组装并投递\n提前提醒天数、重复发送间隔、按类型抄送管理员\n发送记录写 mail_logs，失败不影响主流程", fillcolor="#f0e6f5", color="#8a6aa0"];
+        smtp [label="SMTP 邮件服务器\n明文 25 / STARTTLS 587 / 隐式 SSL 465", shape=box3d, fillcolor="#e4e0ea", color="#7a6a90"];
+    }
+
+    // ==================== 数据存储 ====================
+    db [label="SQLite 主库 ort_plans.db\n默认在程序目录 Data 下，可改到网络共享\nFreeSql 自动结构同步，新增列自动迁移\n本地用 WAL，网络共享退回 rollback journal", shape=cylinder, fillcolor="#dff0e4", color="#4f8a63"];
+
+    no_txn [label="结构观察：导入与提交保存均为逐行写入\n代码中未见显式数据库事务\n（这是静态检索结果，非运行时行为验证）", shape=note, fillcolor="#f2f2f2", color="#999999", fontcolor="#555555", style="rounded,filled,dashed"];
+
+    // ==================== 边 ====================
+    tech -> xls_req  [label="选择文件导入"];
+    tech -> imp_req  [label="plan.import"];
+    tech -> imp_plan [label="plan.import"];
+    xls_req  -> imp_req;
+    xls_plan -> imp_plan;
+    imp_req  -> merge_rule;
+    imp_plan -> merge_rule;
+    merge_rule -> staged [label="导入结果同样先暂存"];
+
+    tech    -> ui_add [label="plan.add / plan.edit"];
+    general -> ui_add [label="plan.add / plan.edit"];
+    ui_add  -> staged;
+
+    staged -> validate [label="UI: 点提交保存"];
+    validate -> need_review [label="校验通过"];
+    need_review -> writeback [label="否（技术员及以上）\n直接生效"];
+    need_review -> req_queue [label="是（普通用户）\n生成更改请求"];
+
+    req_queue -> ui_review;
+    ui_review -> decided;
+    revwr -> ui_review [label="review.view"];
+    decided -> applied  [label="通过"];
+    decided -> rejected [label="驳回"];
+    applied -> db;
+    writeback -> db;
+    req_queue -> db;
+    rejected -> db [style=dashed, label="记录请求状态"];
+
+    writeback -> disposition [label="领退记录进入终态登记"];
+    disposition -> retline [label="入库"];
+    disposition -> scrap   [label="报废"];
+    retline -> stockin [label="已登记回线才允许入库"];
+    scrap -> unitback [style=dashed, label="其他部门申请测试流程\n另有单体归还节点"];
+    retline -> unitback [style=dashed];
+    disposition -> flowwin [style=dotted, label="UI: 查看流程"];
+    stockin -> flowwin [style=dotted];
+    scrap -> flowwin [style=dotted];
+
+    tech -> tpl_entry [label="report.use"];
+    tech -> onekey    [label="report.use"];
+    tpl_entry -> tpl_source;
+    report_dir -> tpl_source [style=dashed, label="读取已有报告概览"];
+    tpl_source -> tpl_sched;
+    tpl_sched -> tpl_conflict;
+    tpl_conflict -> tpl_out;
+    templates_dir -> tpl_out [label="空白模板兜底"];
+    tpl_out -> report_dir [label="生成报告夹与四张表"];
+
+    onekey -> onekey_fill;
+    templates_dir -> onekey_fill [label="模板单元格地址表"];
+    report_dir -> onekey_fill [style=dashed, label="测试信息与图片优先读绑定报告夹里的已有报告"];
+    onekey_fill -> ole_embed;
+    ole_embed -> report_dir [label="保存报告文件"];
+
+    onekey -> coord [label="启动前经协调器"];
+    coord -> scan;
+    report_dir -> scan [label="扫描目标"];
+    scan -> status_read;
+    status_read -> status_calc;
+    status_calc -> links_write [label="匹配到报告夹"];
+    status_calc -> status_write;
+    links_write -> db;
+    status_write -> db;
+    db -> flowwin [style=dashed, label="流程状态取自登记数据与扫描结果"];
+
+    mail_timer -> mail_send;
+    db -> mail_timer [label="读计划结束日期与提醒设置"];
+    mail_send -> smtp;
+
+    writeback -> no_txn [style=dotted, arrowhead=none, color="#999999"];
+    imp_req   -> no_txn [style=dotted, arrowhead=none, color="#999999"];
+}
