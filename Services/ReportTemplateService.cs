@@ -365,7 +365,9 @@ namespace ORT一键报告.Services
 
         /// <summary>
         /// 按"每项测试的试验周期、开始日期落在工作日"给测试项排期。
-        /// 每项测试占连续的若干天（周期小时数 / 24 向上取整），下一项从上一项结束后的第一个工作日开始。
+        /// 每项测试占连续的若干天（周期小时数 / 24 向上取整），下一项从上一项结束后的第一个工作日开始；
+        /// 相邻两项都是跨天测试时，后一项直接接在前一项的结束日当天（跨天测试在结束日当天就已经收尾，
+        /// 这个边界日被两项共用），整条排期因此省下一天。
         /// </summary>
         public static void Schedule(List<ReportTemplateItem> items, DateTime startDate)
         {
@@ -374,14 +376,19 @@ namespace ORT一键报告.Services
                 return;
             }
             DateTime cursor = startDate.Date;
+            bool previousCrossDay = false;
             foreach (ReportTemplateItem item in items)
             {
                 int days = item.PeriodDays;
-                DateTime start = NextWorkingDay(cursor);
+                bool crossDay = days > 1;
+                // 两个跨天测试连排：后一项的开始日 = 前一项的结束日（共用边界日，省一天）
+                DateTime anchor = previousCrossDay && crossDay ? cursor.AddDays(-1) : cursor;
+                DateTime start = NextWorkingDay(anchor);
                 DateTime end = start.AddDays(days - 1);
                 item.Start = start;
                 item.End = end;
                 cursor = end.AddDays(1);
+                previousCrossDay = crossDay;
             }
         }
 

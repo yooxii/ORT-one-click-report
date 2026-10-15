@@ -64,6 +64,7 @@
     <Compile Include="PlansViewRefreshTests.cs" />
     <Compile Include="RequisitionBatchRulesTests.cs" />
     <Compile Include="RequisitionEditRulesTests.cs" />
+    <Compile Include="ReportTemplateScheduleTests.cs" />
     <Compile Include="ReportTemplateSmokeTests.cs" />
     <Compile Include="ReturnRtCodeCheckTests.cs" />
     <Compile Include="SearchHistoryRulesTests.cs" />
