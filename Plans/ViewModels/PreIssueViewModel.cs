@@ -622,6 +622,12 @@ namespace ORT一键报告.Plans.ViewModels
         private ICommand _addBlacklistCommand;
         public ICommand AddBlacklistCommand => _addBlacklistCommand ??= new CommunityToolkit.Mvvm.Input.RelayCommand<object>(AddToBlacklist, p => CanImport && p is OrtBoardRow);
 
+        private ICommand _undoImportCommand;
+        public ICommand UndoImportCommand => _undoImportCommand ??= new CommunityToolkit.Mvvm.Input.RelayCommand<object>(UndoImport, p => CanImport);
+
+        private ICommand _clearMonthCommand;
+        public ICommand ClearMonthCommand => _clearMonthCommand ??= new CommunityToolkit.Mvvm.Input.RelayCommand<object>(ClearMonth, p => CanImport);
+
         private ICommand _prevWeekCommand;
         public ICommand PrevWeekCommand => _prevWeekCommand ??= new RelayCommand(PrevWeek);
 
@@ -704,7 +710,12 @@ namespace ORT一键报告.Plans.ViewModels
             {
                 return;
             }
-            RunImport(() => _service.ImportSchedule(file), "月排程");
+            // 先预览再确认：文件形状不对（比如把开单数据选成月排程）在这一步就被拦下来
+            if (!ConfirmImport(_service.PreviewSchedule(file), LanguageService.Get("PreIssue_ScheduleTab")))
+            {
+                return;
+            }
+            RunImport(() => _service.ImportSchedule(file), LanguageService.Get("PreIssue_ScheduleTab"));
         }
 
         private void ImportBoard()
@@ -715,7 +726,11 @@ namespace ORT一键报告.Plans.ViewModels
             {
                 return;
             }
-            RunImport(() => _service.ImportBoard(file), "ORT看板");
+            if (!ConfirmImport(_service.PreviewBoard(file), LanguageService.Get("PreIssue_BoardTab")))
+            {
+                return;
+            }
+            RunImport(() => _service.ImportBoard(file), LanguageService.Get("PreIssue_BoardTab"));
         }
 
         private void ImportRequisition()
@@ -727,7 +742,112 @@ namespace ORT一键报告.Plans.ViewModels
                 return;
             }
             string month = Month;
-            RunImport(() => _service.ImportRequisition(file, month), "准备领用");
+            if (!ConfirmImport(_service.PreviewRequisition(file, month), LanguageService.Get("PreIssue_RequisitionTab")))
+            {
+                return;
+            }
+            RunImport(() => _service.ImportRequisition(file, month), LanguageService.Get("PreIssue_RequisitionTab"));
+        }
+
+        /// <summary>
+        /// 导入前的确认：文件不像本页该导的数据就直接拦下（不写库），
+        /// 像的话把「哪个月、多少条、会覆盖多少」摆出来让用户确认。
+        /// </summary>
+        private bool ConfirmImport(PreIssueImportPreview preview, string label)
+        {
+            if (preview == null)
+            {
+                return false;
+            }
+            if (!preview.Success)
+            {
+                StatusMessage = $"{label}没有导入：{preview.Message}";
+                _ = MessageBox.Show(preview.Message, label, MessageBoxButton.OK, MessageBoxImage.Warning);
+                return false;
+            }
+            return MessageBox.Show(preview.Describe(), label, MessageBoxButton.YesNo, MessageBoxImage.Question)
+                == MessageBoxResult.Yes;
+        }
+
+        /// <summary>撤销上次导入（参数：schedule / board）</summary>
+        private void UndoImport(object parameter)
+        {
+            string source = SourceOfParameter(parameter);
+            if (source == null)
+            {
+                return;
+            }
+            string text = string.Format(LanguageService.Get("PreIssue_UndoConfirm"), MonthTitle, source);
+            if (MessageBox.Show(text, LanguageService.Get("PreIssue_UndoTitle"),
+                MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
+            {
+                return;
+            }
+            try
+            {
+                PreIssueImportResult result = _service.UndoImport(source, Month);
+                ReloadAll();
+                if (!result.Success)
+                {
+                    StatusMessage = result.Message;
+                    _ = MessageBox.Show(result.Message, LanguageService.Get("PreIssue_UndoTitle"),
+                        MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+                StatusMessage = result.Message;
+                _ = MessageBox.Show(result.Message, LanguageService.Get("PreIssue_UndoTitle"),
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn($"撤销导入失败: {ex.Message}");
+                StatusMessage = "撤销失败：" + ex.Message;
+            }
+        }
+
+        /// <summary>清除当前月份某一类数据（参数：schedule / board）</summary>
+        private void ClearMonth(object parameter)
+        {
+            string source = SourceOfParameter(parameter);
+            if (source == null)
+            {
+                return;
+            }
+            int count = source == PreIssueCodes.SourceSchedule ? _scheduleItems.Count : _boardAll.Count;
+            string text = string.Format(LanguageService.Get("PreIssue_ClearConfirm"), MonthTitle, source, count);
+            if (MessageBox.Show(text, LanguageService.Get("PreIssue_ClearTitle"),
+                MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+            {
+                return;
+            }
+            try
+            {
+                PreIssueImportResult result = _service.ClearMonth(source, Month);
+                ReloadAll();
+                StatusMessage = result.Message;
+                _ = MessageBox.Show(result.Message, LanguageService.Get("PreIssue_ClearTitle"),
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn($"清除月份数据失败: {ex.Message}");
+                StatusMessage = "清除失败：" + ex.Message;
+            }
+        }
+
+        /// <summary>按钮参数（schedule / board）→ 变动记录里的来源名</summary>
+        private static string SourceOfParameter(object parameter)
+        {
+            if (parameter is not string key)
+            {
+                return null;
+            }
+            return key switch
+            {
+                "schedule" => PreIssueCodes.SourceSchedule,
+                "board" => PreIssueCodes.SourceBoard,
+                _ => null
+            };
         }
 
         /// <summary>执行导入并刷新界面（统一处理异常与结果提示）</summary>

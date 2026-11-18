@@ -172,6 +172,93 @@ namespace ORT一键报告.Tests
             Assert.That(PreIssueReminderScheduler.ParseDayOfWeek("星期五", DayOfWeek.Sunday), Is.EqualTo(DayOfWeek.Sunday));
         }
 
+        /* ------------------ 导入前的文件类型校验（导错文件的拦截） ------------------ */
+
+        [Test]
+        public void LooksLikeVoucherExport_RecognizesVoucherHeaders()
+        {
+            string[] voucher = ["VCHNO_CODE", "VCHNO", "VCH_SEQ", "DIVISION_CODE", "WARE_CODE", "PART_NO", "REQ_QTY"];
+            Assert.That(PreIssueValidation.LooksLikeVoucherExport(voucher), Is.True);
+
+            string[] schedule = ["年月", "線別", "1日", "2日", "3日"];
+            Assert.That(PreIssueValidation.LooksLikeVoucherExport(schedule), Is.False);
+        }
+
+        [Test]
+        public void LooksLikeSchedule_RequiresMonthLineAndDayColumns()
+        {
+            Assert.That(PreIssueValidation.LooksLikeSchedule(["年月", "線別", "1日", "2日", "3日"], out string why), Is.True);
+            Assert.That(why, Is.Null);
+
+            // 没有日列
+            Assert.That(PreIssueValidation.LooksLikeSchedule(["年月", "線別", "A", "B", "C"], out _), Is.False);
+            // 第 1 列不是年月（开单数据的表头）
+            Assert.That(PreIssueValidation.LooksLikeSchedule(["VCHNO", "PART_NO", "REQ_QTY", "1日", "2日", "3日"], out _), Is.False);
+            // 第 2 列不是線別
+            Assert.That(PreIssueValidation.LooksLikeSchedule(["年月", "工令", "1日", "2日", "3日"], out _), Is.False);
+        }
+
+        [Test]
+        public void LooksLikeOrtBoard_RecognizesBoardHeaders()
+        {
+            string[] board = ["日期", "類別", "機種", "生產線別", "生產日期", "工令", "SIM87入庫否"];
+            Assert.That(PreIssueValidation.LooksLikeOrtBoard(board), Is.True);
+            Assert.That(PreIssueValidation.LooksLikeOrtBoard(["年月", "線別", "1日"]), Is.False);
+        }
+
+        [TestCase("1日", 1)]
+        [TestCase("15日", 15)]
+        [TestCase("31日", 31)]
+        [TestCase("01日", 1)]
+        public void IsDayHeader_ReadsDay(string text, int expected)
+        {
+            Assert.That(PreIssueValidation.IsDayHeader(text, out int day), Is.True);
+            Assert.That(day, Is.EqualTo(expected));
+        }
+
+        [TestCase("16")]
+        [TestCase("32日")]
+        [TestCase("0日")]
+        [TestCase("日")]
+        [TestCase("")]
+        [TestCase("VCHNO")]
+        public void IsDayHeader_RejectsOthers(string text)
+        {
+            Assert.That(PreIssueValidation.IsDayHeader(text, out _), Is.False);
+        }
+
+        [TestCase("OTD026-00BG/708", true)]
+        [TestCase("FSG032-A2AG/0", true)]
+        [TestCase("  FSL020-00AG / 1500  ", true)]
+        [TestCase("T", false)]
+        [TestCase("8CT1", false)]
+        [TestCase("H", false)]
+        [TestCase("ADL030-YSAG", false)]
+        [TestCase("ABC/abc", false)]
+        [TestCase("ABC/", false)]
+        [TestCase("", false)]
+        public void LooksLikeModelQty_ChecksCellShape(string text, bool expected)
+        {
+            Assert.That(PreIssueValidation.LooksLikeModelQty(text), Is.EqualTo(expected));
+        }
+
+        /// <summary>
+        /// 回归：把开单数据（VCHNO … PART_NO）误当月排程导入时，
+        /// 表头校验必须直接判否——这就是「提前拦截」的核心判定。
+        /// </summary>
+        [Test]
+        public void VoucherFile_CannotPassAsSchedule()
+        {
+            string[] voucherHeaders =
+            [
+                "VCHNO_CODE", "VCHNO", "VCH_SEQ", "DIVISION_CODE", "WARE_CODE", "TR_CODE",
+                "PART_NO", "REQ_QTY", "IVER_ID", "VCH_STATUS", "REQ_DEPT"
+            ];
+            Assert.That(PreIssueValidation.LooksLikeSchedule(voucherHeaders, out string why), Is.False);
+            Assert.That(why, Is.Not.Null.And.Not.Empty);
+            Assert.That(PreIssueValidation.LooksLikeVoucherExport(voucherHeaders), Is.True);
+        }
+
         /* ------------------ 看板行比对键 ------------------ */
 
         [Test]

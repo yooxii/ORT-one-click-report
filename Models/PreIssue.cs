@@ -356,6 +356,44 @@ namespace ORT一键报告.Models
     }
 
     /// <summary>
+    /// 预领·导入快照（pre_issue_import_snapshots 表）：
+    /// 每次「整体替换某个月」的导入（月排程 / ORT看板）之前，把被替换掉的旧数据整份存一份 JSON，
+    /// 导错了（比如把开单数据当成月排程导进来）可以用「撤销上次导入」一键还原。
+    /// 每个「月份 + 来源」只保留最近 5 份。
+    /// </summary>
+    [Table(Name = "pre_issue_import_snapshots")]
+    [Index("idx_pre_issue_snapshot", nameof(Source), false)]
+    public class PreIssueImportSnapshot
+    {
+        [Column(IsPrimary = true, IsIdentity = true)]
+        public long Id { get; set; }
+
+        /// <summary>月份（yyyyMM）</summary>
+        [Column(StringLength = 6, IsNullable = true)]
+        public string Month { get; set; }
+
+        /// <summary>来源表（月排程 / ORT看板）</summary>
+        [Column(StringLength = 32, IsNullable = true)]
+        public string Source { get; set; }
+
+        /// <summary>当时导入的文件名</summary>
+        [Column(StringLength = 256, IsNullable = true)]
+        public string File { get; set; }
+
+        /// <summary>被替换掉的条数</summary>
+        public int ItemCount { get; set; }
+
+        /// <summary>被替换掉的旧数据（JSON）</summary>
+        [Column(StringLength = -1, IsNullable = true)]
+        public string RowsJson { get; set; }
+
+        [Column(StringLength = 64, IsNullable = true)]
+        public string Operator { get; set; }
+
+        public DateTime? CreatedAt { get; set; }
+    }
+
+    /// <summary>
     /// 预领模块用到的固定文案/常量（存库值不随界面语言变化）
     /// </summary>
     public static class PreIssueCodes
@@ -398,6 +436,12 @@ namespace ORT一键报告.Models
 
         /// <summary>变动类型：黑名单</summary>
         public const string KindBlacklist = "黑名单";
+
+        /// <summary>变动类型：撤销上次导入（还原成导入前的数据）</summary>
+        public const string KindUndo = "撤销";
+
+        /// <summary>变动类型：清除某个月的整份数据</summary>
+        public const string KindCleared = "清除";
 
         /// <summary>按字面判断「是」（Y / y / 是 / Y是）</summary>
         public static bool IsYes(string value)

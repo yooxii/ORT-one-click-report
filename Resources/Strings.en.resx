@@ -3623,4 +3623,32 @@ Programs on a remote path (network share or mapped network drive) cannot start w
   <data name="Plans_View_Dock" xml:space="preserve">
     <value>Dock back into the window</value>
   </data>
+  <data name="PreIssue_Undo" xml:space="preserve">
+    <value>Undo import</value>
+  </data>
+  <data name="PreIssue_Clear" xml:space="preserve">
+    <value>Clear month</value>
+  </data>
+  <data name="PreIssue_UndoTip" xml:space="preserve">
+    <value>Restore this month to the state before the last import (whole-month imports only)</value>
+  </data>
+  <data name="PreIssue_ClearTip" xml:space="preserve">
+    <value>Delete all data of this month (logged; prefer Undo import when you only need to correct a wrong import)</value>
+  </data>
+  <data name="PreIssue_UndoTitle" xml:space="preserve">
+    <value>Undo last import</value>
+  </data>
+  <data name="PreIssue_UndoConfirm" xml:space="preserve">
+    <value>Restore {0} {1} to the state before the last import?
+
+Only the most recent whole-month import is undone; the action is logged.</value>
+  </data>
+  <data name="PreIssue_ClearTitle" xml:space="preserve">
+    <value>Clear this month</value>
+  </data>
+  <data name="PreIssue_ClearConfirm" xml:space="preserve">
+    <value>Delete all {0} {1} data ({2} rows)?
+
+This cannot be restored directly but is logged; prefer Undo import if you only picked a wrong file.</value>
+  </data>
 </root>

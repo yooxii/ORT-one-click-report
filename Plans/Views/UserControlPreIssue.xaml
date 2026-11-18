@@ -76,6 +76,12 @@
                     <WrapPanel Grid.Row="0" Margin="0,2,0,4" Orientation="Horizontal">
                         <Button Style="{StaticResource PreButton}" Content="{lex:Loc PreIssue_Import}" FontWeight="Bold"
                                 Command="{Binding ImportScheduleCommand}" ToolTip="{lex:Loc PreIssue_ImportScheduleTip}"/>
+                        <Button Style="{StaticResource PreButton}" Content="{lex:Loc PreIssue_Undo}"
+                                Command="{Binding UndoImportCommand}" CommandParameter="schedule"
+                                ToolTip="{lex:Loc PreIssue_UndoTip}"/>
+                        <Button Style="{StaticResource PreButton}" Content="{lex:Loc PreIssue_Clear}"
+                                Command="{Binding ClearMonthCommand}" CommandParameter="schedule"
+                                ToolTip="{lex:Loc PreIssue_ClearTip}"/>
                         <Button Style="{StaticResource PreButton}" Content="{lex:Loc PreIssue_Refresh}"
                                 Command="{Binding RefreshCommand}"/>
                         <Separator Margin="4,0"/>
@@ -141,6 +147,12 @@
                     <WrapPanel Grid.Row="0" Margin="0,2,0,4" Orientation="Horizontal">
                         <Button Style="{StaticResource PreButton}" Content="{lex:Loc PreIssue_Import}" FontWeight="Bold"
                                 Command="{Binding ImportBoardCommand}" ToolTip="{lex:Loc PreIssue_ImportBoardTip}"/>
+                        <Button Style="{StaticResource PreButton}" Content="{lex:Loc PreIssue_Undo}"
+                                Command="{Binding UndoImportCommand}" CommandParameter="board"
+                                ToolTip="{lex:Loc PreIssue_UndoTip}"/>
+                        <Button Style="{StaticResource PreButton}" Content="{lex:Loc PreIssue_Clear}"
+                                Command="{Binding ClearMonthCommand}" CommandParameter="board"
+                                ToolTip="{lex:Loc PreIssue_ClearTip}"/>
                         <Button Style="{StaticResource PreButton}" Content="{lex:Loc PreIssue_SyncPending}"
                                 Command="{Binding SyncPendingCommand}" ToolTip="{lex:Loc PreIssue_SyncPendingTip}"/>
                         <Button Style="{StaticResource PreButton}" Content="{lex:Loc PreIssue_Changes}"

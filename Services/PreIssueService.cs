@@ -1,4 +1,5 @@
 using FreeSql;
+using Newtonsoft.Json;
 using NLog;
 using NPOI.SS.UserModel;
 using ORT一键报告.Models;
@@ -194,16 +195,16 @@ namespace ORT一键报告.Services
 
         /// <summary>
         /// 导入月排程（平铺矩阵：年月 / 線別 / 1日…31日，单元格「機種/數量」）。
-        /// 只做导入与更新记录，不改变表格的展示方式。
+        /// 先按表头形状校验并给预览，确认后才真正写库；写库前把该月旧数据存快照（可撤销）。
         /// </summary>
         public PreIssueImportResult ImportSchedule(string filePath)
         {
             PreIssueImportResult result = new() { File = Path.GetFileName(filePath), Source = PreIssueCodes.SourceSchedule };
-            List<PreScheduleItem> parsed = ParseScheduleFile(filePath, result);
-            if (parsed.Count == 0)
+            List<PreScheduleItem> parsed = ParseScheduleFile(filePath, out string error);
+            if (parsed == null || parsed.Count == 0)
             {
                 result.Success = false;
-                result.Message = result.Message ?? "没有读到排程数据";
+                result.Message = error ?? "没有读到排程数据";
                 return result;
             }
             // 按月份分组落库（一个文件一般只有一个月）
@@ -214,42 +215,107 @@ namespace ORT一键报告.Services
             return result;
         }
 
-        /// <summary>解析月排程文件（不落库）</summary>
-        private List<PreScheduleItem> ParseScheduleFile(string filePath, PreIssueImportResult result)
+        /// <summary>导入前预览（不写库）：文件对不对、哪个月、多少条、会覆盖多少旧数据</summary>
+        public PreIssueImportPreview PreviewSchedule(string filePath)
         {
+            PreIssueImportPreview preview = new()
+            {
+                Source = PreIssueCodes.SourceSchedule,
+                File = Path.GetFileName(filePath)
+            };
+            try
+            {
+                List<PreScheduleItem> parsed = ParseScheduleFile(filePath, out string error);
+                if (parsed == null || parsed.Count == 0)
+                {
+                    preview.Success = false;
+                    preview.Message = error ?? "没有读到排程数据";
+                    return preview;
+                }
+                preview.Month = parsed[0].Month;
+                preview.Items = parsed.Count;
+                preview.Models = parsed.Select(i => i.Model).Distinct(StringComparer.OrdinalIgnoreCase).Count();
+                preview.Existing = (int)_db.FreeSql.Select<PreScheduleItem>().Where(a => a.Month == preview.Month).Count();
+                preview.Sample = string.Join("\n", parsed
+                    .OrderBy(i => i.Line, StringComparer.OrdinalIgnoreCase).ThenBy(i => i.Day)
+                    .Take(3)
+                    .Select(i => $"  {i.Line}  {i.Day}日  {i.Model}/{i.Qty}"));
+                return preview;
+            }
+            catch (Exception ex)
+            {
+                preview.Success = false;
+                preview.Message = $"打不开这个文件：{ex.Message}";
+                return preview;
+            }
+        }
+
+        /// <summary>
+        /// 解析月排程文件（不落库）。校验很严格：
+        /// 表头必须是「年月 / 線別 / 1日…」、第 1 列每行都得是年月、单元格必须是「機種/數量」；
+        /// 认出是开单数据或看板数据时直接给出「该去哪儿导」的提示。
+        /// </summary>
+        private List<PreScheduleItem> ParseScheduleFile(string filePath, out string error)
+        {
+            error = null;
             List<PreScheduleItem> items = [];
             IWorkbook workbook = ExcelNpoi.OpenAny(filePath);
             ISheet sheet = ExcelNpoi.SheetByName(workbook, "月排程") ?? ExcelNpoi.SheetAt(workbook, 0);
             if (sheet == null)
             {
-                result.Message = "文件里没有可读的工作表";
+                error = "文件里没有可读的工作表";
                 return items;
             }
             int lastRow = ExcelNpoi.LastRow(sheet);
             int lastCol = ExcelNpoi.LastColumn(sheet);
             if (lastRow < 2 || lastCol < 3)
             {
-                result.Message = "排程表看起来是空的（需要表头 + 至少一行数据）";
+                error = "排程表看起来是空的（需要表头 + 至少一行数据）";
                 return items;
             }
 
-            // 表头：第 1 行是「年月 / 線別 / 1日 …31日」；日列取表头里的数字，取不到时按列序补齐
+            // 先认文件类型：开单数据 / 看板数据经常会误选到这里
+            List<string> headerCells = [];
+            for (int col = 1; col <= lastCol; col++)
+            {
+                headerCells.Add(ExcelNpoi.CellText(sheet, 1, col));
+            }
+            if (PreIssueValidation.LooksLikeVoucherExport(headerCells))
+            {
+                error = "这个文件是开单/领用数据（表头有 VCHNO / PART_NO / VCH_STATUS…），不是月排程。"
+                    + "\n\n请到「准备领用」页签里点「导入开单数据」。";
+                return items;
+            }
+            if (PreIssueValidation.LooksLikeOrtBoard(headerCells))
+            {
+                error = "这个文件是 ORT 看板数据（表头有 SIM87入庫否 / 收料日期…），不是月排程。"
+                    + "\n\n请到「ORT看板」页签里点「导入更新」。";
+                return items;
+            }
+
+            // 表头必须像排程表：年月 / 線別 / 1日…31日
+            if (!PreIssueValidation.LooksLikeSchedule(headerCells, out string why))
+            {
+                error = $"第 1 行不像月排程的表头：{why}。"
+                    + "\n\n月排程的表头应为「年月 | 線別 | 1日 | 2日 …」，单元格写「機種/數量」。";
+                return items;
+            }
+
             Dictionary<int, int> dayColumns = [];
             for (int col = 3; col <= lastCol; col++)
             {
-                string header = ExcelNpoi.CellText(sheet, 1, col);
-                Match m = Regex.Match(header ?? "", @"(\d{1,2})");
-                int day = m.Success ? int.Parse(m.Groups[1].Value, CultureInfo.InvariantCulture) : 0;
-                if (day < 1 || day > 31)
+                if (PreIssueValidation.IsDayHeader(ExcelNpoi.CellText(sheet, 1, col), out int day))
                 {
-                    day = col - 2; // 表头没有日号：按第 3 列 = 1 日顺排
+                    dayColumns[col] = day;
                 }
-                dayColumns[col] = day;
             }
 
-            string fileMonth = MonthFromFileName(filePath);
             string operatorName = _permission?.CurrentUser;
             DateTime now = DateTime.Now;
+            int badMonthRows = 0;
+            string firstBadMonth = null;
+            int cellCount = 0;
+            int shapedCells = 0;
             for (int row = 2; row <= lastRow; row++)
             {
                 string monthCell = ExcelNpoi.CellText(sheet, row, 1);
@@ -258,13 +324,11 @@ namespace ORT一键报告.Services
                 {
                     continue;
                 }
-                string month = NormalizeMonth(monthCell) ?? fileMonth;
+                string month = NormalizeMonth(monthCell);
                 if (month == null)
                 {
-                    if (result.Message == null)
-                    {
-                        result.Message = "第 1 列（年月）认不出月份，也没能从文件名推出月份（文件名里带 202611 这样的年月即可）";
-                    }
+                    badMonthRows++;
+                    firstBadMonth ??= $"第 {row} 行是「{monthCell}」";
                     continue;
                 }
                 string line = string.IsNullOrWhiteSpace(lineCell) ? "" : lineCell.Trim();
@@ -274,6 +338,11 @@ namespace ORT一键报告.Services
                     if (string.IsNullOrWhiteSpace(text))
                     {
                         continue;
+                    }
+                    cellCount++;
+                    if (PreIssueValidation.LooksLikeModelQty(text))
+                    {
+                        shapedCells++;
                     }
                     (string model, int qty) = ParseModelQty(text);
                     items.Add(new PreScheduleItem
@@ -290,9 +359,27 @@ namespace ORT一键报告.Services
                     });
                 }
             }
+
+            if (badMonthRows > 0)
+            {
+                error = $"第 1 列（年月）有 {badMonthRows} 行认不出月份（{firstBadMonth}），这不像是月排程表。"
+                    + "\n\n第一列每行都应写年月，例如 202611；请确认选对文件、页签在第 1 张表。";
+                return [];
+            }
+            if (items.Count == 0)
+            {
+                error = "这个月排程表格子里没有任何「機種/數量」（一整张都是空的），没有东西可以导入。";
+                return items;
+            }
+            // 单元格形状：绝大多数应是「機種/數量」
+            if (cellCount > 0 && shapedCells * 100 / cellCount < 80)
+            {
+                error = $"表格内容不像排程：{cellCount} 个非空格子里只有 {shapedCells} 个是「機種/數量」的形状。"
+                    + "\n\n请确认选的是「202611 工令排程」这类月排程表，而不是开单数据或别的汇总表。";
+                return [];
+            }
             return items;
         }
-
         /// <summary>把「機種/數量」拆成机种与数量（数量认不出时按 0 处理，原文保留在 RawText）</summary>
         public static (string Model, int Qty) ParseModelQty(string text)
         {
@@ -381,6 +468,7 @@ namespace ORT一键报告.Services
                     null, null, null, $"变动较多，只登记了前 {MaxLoggedChanges} 条"));
             }
 
+            SaveSnapshot(PreIssueCodes.SourceSchedule, month, result.File, oldItems);
             _db.FreeSql.Delete<PreScheduleItem>().Where(a => a.Month == month).ExecuteAffrows();
             _db.FreeSql.Insert(newItems).ExecuteAffrows();
             result.Added += added;
@@ -403,11 +491,11 @@ namespace ORT一键报告.Services
         public PreIssueImportResult ImportBoard(string filePath)
         {
             PreIssueImportResult result = new() { File = Path.GetFileName(filePath), Source = PreIssueCodes.SourceBoard };
-            List<OrtBoardRow> parsed = ParseBoardFile(filePath, result);
-            if (parsed.Count == 0)
+            List<OrtBoardRow> parsed = ParseBoardFile(filePath, out string error);
+            if (parsed == null || parsed.Count == 0)
             {
                 result.Success = false;
-                result.Message = result.Message ?? "没有读到看板数据";
+                result.Message = error ?? "没有读到看板数据";
                 return result;
             }
             foreach (IGrouping<string, OrtBoardRow> group in parsed.GroupBy(a => a.Month))
@@ -417,21 +505,81 @@ namespace ORT一键报告.Services
             return result;
         }
 
-        private List<OrtBoardRow> ParseBoardFile(string filePath, PreIssueImportResult result)
+        /// <summary>导入前预览（不写库）：文件对不对、哪些月份、多少行、会覆盖多少旧数据</summary>
+        public PreIssueImportPreview PreviewBoard(string filePath)
         {
+            PreIssueImportPreview preview = new()
+            {
+                Source = PreIssueCodes.SourceBoard,
+                File = Path.GetFileName(filePath)
+            };
+            try
+            {
+                List<OrtBoardRow> parsed = ParseBoardFile(filePath, out string error);
+                if (parsed == null || parsed.Count == 0)
+                {
+                    preview.Success = false;
+                    preview.Message = error ?? "没有读到看板数据";
+                    return preview;
+                }
+                List<string> months = parsed.Select(r => r.Month).Distinct().OrderBy(m => m, StringComparer.Ordinal).ToList();
+                preview.Month = months.FirstOrDefault();
+                preview.Items = parsed.Count;
+                preview.Models = parsed.Select(r => r.Model).Where(m => !string.IsNullOrWhiteSpace(m))
+                    .Distinct(StringComparer.OrdinalIgnoreCase).Count();
+                preview.Existing = months.Sum(m => (int)_db.FreeSql.Select<OrtBoardRow>().Where(a => a.Month == m).Count());
+                int stocked = parsed.Count(r => PreIssueCodes.IsYes(r.Stocked87));
+                string monthText = months.Count > 1
+                    ? string.Join("、", months.Select(m => PreIssueService.MonthText(m)))
+                    : PreIssueService.MonthText(preview.Month);
+                preview.Sample = $"  {monthText}：{parsed.Count} 行，其中 SIM87入庫否 = Y 的 {stocked} 行"
+                    + "\n" + string.Join("\n", parsed.Take(2).Select(r =>
+                        $"  {r.ReportDate}  {r.Model}  {r.JobNo}  SIM87={r.Stocked87}"));
+                return preview;
+            }
+            catch (Exception ex)
+            {
+                preview.Success = false;
+                preview.Message = $"打不开这个文件：{ex.Message}";
+                return preview;
+            }
+        }
+
+        private List<OrtBoardRow> ParseBoardFile(string filePath, out string error)
+        {
+            error = null;
             List<OrtBoardRow> rows = [];
             IWorkbook workbook = ExcelNpoi.OpenAny(filePath);
             ISheet sheet = ExcelNpoi.SheetByName(workbook, "ORT看板") ?? ExcelNpoi.SheetAt(workbook, 0);
             if (sheet == null)
             {
-                result.Message = "文件里没有可读的工作表";
+                error = "文件里没有可读的工作表";
                 return rows;
             }
             int lastRow = ExcelNpoi.LastRow(sheet);
             int lastCol = Math.Min(ExcelNpoi.LastColumn(sheet), 15);
             if (lastRow < 2)
             {
-                result.Message = "看板数据看起来是空的（原表第 2 行是表头，第 3 行起才是数据）";
+                error = "看板数据看起来是空的（原表第 2 行是表头，第 3 行起才是数据）";
+                return rows;
+            }
+
+            // 先认文件类型：开单数据和月排程都可能被误选到这里
+            List<string> firstCells = [];
+            for (int col = 1; col <= lastCol; col++)
+            {
+                firstCells.Add(ExcelNpoi.CellText(sheet, 1, col));
+            }
+            if (PreIssueValidation.LooksLikeVoucherExport(firstCells))
+            {
+                error = "这个文件是开单/领用数据（表头有 VCHNO / PART_NO / VCH_STATUS…），不是 ORT 看板。"
+                    + "\n\n请到「准备领用」页签里点「导入开单数据」。";
+                return rows;
+            }
+            if (PreIssueValidation.LooksLikeSchedule(firstCells, out _))
+            {
+                error = "这个文件是月排程（表头是 年月 / 線別 / 1日…），不是 ORT 看板。"
+                    + "\n\n请到「月排程」页签里点「导入更新」。";
                 return rows;
             }
 
@@ -439,7 +587,7 @@ namespace ORT一键报告.Services
             int headerRow = FindBoardHeaderRow(sheet, lastRow, lastCol);
             if (headerRow == 0)
             {
-                result.Message = "没找到看板表头（應有 日期/類別/機種/生產線別/生產日期/工令…），请确认是看板的原始导出数据";
+                error = "没找到看板表头（應有 日期/類別/機種/生產線別/生產日期/工令…），请确认是看板的原始导出数据";
                 return rows;
             }
             Dictionary<string, int> map = [];
@@ -674,6 +822,7 @@ namespace ORT一键报告.Services
             }
 
             // 整体替换该月看板（只存 A~O 共 15 列）
+            SaveSnapshot(PreIssueCodes.SourceBoard, month, result.File, oldRows);
             _db.FreeSql.Delete<OrtBoardRow>().Where(a => a.Month == month).ExecuteAffrows();
             _db.FreeSql.Insert(newRows).ExecuteAffrows();
 
@@ -737,6 +886,192 @@ namespace ORT一键报告.Services
 
         private static string Norm(string s) => string.IsNullOrWhiteSpace(s) ? "" : s.Trim();
 
+        /* ###############################  导入快照 / 撤销 / 清除  ################################ */
+
+        /// <summary>每个「月份 + 来源」保留的快照份数</summary>
+        private const int SnapshotKeep = 5;
+
+        /// <summary>
+        /// 整体替换某月数据之前，把被替换掉的旧数据整份存一份快照（JSON），
+        /// 导错了可以一键还原；每个「月份 + 来源」只留最近几份。
+        /// </summary>
+        private void SaveSnapshot<T>(string source, string month, string file, List<T> rows)
+        {
+            if (rows == null)
+            {
+                return;
+            }
+            try
+            {
+                _db.FreeSql.Insert(new PreIssueImportSnapshot
+                {
+                    Month = month,
+                    Source = source,
+                    File = file,
+                    ItemCount = rows.Count,
+                    RowsJson = JsonConvert.SerializeObject(rows),
+                    Operator = _permission?.CurrentUser,
+                    CreatedAt = DateTime.Now
+                }).ExecuteAffrows();
+                List<long> ids = _db.FreeSql.Select<PreIssueImportSnapshot>()
+                    .Where(a => a.Source == source && a.Month == month)
+                    .OrderByDescending(a => a.Id)
+                    .ToList(a => a.Id);
+                foreach (long oldId in ids.Skip(SnapshotKeep))
+                {
+                    _db.FreeSql.Delete<PreIssueImportSnapshot>().Where(a => a.Id == oldId).ExecuteAffrows();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn($"保存导入快照失败（不影响本次导入）: {ex.Message}");
+            }
+        }
+
+        /// <summary>当前「月份 + 来源」有没有可撤销的导入快照（界面提示用）</summary>
+        public bool HasUndoableImport(string source, string month)
+        {
+            try
+            {
+                return _db.FreeSql.Select<PreIssueImportSnapshot>()
+                    .Where(a => a.Source == source && a.Month == month).Count() > 0;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 撤销上次导入：把该月数据还原成上次导入之前的样子（取最近一份快照），并记一条变动。
+        /// </summary>
+        public PreIssueImportResult UndoImport(string source, string month)
+        {
+            PreIssueImportResult result = new() { Source = source, Month = month, File = "-" };
+            try
+            {
+                PreIssueImportSnapshot snapshot = _db.FreeSql.Select<PreIssueImportSnapshot>()
+                    .Where(a => a.Source == source && a.Month == month)
+                    .OrderByDescending(a => a.Id)
+                    .First();
+                if (snapshot == null)
+                {
+                    result.Success = false;
+                    result.Message = $"{PreIssueService.MonthText(month)} 的{source}没有可撤销的导入记录（只记录整体替换型导入的快照）";
+                    return result;
+                }
+                int before = 0;
+                if (source == PreIssueCodes.SourceSchedule)
+                {
+                    before = (int)_db.FreeSql.Select<PreScheduleItem>().Where(a => a.Month == month).Count();
+                    List<PreScheduleItem> rows = JsonConvert.DeserializeObject<List<PreScheduleItem>>(snapshot.RowsJson ?? "[]") ?? [];
+                    foreach (PreScheduleItem row in rows)
+                    {
+                        row.Id = 0;
+                    }
+                    _db.FreeSql.Delete<PreScheduleItem>().Where(a => a.Month == month).ExecuteAffrows();
+                    if (rows.Count > 0)
+                    {
+                        _db.FreeSql.Insert(rows).ExecuteAffrows();
+                    }
+                    result.Added = rows.Count;
+                }
+                else if (source == PreIssueCodes.SourceBoard)
+                {
+                    before = (int)_db.FreeSql.Select<OrtBoardRow>().Where(a => a.Month == month).Count();
+                    List<OrtBoardRow> rows = JsonConvert.DeserializeObject<List<OrtBoardRow>>(snapshot.RowsJson ?? "[]") ?? [];
+                    foreach (OrtBoardRow row in rows)
+                    {
+                        row.Id = 0;
+                    }
+                    _db.FreeSql.Delete<OrtBoardRow>().Where(a => a.Month == month).ExecuteAffrows();
+                    if (rows.Count > 0)
+                    {
+                        _db.FreeSql.Insert(rows).ExecuteAffrows();
+                    }
+                    result.Added = rows.Count;
+                }
+                else
+                {
+                    result.Success = false;
+                    result.Message = $"「{source}」不支持撤销（只有月排程 / ORT看板整体替换型导入才留快照）";
+                    return result;
+                }
+                result.Removed = before;
+                _db.FreeSql.Delete<PreIssueImportSnapshot>().Where(a => a.Id == snapshot.Id).ExecuteAffrows();
+                _db.FreeSql.Insert(new PreIssueChangeLog
+                {
+                    Month = month,
+                    Source = source,
+                    Kind = PreIssueCodes.KindUndo,
+                    Target = snapshot.File,
+                    OldValue = before.ToString(CultureInfo.InvariantCulture),
+                    NewValue = result.Added.ToString(CultureInfo.InvariantCulture),
+                    Note = $"撤销导入「{snapshot.File}」，还原为导入前的 {result.Added} 条",
+                    Operator = _permission?.CurrentUser,
+                    CreatedAt = DateTime.Now
+                }).ExecuteAffrows();
+                result.Message = $"已撤销导入「{snapshot.File}」：{PreIssueService.MonthText(month)} 的{source}还原成导入前的 {result.Added} 条（原来是 {before} 条）";
+                _logger.Info(result.Message);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, $"撤销导入失败（{source} {month}）");
+                result.Success = false;
+                result.Message = "撤销失败：" + ex.Message;
+                return result;
+            }
+        }
+
+        /// <summary>
+        /// 清空某个月的整份数据（月排程 / ORT看板），用于导错了又没法撤销的情况；
+        /// 清除动作本身记进变动记录。
+        /// </summary>
+        public PreIssueImportResult ClearMonth(string source, string month)
+        {
+            PreIssueImportResult result = new() { Source = source, Month = month, File = "-" };
+            try
+            {
+                int before;
+                if (source == PreIssueCodes.SourceSchedule)
+                {
+                    before = _db.FreeSql.Delete<PreScheduleItem>().Where(a => a.Month == month).ExecuteAffrows();
+                }
+                else if (source == PreIssueCodes.SourceBoard)
+                {
+                    before = _db.FreeSql.Delete<OrtBoardRow>().Where(a => a.Month == month).ExecuteAffrows();
+                }
+                else
+                {
+                    result.Success = false;
+                    result.Message = $"「{source}」不支持整月清除";
+                    return result;
+                }
+                result.Removed = before;
+                _db.FreeSql.Insert(new PreIssueChangeLog
+                {
+                    Month = month,
+                    Source = source,
+                    Kind = PreIssueCodes.KindCleared,
+                    Target = PreIssueService.MonthText(month),
+                    OldValue = before.ToString(CultureInfo.InvariantCulture),
+                    Note = $"清除 {PreIssueService.MonthText(month)} 的{source}全部数据（{before} 条）",
+                    Operator = _permission?.CurrentUser,
+                    CreatedAt = DateTime.Now
+                }).ExecuteAffrows();
+                result.Message = $"已清除 {PreIssueService.MonthText(month)} 的{source}：{before} 条";
+                _logger.Warn(result.Message);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, $"清除月份数据失败（{source} {month}）");
+                result.Success = false;
+                result.Message = "清除失败：" + ex.Message;
+                return result;
+            }
+        }
         /* ###############################  准备领用导入  ################################ */
 
         /// <summary>
@@ -747,11 +1082,11 @@ namespace ORT一键报告.Services
         public PreIssueImportResult ImportRequisition(string filePath, string defaultMonth)
         {
             PreIssueImportResult result = new() { File = Path.GetFileName(filePath), Source = PreIssueCodes.SourceRequisition };
-            List<Dictionary<string, string>> rows = ParseRequisitionFile(filePath, result);
-            if (rows.Count == 0)
+            List<Dictionary<string, string>> rows = ParseRequisitionFile(filePath, out string error);
+            if (rows == null || rows.Count == 0)
             {
                 result.Success = false;
-                result.Message = result.Message ?? "没有读到开单数据";
+                result.Message = error ?? "没有读到开单数据";
                 return result;
             }
             string operatorName = _permission?.CurrentUser;
@@ -895,8 +1230,44 @@ namespace ORT一键报告.Services
             return null;
         }
 
-        private List<Dictionary<string, string>> ParseRequisitionFile(string filePath, PreIssueImportResult result)
+        /// <summary>导入前预览（不写库）：文件对不对、多少行、涉及几个机种</summary>
+        public PreIssueImportPreview PreviewRequisition(string filePath, string defaultMonth)
         {
+            PreIssueImportPreview preview = new()
+            {
+                Source = PreIssueCodes.SourceRequisition,
+                File = Path.GetFileName(filePath)
+            };
+            try
+            {
+                List<Dictionary<string, string>> rows = ParseRequisitionFile(filePath, out string error);
+                if (rows == null || rows.Count == 0)
+                {
+                    preview.Success = false;
+                    preview.Message = error ?? "没有读到开单数据";
+                    return preview;
+                }
+                preview.Month = MonthFromVchno(rows.Select(r => Value(r, "VCHNO")).FirstOrDefault())
+                    ?? NormalizeMonth(defaultMonth) ?? CurrentMonth;
+                preview.Items = rows.Count;
+                preview.Models = rows.Select(r => Value(r, "PART_NO")).Where(p => !string.IsNullOrWhiteSpace(p))
+                    .Distinct(StringComparer.OrdinalIgnoreCase).Count();
+                preview.Existing = (int)_db.FreeSql.Select<PreIssueRequisition>().Where(a => a.Month == preview.Month).Count();
+                preview.Sample = string.Join("\n", rows.Take(3).Select(r =>
+                    $"  {Value(r, "VCHNO")}  {Value(r, "PART_NO")}  {Value(r, "VCH_STATUS")}  {Value(r, "CLOSE_CODE")}"));
+                return preview;
+            }
+            catch (Exception ex)
+            {
+                preview.Success = false;
+                preview.Message = $"打不开这个文件：{ex.Message}";
+                return preview;
+            }
+        }
+
+        private List<Dictionary<string, string>> ParseRequisitionFile(string filePath, out string error)
+        {
+            error = null;
             List<Dictionary<string, string>> rows = [];
             string[] wanted =
             [
@@ -904,6 +1275,32 @@ namespace ORT一键报告.Services
                 "IVER_ID", "VCH_STATUS", "ISSUE_DEPT", "CLOSE_CODE", "PC"
             ];
             IWorkbook workbook = ExcelNpoi.OpenAny(filePath);
+            // 先认文件类型：月排程 / 看板选错了要给清楚的提示
+            ISheet probe = ExcelNpoi.SheetByName(workbook, "ORT领用") ?? ExcelNpoi.SheetAt(workbook, 0);
+            if (probe != null)
+            {
+                List<string> probeHeaders = [];
+                int probeCols = Math.Min(ExcelNpoi.LastColumn(probe), 40);
+                for (int col = 1; col <= probeCols; col++)
+                {
+                    probeHeaders.Add(ExcelNpoi.CellText(probe, 1, col));
+                }
+                if (!PreIssueValidation.LooksLikeVoucherExport(probeHeaders))
+                {
+                    if (PreIssueValidation.LooksLikeSchedule(probeHeaders, out _))
+                    {
+                        error = "这个文件是月排程（表头是 年月 / 線別 / 1日…），不是开单数据。"
+                            + "\n\n请到「月排程」页签里点「导入更新」。";
+                        return rows;
+                    }
+                    if (PreIssueValidation.LooksLikeOrtBoard(probeHeaders))
+                    {
+                        error = "这个文件是 ORT 看板数据（表头有 SIM87入庫否 / 收料日期…），不是开单数据。"
+                            + "\n\n请到「ORT看板」页签里点「导入更新」。";
+                        return rows;
+                    }
+                }
+            }
             for (int index = 0; index < workbook.NumberOfSheets; index++)
             {
                 ISheet sheet = ExcelNpoi.SheetAt(workbook, index);
@@ -946,9 +1343,10 @@ namespace ORT一键报告.Services
                 }
                 break;
             }
-            if (rows.Count == 0)
+            if (rows.Count == 0 && error == null)
             {
-                result.Message = "没找到开单数据的表头（需要 VCHNO / PART_NO / VCH_STATUS / CLOSE_CODE 等列）";
+                error = "没找到开单数据的表头（需要 VCHNO / PART_NO / VCH_STATUS / CLOSE_CODE 等列），"
+                    + "请确认是系统下载的开单数据（11.XLS 一类）。";
             }
             return rows;
         }

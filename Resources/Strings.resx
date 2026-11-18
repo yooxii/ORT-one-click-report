@@ -3623,4 +3623,32 @@
   <data name="Plans_View_Dock" xml:space="preserve">
     <value>收回窗口（固定回窗口里）</value>
   </data>
+  <data name="PreIssue_Undo" xml:space="preserve">
+    <value>撤销导入</value>
+  </data>
+  <data name="PreIssue_Clear" xml:space="preserve">
+    <value>清除本月</value>
+  </data>
+  <data name="PreIssue_UndoTip" xml:space="preserve">
+    <value>把本月数据还原成上次导入之前的样子（只针对整体替换型的导入）</value>
+  </data>
+  <data name="PreIssue_ClearTip" xml:space="preserve">
+    <value>清空本月的全部数据（会记入变动记录；只是想纠正导入的话优先用「撤销导入」）</value>
+  </data>
+  <data name="PreIssue_UndoTitle" xml:space="preserve">
+    <value>撤销上次导入</value>
+  </data>
+  <data name="PreIssue_UndoConfirm" xml:space="preserve">
+    <value>把 {0} 的{1}还原成上次导入之前的数据？
+
+只撤销最近一次整体替换型导入，撤销动作会记进变动记录。</value>
+  </data>
+  <data name="PreIssue_ClearTitle" xml:space="preserve">
+    <value>清除本月数据</value>
+  </data>
+  <data name="PreIssue_ClearConfirm" xml:space="preserve">
+    <value>清除 {0} 的{1}全部数据（{2} 条）？
+
+清除后不能直接恢复，但会记进变动记录；如果只是想纠正导错的文件，优先用「撤销导入」。</value>
+  </data>
 </root>
