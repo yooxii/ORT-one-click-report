@@ -1,0 +1,82 @@
+<Window x:Class="ORT一键报告.Plans.Views.WindowPreIssueChanges"
+        Background="{DynamicResource WindowBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:lex="http://wpflocalizeextension.codeplex.com"
+        mc:Ignorable="d"
+        Title="{lex:Loc PreIssue_ChangesTitle}" Width="1120" Height="560" MinWidth="820" MinHeight="360"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
+
+    <Window.Resources>
+        <Style x:Key="ChangeText" TargetType="TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="TextAlignment" Value="Center"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+            <Setter Property="ToolTip" Value="{Binding RelativeSource={RelativeSource Self}, Path=Text}"/>
+        </Style>
+        <Style x:Key="ChangeNoteText" TargetType="TextBlock" BasedOn="{StaticResource ChangeText}">
+            <Setter Property="TextAlignment" Value="Left"/>
+            <Setter Property="Margin" Value="4,0"/>
+        </Style>
+        <Style x:Key="ChangeCell" TargetType="DataGridCell">
+            <Setter Property="Padding" Value="2,0"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="{lex:Loc PreIssue_ChangesHint}" TextWrapping="Wrap"
+                   Foreground="{DynamicResource TextSecondaryBrush}"/>
+
+        <WrapPanel Grid.Row="1" Margin="0,10,0,8">
+            <Label Content="{lex:Loc PreIssue_Month}" VerticalAlignment="Center"/>
+            <ComboBox x:Name="cb_month" Width="140" VerticalAlignment="Center" Margin="0,0,12,0"
+                      SelectionChanged="Filter_Changed" DisplayMemberPath="Text"/>
+            <Label Content="{lex:Loc PreIssue_Changes_Source}" VerticalAlignment="Center"/>
+            <ComboBox x:Name="cb_source" Width="130" VerticalAlignment="Center" Margin="0,0,12,0"
+                      SelectionChanged="Filter_Changed"/>
+            <Button Content="{lex:Loc PreIssue_Refresh}" MinWidth="76" Padding="10,3" Click="Btn_Refresh_Click"/>
+            <TextBlock x:Name="txt_count" VerticalAlignment="Center" Margin="12,0,0,0"
+                       Foreground="{DynamicResource TextSecondaryBrush}"/>
+        </WrapPanel>
+
+        <DataGrid x:Name="dg_changes" Grid.Row="2"
+                  AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False"
+                  HeadersVisibility="Column" GridLinesVisibility="All"
+                  SelectionMode="Extended" SelectionUnit="FullRow" ClipboardCopyMode="None"
+                  VirtualizingPanel.IsVirtualizing="True">
+            <DataGrid.CellStyle>
+                <StaticResource ResourceKey="ChangeCell"/>
+            </DataGrid.CellStyle>
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="{lex:Loc PreIssue_Changes_Time}" Binding="{Binding CreatedAt, StringFormat={}{0:yyyy/M/d HH:mm}}" Width="135" ElementStyle="{StaticResource ChangeText}"/>
+                <DataGridTextColumn Header="{lex:Loc PreIssue_Changes_Month}" Binding="{Binding Month}" Width="80" ElementStyle="{StaticResource ChangeText}"/>
+                <DataGridTextColumn Header="{lex:Loc PreIssue_Changes_Source}" Binding="{Binding Source}" Width="95" ElementStyle="{StaticResource ChangeText}"/>
+                <DataGridTextColumn Header="{lex:Loc PreIssue_Changes_Kind}" Binding="{Binding Kind}" Width="70" ElementStyle="{StaticResource ChangeText}"/>
+                <DataGridTextColumn Header="{lex:Loc PreIssue_Changes_Target}" Binding="{Binding Target}" Width="120" ElementStyle="{StaticResource ChangeText}"/>
+                <DataGridTextColumn Header="{lex:Loc PreIssue_Changes_Field}" Binding="{Binding Field}" Width="110" ElementStyle="{StaticResource ChangeText}"/>
+                <DataGridTextColumn Header="{lex:Loc PreIssue_Changes_Old}" Binding="{Binding OldValue}" Width="150" ElementStyle="{StaticResource ChangeText}"/>
+                <DataGridTextColumn Header="{lex:Loc PreIssue_Changes_New}" Binding="{Binding NewValue}" Width="150" ElementStyle="{StaticResource ChangeText}"/>
+                <DataGridTextColumn Header="{lex:Loc PreIssue_Changes_Operator}" Binding="{Binding Operator}" Width="95" ElementStyle="{StaticResource ChangeText}"/>
+                <DataGridTextColumn Header="{lex:Loc PreIssue_Changes_Note}" Binding="{Binding Note}" Width="*" ElementStyle="{StaticResource ChangeNoteText}"/>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <DockPanel Grid.Row="3" Margin="0,10,0,0">
+            <Button DockPanel.Dock="Right" Content="{lex:Loc Common_Close}" MinWidth="84" Padding="10,3" IsCancel="True"/>
+            <TextBlock x:Name="txt_status" VerticalAlignment="Center" Foreground="{DynamicResource StatusWarnBrush}"/>
+        </DockPanel>
+    </Grid>
+</Window>

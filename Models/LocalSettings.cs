@@ -45,6 +45,61 @@ namespace ORT一键报告.Models
 
         /// <summary>后台运行设置（本机：最小化到后台 / 开机自启）</summary>
         public BackgroundSettings Background { get; set; } = new BackgroundSettings();
+
+        /// <summary>领退和计划窗口的页签布局（哪些页签显示、当前页签、浮在窗口外的页签与位置）</summary>
+        public PlansTabsLayout PlansTabs { get; set; } = new PlansTabsLayout();
+
+        /// <summary>预领的更新提醒设置（每周排程提醒 / 每天看板提醒，本机保存）</summary>
+        public PreIssueReminderSettings PreIssueReminders { get; set; } = new PreIssueReminderSettings();
+    }
+
+    /// <summary>
+    /// 领退和计划窗口的外层页签布局（本机保存）：
+    /// 三个页签（领退表 / 计划表 / 预领）可以显示或隐藏、可以浮在窗口外单独摆放，
+    /// 关闭窗口时把状态记到这里，下次打开按记忆恢复。
+    /// </summary>
+    public class PlansTabsLayout
+    {
+        /// <summary>当前显示的页签 id（requisitions / plans / preissue），按顺序排列</summary>
+        public List<string> Visible { get; set; }
+
+        /// <summary>当前选中的页签 id</summary>
+        public string Active { get; set; }
+
+        /// <summary>浮在窗口外的页签 id</summary>
+        public List<string> Floating { get; set; }
+
+        /// <summary>浮动窗口的位置与大小（页签 id → "x,y,width,height"）</summary>
+        public Dictionary<string, string> Bounds { get; set; }
+    }
+
+    /// <summary>
+    /// 预领的更新提醒设置（本机保存）：
+    /// 月排程每周固定时间提醒导入更新，ORT 看板每天固定时间提醒导入更新。
+    /// 时间用 HH:mm 文本保存，星期用 DayOfWeek 名称保存，避免跨版本序列化问题。
+    /// </summary>
+    public class PreIssueReminderSettings
+    {
+        /// <summary>每周排程提醒开关</summary>
+        public bool WeeklyEnabled { get; set; } = true;
+
+        /// <summary>每周排程提醒的星期（Monday..Sunday）</summary>
+        public string WeeklyDay { get; set; } = "Monday";
+
+        /// <summary>每周排程提醒的时间（HH:mm）</summary>
+        public string WeeklyTime { get; set; } = "08:30";
+
+        /// <summary>每天看板提醒开关</summary>
+        public bool DailyEnabled { get; set; } = true;
+
+        /// <summary>每天看板提醒的时间（HH:mm）</summary>
+        public string DailyTime { get; set; } = "08:30";
+
+        /// <summary>上一次排程提醒的日期（yyyy-MM-dd），同一天只提醒一次</summary>
+        public string LastWeeklyPrompt { get; set; }
+
+        /// <summary>上一次看板提醒的日期（yyyy-MM-dd），同一天只提醒一次</summary>
+        public string LastDailyPrompt { get; set; }
     }
 
     /// <summary>

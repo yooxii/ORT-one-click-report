@@ -1,0 +1,44 @@
+<Window x:Class="ORT一键报告.Plans.Views.WindowPreIssueReminder"
+        Background="{DynamicResource WindowBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:lex="http://wpflocalizeextension.codeplex.com"
+        mc:Ignorable="d"
+        Title="{lex:Loc PreIssue_ReminderTitle}" Width="430" SizeToContent="Height"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False" ResizeMode="NoResize">
+
+    <StackPanel Margin="14">
+        <TextBlock Text="{lex:Loc PreIssue_ReminderHint}" TextWrapping="Wrap"
+                   Foreground="{DynamicResource TextSecondaryBrush}"/>
+
+        <!-- 月排程：每周固定时间提醒 -->
+        <GroupBox Header="{lex:Loc PreIssue_ReminderWeekly}" Margin="0,12,0,0" Padding="8">
+            <WrapPanel>
+                <CheckBox x:Name="chk_weekly" Content="{lex:Loc PreIssue_ReminderEnable}" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                <Label Content="{lex:Loc PreIssue_ReminderWeeklyDay}" VerticalAlignment="Center"/>
+                <ComboBox x:Name="cb_day" Width="96" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                <Label Content="{lex:Loc PreIssue_ReminderWeeklyTime}" VerticalAlignment="Center"/>
+                <TextBox x:Name="txt_weekly_time" Width="70" VerticalContentAlignment="Center" ToolTip="HH:mm"/>
+            </WrapPanel>
+        </GroupBox>
+
+        <!-- ORT看板：每天固定时间提醒 -->
+        <GroupBox Header="{lex:Loc PreIssue_ReminderDaily}" Margin="0,10,0,0" Padding="8">
+            <WrapPanel>
+                <CheckBox x:Name="chk_daily" Content="{lex:Loc PreIssue_ReminderEnable}" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                <Label Content="{lex:Loc PreIssue_ReminderDailyTime}" VerticalAlignment="Center"/>
+                <TextBox x:Name="txt_daily_time" Width="70" VerticalContentAlignment="Center" ToolTip="HH:mm"/>
+            </WrapPanel>
+        </GroupBox>
+
+        <TextBlock x:Name="txt_tip" TextWrapping="Wrap" Margin="0,10,0,0"
+                   Foreground="{DynamicResource StatusWarnBrush}"/>
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
+            <Button Content="{lex:Loc Common_Save}" IsDefault="True" MinWidth="84" Padding="10,3" Click="Btn_Save_Click"/>
+            <Button Content="{lex:Loc Common_Cancel}" IsCancel="True" MinWidth="84" Padding="10,3" Margin="8,0,0,0"/>
+        </StackPanel>
+    </StackPanel>
+</Window>

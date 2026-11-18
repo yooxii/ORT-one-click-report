@@ -126,6 +126,8 @@ namespace ORT一键报告
                 services.AddSingleton<TestPlanService>();
                 services.AddSingleton<PlanIndexService>();
                 services.AddSingleton<PlanIndexScheduler>();
+                services.AddSingleton<PreIssueService>();
+                services.AddSingleton<PreIssueReminderScheduler>();
                 services.AddSingleton<DatabaseBackupService>();
                 services.AddSingleton<DatabaseBackupScheduler>();
                 services.AddSingleton<ReportStatusReader>();
@@ -144,6 +146,7 @@ namespace ORT一键报告
                 services.AddTransient<ReturnLineViewModel>();
                 services.AddTransient<ReturnLineSingleViewModel>();
                 services.AddTransient<PlansViewModel>();
+                services.AddTransient<PreIssueViewModel>();
 
                 ServiceProvider = services.BuildServiceProvider();
 
@@ -237,6 +240,18 @@ namespace ORT一键报告
                 catch (Exception ex)
                 {
                     logger.Warn($"启动闲置报告扫描失败: {ex.Message}");
+                }
+
+                // 预领的更新提醒：月排程每周一次、ORT看板每天一次的固定时间提醒导入更新
+                try
+                {
+                    PreIssueReminderScheduler reminder = ServiceProvider.GetRequiredService<PreIssueReminderScheduler>();
+                    reminder.Prompted += (kind, message) => ToastService.Show(message, ORT一键报告.Main.Views.ToastType.Warning);
+                    reminder.Start();
+                }
+                catch (Exception ex)
+                {
+                    logger.Warn($"启动预领更新提醒失败: {ex.Message}");
                 }
 
                 // 主窗口显示后启动数据库定时备份（每周一次全量 + 每天一次增量）

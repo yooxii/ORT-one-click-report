@@ -3344,4 +3344,283 @@
   <data name="Msg_JobNoTakenInListFormat" xml:space="preserve">
     <value>工作編號 [{0}] 已被表格中的記錄占用（含尚未提交的修改）</value>
   </data>
+  <data name="PreIssue_Tab" xml:space="preserve">
+    <value>預領</value>
+  </data>
+  <data name="PreIssue_Month" xml:space="preserve">
+    <value>月份</value>
+  </data>
+  <data name="PreIssue_MonthHint" xml:space="preserve">
+    <value>三個頁籤共用同一月份；切到舊月份可以隨時翻閱，也可以再次匯入更新（會記錄變動）</value>
+  </data>
+  <data name="PreIssue_ReminderSettings" xml:space="preserve">
+    <value>更新提醒</value>
+  </data>
+  <data name="PreIssue_ReminderHint" xml:space="preserve">
+    <value>設定月排程的每週提醒與 ORT 看板的每天提醒</value>
+  </data>
+  <data name="PreIssue_ScheduleTab" xml:space="preserve">
+    <value>月排程</value>
+  </data>
+  <data name="PreIssue_Import" xml:space="preserve">
+    <value>匯入更新</value>
+  </data>
+  <data name="PreIssue_ImportScheduleTip" xml:space="preserve">
+    <value>選擇「202611 工令排程」這類排程表：第 1 行是表頭，儲存格寫「機種/數量」</value>
+  </data>
+  <data name="PreIssue_Refresh" xml:space="preserve">
+    <value>重新整理</value>
+  </data>
+  <data name="PreIssue_WeekView" xml:space="preserve">
+    <value>週視圖</value>
+  </data>
+  <data name="PreIssue_MonthView" xml:space="preserve">
+    <value>整月視圖</value>
+  </data>
+  <data name="PreIssue_PrevWeek" xml:space="preserve">
+    <value>上一週</value>
+  </data>
+  <data name="PreIssue_NextWeek" xml:space="preserve">
+    <value>下一週</value>
+  </data>
+  <data name="PreIssue_ThisWeek" xml:space="preserve">
+    <value>本週</value>
+  </data>
+  <data name="PreIssue_WeekHint" xml:space="preserve">
+    <value>按週翻頁：一屏看一週，不用左右拖捲軸</value>
+  </data>
+  <data name="PreIssue_SearchHint" xml:space="preserve">
+    <value>按線別 / 機種搜尋</value>
+  </data>
+  <data name="PreIssue_Menu_CopyRow" xml:space="preserve">
+    <value>複製整行</value>
+  </data>
+  <data name="PreIssue_Menu_CopyCell" xml:space="preserve">
+    <value>複製該值</value>
+  </data>
+  <data name="PreIssue_BoardTab" xml:space="preserve">
+    <value>ORT看板</value>
+  </data>
+  <data name="PreIssue_SyncPending" xml:space="preserve">
+    <value>從看板補全待開單</value>
+  </data>
+  <data name="PreIssue_SyncPendingTip" xml:space="preserve">
+    <value>把看板裡「SIM87入庫否 = Y」、不在黑名單、還沒進準備領用的機種補成待開單</value>
+  </data>
+  <data name="PreIssue_Changes" xml:space="preserve">
+    <value>變動記錄</value>
+  </data>
+  <data name="PreIssue_Blacklist" xml:space="preserve">
+    <value>黑名單</value>
+  </data>
+  <data name="PreIssue_BoardOnlyStocked" xml:space="preserve">
+    <value>只看已入庫</value>
+  </data>
+  <data name="PreIssue_BoardOnlyPending" xml:space="preserve">
+    <value>只看待轉領用</value>
+  </data>
+  <data name="PreIssue_ImportBoardTip" xml:space="preserve">
+    <value>選擇看板原始匯出資料：第 1 行丟棄、第 2 行是表頭，只讀前 15 欄</value>
+  </data>
+  <data name="PreIssue_Menu_AddBlacklist" xml:space="preserve">
+    <value>加入黑名單（ORT 做不了、不領用）</value>
+  </data>
+  <data name="PreIssue_RequisitionTab" xml:space="preserve">
+    <value>準備領用</value>
+  </data>
+  <data name="PreIssue_AddPending" xml:space="preserve">
+    <value>新增待開單</value>
+  </data>
+  <data name="PreIssue_AddPendingTip" xml:space="preserve">
+    <value>先填待開單的機種，開好單後再匯入開單資料補全</value>
+  </data>
+  <data name="PreIssue_ImportRequisition" xml:space="preserve">
+    <value>匯入開單資料</value>
+  </data>
+  <data name="PreIssue_ImportRequisitionTip" xml:space="preserve">
+    <value>選擇下載的開單資料（11.XLS 一類）：只保留 ORT 領用的 10 欄，再次匯入會同步 VCH_STATUS / CLOSE_CODE</value>
+  </data>
+  <data name="PreIssue_StateFilter" xml:space="preserve">
+    <value>狀態</value>
+  </data>
+  <data name="PreIssue_Column_State" xml:space="preserve">
+    <value>階段</value>
+  </data>
+  <data name="PreIssue_Menu_DeletePending" xml:space="preserve">
+    <value>刪除待開單</value>
+  </data>
+  <data name="PreIssue_Line" xml:space="preserve">
+    <value>線別</value>
+  </data>
+  <data name="PreIssue_Model" xml:space="preserve">
+    <value>機種</value>
+  </data>
+  <data name="PreIssue_Total" xml:space="preserve">
+    <value>合計</value>
+  </data>
+  <data name="PreIssue_AddPendingTitle" xml:space="preserve">
+    <value>新增待開單</value>
+  </data>
+  <data name="PreIssue_DeletePendingTitle" xml:space="preserve">
+    <value>刪除待開單</value>
+  </data>
+  <data name="PreIssue_AddBlacklistTitle" xml:space="preserve">
+    <value>加入黑名單</value>
+  </data>
+  <data name="PreIssue_JobNo" xml:space="preserve">
+    <value>工令（選填）</value>
+  </data>
+  <data name="PreIssue_AddPendingHint" xml:space="preserve">
+    <value>填機種（可從下拉裡挑看板出現過的機種），全部開好單後到「匯入開單資料」補全其它欄。</value>
+  </data>
+  <data name="PreIssue_ModelRequired" xml:space="preserve">
+    <value>機種不能為空</value>
+  </data>
+  <data name="PreIssue_BlacklistTitle" xml:space="preserve">
+    <value>ORT 黑名單</value>
+  </data>
+  <data name="PreIssue_BlacklistHint" xml:space="preserve">
+    <value>黑名單裡的機種 ORT 做不了、不需要領用：看板變動時不會推進到準備領用。</value>
+  </data>
+  <data name="PreIssue_BlacklistAdd" xml:space="preserve">
+    <value>加入</value>
+  </data>
+  <data name="PreIssue_BlacklistRemove" xml:space="preserve">
+    <value>移出黑名單</value>
+  </data>
+  <data name="PreIssue_BlacklistAdded" xml:space="preserve">
+    <value>已加入黑名單：{0}</value>
+  </data>
+  <data name="PreIssue_BlacklistRemoved" xml:space="preserve">
+    <value>已移出黑名單：{0}</value>
+  </data>
+  <data name="PreIssue_BlacklistSelectFirst" xml:space="preserve">
+    <value>先在列表裡選一條再移出</value>
+  </data>
+  <data name="PreIssue_BlacklistFromBoard" xml:space="preserve">
+    <value>看板裡右鍵加入</value>
+  </data>
+  <data name="PreIssue_Reason" xml:space="preserve">
+    <value>原因（選填）</value>
+  </data>
+  <data name="PreIssue_ChangesTitle" xml:space="preserve">
+    <value>預領變動記錄</value>
+  </data>
+  <data name="PreIssue_ChangesHint" xml:space="preserve">
+    <value>三個表每次匯入更新都會逐條記錄變動（新增 / 刪除 / 修改 / 入庫 / 開單 / 黑名單）；舊月份被更新時同樣記錄。</value>
+  </data>
+  <data name="PreIssue_Changes_Source" xml:space="preserve">
+    <value>來源</value>
+  </data>
+  <data name="PreIssue_Changes_Month" xml:space="preserve">
+    <value>月份</value>
+  </data>
+  <data name="PreIssue_Changes_Kind" xml:space="preserve">
+    <value>類型</value>
+  </data>
+  <data name="PreIssue_Changes_Target" xml:space="preserve">
+    <value>對象</value>
+  </data>
+  <data name="PreIssue_Changes_Field" xml:space="preserve">
+    <value>欄</value>
+  </data>
+  <data name="PreIssue_Changes_Old" xml:space="preserve">
+    <value>變動前</value>
+  </data>
+  <data name="PreIssue_Changes_New" xml:space="preserve">
+    <value>變動後</value>
+  </data>
+  <data name="PreIssue_Changes_Operator" xml:space="preserve">
+    <value>操作人</value>
+  </data>
+  <data name="PreIssue_Changes_Time" xml:space="preserve">
+    <value>時間</value>
+  </data>
+  <data name="PreIssue_Changes_Note" xml:space="preserve">
+    <value>說明</value>
+  </data>
+  <data name="PreIssue_ChangesCount" xml:space="preserve">
+    <value>共 {0} 筆</value>
+  </data>
+  <data name="PreIssue_ChangesEmpty" xml:space="preserve">
+    <value>沒有記錄</value>
+  </data>
+  <data name="PreIssue_ReminderTitle" xml:space="preserve">
+    <value>預領更新提醒設定</value>
+  </data>
+  <data name="PreIssue_ReminderWeekly" xml:space="preserve">
+    <value>月排程 · 每週提醒</value>
+  </data>
+  <data name="PreIssue_ReminderEnable" xml:space="preserve">
+    <value>啟用</value>
+  </data>
+  <data name="PreIssue_ReminderWeeklyDay" xml:space="preserve">
+    <value>星期</value>
+  </data>
+  <data name="PreIssue_ReminderWeeklyTime" xml:space="preserve">
+    <value>時間</value>
+  </data>
+  <data name="PreIssue_ReminderDaily" xml:space="preserve">
+    <value>ORT看板 · 每天提醒</value>
+  </data>
+  <data name="PreIssue_ReminderDailyTime" xml:space="preserve">
+    <value>時間</value>
+  </data>
+  <data name="PreIssue_ReminderLast" xml:space="preserve">
+    <value>上次提醒：月排程 {0}；ORT看板 {1}（同一天只提醒一次）</value>
+  </data>
+  <data name="PreIssue_ReminderTimeInvalid" xml:space="preserve">
+    <value>時間格式要寫成 HH:mm，例如 08:30</value>
+  </data>
+  <data name="PreIssue_Day_Monday" xml:space="preserve">
+    <value>星期一</value>
+  </data>
+  <data name="PreIssue_Day_Tuesday" xml:space="preserve">
+    <value>星期二</value>
+  </data>
+  <data name="PreIssue_Day_Wednesday" xml:space="preserve">
+    <value>星期三</value>
+  </data>
+  <data name="PreIssue_Day_Thursday" xml:space="preserve">
+    <value>星期四</value>
+  </data>
+  <data name="PreIssue_Day_Friday" xml:space="preserve">
+    <value>星期五</value>
+  </data>
+  <data name="PreIssue_Day_Saturday" xml:space="preserve">
+    <value>星期六</value>
+  </data>
+  <data name="PreIssue_Day_Sunday" xml:space="preserve">
+    <value>星期日</value>
+  </data>
+  <data name="PreIssue_Reminder_Weekly" xml:space="preserve">
+    <value>月排程每週更新提醒：排程隨時可能調整，請到「領退和計劃 → 預領 → 月排程」匯入最新排程</value>
+  </data>
+  <data name="PreIssue_Reminder_Daily" xml:space="preserve">
+    <value>ORT看板每日更新提醒：請到「領退和計劃 → 預領 → ORT看板」匯入今早最新的看板資料</value>
+  </data>
+  <data name="PreIssue_ImportScheduleTitle" xml:space="preserve">
+    <value>匯入月排程</value>
+  </data>
+  <data name="PreIssue_ImportBoardTitle" xml:space="preserve">
+    <value>匯入 ORT 看板</value>
+  </data>
+  <data name="PreIssue_ImportRequisitionTitle" xml:space="preserve">
+    <value>匯入開單資料</value>
+  </data>
+  <data name="Plans_View_Tabs" xml:space="preserve">
+    <value>頁籤</value>
+  </data>
+  <data name="Plans_View_Float" xml:space="preserve">
+    <value>浮動到視窗外</value>
+  </data>
+  <data name="Plans_View_Hide" xml:space="preserve">
+    <value>隱藏該頁籤</value>
+  </data>
+  <data name="Plans_Tabs_KeepOne" xml:space="preserve">
+    <value>至少要保留一個頁籤</value>
+  </data>
+  <data name="Plans_View_Dock" xml:space="preserve">
+    <value>收回視窗（固定回視窗裡）</value>
+  </data>
 </root>

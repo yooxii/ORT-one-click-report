@@ -132,6 +132,16 @@
                 <MenuItem x:Name="menu_view_toolbar" Header="{lex:Loc Menu_Toolbar}" IsCheckable="True" Click="Menu_View_Toggle_Click"/>
                 <MenuItem x:Name="menu_view_search" Header="{lex:Loc Common_Search}" IsCheckable="True" IsChecked="True" Click="Menu_View_Toggle_Click"/>
                 <Separator/>
+                <!--页签：显示/隐藏（默认只显示计划表；浮出去的页签关掉浮动窗口就回到窗口里）-->
+                <MenuItem Header="{lex:Loc Plans_View_Tabs}">
+                    <MenuItem x:Name="menu_tab_req" Header="{lex:Loc Plans_RequisitionTab}" Tag="requisitions"
+                              IsCheckable="True" Click="Menu_TabToggle_Click"/>
+                    <MenuItem x:Name="menu_tab_plan" Header="{lex:Loc Plans_PlanTab}" Tag="plans"
+                              IsCheckable="True" Click="Menu_TabToggle_Click"/>
+                    <MenuItem x:Name="menu_tab_pre" Header="{lex:Loc PreIssue_Tab}" Tag="preissue"
+                              IsCheckable="True" Click="Menu_TabToggle_Click"/>
+                </MenuItem>
+                <Separator/>
                 <MenuItem x:Name="menu_window_columns" Header="{lex:Loc Menu_Columns}" SubmenuOpened="Menu_View_SubmenuOpened"/>
                 <Separator/>
                 <MenuItem Header="{lex:Loc Common_Refresh}" Command="{Binding RefreshCommand}"/>
@@ -215,10 +225,21 @@
             </Border>
         </StackPanel>
 
-        <!--两 Tab：领退表 / 计划表-->
-        <TabControl x:Name="tabs" Grid.Row="3" Margin="0,5,0,0">
+        <!--可浮动、可固定的页签：领退表 / 计划表 / 预领（默认只显示计划表，其余从「视图-页签」打开；
+             页签可以浮出窗口单独摆放，关掉浮动窗口就回到这里）-->
+        <Grid Grid.Row="3" Margin="0,5,0,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition/>
+            </Grid.RowDefinitions>
+            <!--页签条：内容由代码按「显示中的页签」生成（每项带 浮动 / 关闭 两个小按钮）-->
+            <Border x:Name="tabbar" Grid.Row="0" Background="{DynamicResource MenuBackgroundBrush}"
+                    BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="0,1,0,1" Padding="2,1">
+                <StackPanel x:Name="tabbar_items" Orientation="Horizontal"/>
+            </Border>
+            <Grid x:Name="pane_host" Grid.Row="1">
             <!--领退表-->
-            <TabItem Header="{lex:Loc Plans_RequisitionTab}">
+            <Border x:Name="pane_requisitions" Visibility="Collapsed">
                 <DataGrid x:Name="dg_requisitions"
                           ItemsSource="{Binding RequisitionsView}"
                           SelectedItem="{Binding SelectedRequisition, Mode=TwoWay}"
@@ -383,10 +404,10 @@
                         </DataGridTemplateColumn>
                     </DataGrid.Columns>
                 </DataGrid>
-            </TabItem>
+            </Border>
 
             <!--计划表-->
-            <TabItem Header="{lex:Loc Plans_PlanTab}">
+            <Border x:Name="pane_plans" Visibility="Collapsed">
                 <DataGrid x:Name="dg_plans"
                           ItemsSource="{Binding PlansView}"
                           SelectedItem="{Binding SelectedPlan, Mode=TwoWay}"
@@ -604,8 +625,14 @@
                         <DataGridTextColumn Header="{lex:Loc Admin_Remark}" Binding="{Binding Remark, UpdateSourceTrigger=PropertyChanged}" Width="150" ElementStyle="{StaticResource CenterText}" EditingElementStyle="{StaticResource CenterEdit}"/>
                     </DataGrid.Columns>
                 </DataGrid>
-            </TabItem>
-        </TabControl>
+            </Border>
+
+            <!--预领：内层再套三个页签（月排程 / ORT看板 / 准备领用）-->
+            <Grid x:Name="pane_preissue" Visibility="Collapsed">
+                <local:UserControlPreIssue x:Name="pre_issue"/>
+            </Grid>
+            </Grid>
+        </Grid>
 
         <StatusBar Grid.Row="4">
             <StatusBarItem>

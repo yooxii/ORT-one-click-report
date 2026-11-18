@@ -1,0 +1,333 @@
+<UserControl x:Class="ORT一键报告.Plans.Views.UserControlPreIssue"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:lex="http://wpflocalizeextension.codeplex.com"
+             xmlns:local="clr-namespace:ORT一键报告.Plans.Views"
+             Background="{DynamicResource WindowBackgroundBrush}"
+             Foreground="{DynamicResource TextPrimaryBrush}">
+
+    <UserControl.Resources>
+        <!-- 居中文本（只读展示用） -->
+        <Style x:Key="PreText" TargetType="TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="TextAlignment" Value="Center"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+        </Style>
+        <!-- 单元格：无内边距、内容居中，选中仍可见 -->
+        <Style x:Key="PreCell" TargetType="DataGridCell">
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource TableCellSelectedBrush}"/>
+                    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <!-- 工具栏小按钮 -->
+        <Style x:Key="PreButton" TargetType="Button">
+            <Setter Property="Padding" Value="10,3"/>
+            <Setter Property="Margin" Value="0,0,6,0"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- 顶部：月份（三个页签共用同一月份，旧月份随时可翻阅） + 总提示 + 提醒设置 -->
+        <DockPanel Grid.Row="0" Margin="0,0,0,4" LastChildFill="True">
+            <Label Content="{lex:Loc PreIssue_Month}" VerticalAlignment="Center"/>
+            <ComboBox x:Name="cb_month" Width="110" Margin="0,0,10,0" VerticalAlignment="Center"
+                      ItemsSource="{Binding Months}" SelectedItem="{Binding SelectedMonth, Mode=TwoWay}"
+                      DisplayMemberPath="Text" ToolTip="{lex:Loc PreIssue_MonthHint}"/>
+            <Button DockPanel.Dock="Right" Style="{StaticResource PreButton}" Content="{lex:Loc PreIssue_ReminderSettings}"
+                    Click="Btn_ReminderSettings_Click" ToolTip="{lex:Loc PreIssue_ReminderHint}"/>
+            <TextBlock Text="{Binding OverallHint}" VerticalAlignment="Center" Margin="4,0,0,0"
+                       Foreground="{DynamicResource TextSecondaryBrush}" TextTrimming="CharacterEllipsis"
+                       ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
+        </DockPanel>
+
+        <!-- 内层三个页签：月排程 / ORT看板 / 准备领用 -->
+        <TabControl x:Name="inner_tabs" Grid.Row="2" Margin="0,2,0,0">
+
+            <!-- ============================ 月排程 ============================ -->
+            <TabItem Header="{lex:Loc PreIssue_ScheduleTab}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition/>
+                    </Grid.RowDefinitions>
+
+                    <WrapPanel Grid.Row="0" Margin="0,2,0,4" Orientation="Horizontal">
+                        <Button Style="{StaticResource PreButton}" Content="{lex:Loc PreIssue_Import}" FontWeight="Bold"
+                                Command="{Binding ImportScheduleCommand}" ToolTip="{lex:Loc PreIssue_ImportScheduleTip}"/>
+                        <Button Style="{StaticResource PreButton}" Content="{lex:Loc PreIssue_Refresh}"
+                                Command="{Binding RefreshCommand}"/>
+                        <Separator Margin="4,0"/>
+                        <!-- 视图：周视图（默认，一次看一周、不用左右拖）/ 整月视图（原平铺样） -->
+                        <RadioButton Content="{lex:Loc PreIssue_WeekView}" VerticalAlignment="Center" Margin="2,0"
+                                     IsChecked="{Binding WeekView, Mode=TwoWay}"/>
+                        <RadioButton Content="{lex:Loc PreIssue_MonthView}" VerticalAlignment="Center" Margin="8,0"
+                                     IsChecked="{Binding WholeMonth, Mode=TwoWay}"/>
+                        <Separator Margin="8,0"/>
+                        <Button Style="{StaticResource PreButton}" Content="{lex:Loc PreIssue_PrevWeek}"
+                                Command="{Binding PrevWeekCommand}"/>
+                        <Button Style="{StaticResource PreButton}" Content="{lex:Loc PreIssue_NextWeek}"
+                                Command="{Binding NextWeekCommand}"/>
+                        <Button Style="{StaticResource PreButton}" Content="{lex:Loc PreIssue_ThisWeek}"
+                                Command="{Binding CurrentWeekCommand}"/>
+                        <ComboBox Width="130" Margin="0,0,8,0" VerticalAlignment="Center"
+                                  ItemsSource="{Binding Weeks}" SelectedItem="{Binding SelectedWeek, Mode=TwoWay}"
+                                  DisplayMemberPath="Text" ToolTip="{lex:Loc PreIssue_WeekHint}"/>
+                        <TextBox x:Name="txt_schedule_search" Width="150" VerticalContentAlignment="Center"
+                                 Margin="0,0,8,0" ToolTip="{lex:Loc PreIssue_SearchHint}"
+                                 Text="{Binding ScheduleSearch, UpdateSourceTrigger=PropertyChanged, Delay=250}"/>
+                        <TextBlock Text="{Binding ScheduleSummary}" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"/>
+                    </WrapPanel>
+
+                    <TextBlock Grid.Row="1" Text="{Binding ScheduleHint}" Margin="2,0,0,4" TextWrapping="Wrap"
+                               Foreground="{DynamicResource StatusWarnBrush}"/>
+
+                    <!-- 一行一个「線別 + 機種」，列是日期：周视图 7 列、整月视图当月天数；前两列冻结不跑 -->
+                    <DataGrid x:Name="dg_schedule" Grid.Row="2"
+                              ItemsSource="{Binding ScheduleRows}"
+                              AutoGenerateColumns="False" IsReadOnly="True"
+                              CanUserSortColumns="False" CanUserReorderColumns="False" CanUserAddRows="False"
+                              HeadersVisibility="All" GridLinesVisibility="All"
+                              SelectionMode="Extended" SelectionUnit="FullRow"
+                              ClipboardCopyMode="None" FrozenColumnCount="2"
+                              RowHeaderWidth="0"
+                              VirtualizingPanel.IsVirtualizing="True"
+                              VirtualizingPanel.VirtualizationMode="Recycling"
+                              PreviewMouseRightButtonDown="DataGrid_PreviewMouseRightButtonDown">
+                        <DataGrid.CellStyle>
+                            <StaticResource ResourceKey="PreCell"/>
+                        </DataGrid.CellStyle>
+                        <DataGrid.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="{lex:Loc PreIssue_Menu_CopyRow}" Click="Menu_CopyScheduleRow_Click"/>
+                                <MenuItem Header="{lex:Loc PreIssue_Menu_CopyCell}" Click="Menu_CopyCell_Click"/>
+                            </ContextMenu>
+                        </DataGrid.ContextMenu>
+                    </DataGrid>
+                </Grid>
+            </TabItem>
+
+            <!-- ============================ ORT 看板 ============================ -->
+            <TabItem Header="{lex:Loc PreIssue_BoardTab}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition/>
+                    </Grid.RowDefinitions>
+
+                    <WrapPanel Grid.Row="0" Margin="0,2,0,4" Orientation="Horizontal">
+                        <Button Style="{StaticResource PreButton}" Content="{lex:Loc PreIssue_Import}" FontWeight="Bold"
+                                Command="{Binding ImportBoardCommand}" ToolTip="{lex:Loc PreIssue_ImportBoardTip}"/>
+                        <Button Style="{StaticResource PreButton}" Content="{lex:Loc PreIssue_SyncPending}"
+                                Command="{Binding SyncPendingCommand}" ToolTip="{lex:Loc PreIssue_SyncPendingTip}"/>
+                        <Button Style="{StaticResource PreButton}" Content="{lex:Loc PreIssue_Changes}"
+                                Click="Btn_Changes_Click"/>
+                        <Button Style="{StaticResource PreButton}" Content="{lex:Loc PreIssue_Blacklist}"
+                                Click="Btn_Blacklist_Click"/>
+                        <Button Style="{StaticResource PreButton}" Content="{lex:Loc PreIssue_Refresh}"
+                                Command="{Binding RefreshCommand}"/>
+                        <Separator Margin="4,0"/>
+                        <CheckBox Content="{lex:Loc PreIssue_BoardOnlyStocked}" VerticalAlignment="Center" Margin="2,0"
+                                  IsChecked="{Binding BoardOnlyStocked, Mode=TwoWay}"/>
+                        <CheckBox Content="{lex:Loc PreIssue_BoardOnlyPending}" VerticalAlignment="Center" Margin="8,0"
+                                  IsChecked="{Binding BoardOnlyPending, Mode=TwoWay}"/>
+                        <TextBox x:Name="txt_board_search" Width="150" VerticalContentAlignment="Center" Margin="8,0,8,0"
+                                 ToolTip="{lex:Loc PreIssue_SearchHint}"
+                                 Text="{Binding BoardSearch, UpdateSourceTrigger=PropertyChanged, Delay=250}"/>
+                        <TextBlock Text="{Binding BoardSummary}" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"/>
+                    </WrapPanel>
+
+                    <TextBlock Grid.Row="1" Text="{Binding BoardHint}" Margin="2,0,0,4" TextWrapping="Wrap"
+                               Foreground="{DynamicResource StatusWarnBrush}"/>
+
+                    <!-- 原样 15 列（A~O）：P 列及之后是人工加的列，不导入也不显示 -->
+                    <DataGrid x:Name="dg_board" Grid.Row="2"
+                              ItemsSource="{Binding BoardView}"
+                              SelectedItem="{Binding SelectedBoardRow, Mode=TwoWay}"
+                              AutoGenerateColumns="False" IsReadOnly="True"
+                              CanUserSortColumns="True" CanUserAddRows="False"
+                              HeadersVisibility="All" GridLinesVisibility="All"
+                              SelectionMode="Extended" SelectionUnit="FullRow"
+                              ClipboardCopyMode="None"
+                              VirtualizingPanel.IsVirtualizing="True"
+                              PreviewMouseRightButtonDown="DataGrid_PreviewMouseRightButtonDown">
+                        <DataGrid.CellStyle>
+                            <StaticResource ResourceKey="PreCell"/>
+                        </DataGrid.CellStyle>
+                        <DataGrid.RowStyle>
+                            <Style TargetType="DataGridRow">
+                                <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
+                                <Style.Triggers>
+                                    <!-- 已入库且还没转准备领用：黄色提示「可以准备领用了」 -->
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding Stocked}" Value="True"/>
+                                            <Condition Binding="{Binding HasRequisition}" Value="False"/>
+                                        </MultiDataTrigger.Conditions>
+                                        <Setter Property="Background" Value="{DynamicResource StatusWarnBgBrush}"/>
+                                    </MultiDataTrigger>
+                                    <!-- 已转准备领用：绿色 -->
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding Stocked}" Value="True"/>
+                                            <Condition Binding="{Binding HasRequisition}" Value="True"/>
+                                        </MultiDataTrigger.Conditions>
+                                        <Setter Property="Background" Value="{DynamicResource StatusOkBgBrush}"/>
+                                    </MultiDataTrigger>
+                                    <Trigger Property="IsSelected" Value="True">
+                                        <Setter Property="Background" Value="{DynamicResource TableRowSelectedBrush}"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </DataGrid.RowStyle>
+                        <DataGrid.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="{lex:Loc PreIssue_Menu_AddBlacklist}" Click="Menu_BoardAddBlacklist_Click"/>
+                                <Separator/>
+                                <MenuItem Header="{lex:Loc PreIssue_Menu_CopyRow}" Click="Menu_CopyBoardRow_Click"/>
+                                <MenuItem Header="{lex:Loc PreIssue_Menu_CopyCell}" Click="Menu_CopyCell_Click"/>
+                            </ContextMenu>
+                        </DataGrid.ContextMenu>
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="日期" Binding="{Binding ReportDate}" Width="85" ElementStyle="{StaticResource PreText}"/>
+                            <DataGridTextColumn Header="類別" Binding="{Binding Category}" Width="55" ElementStyle="{StaticResource PreText}"/>
+                            <DataGridTextColumn Header="機種" Binding="{Binding Model}" Width="120" ElementStyle="{StaticResource PreText}"/>
+                            <DataGridTextColumn Header="生產線別" Binding="{Binding Line}" Width="70" ElementStyle="{StaticResource PreText}"/>
+                            <DataGridTextColumn Header="生產日期" Binding="{Binding ProduceDate}" Width="85" ElementStyle="{StaticResource PreText}"/>
+                            <DataGridTextColumn Header="工令" Binding="{Binding JobNo}" Width="115" ElementStyle="{StaticResource PreText}"/>
+                            <DataGridTextColumn Header="生產數量" Binding="{Binding Qty}" Width="75" ElementStyle="{StaticResource PreText}"/>
+                            <DataGridTextColumn Header="生產時數" Binding="{Binding Hours}" Width="75" ElementStyle="{StaticResource PreText}"/>
+                            <DataGridTextColumn Header="65報工否" Binding="{Binding Reported65}" Width="70" ElementStyle="{StaticResource PreText}"/>
+                            <DataGridTextColumn Header="SIM87入庫否" Binding="{Binding Stocked87}" Width="85" ElementStyle="{StaticResource PreText}"/>
+                            <DataGridTextColumn Header="收料日期" Binding="{Binding ReceiveDate}" Width="85" ElementStyle="{StaticResource PreText}"/>
+                            <DataGridTextColumn Header="料號" Binding="{Binding PartNo}" Width="120" ElementStyle="{StaticResource PreText}"/>
+                            <DataGridTextColumn Header="材料剩餘庫存" Binding="{Binding MaterialStock}" Width="95" ElementStyle="{StaticResource PreText}"/>
+                            <DataGridTextColumn Header="測試結果" Binding="{Binding TestResult}" Width="70" ElementStyle="{StaticResource PreText}"/>
+                            <DataGridTextColumn Header="SIM94禁止出貨" Binding="{Binding Forbidden94}" Width="95" ElementStyle="{StaticResource PreText}"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </TabItem>
+
+            <!-- ============================ 准备领用 ============================ -->
+            <TabItem Header="{lex:Loc PreIssue_RequisitionTab}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition/>
+                    </Grid.RowDefinitions>
+
+                    <WrapPanel Grid.Row="0" Margin="0,2,0,4" Orientation="Horizontal">
+                        <Button Style="{StaticResource PreButton}" Content="{lex:Loc PreIssue_AddPending}"
+                                Click="Btn_AddPending_Click" ToolTip="{lex:Loc PreIssue_AddPendingTip}"/>
+                        <Button Style="{StaticResource PreButton}" Content="{lex:Loc PreIssue_SyncPending}"
+                                Command="{Binding SyncPendingCommand}" ToolTip="{lex:Loc PreIssue_SyncPendingTip}"/>
+                        <Button Style="{StaticResource PreButton}" Content="{lex:Loc PreIssue_ImportRequisition}" FontWeight="Bold"
+                                Command="{Binding ImportRequisitionCommand}" ToolTip="{lex:Loc PreIssue_ImportRequisitionTip}"/>
+                        <Separator Margin="4,0"/>
+                        <Button Style="{StaticResource PreButton}" Content="{lex:Loc PreIssue_Changes}"
+                                Click="Btn_Changes_Click"/>
+                        <Button Style="{StaticResource PreButton}" Content="{lex:Loc PreIssue_Blacklist}"
+                                Click="Btn_Blacklist_Click"/>
+                        <Button Style="{StaticResource PreButton}" Content="{lex:Loc PreIssue_Refresh}"
+                                Command="{Binding RefreshCommand}"/>
+                        <Separator Margin="4,0"/>
+                        <TextBlock Text="{lex:Loc PreIssue_StateFilter}" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                        <ComboBox Width="90" VerticalAlignment="Center" Margin="0,0,8,0"
+                                  ItemsSource="{Binding ReqStateOptions}" SelectedItem="{Binding ReqStateFilter, Mode=TwoWay}"/>
+                        <TextBox x:Name="txt_req_search" Width="150" VerticalContentAlignment="Center" Margin="0,0,8,0"
+                                 ToolTip="{lex:Loc PreIssue_SearchHint}"
+                                 Text="{Binding ReqSearch, UpdateSourceTrigger=PropertyChanged, Delay=250}"/>
+                        <TextBlock Text="{Binding ReqSummary}" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"/>
+                    </WrapPanel>
+
+                    <TextBlock Grid.Row="1" Text="{Binding ReqHint}" Margin="2,0,0,4" TextWrapping="Wrap"
+                               Foreground="{DynamicResource StatusWarnBrush}"/>
+
+                    <!-- 开单数据只保留这 10 列（VCHNO … PC），待开单阶段只有 PART_NO 有值 -->
+                    <DataGrid x:Name="dg_req" Grid.Row="2"
+                              ItemsSource="{Binding ReqView}"
+                              SelectedItem="{Binding SelectedReqRow, Mode=TwoWay}"
+                              AutoGenerateColumns="False" IsReadOnly="True"
+                              CanUserSortColumns="True" CanUserAddRows="False"
+                              HeadersVisibility="All" GridLinesVisibility="All"
+                              SelectionMode="Extended" SelectionUnit="FullRow"
+                              ClipboardCopyMode="None"
+                              VirtualizingPanel.IsVirtualizing="True"
+                              PreviewMouseRightButtonDown="DataGrid_PreviewMouseRightButtonDown">
+                        <DataGrid.CellStyle>
+                            <StaticResource ResourceKey="PreCell"/>
+                        </DataGrid.CellStyle>
+                        <DataGrid.RowStyle>
+                            <Style TargetType="DataGridRow">
+                                <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding State}" Value="待开单">
+                                        <Setter Property="Background" Value="{DynamicResource StatusWarnBgBrush}"/>
+                                    </DataTrigger>
+                                    <Trigger Property="IsSelected" Value="True">
+                                        <Setter Property="Background" Value="{DynamicResource TableRowSelectedBrush}"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </DataGrid.RowStyle>
+                        <DataGrid.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="{lex:Loc PreIssue_Menu_DeletePending}" Click="Menu_DeletePending_Click"/>
+                                <MenuItem Header="{lex:Loc PreIssue_Menu_AddBlacklist}" Click="Menu_ReqAddBlacklist_Click"/>
+                                <Separator/>
+                                <MenuItem Header="{lex:Loc PreIssue_Menu_CopyRow}" Click="Menu_CopyReqRow_Click"/>
+                                <MenuItem Header="{lex:Loc PreIssue_Menu_CopyCell}" Click="Menu_CopyCell_Click"/>
+                            </ContextMenu>
+                        </DataGrid.ContextMenu>
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="{lex:Loc PreIssue_Column_State}" Binding="{Binding PhaseText}" Width="95" ElementStyle="{StaticResource PreText}"/>
+                            <DataGridTextColumn Header="VCHNO" Binding="{Binding Vchno}" Width="120" ElementStyle="{StaticResource PreText}"/>
+                            <DataGridTextColumn Header="WARE_CODE" Binding="{Binding WareCode}" Width="85" ElementStyle="{StaticResource PreText}"/>
+                            <DataGridTextColumn Header="TR_CODE" Binding="{Binding TrCode}" Width="70" ElementStyle="{StaticResource PreText}"/>
+                            <DataGridTextColumn Header="PART_NO" Binding="{Binding PartNo}" Width="120" ElementStyle="{StaticResource PreText}"/>
+                            <DataGridTextColumn Header="REQ_QTY" Binding="{Binding ReqQty}" Width="75" ElementStyle="{StaticResource PreText}"/>
+                            <DataGridTextColumn Header="IVER_ID" Binding="{Binding IverId}" Width="70" ElementStyle="{StaticResource PreText}"/>
+                            <DataGridTextColumn Header="VCH_STATUS" Binding="{Binding VchStatus}" Width="110" ElementStyle="{StaticResource PreText}"/>
+                            <DataGridTextColumn Header="ISSUE_DEPT" Binding="{Binding IssueDept}" Width="90" ElementStyle="{StaticResource PreText}"/>
+                            <DataGridTextColumn Header="CLOSE_CODE" Binding="{Binding CloseCode}" Width="85" ElementStyle="{StaticResource PreText}"/>
+                            <DataGridTextColumn Header="PC" Binding="{Binding Pc}" Width="85" ElementStyle="{StaticResource PreText}"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </TabItem>
+        </TabControl>
+
+        <StatusBar Grid.Row="3">
+            <StatusBarItem>
+                <TextBlock Text="{Binding StatusMessage}" TextTrimming="CharacterEllipsis" MaxWidth="900"/>
+            </StatusBarItem>
+        </StatusBar>
+    </Grid>
+</UserControl>

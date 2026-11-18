@@ -61,6 +61,7 @@
     <Compile Include="KindAndResourceTests.cs" />
     <Compile Include="PathAndFileUtilTests.cs" />
     <Compile Include="PlanValidationTests.cs" />
+    <Compile Include="PreIssueRuleTests.cs" />
     <Compile Include="PlansViewRefreshTests.cs" />
     <Compile Include="RequisitionBatchRulesTests.cs" />
     <Compile Include="RequisitionEditRulesTests.cs" />

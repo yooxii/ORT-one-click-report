@@ -26,8 +26,8 @@ using System.Windows.Threading;
 namespace ORT一键报告.Plans.Views
 {
     /// <summary>
-    /// WindowPlans.xaml 的交互逻辑：领退表/计划表两个 Tab 展示、单元格编辑、
-    /// 右键菜单（编辑/删除/复制/粘贴/显示隐藏列）、机种联动、行号显示与列顺序持久化。
+    /// WindowPlans.xaml 的交互逻辑：领退表 / 计划表 / 预领 三个页签（可浮动、可固定，默认只显示计划表）
+    /// 的展示、单元格编辑、右键菜单（编辑/删除/复制/粘贴/显示隐藏列）、机种联动、行号显示与布局持久化。
     /// </summary>
     public partial class WindowPlans : Window
     {
@@ -58,9 +58,13 @@ namespace ORT一键报告.Plans.Views
             _vm = App.ServiceProvider.GetRequiredService<PlansViewModel>();
             _appSettings = App.ServiceProvider.GetRequiredService<AppSettingsService>();
             DataContext = _vm;
+            // 预领页签自己一套视图模型（三个内层页签共用一个月份）
+            _preVm = App.ServiceProvider.GetRequiredService<PreIssueViewModel>();
+            pre_issue.DataContext = _preVm;
             SetupHeaderMenus();
             Loaded += (s, e) =>
             {
+                InitTabs();
                 RestoreColumnState();
                 _vm.LoadSearchHistory();
                 _vm.Refresh();
@@ -70,12 +74,6 @@ namespace ORT一键报告.Plans.Views
                 BuildColumnMenu(menu_window_columns, ActiveGrid());
                 RefreshHeaderStyles();
                 RunPendingActionOnce();
-            };
-            tabs.SelectionChanged += (s, e) =>
-            {
-                // 窗口菜单作用于当前 Tab，切换后同步为对应表格的字段/列
-                BuildSortMenu(menu_window_sort, ActiveGrid());
-                BuildColumnMenu(menu_window_columns, ActiveGrid());
             };
             // 右键菜单同理：在打开前构建子项
             dg_requisitions.ContextMenuOpening += (s, e) =>
@@ -101,7 +99,9 @@ namespace ORT一键报告.Plans.Views
                     e.Cancel = true;
                     return;
                 }
+                _closing = true;
                 SaveColumnState();
+                SaveTabsLayout();
                 // 关窗口时把当前搜索关键字记进「最近搜索」（本机保存）
                 _vm.RememberSearch();
                 // 退订对单例报告扫描服务的订阅，避免旧 ViewModel 被长期引用
@@ -142,7 +142,7 @@ namespace ORT一键报告.Plans.Views
                     {
                         return;
                     }
-                    tabs.SelectedIndex = isPlan ? 1 : 0;
+                    ActivatePane(isPlan ? PanePlans : PaneRequisitions);
                     ICollectionView view = isPlan ? _vm.PlansView : _vm.RequisitionsView;
                     DataGrid grid = isPlan ? dg_plans : dg_requisitions;
                     bool cleared = false;
@@ -1331,7 +1331,7 @@ namespace ORT一键报告.Plans.Views
                 _vm.StatusMessage = LanguageService.Get("Plans_Batch_AlreadyOpen");
                 return;
             }
-            tabs.SelectedIndex = 0;
+            ActivatePane(PaneRequisitions);
             ApplyPendingStockInFilter();
         }
 
@@ -1349,7 +1349,7 @@ namespace ORT一键报告.Plans.Views
         /// <summary>工具菜单「批量删除」：按当前页签决定删领退记录还是计划记录</summary>
         private void Menu_BatchDelete_Click(object sender, RoutedEventArgs e)
         {
-            if (tabs.SelectedIndex == 1)
+            if (_activePane == PanePlans)
             {
                 StartPlanBatchDelete();
                 return;
@@ -1445,7 +1445,7 @@ namespace ORT一键报告.Plans.Views
                 _vm.StatusMessage = LanguageService.Get("Plans_Batch_AlreadyOpen");
                 return;
             }
-            tabs.SelectedIndex = 0;
+            ActivatePane(PaneRequisitions);
             WindowRequisitionBatch window = new(mode);
             window.Confirmed += ApplyRequisitionBatch;
             window.Closed += (s, e) => EndRequisitionBatch();
@@ -1473,7 +1473,7 @@ namespace ORT一键报告.Plans.Views
                 _vm.StatusMessage = LanguageService.Get("Plans_Batch_AlreadyOpen");
                 return;
             }
-            tabs.SelectedIndex = 1;
+            ActivatePane(PanePlans);
             WindowPlanBatchDelete window = new();
             window.Confirmed += ApplyPlanBatchDelete;
             window.Closed += (s, e) => EndPlanBatchDelete();
@@ -1967,7 +1967,7 @@ namespace ORT一键报告.Plans.Views
                 _vm.UpdateStatusCounts();
                 RefreshHeaderStyles();
             }
-            tabs.SelectedIndex = 1;
+            ActivatePane(PanePlans);
             _vm.SelectedPlan = plan;
             SelectAndReveal(dg_plans, plan);
         }
@@ -1997,7 +1997,7 @@ namespace ORT一键报告.Plans.Views
                 _vm.RequisitionsView.Refresh();
                 RefreshHeaderStyles();
             }
-            tabs.SelectedIndex = 0;
+            ActivatePane(PaneRequisitions);
             _vm.SelectedRequisition = req;
             SelectAndReveal(dg_requisitions, req);
         }
@@ -2702,7 +2702,12 @@ namespace ORT一键报告.Plans.Views
         }
 
         /// <summary>当前 Tab 对应的表格（0=领退表，1=计划表）</summary>
-        private DataGrid ActiveGrid() => tabs.SelectedIndex == 1 ? dg_plans : dg_requisitions;
+        private DataGrid ActiveGrid() => _activePane switch
+        {
+            PanePlans => dg_plans,
+            PaneRequisitions => dg_requisitions,
+            _ => null
+        };
 
         /// <summary>
         /// 构建排序菜单（类似资源管理器的"排序方式"）：默认顺序 + 各可排序字段 + 升序/降序。
@@ -2710,6 +2715,16 @@ namespace ORT一键报告.Plans.Views
         /// </summary>
         private void BuildSortMenu(MenuItem parent, DataGrid grid)
         {
+            if (parent == null)
+            {
+                return;
+            }
+            if (grid == null)
+            {
+                // 当前是「预领」页签：窗口菜单里的排序不适用（各表格有自己的右键菜单）
+                parent.Items.Clear();
+                return;
+            }
             bool isPlan = ReferenceEquals(grid, dg_plans);
             string current = isPlan ? _planSortField : _reqSortField;
             ListSortDirection direction = isPlan ? _planSortDirection : _reqSortDirection;
@@ -2803,6 +2818,16 @@ namespace ORT一键报告.Plans.Views
 
         private static void BuildColumnMenu(MenuItem parent, DataGrid grid)
         {
+            if (parent == null)
+            {
+                return;
+            }
+            if (grid == null)
+            {
+                // 当前是「预领」页签：列显示/隐藏不适用
+                parent.Items.Clear();
+                return;
+            }
             parent.Items.Clear();
             foreach (DataGridColumn column in grid.Columns)
             {
@@ -2852,6 +2877,443 @@ namespace ORT一键报告.Plans.Views
             }
         }
 
+        /* ###############################  可浮动 / 可固定的页签  ################################ */
+
+        private const string PaneRequisitions = "requisitions";
+        private const string PanePlans = "plans";
+        private const string PanePreIssue = "preissue";
+
+        private static readonly string[] AllPanes = [PaneRequisitions, PanePlans, PanePreIssue];
+
+        /// <summary>当前显示在窗口里的页签（按固定顺序：领退表 / 计划表 / 预领）</summary>
+        private readonly List<string> _visiblePanes = [];
+
+        /// <summary>浮在窗口外的页签窗口</summary>
+        private readonly Dictionary<string, Window> _floatingPanes = new(StringComparer.Ordinal);
+
+        /// <summary>当前活动页签</summary>
+        private string _activePane = PanePlans;
+
+        /// <summary>窗口正在关闭：浮动窗口被收回时不要再写布局（否则会丢掉记下的浮动状态）</summary>
+        private bool _closing;
+
+        /// <summary>预领页签的视图模型</summary>
+        private PreIssueViewModel _preVm;
+
+        /// <summary>上次记住的浮动窗口位置（页签 id → "x,y,w,h"）</summary>
+        private Dictionary<string, string> _savedBounds = [];
+
+        private FrameworkElement PaneElement(string id) => id switch
+        {
+            PaneRequisitions => pane_requisitions,
+            PanePlans => pane_plans,
+            PanePreIssue => pane_preissue,
+            _ => null
+        };
+
+        private string PaneTitle(string id) => id switch
+        {
+            PaneRequisitions => LanguageService.Get("Plans_RequisitionTab"),
+            PanePlans => LanguageService.Get("Plans_PlanTab"),
+            PanePreIssue => LanguageService.Get("PreIssue_Tab"),
+            _ => id
+        };
+
+        private MenuItem PaneMenu(string id) => id switch
+        {
+            PaneRequisitions => menu_tab_req,
+            PanePlans => menu_tab_plan,
+            PanePreIssue => menu_tab_pre,
+            _ => null
+        };
+
+        /// <summary>
+        /// 恢复页签布局：默认只显示计划表，其余从「视图-页签」打开；
+        /// 上次浮在窗口外的页签照原位置重新浮出来（记在本机设置里，每台电脑各记各的）。
+        /// </summary>
+        private void InitTabs()
+        {
+            PlansTabsLayout layout = null;
+            try
+            {
+                layout = LocalSettingsStore.Read().PlansTabs;
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn($"读取页签布局失败（按默认布局）：{ex.Message}");
+            }
+            _visiblePanes.Clear();
+            foreach (string id in layout?.Visible ?? [])
+            {
+                if (AllPanes.Contains(id) && !_visiblePanes.Contains(id))
+                {
+                    _visiblePanes.Add(id);
+                }
+            }
+            if (_visiblePanes.Count == 0)
+            {
+                _visiblePanes.Add(PanePlans);   // 默认只显示计划表
+            }
+            _savedBounds = layout?.Bounds ?? new Dictionary<string, string>();
+            _activePane = layout?.Active != null && _visiblePanes.Contains(layout.Active)
+                ? layout.Active
+                : _visiblePanes[0];
+
+            ApplyPaneVisibility();
+            BuildTabBar();
+
+            // 浮出去的页签：重新浮出来（位置用上次记下的）
+            foreach (string id in layout?.Floating ?? [])
+            {
+                if (!AllPanes.Contains(id))
+                {
+                    continue;
+                }
+                _savedBounds.TryGetValue(id, out string bounds);
+                FloatPane(id, bounds);
+            }
+            ActivatePane(_activePane, save: false);
+        }
+
+        /// <summary>按「显示中 + 是否活动」刷新三个页签元素的可见性</summary>
+        private void ApplyPaneVisibility()
+        {
+            foreach (string id in AllPanes)
+            {
+                FrameworkElement element = PaneElement(id);
+                if (element == null)
+                {
+                    continue;
+                }
+                // 浮在窗口外的那一个不在 pane_host 里，这里只管留在窗口里的
+                if (_floatingPanes.ContainsKey(id))
+                {
+                    continue;
+                }
+                element.Visibility = _visiblePanes.Contains(id) && id == _activePane
+                    ? Visibility.Visible
+                    : Visibility.Collapsed;
+            }
+        }
+
+        /// <summary>重建页签条（每个页签一件：标题 + 浮动 + 关闭）</summary>
+        private void BuildTabBar()
+        {
+            try
+            {
+                tabbar.Visibility = _visiblePanes.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
+                tabbar_items.Children.Clear();
+                foreach (string id in AllPanes.Where(p => _visiblePanes.Contains(p) || _floatingPanes.ContainsKey(p)))
+                {
+                    bool floating = _floatingPanes.ContainsKey(id);
+                    bool active = id == _activePane && !floating;
+                    Border chip = new()
+                    {
+                        CornerRadius = new CornerRadius(4, 4, 0, 0),
+                        Padding = new Thickness(8, 2, 4, 2),
+                        Margin = new Thickness(0, 0, 2, 0),
+                        Background = active ? FindBrush("CardBackgroundBrush") : Brushes.Transparent,
+                        BorderBrush = active ? FindBrush("BorderSubtleBrush") : Brushes.Transparent,
+                        BorderThickness = new Thickness(1, 1, 1, 0)
+                    };
+                    StackPanel panel = new() { Orientation = Orientation.Horizontal };
+                    string capturedId = id;
+                    TextBlock label = new()
+                    {
+                        // 浮在窗口外的页签前面带 ⇱ 标记，点它就切到那个浮动窗口
+                        Text = (floating ? "⇱ " : "") + PaneTitle(id),
+                        VerticalAlignment = VerticalAlignment.Center,
+                        Margin = new Thickness(2, 0, 8, 0),
+                        Cursor = Cursors.Hand,
+                        FontWeight = active ? FontWeights.Bold : FontWeights.Normal,
+                        Foreground = active ? FindBrush("TextPrimaryBrush") : FindBrush("TextSecondaryBrush"),
+                        ToolTip = floating ? LanguageService.Get("Plans_View_Dock") : PaneTitle(id)
+                    };
+                    label.MouseLeftButtonDown += (s, e) =>
+                    {
+                        // 双击页签 = 浮动出去（和 VS/浏览器里的页签手势一致）
+                        if (e.ClickCount == 2)
+                        {
+                            FloatPane(capturedId);
+                        }
+                        else
+                        {
+                            ActivatePane(capturedId);
+                        }
+                    };
+                    panel.Children.Add(label);
+                    if (floating)
+                    {
+                        panel.Children.Add(BuildChipButton("⇲", LanguageService.Get("Plans_View_Dock"),
+                            () => DockPane(capturedId)));
+                    }
+                    else
+                    {
+                        panel.Children.Add(BuildChipButton("⇱", LanguageService.Get("Plans_View_Float"),
+                            () => FloatPane(capturedId)));
+                    }
+                    panel.Children.Add(BuildChipButton("✕", LanguageService.Get("Plans_View_Hide"),
+                        () => HidePane(capturedId)));
+                    chip.Child = panel;
+                    tabbar_items.Children.Add(chip);
+                }
+                SyncTabMenuChecks();
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn($"重建页签条失败: {ex.Message}");
+            }
+        }
+
+        /// <summary>页签上的小图标按钮（浮动 / 关闭）</summary>
+        private Button BuildChipButton(string content, string toolTip, Action click)
+        {
+            Button button = new()
+            {
+                Content = content,
+                ToolTip = toolTip,
+                Padding = new Thickness(3, 0, 3, 0),
+                FontSize = 10,
+                VerticalAlignment = VerticalAlignment.Center,
+                Background = Brushes.Transparent,
+                BorderThickness = new Thickness(0),
+                Cursor = Cursors.Hand,
+                Focusable = false
+            };
+            button.Click += (s, e) => click();
+            return button;
+        }
+
+        private Brush FindBrush(string key) => TryFindResource(key) as Brush ?? Brushes.Transparent;
+
+        /// <summary>切到某个页签（浮在窗口外的就先激活它的窗口）</summary>
+        private void ActivatePane(string id, bool save = true)
+        {
+            if (string.IsNullOrEmpty(id) || !AllPanes.Contains(id))
+            {
+                return;
+            }
+            if (_floatingPanes.TryGetValue(id, out Window window))
+            {
+                window.Activate();
+                return;
+            }
+            if (!_visiblePanes.Contains(id))
+            {
+                _visiblePanes.Add(id);
+            }
+            _activePane = id;
+            ApplyPaneVisibility();
+            BuildTabBar();
+            // 窗口菜单（排序 / 显示隐藏列）作用于当前页签的表格
+            BuildSortMenu(menu_window_sort, ActiveGrid());
+            BuildColumnMenu(menu_window_columns, ActiveGrid());
+            if (save && !_closing)
+            {
+                SaveTabsLayout();
+            }
+        }
+
+        /// <summary>隐藏页签（至少保留一个；浮在窗口外的先收回再隐藏）</summary>
+        private void HidePane(string id)
+        {
+            if (_floatingPanes.ContainsKey(id))
+            {
+                DockPane(id);
+            }
+            if (_visiblePanes.Count <= 1 && _visiblePanes.Contains(id))
+            {
+                ToastService.Show(LanguageService.Get("Plans_Tabs_KeepOne"), ToastType.Warning);
+                return;
+            }
+            _visiblePanes.Remove(id);
+            if (_activePane == id)
+            {
+                _activePane = _visiblePanes.FirstOrDefault() ?? PanePlans;
+            }
+            ApplyPaneVisibility();
+            BuildTabBar();
+            BuildSortMenu(menu_window_sort, ActiveGrid());
+            BuildColumnMenu(menu_window_columns, ActiveGrid());
+            SaveTabsLayout();
+        }
+
+        /// <summary>
+        /// 页签浮出窗口：把页签内容从窗口里摘下来放进一个独立窗口（仍属于本窗口），
+        /// 关掉浮动窗口就自动回到窗口里。
+        /// </summary>
+        private void FloatPane(string id, string boundsText = null)
+        {
+            if (!AllPanes.Contains(id) || _floatingPanes.ContainsKey(id))
+            {
+                if (_floatingPanes.TryGetValue(id, out Window existing))
+                {
+                    existing.Activate();
+                }
+                return;
+            }
+            FrameworkElement element = PaneElement(id);
+            if (element == null)
+            {
+                return;
+            }
+            pane_host.Children.Remove(element);
+            _visiblePanes.Remove(id);
+
+            Window window = new()
+            {
+                Title = $"{PaneTitle(id)} — {Title}",
+                Content = element,
+                DataContext = DataContext,
+                Owner = this,
+                WindowStartupLocation = WindowStartupLocation.Manual,
+                Width = 1100,
+                Height = 700,
+                MinWidth = 640,
+                MinHeight = 360,
+                ShowInTaskbar = true
+            };
+            ApplyFloatingBounds(window, boundsText ?? (_savedBounds.TryGetValue(id, out string saved) ? saved : null));
+            window.Closing += (s, e) =>
+            {
+                if (_closing)
+                {
+                    return;   // 主窗口正在关闭：不用收回
+                }
+                window.Content = null;
+                DockPane(id);
+            };
+            _floatingPanes[id] = window;
+            if (_activePane == id)
+            {
+                _activePane = _visiblePanes.FirstOrDefault() ?? PanePlans;
+            }
+            ApplyPaneVisibility();
+            BuildTabBar();
+            BuildSortMenu(menu_window_sort, ActiveGrid());
+            BuildColumnMenu(menu_window_columns, ActiveGrid());
+            window.Show();
+            SaveTabsLayout();
+        }
+
+        /// <summary>把浮出去的页签收回窗口</summary>
+        private void DockPane(string id)
+        {
+            if (!_floatingPanes.TryGetValue(id, out Window window))
+            {
+                return;
+            }
+            _floatingPanes.Remove(id);
+            FrameworkElement element = PaneElement(id);
+            window.Content = null;
+            if (element != null && element.Parent == null && !pane_host.Children.Contains(element))
+            {
+                pane_host.Children.Add(element);
+            }
+            if (!_visiblePanes.Contains(id))
+            {
+                _visiblePanes.Add(id);
+            }
+            ActivatePane(id);
+        }
+
+        /// <summary>恢复浮动窗口的位置与大小（"x,y,w,h"；认不出就用默认位置）</summary>
+        private void ApplyFloatingBounds(Window window, string boundsText)
+        {
+            Rect screen = SystemParameters.WorkArea;
+            double width = Math.Min(1100, screen.Width);
+            double height = Math.Min(700, screen.Height);
+            double left = screen.Left + (screen.Width - width) / 2;
+            double top = screen.Top + (screen.Height - height) / 2;
+            if (!string.IsNullOrWhiteSpace(boundsText))
+            {
+                string[] parts = boundsText.Split(',');
+                if (parts.Length == 4
+                    && double.TryParse(parts[0], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double x)
+                    && double.TryParse(parts[1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double y)
+                    && double.TryParse(parts[2], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double w)
+                    && double.TryParse(parts[3], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double h)
+                    && w > 200 && h > 150)
+                {
+                    left = Math.Max(screen.Left, Math.Min(x, screen.Right - 200));
+                    top = Math.Max(screen.Top, Math.Min(y, screen.Bottom - 150));
+                    width = w;
+                    height = h;
+                }
+            }
+            window.Width = width;
+            window.Height = height;
+            window.Left = left;
+            window.Top = top;
+        }
+
+        /// <summary>视图菜单里的「页签」勾选状态</summary>
+        private void SyncTabMenuChecks()
+        {
+            foreach (string id in AllPanes)
+            {
+                MenuItem item = PaneMenu(id);
+                if (item != null)
+                {
+                    item.IsChecked = _visiblePanes.Contains(id) || _floatingPanes.ContainsKey(id);
+                }
+            }
+        }
+
+        /// <summary>视图菜单「页签」：勾选=显示在窗口里，取消=隐藏（至少保留一个）</summary>
+        private void Menu_TabToggle_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not MenuItem item || item.Tag is not string id)
+            {
+                return;
+            }
+            // IsCheckable 的菜单项在 Click 之前已经把 IsChecked 取反：勾上 = 打开，取消 = 隐藏
+            bool shown = _visiblePanes.Contains(id) || _floatingPanes.ContainsKey(id);
+            if (item.IsChecked && !shown)
+            {
+                ActivatePane(id);
+            }
+            else if (!item.IsChecked && _floatingPanes.ContainsKey(id))
+            {
+                DockPane(id);           // 浮在窗口外的先收回窗口
+            }
+            else if (!item.IsChecked && shown)
+            {
+                HidePane(id);
+            }
+            else
+            {
+                SyncTabMenuChecks();
+            }
+        }
+
+        /// <summary>把页签布局（显示中/活动/浮动位置）记到本机设置</summary>
+        private void SaveTabsLayout()
+        {
+            try
+            {
+                Dictionary<string, string> bounds = [];
+                foreach (KeyValuePair<string, Window> pair in _floatingPanes)
+                {
+                    Rect rect = pair.Value.WindowState == WindowState.Normal
+                        ? new Rect(pair.Value.Left, pair.Value.Top, pair.Value.Width, pair.Value.Height)
+                        : pair.Value.RestoreBounds;
+                    bounds[pair.Key] = string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                        "{0},{1},{2},{3}", (int)rect.X, (int)rect.Y, (int)rect.Width, (int)rect.Height);
+                }
+                LocalSettingsStore.Update(s => s.PlansTabs = new PlansTabsLayout
+                {
+                    Visible = [.. _visiblePanes],
+                    Active = _activePane,
+                    Floating = [.. _floatingPanes.Keys],
+                    Bounds = bounds
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn($"保存页签布局失败: {ex.Message}");
+            }
+        }
         /* ###############################  列顺序与可见性持久化  ################################ */
 
         private void SaveColumnState()

@@ -15,7 +15,7 @@
     <MapFileExtensions>true</MapFileExtensions>
     <PublisherName>Lucas Li%28AcBel ORT%29</PublisherName>
     <ApplicationRevision>0</ApplicationRevision>
-    <ApplicationVersion>0.6.2.1</ApplicationVersion>
+    <ApplicationVersion>0.6.3.0</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <CreateDesktopShortcut>true</CreateDesktopShortcut>
     <PublishWizardCompleted>true</PublishWizardCompleted>
@@ -129,6 +129,7 @@
     <Compile Include="Services\IPathService.cs" />
     <Compile Include="Services\ReportService.cs" />
     <Compile Include="Models\Plan.cs" />
+    <Compile Include="Models\PreIssue.cs" />
     <Compile Include="Models\Requisition.cs" />
     <Compile Include="Reports\Models\ReportInputModels.cs" />
     <Compile Include="Models\Review.cs" />
@@ -149,6 +150,8 @@
     <Compile Include="Services\TestPlanService.cs" />
     <Compile Include="Services\PlanIndexService.cs" />
     <Compile Include="Services\PlanIndexScheduler.cs" />
+    <Compile Include="Services\PreIssueService.cs" />
+    <Compile Include="Services\PreIssueReminderScheduler.cs" />
     <Compile Include="Services\ReportStatusReader.cs" />
     <Compile Include="Services\ReportScanService.cs" />
     <Compile Include="Services\ReportScanScheduler.cs" />
@@ -212,6 +215,7 @@
     <Compile Include="Services\PermissionService.cs" />
     <Compile Include="Services\PlanExcelService.cs" />
     <Compile Include="Plans\ViewModels\PlansViewModel.cs" />
+    <Compile Include="Plans\ViewModels\PreIssueViewModel.cs" />
     <Compile Include="Plans\ViewModels\FlowViewModel.cs" />
     <Compile Include="Plans\ViewModels\RequisitionBatchRules.cs" />
     <Compile Include="Plans\ViewModels\RequisitionEditRules.cs" />
@@ -253,6 +257,21 @@
       <DependentUpon>WindowReturnRtCheck.xaml</DependentUpon>
     </Compile>
     <Compile Include="Plans\Views\PlanFieldText.cs" />
+    <Compile Include="Plans\Views\UserControlPreIssue.xaml.cs">
+      <DependentUpon>UserControlPreIssue.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Plans\Views\WindowPreIssuePending.xaml.cs">
+      <DependentUpon>WindowPreIssuePending.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Plans\Views\WindowOrtBlacklist.xaml.cs">
+      <DependentUpon>WindowOrtBlacklist.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Plans\Views\WindowPreIssueChanges.xaml.cs">
+      <DependentUpon>WindowPreIssueChanges.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Plans\Views\WindowPreIssueReminder.xaml.cs">
+      <DependentUpon>WindowPreIssueReminder.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Utils\SmartTableExtractor.cs" />
     <Compile Include="Utils\SnVerification.cs" />
     <Compile Include="Reports\ViewModels\BaseReportPageViewModel.cs" />
@@ -509,6 +528,26 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Plans\Views\WindowReturnRtCheck.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Plans\Views\UserControlPreIssue.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Plans\Views\WindowPreIssuePending.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Plans\Views\WindowOrtBlacklist.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Plans\Views\WindowPreIssueChanges.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Plans\Views\WindowPreIssueReminder.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
