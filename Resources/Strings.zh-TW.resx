@@ -3651,4 +3651,38 @@
 
 清除後不能直接恢復，但會記入變動記錄；如果只是想糾正匯錯的檔案，優先使用「撤銷匯入」。</value>
   </data>
+  <data name="PreIssue_BlacklistKind" xml:space="preserve">
+    <value>類型</value>
+  </data>
+  <data name="PreIssue_BlacklistEntry" xml:space="preserve">
+    <value>機種 / 正則</value>
+  </data>
+  <data name="PreIssue_BlacklistRegexHint" xml:space="preserve">
+    <value>正則按「包含匹配」處理、忽略大小寫：例如 FSL0.* 會擋掉所有 FSL0 開頭的機種；要整串匹配請自己寫 ^…$。</value>
+  </data>
+  <data name="PreIssue_BlacklistPatternRequired" xml:space="preserve">
+    <value>正則不能為空</value>
+  </data>
+  <data name="PreIssue_BlacklistPatternInvalid" xml:space="preserve">
+    <value>正則寫法有問題：{0}</value>
+  </data>
+  <data name="PreIssue_BlacklistCount" xml:space="preserve">
+    <value>共 {0} 筆（其中正則 {1} 筆）</value>
+  </data>
+  <data name="PreIssue_BlacklistEmpty" xml:space="preserve">
+    <value>黑名單是空的</value>
+  </data>
+  <data name="PreIssue_DeletePendingAsk" xml:space="preserve">
+    <value>刪除待開單「{0}」？
+
+順便把它加入黑名單嗎（加入後 ORT 看板變動不再推進這個機種）？
+
+「是」= 刪除並加入黑名單　「否」= 只刪除　「取消」= 不刪</value>
+  </data>
+  <data name="PreIssue_BlacklistFromDelete" xml:space="preserve">
+    <value>刪除待開單時加入</value>
+  </data>
+  <data name="PreIssue_OnlyPendingDeletable" xml:space="preserve">
+    <value>只有「待開單」的記錄可以刪除（已開單的請到領用系統處理）</value>
+  </data>
 </root>

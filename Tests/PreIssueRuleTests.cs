@@ -259,6 +259,95 @@ namespace ORT一键报告.Tests
             Assert.That(PreIssueValidation.LooksLikeVoucherExport(voucherHeaders), Is.True);
         }
 
+        /* ------------------ 黑名单：精确机种 + 正则模式 ------------------ */
+
+        [Test]
+        public void BlacklistMatcher_ExactMatchIgnoresCase()
+        {
+            OrtBlacklistMatcher matcher = OrtBlacklistMatcher.Create(
+            [
+                new OrtBlacklistItem { Model = "ADC027-YEAG", IsPattern = false }
+            ]);
+            Assert.That(matcher.Matches("ADC027-YEAG"), Is.True);
+            Assert.That(matcher.Matches("adc027-yeag"), Is.True);
+            Assert.That(matcher.Matches("ADC027-YEAG "), Is.True);
+            Assert.That(matcher.Matches("ADC027-YEAG2"), Is.False);
+            Assert.That(matcher.Count, Is.EqualTo(1));
+            Assert.That(matcher.ExactCount, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void BlacklistMatcher_PatternMatchesSubstring()
+        {
+            OrtBlacklistMatcher matcher = OrtBlacklistMatcher.Create(
+            [
+                new OrtBlacklistItem { Model = "FSL0.*", IsPattern = true }
+            ]);
+            Assert.That(matcher.Matches("FSL020-00AG"), Is.True);
+            Assert.That(matcher.Matches("fsl031-243g"), Is.True);
+            Assert.That(matcher.Matches("ADL030-YSAG"), Is.False);
+            Assert.That(matcher.PatternCount, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void BlacklistMatcher_PatternCanAnchorWholeString()
+        {
+            OrtBlacklistMatcher matcher = OrtBlacklistMatcher.Create(
+            [
+                new OrtBlacklistItem { Model = "^WAS003-F9\\dGB$", IsPattern = true }
+            ]);
+            Assert.That(matcher.Matches("WAS003-F90GB"), Is.True);
+            Assert.That(matcher.Matches("WAS003-F90GB-1"), Is.False);
+        }
+
+        [Test]
+        public void BlacklistMatcher_ReturnsMatchedRuleForHint()
+        {
+            OrtBlacklistMatcher matcher = OrtBlacklistMatcher.Create(
+            [
+                new OrtBlacklistItem { Model = "FSL0.*", IsPattern = true }
+            ]);
+            OrtBlacklistRule rule = matcher.Match("FSL020-00AG");
+            Assert.That(rule, Is.Not.Null);
+            Assert.That(rule.IsPattern, Is.True);
+            Assert.That(OrtBlacklistMatcher.Describe(rule), Is.EqualTo("正则 FSL0.*"));
+            Assert.That(matcher.Match("ADL030-YSAG"), Is.Null);
+        }
+
+        [Test]
+        public void BlacklistMatcher_InvalidPatternIsRejectedOrSkipped()
+        {
+            OrtBlacklistMatcher matcher = new();
+            Assert.That(matcher.Add("[", true), Is.False);   // 缺右括号的正则
+            Assert.That(matcher.Count, Is.EqualTo(0));
+
+            Assert.That(OrtBlacklistMatcher.TryCompile("[", out _, out string error), Is.False);
+            Assert.That(error, Is.Not.Null.And.Not.Empty);
+
+            // 从库里读出来时写错的条目被跳过，不影响其它规则
+            OrtBlacklistMatcher mixed = OrtBlacklistMatcher.Create(
+            [
+                new OrtBlacklistItem { Model = "[", IsPattern = true },
+                new OrtBlacklistItem { Model = "OK.*", IsPattern = true }
+            ]);
+            Assert.That(mixed.PatternCount, Is.EqualTo(1));
+            Assert.That(mixed.Matches("OK123"), Is.True);
+        }
+
+        [Test]
+        public void BlacklistMatcher_EmptyArgumentsAreIgnored()
+        {
+            OrtBlacklistMatcher matcher = OrtBlacklistMatcher.Create(
+            [
+                new OrtBlacklistItem { Model = null, IsPattern = false },
+                new OrtBlacklistItem { Model = "   ", IsPattern = false }
+            ]);
+            Assert.That(matcher.Count, Is.EqualTo(0));
+            Assert.That(matcher.Matches(null), Is.False);
+            Assert.That(matcher.Matches(""), Is.False);
+            Assert.That(matcher.Match("ABC"), Is.Null);
+        }
+
         /* ------------------ 看板行比对键 ------------------ */
 
         [Test]

@@ -6,7 +6,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:lex="http://wpflocalizeextension.codeplex.com"
         mc:Ignorable="d"
-        Title="{lex:Loc PreIssue_BlacklistTitle}" Width="720" Height="480" MinWidth="560" MinHeight="320"
+        Title="{lex:Loc PreIssue_BlacklistTitle}" Width="820" Height="520" MinWidth="620" MinHeight="360"
         WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
 
     <Window.Resources>
@@ -29,6 +29,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
@@ -36,16 +37,24 @@
         <TextBlock Grid.Row="0" Text="{lex:Loc PreIssue_BlacklistHint}" TextWrapping="Wrap"
                    Foreground="{DynamicResource TextSecondaryBrush}"/>
 
-        <!-- 新增一条：机种 + 原因 -->
-        <WrapPanel Grid.Row="1" Margin="0,10,0,8">
-            <Label Content="{lex:Loc PreIssue_Model}" VerticalAlignment="Center"/>
-            <TextBox x:Name="txt_model" Width="150" VerticalContentAlignment="Center" Margin="0,0,10,0"/>
+        <!-- 新增一条：类型（機種 / 正则） + 内容 + 原因 -->
+        <WrapPanel Grid.Row="1" Margin="0,10,0,4">
+            <Label Content="{lex:Loc PreIssue_BlacklistKind}" VerticalAlignment="Center"/>
+            <ComboBox x:Name="cb_kind" Width="100" VerticalAlignment="Center" Margin="0,0,10,0"
+                      SelectionChanged="Cb_Kind_SelectionChanged"/>
+            <Label Content="{lex:Loc PreIssue_BlacklistEntry}" VerticalAlignment="Center"/>
+            <TextBox x:Name="txt_model" Width="190" VerticalContentAlignment="Center" Margin="0,0,10,0"/>
             <Label Content="{lex:Loc PreIssue_Reason}" VerticalAlignment="Center"/>
-            <TextBox x:Name="txt_reason" Width="240" VerticalContentAlignment="Center" Margin="0,0,10,0"/>
+            <TextBox x:Name="txt_reason" Width="180" VerticalContentAlignment="Center" Margin="0,0,10,0"/>
             <Button Content="{lex:Loc PreIssue_BlacklistAdd}" MinWidth="76" Padding="10,3" Click="Btn_Add_Click"/>
         </WrapPanel>
 
-        <DataGrid x:Name="dg_blacklist" Grid.Row="2"
+        <!-- 正则提示（只在「正则」类型时显示） -->
+        <TextBlock x:Name="txt_pattern_hint" Grid.Row="2" Text="{lex:Loc PreIssue_BlacklistRegexHint}"
+                   TextWrapping="Wrap" Margin="0,0,0,6" Visibility="Collapsed"
+                   Foreground="{DynamicResource StatusWarnBrush}"/>
+
+        <DataGrid x:Name="dg_blacklist" Grid.Row="3"
                   AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False"
                   HeadersVisibility="Column" GridLinesVisibility="All"
                   SelectionMode="Single" SelectionUnit="FullRow" ClipboardCopyMode="None">
@@ -53,14 +62,15 @@
                 <StaticResource ResourceKey="ListCell"/>
             </DataGrid.CellStyle>
             <DataGrid.Columns>
-                <DataGridTextColumn Header="{lex:Loc PreIssue_Model}" Binding="{Binding Model}" Width="180" ElementStyle="{StaticResource ListText}"/>
+                <DataGridTextColumn Header="{lex:Loc PreIssue_BlacklistKind}" Binding="{Binding KindText}" Width="70" ElementStyle="{StaticResource ListText}"/>
+                <DataGridTextColumn Header="{lex:Loc PreIssue_BlacklistEntry}" Binding="{Binding Model}" Width="230" ElementStyle="{StaticResource ListText}"/>
                 <DataGridTextColumn Header="{lex:Loc PreIssue_Reason}" Binding="{Binding Reason}" Width="*" ElementStyle="{StaticResource ListText}"/>
                 <DataGridTextColumn Header="{lex:Loc PreIssue_Changes_Operator}" Binding="{Binding CreatedBy}" Width="110" ElementStyle="{StaticResource ListText}"/>
                 <DataGridTextColumn Header="{lex:Loc PreIssue_Changes_Time}" Binding="{Binding CreatedAt, StringFormat={}{0:yyyy/M/d HH:mm}}" Width="140" ElementStyle="{StaticResource ListText}"/>
             </DataGrid.Columns>
         </DataGrid>
 
-        <DockPanel Grid.Row="3" Margin="0,10,0,0">
+        <DockPanel Grid.Row="4" Margin="0,10,0,0">
             <Button DockPanel.Dock="Right" Content="{lex:Loc Common_Close}" MinWidth="84" Padding="10,3" Margin="8,0,0,0"
                     IsCancel="True"/>
             <Button DockPanel.Dock="Right" Content="{lex:Loc PreIssue_BlacklistRemove}" MinWidth="84" Padding="10,3"

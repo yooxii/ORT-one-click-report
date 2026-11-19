@@ -210,6 +210,12 @@
                                         </MultiDataTrigger.Conditions>
                                         <Setter Property="Background" Value="{DynamicResource StatusOkBgBrush}"/>
                                     </MultiDataTrigger>
+                                    <!-- 命中黑名单（机种或正则）：灰掉，提示「ORT 做不了、不领用」 -->
+                                    <DataTrigger Binding="{Binding Blacklisted}" Value="True">
+                                        <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+                                        <Setter Property="Opacity" Value="0.75"/>
+                                    </DataTrigger>
                                     <Trigger Property="IsSelected" Value="True">
                                         <Setter Property="Background" Value="{DynamicResource TableRowSelectedBrush}"/>
                                     </Trigger>

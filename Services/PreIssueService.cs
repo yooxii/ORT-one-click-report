@@ -125,11 +125,22 @@ namespace ORT一键报告.Services
                 .Where(a => a.Month == month)
                 .OrderBy(a => a.Line).OrderBy(a => a.Day).ToList();
 
-        /// <summary>某月的 ORT 看板</summary>
-        public List<OrtBoardRow> LoadBoard(string month) =>
-            _db.FreeSql.Select<OrtBoardRow>()
+        /// <summary>某月的 ORT 看板（顺手标记哪些机种命中黑名单，界面据此提示）</summary>
+        public List<OrtBoardRow> LoadBoard(string month)
+        {
+            List<OrtBoardRow> rows = _db.FreeSql.Select<OrtBoardRow>()
                 .Where(a => a.Month == month)
                 .OrderBy(a => a.ReportDate).ToList();
+            OrtBlacklistMatcher blacklist = BuildBlacklistMatcher();
+            if (blacklist.Count > 0)
+            {
+                foreach (OrtBoardRow row in rows)
+                {
+                    row.Blacklisted = blacklist.Matches(row.Model);
+                }
+            }
+            return rows;
+        }
 
         /// <summary>某月的准备领用</summary>
         public List<PreIssueRequisition> LoadRequisition(string month) =>
@@ -141,19 +152,10 @@ namespace ORT一键报告.Services
         public List<OrtBlacklistItem> LoadBlacklist() =>
             _db.FreeSql.Select<OrtBlacklistItem>().OrderBy(a => a.Model).ToList();
 
-        /// <summary>黑名单机种集合（比对用，忽略大小写）</summary>
-        public HashSet<string> BlacklistModels()
-        {
-            HashSet<string> set = new(StringComparer.OrdinalIgnoreCase);
-            foreach (OrtBlacklistItem item in LoadBlacklist())
-            {
-                if (!string.IsNullOrWhiteSpace(item.Model))
-                {
-                    set.Add(item.Model.Trim());
-                }
-            }
-            return set;
-        }
+        /// <summary>
+        /// 黑名单匹配器（精确机种 + 正则模式，忽略大小写）；正则写错的那条会被跳过并记日志。
+        /// </summary>
+        public OrtBlacklistMatcher BuildBlacklistMatcher() => OrtBlacklistMatcher.Create(LoadBlacklist());
 
         /// <summary>变动记录（按月份/来源筛选，最新在前）</summary>
         public List<PreIssueChangeLog> LoadChanges(string month, string source, int limit = 800)
@@ -784,8 +786,8 @@ namespace ORT一键报告.Services
                     null, null, null, $"变动较多，只登记了前 {MaxLoggedChanges} 条"));
             }
 
-            // 入库（SIM87 = Y）的机种推进到准备领用：看板上打「已转」标记，黑名单里的不推
-            HashSet<string> blacklist = BlacklistModels();
+            // 入库（SIM87 = Y）的机种推进到准备领用：看板上打「已转」标记，黑名单（含正则）里的不推
+            OrtBlacklistMatcher blacklist = BuildBlacklistMatcher();
             HashSet<string> existingModels = new(
                 _db.FreeSql.Select<PreIssueRequisition>().Where(a => a.Month == month).ToList()
                     .Where(a => !string.IsNullOrWhiteSpace(a.PartNo))
@@ -805,7 +807,7 @@ namespace ORT一键报告.Services
                 {
                     stocked++;
                 }
-                if (blacklist.Contains(model) || existingModels.Contains(model) || willCreate.ContainsKey(model))
+                if (blacklist.Matches(model) || existingModels.Contains(model) || willCreate.ContainsKey(model))
                 {
                     continue;
                 }
@@ -1445,7 +1447,7 @@ namespace ORT一键报告.Services
         public int SyncPendingFromBoard(string month, out List<string> created)
         {
             created = [];
-            HashSet<string> blacklist = BlacklistModels();
+            OrtBlacklistMatcher blacklist = BuildBlacklistMatcher();
             HashSet<string> existing = new(
                 _db.FreeSql.Select<PreIssueRequisition>().Where(a => a.Month == month).ToList()
                     .Where(a => !string.IsNullOrWhiteSpace(a.PartNo)).Select(a => a.PartNo.Trim()),
@@ -1457,7 +1459,7 @@ namespace ORT一键报告.Services
                 .GroupBy(b => b.Model.Trim(), StringComparer.OrdinalIgnoreCase))
             {
                 string model = group.Key;
-                if (blacklist.Contains(model) || existing.Contains(model))
+                if (blacklist.Matches(model) || existing.Contains(model))
                 {
                     continue;
                 }
@@ -1501,9 +1503,10 @@ namespace ORT一键报告.Services
                 return false;
             }
             string m = model.Trim();
-            if (BlacklistModels().Contains(m))
+            OrtBlacklistRule rule = BuildBlacklistMatcher().Match(m);
+            if (rule != null)
             {
-                error = $"「{m}」在黑名单里（ORT 做不了，不需要领用）";
+                error = $"「{m}」在黑名单里（命中规则：{OrtBlacklistMatcher.Describe(rule)}，ORT 做不了、不需要领用）";
                 return false;
             }
             bool exists = _db.FreeSql.Select<PreIssueRequisition>()
@@ -1568,24 +1571,34 @@ namespace ORT一键报告.Services
 
         /* ###############################  黑名单  ################################ */
 
-        /// <summary>加入黑名单（重复加入直接忽略）</summary>
-        public bool AddToBlacklist(string model, string reason, out string error)
+        /// <summary>
+        /// 加入黑名单：<paramref name="isPattern"/> = true 时按正则模式（含匹配），否则按机种精确匹配。
+        /// 正则写错会直接拦下来并给出错误说明。
+        /// </summary>
+        public bool AddToBlacklist(string model, string reason, bool isPattern, out string error)
         {
             error = null;
             if (string.IsNullOrWhiteSpace(model))
             {
-                error = "机种不能为空";
+                error = isPattern ? "正则不能为空" : "机种不能为空";
                 return false;
             }
             string m = model.Trim();
+            if (isPattern && !OrtBlacklistMatcher.TryCompile(m, out _, out string patternError))
+            {
+                error = $"正则写法有问题：{patternError}";
+                return false;
+            }
             if (_db.FreeSql.Select<OrtBlacklistItem>().Where(a => a.Model == m).Count() > 0)
             {
                 error = $"「{m}」已经在黑名单里了";
                 return false;
             }
+            string kind = isPattern ? PreIssueCodes.BlacklistKindPattern : PreIssueCodes.BlacklistKindExact;
             _db.FreeSql.Insert(new OrtBlacklistItem
             {
                 Model = m,
+                IsPattern = isPattern,
                 Reason = string.IsNullOrWhiteSpace(reason) ? null : reason.Trim(),
                 CreatedBy = _permission?.CurrentUser,
                 CreatedAt = DateTime.Now
@@ -1595,13 +1608,17 @@ namespace ORT一键报告.Services
                 Source = PreIssueCodes.SourceBlacklist,
                 Kind = PreIssueCodes.KindBlacklist,
                 Target = m,
-                NewValue = "加入黑名单",
+                NewValue = $"加入黑名单（{kind}）",
                 Note = reason,
                 Operator = _permission?.CurrentUser,
                 CreatedAt = DateTime.Now
             }).ExecuteAffrows();
             return true;
         }
+
+        /// <summary>加入黑名单（默认精确机种），保留旧签名给已有调用方</summary>
+        public bool AddToBlacklist(string model, string reason, out string error) =>
+            AddToBlacklist(model, reason, false, out error);
 
         /// <summary>移出黑名单</summary>
         public bool RemoveFromBlacklist(string model, out string error)
@@ -1613,6 +1630,7 @@ namespace ORT一键报告.Services
                 return false;
             }
             string m = model.Trim();
+            OrtBlacklistItem existing = _db.FreeSql.Select<OrtBlacklistItem>().Where(a => a.Model == m).First();
             int deleted = _db.FreeSql.Delete<OrtBlacklistItem>().Where(a => a.Model == m).ExecuteAffrows();
             if (deleted == 0)
             {
@@ -1624,7 +1642,7 @@ namespace ORT一键报告.Services
                 Source = PreIssueCodes.SourceBlacklist,
                 Kind = PreIssueCodes.KindBlacklist,
                 Target = m,
-                OldValue = "加入黑名单",
+                OldValue = $"加入黑名单（{(existing?.IsPattern == true ? PreIssueCodes.BlacklistKindPattern : PreIssueCodes.BlacklistKindExact)}）",
                 NewValue = "移出黑名单",
                 Operator = _permission?.CurrentUser,
                 CreatedAt = DateTime.Now

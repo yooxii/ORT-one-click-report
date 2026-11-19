@@ -3651,4 +3651,38 @@ Only the most recent whole-month import is undone; the action is logged.</value>
 
 This cannot be restored directly but is logged; prefer Undo import if you only picked a wrong file.</value>
   </data>
+  <data name="PreIssue_BlacklistKind" xml:space="preserve">
+    <value>Type</value>
+  </data>
+  <data name="PreIssue_BlacklistEntry" xml:space="preserve">
+    <value>Model / regex</value>
+  </data>
+  <data name="PreIssue_BlacklistRegexHint" xml:space="preserve">
+    <value>Regex uses substring matching, case-insensitive: FSL0.* blocks every model starting with FSL0. Add ^...$ yourself for a full-string match.</value>
+  </data>
+  <data name="PreIssue_BlacklistPatternRequired" xml:space="preserve">
+    <value>Regex is required</value>
+  </data>
+  <data name="PreIssue_BlacklistPatternInvalid" xml:space="preserve">
+    <value>Invalid regex: {0}</value>
+  </data>
+  <data name="PreIssue_BlacklistCount" xml:space="preserve">
+    <value>{0} entries ({1} regex)</value>
+  </data>
+  <data name="PreIssue_BlacklistEmpty" xml:space="preserve">
+    <value>The blacklist is empty</value>
+  </data>
+  <data name="PreIssue_DeletePendingAsk" xml:space="preserve">
+    <value>Delete pending "{0}"?
+
+Also add it to the blacklist (so ORT board changes will not push this model again)?
+
+Yes = delete and blacklist, No = delete only, Cancel = do nothing</value>
+  </data>
+  <data name="PreIssue_BlacklistFromDelete" xml:space="preserve">
+    <value>Added while deleting a pending model</value>
+  </data>
+  <data name="PreIssue_OnlyPendingDeletable" xml:space="preserve">
+    <value>Only "pending" rows can be deleted (opened ones are handled in the requisition system)</value>
+  </data>
 </root>

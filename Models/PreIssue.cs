@@ -156,10 +156,28 @@ namespace ORT一键报告.Models
         [Newtonsoft.Json.JsonIgnore]
         public bool Stocked => PreIssueCodes.IsYes(Stocked87);
 
+        private bool _blacklisted;
+        /// <summary>机种命中黑名单（只用于界面提示：这类机种不会推进到准备领用）</summary>
+        [Column(IsIgnore = true)]
+        [Newtonsoft.Json.JsonIgnore]
+        public bool Blacklisted
+        {
+            get => _blacklisted;
+            set
+            {
+                if (SetProperty(ref _blacklisted, value))
+                {
+                    OnPropertyChanged(nameof(Stocked87Hint));
+                }
+            }
+        }
+
         /// <summary>行状态提示（配色 / 悬浮提示用）</summary>
         [Column(IsIgnore = true)]
         [Newtonsoft.Json.JsonIgnore]
-        public string Stocked87Hint => Stocked ? (HasRequisition ? "已转待开单" : "已入库·待转") : "";
+        public string Stocked87Hint => Blacklisted
+            ? "黑名单（ORT 做不了，不领用）"
+            : Stocked ? (HasRequisition ? "已转待开单" : "已入库·待转") : "";
 
         public DateTime? ImportedAt { get; set; }
 
@@ -291,9 +309,19 @@ namespace ORT一键报告.Models
         [Column(IsPrimary = true, IsIdentity = true)]
         public long Id { get; set; }
 
-        /// <summary>机种（唯一）</summary>
-        [Column(StringLength = 64, IsNullable = true)]
+        /// <summary>机种，或正则模式（见 <see cref="IsPattern"/>）；唯一</summary>
+        [Column(StringLength = 128, IsNullable = true)]
         public string Model { get; set; }
+
+        /// <summary>
+        /// 是否正则模式：false = 机种精确匹配（忽略大小写），true = <see cref="Model"/> 按正则做包含匹配。
+        /// </summary>
+        public bool IsPattern { get; set; }
+
+        /// <summary>类型文本（界面显示：机种 / 正则）</summary>
+        [Column(IsIgnore = true)]
+        [Newtonsoft.Json.JsonIgnore]
+        public string KindText => IsPattern ? PreIssueCodes.BlacklistKindPattern : PreIssueCodes.BlacklistKindExact;
 
         /// <summary>加入原因 / 备注</summary>
         [Column(StringLength = 256, IsNullable = true)]
@@ -442,6 +470,12 @@ namespace ORT一键报告.Models
 
         /// <summary>变动类型：清除某个月的整份数据</summary>
         public const string KindCleared = "清除";
+
+        /// <summary>黑名单类型：機種（精确匹配）</summary>
+        public const string BlacklistKindExact = "機種";
+
+        /// <summary>黑名单类型：正则</summary>
+        public const string BlacklistKindPattern = "正则";
 
         /// <summary>按字面判断「是」（Y / y / 是 / Y是）</summary>
         public static bool IsYes(string value)

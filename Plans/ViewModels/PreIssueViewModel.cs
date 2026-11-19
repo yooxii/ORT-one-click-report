@@ -407,9 +407,11 @@ namespace ORT一键报告.Plans.ViewModels
             int stocked = _boardAll.Count(r => PreIssueCodes.IsYes(r.Stocked87));
             int pending = _boardAll.Count(r => PreIssueCodes.IsYes(r.Stocked87) && !r.HasRequisition);
             int forbidden = _boardAll.Count(r => PreIssueCodes.IsYes(r.Forbidden94));
+            int blacklisted = _boardAll.Count(r => r.Blacklisted);
             BoardSummary = total == 0
                 ? "没有看板数据"
-                : $"{total} 行 · 已入库 {stocked} · 待转领用 {pending} · SIM94禁止出货 {forbidden}";
+                : $"{total} 行 · 已入库 {stocked} · 待转领用 {pending} · SIM94禁止出货 {forbidden}"
+                    + (blacklisted > 0 ? $" · 黑名单 {blacklisted}" : "");
         }
 
         private bool FilterBoard(object obj)
@@ -552,9 +554,13 @@ namespace ORT一键报告.Plans.ViewModels
         /// <summary>黑名单（管理窗口用）</summary>
         public List<OrtBlacklistItem> LoadBlacklist() => _service.LoadBlacklist();
 
-        /// <summary>加入黑名单（黑名单管理窗口用）</summary>
-        public bool AddBlacklistModel(string model, string reason) =>
-            _service.AddToBlacklist(model, reason, out string error) || Fail(error);
+        /// <summary>加入黑名单（黑名单管理窗口用；isPattern = true 按正则模式）</summary>
+        public bool AddBlacklistModel(string model, string reason, bool isPattern = false) =>
+            _service.AddToBlacklist(model, reason, isPattern, out string error) || Fail(error);
+
+        /// <summary>校验正则写法（黑名单窗口在加入前先查一遍）</summary>
+        public static bool ValidateBlacklistPattern(string pattern, out string error) =>
+            OrtBlacklistMatcher.TryCompile(pattern, out _, out error);
 
         /// <summary>移出黑名单</summary>
         public bool RemoveBlacklistModel(string model) =>
@@ -925,20 +931,52 @@ namespace ORT一键报告.Plans.ViewModels
             .OrderBy(m => m, StringComparer.OrdinalIgnoreCase)
             .ToList();
 
+        /// <summary>
+        /// 删除待开单：先问「要不要顺便加入黑名单」——
+        /// 是 = 删除 + 加入黑名单（以后看板变动不再推进它），否 = 只删除，取消 = 什么都不做。
+        /// </summary>
         private void DeletePending(object parameter)
         {
             if (parameter is not PreIssueRequisition row)
             {
                 return;
             }
+            if (!PreIssueCodes.IsPendingState(row.State) || !string.IsNullOrWhiteSpace(row.Vchno))
+            {
+                _ = MessageBox.Show(LanguageService.Get("PreIssue_OnlyPendingDeletable"),
+                    LanguageService.Get("PreIssue_DeletePendingTitle"), MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            string part = row.PartNo ?? "";
+            string ask = string.Format(LanguageService.Get("PreIssue_DeletePendingAsk"), part);
+            MessageBoxResult choice = MessageBox.Show(ask, LanguageService.Get("PreIssue_DeletePendingTitle"),
+                MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+            if (choice == MessageBoxResult.Cancel)
+            {
+                return;
+            }
+            bool addBlacklist = choice == MessageBoxResult.Yes;
             if (!_service.DeletePending(row.Id, out string error))
             {
                 _ = MessageBox.Show(error, LanguageService.Get("PreIssue_DeletePendingTitle"),
                     MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
+            string message = $"已删除待开单：{part}";
+            if (addBlacklist)
+            {
+                if (_service.AddToBlacklist(part, LanguageService.Get("PreIssue_BlacklistFromDelete"), false, out string blackError))
+                {
+                    message += "，并已加入黑名单（以后不再推进到准备领用）";
+                }
+                else
+                {
+                    message += $"；加入黑名单失败：{blackError}";
+                }
+            }
             ReloadAll();
-            StatusMessage = $"已删除待开单：{row.PartNo}";
+            StatusMessage = message;
+            ToastService.Show(message);
         }
 
         private void AddToBlacklist(object parameter)

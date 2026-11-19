@@ -15,7 +15,7 @@
     <MapFileExtensions>true</MapFileExtensions>
     <PublisherName>Lucas Li%28AcBel ORT%29</PublisherName>
     <ApplicationRevision>0</ApplicationRevision>
-    <ApplicationVersion>0.6.3.2</ApplicationVersion>
+    <ApplicationVersion>0.6.3.3</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <CreateDesktopShortcut>true</CreateDesktopShortcut>
     <PublishWizardCompleted>true</PublishWizardCompleted>
@@ -151,6 +151,7 @@
     <Compile Include="Services\PlanIndexService.cs" />
     <Compile Include="Services\PlanIndexScheduler.cs" />
     <Compile Include="Services\PreIssueService.cs" />
+    <Compile Include="Services\OrtBlacklistMatcher.cs" />
     <Compile Include="Services\PreIssueValidation.cs" />
     <Compile Include="Services\PreIssueReminderScheduler.cs" />
     <Compile Include="Services\ReportStatusReader.cs" />
