@@ -201,13 +201,15 @@ namespace ORT一键报告.Plans.Views
 
         /* ###############################  右键：复制 / 黑名单 / 删除  ################################ */
 
-        private void Menu_CopyCell_Click(object sender, RoutedEventArgs e)
-        {
-            if (!string.IsNullOrWhiteSpace(_contextCellValue))
+        private void Menu_CopyCell_Click(object sender, RoutedEventArgs e) => SafeRun(
+            LanguageService.Get("PreIssue_Menu_CopyCell"),
+            () =>
             {
-                RightClickCopy.Copy(_contextCellValue);
-            }
-        }
+                if (!string.IsNullOrWhiteSpace(_contextCellValue))
+                {
+                    RightClickCopy.Copy(_contextCellValue);
+                }
+            });
 
         private void Menu_CopyScheduleRow_Click(object sender, RoutedEventArgs e)
         {
@@ -251,55 +253,96 @@ namespace ORT一键报告.Plans.Views
             }
         }
 
-        private void Menu_BoardAddBlacklist_Click(object sender, RoutedEventArgs e)
-        {
-            if (_vm != null && _contextRow is OrtBoardRow row && !string.IsNullOrWhiteSpace(row.Model))
+        private void Menu_BoardAddBlacklist_Click(object sender, RoutedEventArgs e) => SafeRun(
+            LanguageService.Get("PreIssue_AddBlacklistTitle"),
+            () =>
             {
-                _vm.AddBlacklistModel(row.Model, LanguageService.Get("PreIssue_BlacklistFromBoard"));
-            }
-        }
+                if (_vm != null && _contextRow is OrtBoardRow row && !string.IsNullOrWhiteSpace(row.Model))
+                {
+                    _vm.AddBlacklistModel(row.Model, LanguageService.Get("PreIssue_BlacklistFromBoard"));
+                }
+            });
 
-        private void Menu_ReqAddBlacklist_Click(object sender, RoutedEventArgs e)
-        {
-            if (_vm != null && _contextRow is PreIssueRequisition row && !string.IsNullOrWhiteSpace(row.PartNo))
+        private void Menu_ReqAddBlacklist_Click(object sender, RoutedEventArgs e) => SafeRun(
+            LanguageService.Get("PreIssue_AddBlacklistTitle"),
+            () =>
             {
-                _vm.AddBlacklistModel(row.PartNo, LanguageService.Get("PreIssue_BlacklistFromBoard"));
-            }
-        }
+                if (_vm != null && _contextRow is PreIssueRequisition row && !string.IsNullOrWhiteSpace(row.PartNo))
+                {
+                    _vm.AddBlacklistModel(row.PartNo, LanguageService.Get("PreIssue_BlacklistFromBoard"));
+                }
+            });
 
-        private void Menu_DeletePending_Click(object sender, RoutedEventArgs e)
-        {
-            if (_vm != null && _contextRow is PreIssueRequisition row)
+        private void Menu_DeletePending_Click(object sender, RoutedEventArgs e) => SafeRun(
+            LanguageService.Get("PreIssue_DeletePendingTitle"),
+            () =>
             {
-                _vm.DeletePendingCommand.Execute(row);
-            }
-        }
+                if (_vm != null && _contextRow is PreIssueRequisition row)
+                {
+                    _vm.DeletePendingCommand.Execute(row);
+                }
+            });
 
         /* ###############################  右键定位  ################################ */
 
-        /// <summary>三个表格共用的右键定位：记下单元格值、所在行，并选中该行</summary>
+        /// <summary>
+        /// 三个表格共用的右键定位：记下单元格值与所在行，并把该行定位选中。
+        /// 注意：这几张表都是「整行选中」（SelectionUnit=FullRow），这种模式下改单元格的
+        /// IsSelected 会抛 InvalidOperationException（“SelectionUnit 为 FullRow 时，无法更改单元格选择”），
+        /// 所以只动行选中；已经多选的行保持原样（右键操作仍按原来的选择范围走）。
+        /// 右键只是定位/复制，任何意外都不该把程序带崩，整段加兜底。
+        /// </summary>
         private void DataGrid_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
         {
-            _contextCellValue = null;
-            _contextRow = null;
-            if (sender is not DataGrid grid || e.OriginalSource is not DependencyObject source)
+            try
             {
-                return;
+                _contextCellValue = null;
+                _contextRow = null;
+                if (sender is not DataGrid grid || e.OriginalSource is not DependencyObject source)
+                {
+                    return;
+                }
+                DataGridCell cell = FindAncestor<DataGridCell>(source);
+                if (cell == null)
+                {
+                    return;
+                }
+                if (cell.Content is TextBlock text)
+                {
+                    _contextCellValue = text.Text;
+                }
+                object row = cell.DataContext;
+                _contextRow = row;
+                if (row == null || grid.SelectionUnit == DataGridSelectionUnit.FullRow)
+                {
+                    if (row != null && !grid.SelectedItems.Contains(row))
+                    {
+                        grid.SelectedItem = row;
+                    }
+                    return;
+                }
+                if (!grid.SelectedItems.Contains(row))
+                {
+                    cell.IsSelected = true;
+                }
             }
-            DataGridCell cell = FindAncestor<DataGridCell>(source);
-            if (cell == null)
+            catch (Exception ex)
             {
-                return;
+                _logger.Warn($"右键定位失败（已忽略，不影响继续操作）: {ex.Message}");
             }
-            cell.IsSelected = true;
-            if (cell.Content is TextBlock text)
+        }
+
+        /// <summary>右键菜单里的动作统一兜底：出错只提示，不把程序带崩</summary>
+        private void SafeRun(string action, Action run)
+        {
+            try
             {
-                _contextCellValue = text.Text;
+                run();
             }
-            _contextRow = cell.DataContext;
-            if (_contextRow != null)
+            catch (Exception ex)
             {
-                grid.SelectedItem = _contextRow;
+                _logger.Warn($"{action}失败: {ex.Message}");
+                _ = MessageBox.Show(ex.Message, action, MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
 

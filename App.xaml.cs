@@ -45,6 +45,10 @@ namespace ORT一键报告
             {
                 base.OnStartup(e);
 
+                // 兜底：界面线程上任何没被处理的异常都不再直接把程序带崩（生产现场最怕闪退丢操作）。
+                // 记日志 + 告诉用户，然后继续运行；如果状态已经乱了，提示用户保存后重启。
+                DispatcherUnhandledException += OnDispatcherUnhandledException;
+
                 // 单实例：同一个 Windows 用户只允许开一个。已经有一个在运行时，
                 // 通知它把主窗口显示出来（恢复/置前），本次启动直接退出。
                 if (!SingleInstanceManager.TryAcquire())
@@ -271,6 +275,28 @@ namespace ORT一键报告
                 logger.Fatal(ex, "程序启动失败");
                 throw;
             }
+        }
+
+        /// <summary>
+        /// 界面线程未处理异常的兜底：记日志、弹一次友好提示，然后继续运行。
+        /// 只兜底不吞错——信息都进日志（Help → 查看日志），方便事后定位。
+        /// </summary>
+        private void OnDispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
+        {
+            try
+            {
+                logger.Error(e.Exception, "界面线程未处理异常（已拦截，程序继续运行）");
+                string hint = e.Exception?.Message ?? "";
+                _ = MessageBox.Show(
+                    $"刚才这个操作出错了，程序会继续运行（详细信息已记入日志）。\n\n{hint}\n\n"
+                    + "如果接下来界面表现不正常，请先把要保存的内容保存好，再重启程序。",
+                    "ORT实验室管理系统", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+            catch
+            {
+                // 连提示都弹不出来：不能再抛
+            }
+            e.Handled = true;
         }
 
         /// <summary>
