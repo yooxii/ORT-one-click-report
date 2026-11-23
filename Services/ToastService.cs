@@ -44,9 +44,11 @@ namespace ORT一键报告.Services
                     _current = null;
                 }
 
+                // 找不到可见的聚焦窗口时退回主窗口；主窗口也可能还没打开过
+                // （开机自启到后台、尚未从托盘恢复），此时按「无 Owner」处理，放到屏幕角落
                 Window owner = Application.Current.Windows.OfType<Window>()
-                    .FirstOrDefault(w => w.IsActive && w is not WindowToast)
-                    ?? Application.Current.MainWindow;
+                    .FirstOrDefault(w => w.IsActive && w.IsVisible && w is not WindowToast)
+                    ?? (Application.Current.MainWindow is { IsVisible: true } mainWindow ? mainWindow : null);
 
                 var toast = new WindowToast(message, type);
                 toast.PositionNear(owner, GetPosition());

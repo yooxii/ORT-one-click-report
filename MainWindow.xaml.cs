@@ -52,6 +52,9 @@ namespace ORT一键报告
         /// <summary>当前是否已最小化到后台（窗口隐藏、托盘图标有效）</summary>
         private bool _inBackground;
 
+        /// <summary>后台任务（邮件提醒、计划索引）是否已启动，保证只启动一次</summary>
+        private bool _backgroundTasksStarted;
+
         /// <summary>本次运行是否以「后台运行」状态启动（由 --background 命令行参数决定）</summary>
         public bool StartInBackground { get; set; }
 
@@ -84,8 +87,7 @@ namespace ORT一键报告
 
             _auth.AuthChanged += () => Dispatcher.Invoke(UpdateUIByPermission);
             Loaded += (s, e) => UpdateUIByPermission();
-            Loaded += (s, e) => StartMailReminder();
-            Loaded += (s, e) => StartPlanIndexScheduler();
+            Loaded += (s, e) => EnsureBackgroundTasks();
             Closed += (s, e) => _mailTimer.Stop();
             // 关闭主窗口：先问是「最小化到后台」还是「退出程序」（见 OnClosing）
             Closing += MainWindow_Closing;
@@ -114,7 +116,6 @@ namespace ORT一键报告
                 // 界面相关的托管对象（图片、表格、报告预览等）暂时用不到了，回收并把工作集还给系统
                 MemoryTrimmer.Trim("最小化到后台");
                 _logger.Info("已最小化到后台（托盘）");
-                ShowBackgroundTipIfDue();
             }
             catch (Exception ex)
             {
@@ -123,52 +124,51 @@ namespace ORT一键报告
         }
 
         /// <summary>
-        /// 最小化到后台后弹一次托盘气球提示，告知用户可在设置里关掉这个行为；
-        /// 「每天只提醒一次」：记住上次弹出的日期，同一天再最小化就不打扰了。
-        ///
-        /// 刻意**延迟**约 1.5 秒再弹：第一次最小化时托盘图标是刚创建的，
-        /// 立刻弹气球会抢走刚落到图标上的鼠标交互——用户这时右键点不开菜单、双击也像没反应。
-        /// 等图标在托盘里稳定下来再提示，鼠标就能正常操作。
+        /// 启动时直接进后台：**不打开主窗口**（避免先闪出来再收进托盘），
+        /// 只建托盘图标、进入后台状态并启动后台任务；用户从托盘菜单选「显示主窗口」时才真正打开窗口。
         /// </summary>
-        private void ShowBackgroundTipIfDue()
+        public void EnterBackgroundWithoutShowing()
         {
-            if (_trayIcon == null)
+            try
             {
-                return;
+                ShowInTaskbar = false;
+                EnsureTrayIcon();
+                _inBackground = true;
+                MemoryTrimmer.Trim("后台启动");
+                // 主窗口没打开，Loaded 不会触发：后台任务在这里显式启动（有一次性保护）
+                EnsureBackgroundTasks();
+                _logger.Info("以后台方式启动：主窗口未打开，已进入托盘");
             }
-            string today = DateTime.Today.ToString("yyyy-MM-dd");
-            if (string.Equals(_appSettings.GetLastTrayTipDate(), today, StringComparison.Ordinal))
+            catch (Exception ex)
             {
-                return;
-            }
-            // 先把日期记下，避免提示排队期间反复最小化导致弹多次
-            _appSettings.SetLastTrayTipDate(today);
-
-            System.Windows.Threading.DispatcherTimer timer = new()
-            {
-                Interval = TimeSpan.FromMilliseconds(1500)
-            };
-            timer.Tick += (s, e) =>
-            {
-                timer.Stop();
-                if (_trayIcon == null)
-                {
-                    return;
-                }
+                // 兜底：进后台失败（例如建托盘图标出错）时把主窗口正常打开，避免程序"看不见"
+                _logger.Warn($"后台启动失败，改为正常打开主窗口: {ex.Message}");
                 try
                 {
-                    _trayIcon.ShowBalloonTip(5000,
-                        LanguageService.Get("Main_TrayBalloonTitle"),
-                        LanguageService.Get("Main_TrayBalloonText"),
-                        WinForms.ToolTipIcon.Info);
-                    _logger.Info($"已提示最小化到后台（{today}，当天不再重复提示）");
+                    ShowInTaskbar = true;
+                    _inBackground = false;
+                    Show();
                 }
-                catch (Exception ex)
+                catch (Exception inner)
                 {
-                    _logger.Warn($"弹出最小化提示失败: {ex.Message}");
+                    _logger.Error(inner, "后台启动失败后打开主窗口也失败");
                 }
-            };
-            timer.Start();
+            }
+        }
+
+        /// <summary>
+        /// 启动后台任务（邮件提醒、计划索引），只启动一次：
+        /// 「主窗口显示后」与「不打开主窗口直接进后台」两条路径都走这里，避免事件重复挂接。
+        /// </summary>
+        private void EnsureBackgroundTasks()
+        {
+            if (_backgroundTasksStarted)
+            {
+                return;
+            }
+            _backgroundTasksStarted = true;
+            StartMailReminder();
+            StartPlanIndexScheduler();
         }
 
         /// <summary>
@@ -201,11 +201,18 @@ namespace ORT一键报告
         }
 
         /// <summary>
-        /// 真正退出程序：置退出标记并关窗（OnClosing 不再拦截，OnClosed 里统一 Shutdown）
+        /// 真正退出程序：置退出标记并关窗（OnClosing 不再拦截，OnClosed 里统一 Shutdown）。
+        /// 主窗口可能从未打开过（开机自启到后台、还没从托盘恢复），这种窗口没有可关闭的实体，
+        /// 直接让程序结束（OnExit 里会统一收拾托盘图标与单实例）。
         /// </summary>
         public void ExitApplication()
         {
             _exitRequested = true;
+            if (!IsLoaded)
+            {
+                Application.Current?.Shutdown();
+                return;
+            }
             Close();
         }
 

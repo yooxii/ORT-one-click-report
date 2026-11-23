@@ -215,7 +215,6 @@ namespace ORT一键报告
                 };
                 // 显式登记为主窗口：任务栏、Toast 定位与 Owner 归属都依赖它（登录窗口是启动阶段的临时窗口）
                 MainWindow = mainWindow;
-                mainWindow.Show();
 
                 // 监听「又开了一个」的请求：主窗口就绪后，把它转回 UI 线程并显示主窗口
                 InstanceActivationRequested += () => Dispatcher.Invoke(mainWindow.RestoreFromBackground);
@@ -225,14 +224,20 @@ namespace ORT一键报告
 
                 if (mainWindow.StartInBackground)
                 {
-                    logger.Info("按 --background 参数以后台方式启动，直接最小化到托盘");
-                    mainWindow.MinimizeToBackground();
+                    // 后台启动：主窗口**一次都不打开**（不闪），直接进托盘；后台任务在这里一并启动
+                    logger.Info("按 --background 参数以后台方式启动，不打开主窗口，直接进托盘");
+                    mainWindow.EnterBackgroundWithoutShowing();
                 }
-                else if (_activationPending)
+                else
+                {
+                    mainWindow.Show();
+                }
+
+                if (_activationPending)
                 {
                     // 登录窗口阶段用户又双击了一次图标：这里补上「显示窗口」的动作
                     _activationPending = false;
-                    logger.Info("登录期间收到过重复启动请求，主窗口显示后置前");
+                    logger.Info("登录期间收到过重复启动请求，把主窗口显示出来");
                     mainWindow.RestoreFromBackground();
                 }
 
