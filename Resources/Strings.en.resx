@@ -3748,4 +3748,19 @@ Yes = delete and blacklist, No = delete only, Cancel = do nothing</value>
   <data name="PreIssue_BlacklistSeriesOnly" xml:space="preserve">
     <value>Series {0} (models sharing the first 6 characters belong to one series)</value>
   </data>
+  <data name="Filter_Invert" xml:space="preserve">
+    <value>Invert</value>
+  </data>
+  <data name="Filter_SelectNone" xml:space="preserve">
+    <value>Select none</value>
+  </data>
+  <data name="Filter_LazyHint" xml:space="preserve">
+    <value>Checking values does not apply immediately; click OK to apply</value>
+  </data>
+  <data name="Filter_ApplyCountFormat" xml:space="preserve">
+    <value>OK ({0} of {1} selected)</value>
+  </data>
+  <data name="Filter_ApplyNoneFormat" xml:space="preserve">
+    <value>OK (nothing checked = show all {0})</value>
+  </data>
 </root>

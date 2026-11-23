@@ -311,46 +311,48 @@ namespace ORT一键报告.Plans.Views
             menu.Items.Add(new Separator());
 
             MenuItem filterRoot = new() { Header = LanguageService.Get("Common_Filter") };
-            MenuItem all = new()
+            bool allIncluded = filter == null || !filter.IsActive;
+            // 惰性筛选：这里的勾选只改本地状态，点「确定」才真正应用
+            //（值很多、只要一个时，不必一个个点掉——先「全不选」再点那一个即可）
+            FilterEdit edit = new()
             {
-                Header = LanguageService.Get("Menu_FilterAll"),
-                IsCheckable = true,
-                IsChecked = filter == null || !filter.IsActive
+                Values = values,
+                Pending = allIncluded
+                    ? new HashSet<string>(values, StringComparer.Ordinal)
+                    : new HashSet<string>(filter.Selected, StringComparer.Ordinal),
+                IsPlan = isPlan,
+                Property = property,
+                Label = label
             };
-            all.Click += (s, args) => ApplyColumnFilter(isPlan, property, label, values, null);
-            filterRoot.Items.Add(all);
 
             if (values.Count > 0)
             {
-                // 未筛选时所有值都是勾选状态（"全部包含"，与资源管理器/Excel 一致），
-                // 取消勾选某个值即为"排除它"
-                bool allIncluded = filter == null || !filter.IsActive;
-                filterRoot.Items.Add(new Separator());
+                filterRoot.Items.Add(MakeFilterBulkItem(LanguageService.Get("Filter_SelectAll"), edit, FilterBulkMode.All));
+                filterRoot.Items.Add(MakeFilterBulkItem(LanguageService.Get("Filter_SelectNone"), edit, FilterBulkMode.None));
+                filterRoot.Items.Add(MakeFilterBulkItem(LanguageService.Get("Filter_Invert"), edit, FilterBulkMode.Invert));
 
                 // 非空值按「开头相同」逐段多级合并，全部平铺成同一级菜单项、用缩进体现层级
-                // （分组行点击展开/收起；不用嵌套子菜单，弹出菜单里的多级子菜单点不开）
+                //（分组行点击展开/收起；不用嵌套子菜单，弹出菜单里的多级子菜单点不开）
                 List<string> nonEmpty = values.Where(v => v != "").ToList();
                 string tableKey = isPlan ? "plan" : "req";
                 List<FilterRow> rows = BuildFilterRows(nonEmpty, tableKey, property);
-                // 任一筛选项变化后，所有分组行的勾选显示都需要重算（组内全选中才打勾）
-                Action afterApply = () => RefreshGroupCheckStates(rows, isPlan, property);
+                edit.Rows = rows;
 
                 // 空/null 单元格也作为一项列出（显示为「（空白）」），排在最前
                 List<MenuItem> browseExtras = [];
                 if (values.Contains(""))
                 {
-                    MenuItem emptyItem = MakeFilterValueItem("", LanguageService.Get("Menu_FilterEmpty"),
-                        0, isPlan, property, label, values, filter, allIncluded, afterApply);
+                    MenuItem emptyItem = MakeFilterValueItem("", LanguageService.Get("Menu_FilterEmpty"), 0, edit);
                     filterRoot.Items.Add(emptyItem);
                     browseExtras.Add(emptyItem);
                 }
 
-                AddFilterRowItems(filterRoot, rows, isPlan, property, label, values, filter, allIncluded, afterApply);
+                AddFilterRowItems(filterRoot, rows, edit);
 
                 // 值多时提供搜索框：空查询显示分组树（默认折叠），输入关键字后切换为平铺匹配列表
                 if (values.Count > FilterSearchThreshold)
                 {
-                    List<(MenuItem Item, string Value)> valueItems = [];
+                    List<(MenuItem Item, string Value)> searchItems = [];
                     int flatCreated = 0;
                     foreach (string value in values)
                     {
@@ -359,19 +361,47 @@ namespace ORT一键报告.Plans.Views
                             break;   // 超大表保护：搜索项数量封顶
                         }
                         MenuItem flat = MakeFilterValueItem(value,
-                            value == "" ? LanguageService.Get("Menu_FilterEmpty") : value,
-                            0, isPlan, property, label, values, filter, allIncluded, afterApply);
+                            value == "" ? LanguageService.Get("Menu_FilterEmpty") : value, 0, edit);
                         flat.Visibility = Visibility.Collapsed;
                         filterRoot.Items.Add(flat);
-                        valueItems.Add((flat, value));
+                        searchItems.Add((flat, value));
                     }
-                    AddFilterSearchBox(filterRoot, rows, browseExtras, valueItems);
+                    AddFilterSearchBox(filterRoot, rows, browseExtras, edit, searchItems);
                 }
                 else
                 {
                     RefreshFilterRows(rows);
                 }
             }
+
+            filterRoot.Items.Add(new Separator());
+            MenuItem applyFilter = new()
+            {
+                Header = LanguageService.Get("Common_OK"),
+                FontWeight = FontWeights.Bold,
+                ToolTip = LanguageService.Get("Filter_LazyHint")
+            };
+            applyFilter.Click += (s, args) =>
+            {
+                ApplyColumnFilter(isPlan, property, label, values, edit.Pending.ToList());
+                menu.IsOpen = false;
+            };
+            filterRoot.Items.Add(applyFilter);
+            MenuItem cancelFilter = new() { Header = LanguageService.Get("Common_Cancel") };
+            cancelFilter.Click += (s, args) => menu.IsOpen = false;
+            filterRoot.Items.Add(cancelFilter);
+
+            // 「确定」上直接写清已选数量：一个都没勾时说明等于「显示全部」
+            void SyncApplyText()
+            {
+                applyFilter.Header = edit.Pending.Count == 0
+                    ? string.Format(LanguageService.Get("Filter_ApplyNoneFormat"), values.Count)
+                    : string.Format(LanguageService.Get("Filter_ApplyCountFormat"), edit.Pending.Count, values.Count);
+            }
+            edit.Changed = SyncApplyText;
+            SyncApplyText();
+
+            menu.Items.Add(filterRoot);
             menu.Items.Add(filterRoot);
 
             menu.Items.Add(new Separator());
@@ -396,41 +426,122 @@ namespace ORT一键报告.Plans.Views
             menu.Items.Add(clearAll);
         }
 
+        /// <summary>筛选菜单的本地编辑状态：勾选只改这里，点「确定」才写回表格筛选</summary>
+        private sealed class FilterEdit
+        {
+            public List<string> Values = [];
+            public HashSet<string> Pending = new(StringComparer.Ordinal);
+            public bool IsPlan;
+            public string Property;
+            public string Label;
+            public List<FilterRow> Rows = [];
+            public List<(MenuItem Item, string Value)> ValueItems = [];
+
+            public void SelectAll()
+            {
+                Pending.Clear();
+                Pending.UnionWith(Values);
+            }
+
+            public void SelectNone() => Pending.Clear();
+
+            public void Invert()
+            {
+                HashSet<string> inverted = new(StringComparer.Ordinal);
+                foreach (string value in Values)
+                {
+                    if (!Pending.Contains(value))
+                    {
+                        inverted.Add(value);
+                    }
+                }
+                Pending.Clear();
+                Pending.UnionWith(inverted);
+            }
+
+            /// <summary>勾选状态变化后的回调（刷新「确定」按钮上的已选数量）</summary>
+            public Action Changed;
+
+            /// <summary>把勾选状态同步到全部取值行与分组行</summary>
+            public void RefreshAll()
+            {
+                foreach ((MenuItem item, string value) in ValueItems)
+                {
+                    if (item != null && value != null)
+                    {
+                        item.IsChecked = Pending.Contains(value);
+                    }
+                }
+                foreach (FilterRow row in Rows)
+                {
+                    if (row.IsGroup && row.Item != null)
+                    {
+                        row.Item.IsChecked = row.Values.Count > 0 && row.Values.All(v => Pending.Contains(v));
+                    }
+                }
+                Changed?.Invoke();
+            }
+        }
+
+        /// <summary>全选 / 全不选 / 反选 三种批量操作</summary>
+        private enum FilterBulkMode
+        {
+            All,
+            None,
+            Invert
+        }
+
+        /// <summary>批量勾选菜单项（不关菜单、不立即应用）</summary>
+        private MenuItem MakeFilterBulkItem(string header, FilterEdit edit, FilterBulkMode mode)
+        {
+            MenuItem item = new() { Header = header, StaysOpenOnClick = true };
+            item.Click += (s, args) =>
+            {
+                switch (mode)
+                {
+                    case FilterBulkMode.All:
+                        edit.SelectAll();
+                        break;
+                    case FilterBulkMode.None:
+                        edit.SelectNone();
+                        break;
+                    default:
+                        edit.Invert();
+                        break;
+                }
+                edit.RefreshAll();
+            };
+            return item;
+        }
+
         /// <summary>
         /// 创建一个可勾选的筛选项（单个值）；value 为比较用的实际值（空值为 ""），display 为菜单显示文本；
-        /// depth 为缩进层级（分组树里的取值行用）。点击后菜单保持打开，方便连续勾选多个值。
-        /// afterApply 在筛选应用完后回调（用来刷新分组行的勾选显示）。
+        /// depth 为缩进层级。点击只改本地勾选（StaysOpenOnClick），不刷新表格——「确定」才应用。
         /// </summary>
-        private MenuItem MakeFilterValueItem(string value, string display, int depth,
-            bool isPlan, string property, string label, List<string> values, ColumnFilter filter, bool allIncluded,
-            Action afterApply = null)
+        private MenuItem MakeFilterValueItem(string value, string display, int depth, FilterEdit edit)
         {
             MenuItem valueItem = new()
             {
                 Header = display,
                 IsCheckable = true,
-                IsChecked = allIncluded || filter.Selected.Contains(value),
+                IsChecked = edit.Pending.Contains(value),
                 StaysOpenOnClick = true,
                 Padding = new Thickness(8 + depth * 14, 5, 8, 5)
             };
             string captured = value;
             valueItem.Click += (s, args) =>
             {
-                List<string> selected = allIncluded ? [.. values] : [.. filter.Selected];
                 if (valueItem.IsChecked)
                 {
-                    if (!selected.Contains(captured))
-                    {
-                        selected.Add(captured);
-                    }
+                    edit.Pending.Add(captured);
                 }
                 else
                 {
-                    selected.Remove(captured);
+                    edit.Pending.Remove(captured);
                 }
-                ApplyColumnFilter(isPlan, property, label, values, selected);
-                afterApply?.Invoke();
+                edit.RefreshAll();
             };
+            edit.ValueItems.Add((valueItem, captured));
             return valueItem;
         }
 
@@ -446,9 +557,7 @@ namespace ORT一键报告.Plans.Views
         /// 把筛选树的行写成菜单项（深度优先平铺），分组行的子行紧跟其后、靠缩进区分层级。
         /// 分组行本身可勾选（一次点击 = 切换展开/收起 + 整组勾选/取消），不再单独占一行「全选本组」。
         /// </summary>
-        private void AddFilterRowItems(MenuItem filterRoot, List<FilterRow> rows,
-            bool isPlan, string property, string label, List<string> values, ColumnFilter filter, bool allIncluded,
-            Action afterApply)
+        private void AddFilterRowItems(MenuItem filterRoot, List<FilterRow> rows, FilterEdit edit)
         {
             int created = 0;
             foreach (FilterRow row in rows)
@@ -464,14 +573,13 @@ namespace ORT一键报告.Plans.Views
                 }
                 if (row.IsGroup)
                 {
-                    row.Item = MakeFilterGroupItem(row, rows, isPlan, property, label, values, filter, allIncluded, afterApply);
+                    row.Item = MakeFilterGroupItem(row, rows, edit);
                     row.Item.Tag = row.Depth;   // 标记为分组树的行（便于区分搜索用的平铺项）
                     filterRoot.Items.Add(row.Item);
                 }
                 else
                 {
-                    row.Item = MakeFilterValueItem(row.Value, row.Value, row.Depth,
-                        isPlan, property, label, values, filter, allIncluded, afterApply);
+                    row.Item = MakeFilterValueItem(row.Value, row.Value, row.Depth, edit);
                     row.Item.Tag = row.Depth;   // 标记为分组树的行
                     filterRoot.Items.Add(row.Item);
                 }
@@ -483,14 +591,12 @@ namespace ORT一键报告.Plans.Views
         /// 建一个分组行：本身可勾选，一次点击同时完成两件事：切换展开/收起 + 整组勾选/取消。
         /// IsChecked 反映「组内是否全部被选中」（部分选中时显示为未勾选，避免 WPF MenuItem 不支持真三态的局限）。
         /// </summary>
-        private MenuItem MakeFilterGroupItem(FilterRow row, List<FilterRow> rows,
-            bool isPlan, string property, string label, List<string> values, ColumnFilter filter, bool allIncluded,
-            Action afterApply)
+        private MenuItem MakeFilterGroupItem(FilterRow row, List<FilterRow> rows, FilterEdit edit)
         {
             MenuItem item = new()
             {
                 IsCheckable = true,
-                IsChecked = allIncluded || row.Values.All(v => filter.Selected.Contains(v)),
+                IsChecked = row.Values.Count > 0 && row.Values.All(v => edit.Pending.Contains(v)),
                 StaysOpenOnClick = true,
                 Padding = new Thickness(8 + row.Depth * 14, 5, 8, 5),
                 ToolTip = LanguageService.Get("Menu_FilterGroupHint")
@@ -502,28 +608,20 @@ namespace ORT一键报告.Plans.Views
                 {
                     _expandedFilterGroups.Add(row.Key);
                 }
-                // 2) 根据新 IsChecked 应用整组选择（用实时的 filter 而非构造时捕获的那一份，
-                //    避免用户先点过取值行后分组行拿到的是陈旧选中集）
-                ColumnFilter currentFilter = _vm.GetColumnFilter(isPlan, property);
-                bool currentAllIncluded = currentFilter == null || !currentFilter.IsActive;
-                List<string> selected = currentAllIncluded ? [.. values] : [.. currentFilter.Selected];
+                // 2) 按新 IsChecked 整组勾选/取消（只改本地状态）
                 if (item.IsChecked)
                 {
                     foreach (string v in row.Values)
                     {
-                        if (!selected.Contains(v))
-                        {
-                            selected.Add(v);
-                        }
+                        edit.Pending.Add(v);
                     }
                 }
                 else
                 {
-                    selected.RemoveAll(row.Values.Contains);
+                    edit.Pending.ExceptWith(row.Values);
                 }
-                ApplyColumnFilter(isPlan, property, label, values, selected);
-                // 3) 刷新所有分组行（含祖先）的勾选显示与树可见性
-                afterApply?.Invoke();
+                // 3) 刷新所有勾选显示与树可见性
+                edit.RefreshAll();
                 RefreshFilterRows(rows);
             };
             SetFilterGroupHeader(item, row);
@@ -555,23 +653,6 @@ namespace ORT一键报告.Plans.Views
                     SetFilterGroupHeader(row.Item, row);
                 }
                 row.Item.Visibility = Visible(row.AncestorKeys) ? Visibility.Visible : Visibility.Collapsed;
-            }
-        }
-
-        /// <summary>
-        /// 任一筛选项变化后重算所有分组行的勾选显示：
-        /// IsChecked = 组内全部取值都在当前选中集里（部分选中时显示为未勾选）。
-        /// </summary>
-        private void RefreshGroupCheckStates(List<FilterRow> rows, bool isPlan, string property)
-        {
-            ColumnFilter filter = _vm.GetColumnFilter(isPlan, property);
-            bool allIncluded = filter == null || !filter.IsActive;
-            foreach (FilterRow row in rows)
-            {
-                if (row.IsGroup && row.Item != null)
-                {
-                    row.Item.IsChecked = allIncluded || row.Values.All(v => filter.Selected.Contains(v));
-                }
             }
         }
 
@@ -824,8 +905,9 @@ namespace ORT一键报告.Plans.Views
         /// 并在子菜单打开时把焦点交给输入框，否则键盘输入会被菜单当成导航。
         /// </summary>
         private void AddFilterSearchBox(MenuItem filterRoot, List<FilterRow> rows, List<MenuItem> browseExtras,
-            List<(MenuItem Item, string Value)> valueItems)
+            FilterEdit edit, List<(MenuItem Item, string Value)> searchItems)
         {
+            List<(MenuItem Item, string Value)> valueItems = searchItems;
             TextBox search = new()
             {
                 Width = 190,
@@ -910,9 +992,9 @@ namespace ORT一键报告.Plans.Views
 
             search.TextChanged += (s, args) => ApplySearch();
 
-            int insertAt = Math.Min(2, filterRoot.Items.Count);
-            filterRoot.Items.Insert(insertAt, searchHost);
-            filterRoot.Items.Insert(insertAt + 1, new Separator());
+            // 搜索框放最上面（批量勾选按钮之下、值列表之上都由外边控制顺序）
+            filterRoot.Items.Insert(0, searchHost);
+            filterRoot.Items.Insert(1, new Separator());
             filterRoot.Items.Add(noMatch);
             ApplySearch();
         }

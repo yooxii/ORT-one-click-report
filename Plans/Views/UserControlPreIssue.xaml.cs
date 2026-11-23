@@ -444,7 +444,7 @@ namespace ORT一键报告.Plans.Views
                     null, !sameColumn));
                 menu.Items.Add(sort);
 
-                // ---- 筛选（按值多选） ----
+                // ---- 筛选（惰性：勾选只改本地状态，点「确定」才应用） ----
                 MenuItem filter = new() { Header = LanguageService.Get("PreIssue_Menu_Filter") };
                 List<string> values = _vm.GetReqColumnValues(property);
                 HashSet<string> selection = _vm.GetReqColumnSelection(property);
@@ -462,20 +462,94 @@ namespace ORT一键报告.Plans.Views
                 }
                 else
                 {
+                    // 编辑中的勾选集合：不动表格，等「确定」再一次性写回
+                    HashSet<string> pending = selection == null
+                        ? new HashSet<string>(values, StringComparer.Ordinal)
+                        : new HashSet<string>(selection, StringComparer.Ordinal);
                     List<(string Value, MenuItem Item)> items = [];
+                    // 先建出「确定」项，勾选变化时好同步它标题上的已选数量
+                    MenuItem applyFilter = new()
+                    {
+                        Header = LanguageService.Get("Common_OK"),
+                        FontWeight = FontWeights.Bold,
+                        ToolTip = LanguageService.Get("Filter_LazyHint")
+                    };
+
+                    void RefreshChecks()
+                    {
+                        foreach ((string value, MenuItem item) in items)
+                        {
+                            item.IsChecked = pending.Contains(value);
+                        }
+                        SyncApplyText();
+                    }
+
+                    filter.Items.Add(BuildBulkFilterItem(LanguageService.Get("Filter_SelectAll"), () =>
+                    {
+                        pending.Clear();
+                        pending.UnionWith(values);
+                        RefreshChecks();
+                    }));
+                    filter.Items.Add(BuildBulkFilterItem(LanguageService.Get("Filter_SelectNone"), () =>
+                    {
+                        pending.Clear();
+                        RefreshChecks();
+                    }));
+                    filter.Items.Add(BuildBulkFilterItem(LanguageService.Get("Filter_Invert"), () =>
+                    {
+                        List<string> inverted = values.Where(v => !pending.Contains(v)).ToList();
+                        pending.Clear();
+                        pending.UnionWith(inverted);
+                        RefreshChecks();
+                    }));
+                    filter.Items.Add(new Separator());
+
                     foreach (string value in values)
                     {
                         MenuItem item = new()
                         {
                             Header = string.IsNullOrEmpty(value) ? LanguageService.Get("PreIssue_Menu_FilterBlank") : value,
                             IsCheckable = true,
-                            IsChecked = selection == null || selection.Contains(value)
+                            IsChecked = pending.Contains(value),
+                            StaysOpenOnClick = true
                         };
                         string captured = value;
-                        item.Click += (s, e) => ApplyHeaderFilter(property, values, items);
+                        item.Click += (s, e) =>
+                        {
+                            if (item.IsChecked)
+                            {
+                                pending.Add(captured);
+                            }
+                            else
+                            {
+                                pending.Remove(captured);
+                            }
+                            RefreshChecks();   // 同步「确定」上的已选数量
+                        };
                         items.Add((value, item));
                         filter.Items.Add(item);
                     }
+
+                    filter.Items.Add(new Separator());
+                    applyFilter.Click += (s, e) =>
+                    {
+                        _vm.SetReqColumnFilter(property, pending);
+                        menu.IsOpen = false;
+                    };
+                    filter.Items.Add(applyFilter);
+                    MenuItem cancelFilter = new() { Header = LanguageService.Get("Common_Cancel") };
+                    cancelFilter.Click += (s, e) => menu.IsOpen = false;
+                    filter.Items.Add(cancelFilter);
+
+                    // 「确定」上写清已选数量：一个都没勾时说明等于「显示全部」
+                    void SyncApplyText()
+                    {
+                        applyFilter.Header = pending.Count == 0
+                            ? string.Format(LanguageService.Get("Filter_ApplyNoneFormat"), values.Count)
+                            : string.Format(LanguageService.Get("Filter_ApplyCountFormat"), pending.Count, values.Count);
+                    }
+                    SyncApplyText();
+
                     menu.Items.Add(filter);
                 }
                 menu.Items.Add(new Separator());
@@ -493,20 +567,12 @@ namespace ORT一键报告.Plans.Views
             }
         }
 
-        /// <summary>把筛选菜单当前的勾选状态应用到该列（全选 = 等于没筛选）</summary>
-        private void ApplyHeaderFilter(string property, List<string> allValues, List<(string Value, MenuItem Item)> items)
+        /// <summary>筛选里的批量勾选按钮（全选 / 全不选 / 反选）：只改本地勾选，不关菜单、不立即应用</summary>
+        private static MenuItem BuildBulkFilterItem(string header, Action click)
         {
-            if (_vm == null || items == null)
-            {
-                return;
-            }
-            List<string> checkedValues = items.Where(pair => pair.Item.IsChecked).Select(pair => pair.Value).ToList();
-            if (checkedValues.Count == 0 || checkedValues.Count == allValues.Count)
-            {
-                _vm.ClearReqColumnFilter(property);   // 一个都没勾 / 全都勾上：等于不筛选
-                return;
-            }
-            _vm.SetReqColumnFilter(property, checkedValues);
+            MenuItem item = new() { Header = header, StaysOpenOnClick = true };
+            item.Click += (s, e) => click();
+            return item;
         }
 
         private MenuItem BuildSortItem(string header, string property, ListSortDirection? direction, bool isChecked)

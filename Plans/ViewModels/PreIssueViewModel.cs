@@ -796,7 +796,10 @@ namespace ORT一键报告.Plans.ViewModels
                 .ToList();
         }
 
-        /// <summary>设置某一列的筛选（values 为空 = 清除该列筛选）</summary>
+        /// <summary>
+        /// 设置某一列的筛选：没勾 / 全部勾上 都等于「不筛选」（与领退表、计划表的口径一致）。
+        /// 界面上的勾选是惰性的，点「确定」才走到这里。
+        /// </summary>
         public void SetReqColumnFilter(string property, IEnumerable<string> values)
         {
             if (string.IsNullOrEmpty(property))
@@ -804,7 +807,9 @@ namespace ORT一键报告.Plans.ViewModels
                 return;
             }
             HashSet<string> set = new(values ?? [], StringComparer.Ordinal);
-            if (set.Count == 0)
+            List<string> all = GetReqColumnValues(property);
+            bool everything = all.Count == 0 || (set.Count >= all.Count && all.All(set.Contains));
+            if (set.Count == 0 || everything)
             {
                 _reqColumnFilters.Remove(property);
             }

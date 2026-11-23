@@ -3748,4 +3748,19 @@
   <data name="PreIssue_BlacklistSeriesOnly" xml:space="preserve">
     <value>系列 {0}（前 6 位相同即视为同一系列）</value>
   </data>
+  <data name="Filter_Invert" xml:space="preserve">
+    <value>反选</value>
+  </data>
+  <data name="Filter_SelectNone" xml:space="preserve">
+    <value>全不选</value>
+  </data>
+  <data name="Filter_LazyHint" xml:space="preserve">
+    <value>勾选不会立刻生效：点「确定」才应用筛选</value>
+  </data>
+  <data name="Filter_ApplyCountFormat" xml:space="preserve">
+    <value>确定（已选 {0} / {1} 项）</value>
+  </data>
+  <data name="Filter_ApplyNoneFormat" xml:space="preserve">
+    <value>确定（未勾选 = 显示全部 {0} 项）</value>
+  </data>
 </root>
