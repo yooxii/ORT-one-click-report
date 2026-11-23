@@ -3152,10 +3152,10 @@
     <value>登錄到目前使用者的啟動項，登入 Windows 後自動執行本程式，不需要管理員權限；在工作管理員的「啟動」頁也看得到並可關閉。程式位於網路共享或網路磁碟時不允許自動啟動。修改後按「儲存/套用」寫入。</value>
   </data>
   <data name="Settings_AutoStartBackground" xml:space="preserve">
-    <value>開機自動啟動時直接進背景</value>
+    <value>開機自動啟動時同時駐留背景</value>
   </data>
   <data name="Settings_AutoStartBackgroundHint" xml:space="preserve">
-    <value>勾選後開機自動啟動不彈出主視窗，直接收進通知區域；需要登入時仍會先彈出登入視窗。</value>
+    <value>勾選後開機自動啟動時主視窗照常開啟，同時先把通知區域圖示就緒——之後關閉主視窗就直接收進背景；需要登入時仍會先彈出登入視窗。不勾選則自動啟動時不預先駐留通知區域（關閉視窗時才進背景）。</value>
   </data>
   <data name="Settings_AutoStartRemoteBlockedFormat" xml:space="preserve">
     <value>程式目前位於遠端路徑：{0}

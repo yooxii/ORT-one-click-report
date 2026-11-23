@@ -3152,10 +3152,10 @@
     <value>登记到当前用户的启动项，登录 Windows 后自动运行本程序，不需要管理员权限；在任务管理器的「启动」页也能看到并关闭。程序位于网络共享或网络盘时不允许自启。修改后按「保存/应用」写入。</value>
   </data>
   <data name="Settings_AutoStartBackground" xml:space="preserve">
-    <value>开机自启时直接进后台</value>
+    <value>开机自启时同时驻留后台</value>
   </data>
   <data name="Settings_AutoStartBackgroundHint" xml:space="preserve">
-    <value>勾选后开机自启不弹出主窗口，直接收进托盘；需要登录时仍会先弹出登录窗口。</value>
+    <value>勾选后开机自启时主窗口照常打开，同时先把托盘图标就绪——之后点关闭主窗口就直接收进后台；需要登录时仍会先弹出登录窗口。不勾选则自启时不预先驻留托盘（关闭窗口时才进后台）。</value>
   </data>
   <data name="Settings_AutoStartRemoteBlockedFormat" xml:space="preserve">
     <value>程序当前位于远程路径：{0}

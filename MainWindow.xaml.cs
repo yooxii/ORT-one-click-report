@@ -124,41 +124,38 @@ namespace ORT一键报告
         }
 
         /// <summary>
-        /// 启动时直接进后台：**不打开主窗口**（避免先闪出来再收进托盘），
-        /// 只建托盘图标、进入后台状态并启动后台任务；用户从托盘菜单选「显示主窗口」时才真正打开窗口。
+        /// 启动时「打开主窗口 + 同时进入后台就绪」：主窗口照常显示在屏幕上，
+        /// 托盘图标也先建好——之后点关闭主窗口就直接收进后台（后台任务随窗口显示一并启动）。
         /// </summary>
-        public void EnterBackgroundWithoutShowing()
+        public void StartWithBackgroundReady()
         {
             try
             {
-                ShowInTaskbar = false;
+                // 先让托盘就绪，再打开窗口；窗口可见时不算"后台运行中"
                 EnsureTrayIcon();
-                _inBackground = true;
-                MemoryTrimmer.Trim("后台启动");
-                // 主窗口没打开，Loaded 不会触发：后台任务在这里显式启动（有一次性保护）
-                EnsureBackgroundTasks();
-                _logger.Info("以后台方式启动：主窗口未打开，已进入托盘");
+                _inBackground = false;
+                Show();
+                _logger.Info("按 --background 参数启动：已打开主窗口，同时托盘就绪（关闭窗口即进后台）");
             }
             catch (Exception ex)
             {
-                // 兜底：进后台失败（例如建托盘图标出错）时把主窗口正常打开，避免程序"看不见"
-                _logger.Warn($"后台启动失败，改为正常打开主窗口: {ex.Message}");
+                // 兜底：后台就绪失败也要保证主窗口能打开
+                _logger.Warn($"启动时后台就绪失败，仍正常打开主窗口: {ex.Message}");
                 try
                 {
-                    ShowInTaskbar = true;
                     _inBackground = false;
                     Show();
                 }
                 catch (Exception inner)
                 {
-                    _logger.Error(inner, "后台启动失败后打开主窗口也失败");
+                    _logger.Error(inner, "打开主窗口失败");
                 }
             }
         }
 
         /// <summary>
         /// 启动后台任务（邮件提醒、计划索引），只启动一次：
-        /// 「主窗口显示后」与「不打开主窗口直接进后台」两条路径都走这里，避免事件重复挂接。
+        /// 主窗口显示时统一从这里启动，避免事件重复挂接。
         /// </summary>
         private void EnsureBackgroundTasks()
         {

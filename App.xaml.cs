@@ -224,9 +224,9 @@ namespace ORT一键报告
 
                 if (mainWindow.StartInBackground)
                 {
-                    // 后台启动：主窗口**一次都不打开**（不闪），直接进托盘；后台任务在这里一并启动
-                    logger.Info("按 --background 参数以后台方式启动，不打开主窗口，直接进托盘");
-                    mainWindow.EnterBackgroundWithoutShowing();
+                    // 自启到后台：主窗口照常打开，同时把托盘/后台能力先就绪（关闭窗口即收进后台）
+                    logger.Info("按 --background 参数启动：打开主窗口，同时托盘就绪");
+                    mainWindow.StartWithBackgroundReady();
                 }
                 else
                 {

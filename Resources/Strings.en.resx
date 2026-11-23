@@ -3152,10 +3152,10 @@ Exit now and discard them?</value>
     <value>Registers a startup entry for the current user so the app runs after signing in to Windows; no administrator rights are required. The entry is also listed on the Startup page of Task Manager. Starting from a network share or mapped network drive is not allowed. Click Save or Apply to write the change.</value>
   </data>
   <data name="Settings_AutoStartBackground" xml:space="preserve">
-    <value>Start minimized to background</value>
+    <value>Stay in the tray at startup</value>
   </data>
   <data name="Settings_AutoStartBackgroundHint" xml:space="preserve">
-    <value>When enabled, starting with Windows does not open the main window; the app goes straight to the notification area. A login window still appears when signing in is required.</value>
+    <value>When enabled, the main window still opens at startup while the tray icon is prepared at the same time, so closing the window immediately keeps the app running in the background. A login window still appears when signing in is required. When disabled, no tray icon is prepared at startup (the app goes to the background only when you close the window).</value>
   </data>
   <data name="Settings_AutoStartRemoteBlockedFormat" xml:space="preserve">
     <value>The program is running from a remote path: {0}
