@@ -3763,4 +3763,7 @@ Yes = delete and blacklist, No = delete only, Cancel = do nothing</value>
   <data name="Filter_ApplyNoneFormat" xml:space="preserve">
     <value>OK (nothing checked = show all {0})</value>
   </data>
+  <data name="Menu_HeaderMenuError" xml:space="preserve">
+    <value>Header menu failed to open (see log)</value>
+  </data>
 </root>

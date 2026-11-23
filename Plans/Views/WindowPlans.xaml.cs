@@ -286,6 +286,25 @@ namespace ORT一键报告.Plans.Views
         /// </summary>
         private void BuildHeaderMenu(ContextMenu menu, DataGrid grid, DataGridColumn column)
         {
+            // 菜单构建失败不该让右键变哑巴、更不该把界面带崩：兜底成一条提示项
+            try
+            {
+                BuildHeaderMenuCore(menu, grid, column);
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn($"构建列头菜单失败: {ex.Message}");
+                menu.Items.Clear();
+                menu.Items.Add(new MenuItem
+                {
+                    Header = LanguageService.Get("Menu_HeaderMenuError"),
+                    IsEnabled = false
+                });
+            }
+        }
+
+        private void BuildHeaderMenuCore(ContextMenu menu, DataGrid grid, DataGridColumn column)
+        {
             bool isPlan = ReferenceEquals(grid, dg_plans);
             string property = column.SortMemberPath;
             string label = column.Header?.ToString() ?? "?";
@@ -401,7 +420,6 @@ namespace ORT一键报告.Plans.Views
             edit.Changed = SyncApplyText;
             SyncApplyText();
 
-            menu.Items.Add(filterRoot);
             menu.Items.Add(filterRoot);
 
             menu.Items.Add(new Separator());

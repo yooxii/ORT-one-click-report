@@ -3763,4 +3763,7 @@
   <data name="Filter_ApplyNoneFormat" xml:space="preserve">
     <value>確定（未勾選 = 顯示全部 {0} 項）</value>
   </data>
+  <data name="Menu_HeaderMenuError" xml:space="preserve">
+    <value>欄頭選單打不開（詳見日誌）</value>
+  </data>
 </root>
