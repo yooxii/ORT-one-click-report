@@ -15,7 +15,7 @@
     <MapFileExtensions>true</MapFileExtensions>
     <PublisherName>Lucas Li%28AcBel ORT%29</PublisherName>
     <ApplicationRevision>0</ApplicationRevision>
-    <ApplicationVersion>0.6.3.3</ApplicationVersion>
+    <ApplicationVersion>0.6.4.0</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <CreateDesktopShortcut>true</CreateDesktopShortcut>
     <PublishWizardCompleted>true</PublishWizardCompleted>
@@ -264,6 +264,9 @@
     </Compile>
     <Compile Include="Plans\Views\WindowPreIssuePending.xaml.cs">
       <DependentUpon>WindowPreIssuePending.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Plans\Views\WindowOrtBlacklistEdit.xaml.cs">
+      <DependentUpon>WindowOrtBlacklistEdit.xaml</DependentUpon>
     </Compile>
     <Compile Include="Plans\Views\WindowOrtBlacklist.xaml.cs">
       <DependentUpon>WindowOrtBlacklist.xaml</DependentUpon>
@@ -538,6 +541,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Plans\Views\WindowPreIssuePending.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Plans\Views\WindowOrtBlacklistEdit.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

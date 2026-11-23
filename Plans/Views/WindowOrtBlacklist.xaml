@@ -6,7 +6,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:lex="http://wpflocalizeextension.codeplex.com"
         mc:Ignorable="d"
-        Title="{lex:Loc PreIssue_BlacklistTitle}" Width="820" Height="520" MinWidth="620" MinHeight="360"
+        Title="{lex:Loc PreIssue_BlacklistTitle}" Width="860" Height="540" MinWidth="640" MinHeight="380"
         WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
 
     <Window.Resources>
@@ -29,7 +29,6 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
@@ -37,24 +36,13 @@
         <TextBlock Grid.Row="0" Text="{lex:Loc PreIssue_BlacklistHint}" TextWrapping="Wrap"
                    Foreground="{DynamicResource TextSecondaryBrush}"/>
 
-        <!-- 新增一条：类型（機種 / 正则） + 内容 + 原因 -->
-        <WrapPanel Grid.Row="1" Margin="0,10,0,4">
-            <Label Content="{lex:Loc PreIssue_BlacklistKind}" VerticalAlignment="Center"/>
-            <ComboBox x:Name="cb_kind" Width="100" VerticalAlignment="Center" Margin="0,0,10,0"
-                      SelectionChanged="Cb_Kind_SelectionChanged"/>
-            <Label Content="{lex:Loc PreIssue_BlacklistEntry}" VerticalAlignment="Center"/>
-            <TextBox x:Name="txt_model" Width="190" VerticalContentAlignment="Center" Margin="0,0,10,0"/>
-            <Label Content="{lex:Loc PreIssue_Reason}" VerticalAlignment="Center"/>
-            <TextBox x:Name="txt_reason" Width="180" VerticalContentAlignment="Center" Margin="0,0,10,0"/>
-            <Button Content="{lex:Loc PreIssue_BlacklistAdd}" MinWidth="76" Padding="10,3" Click="Btn_Add_Click"/>
+        <WrapPanel Grid.Row="1" Margin="0,10,0,8">
+            <Button Content="{lex:Loc PreIssue_BlacklistNew}" MinWidth="96" Padding="10,3" Click="Btn_New_Click"/>
+            <Button Content="{lex:Loc PreIssue_BlacklistRemove}" MinWidth="96" Padding="10,3" Margin="8,0,0,0"
+                    Click="Btn_Remove_Click"/>
         </WrapPanel>
 
-        <!-- 正则提示（只在「正则」类型时显示） -->
-        <TextBlock x:Name="txt_pattern_hint" Grid.Row="2" Text="{lex:Loc PreIssue_BlacklistRegexHint}"
-                   TextWrapping="Wrap" Margin="0,0,0,6" Visibility="Collapsed"
-                   Foreground="{DynamicResource StatusWarnBrush}"/>
-
-        <DataGrid x:Name="dg_blacklist" Grid.Row="3"
+        <DataGrid x:Name="dg_blacklist" Grid.Row="2"
                   AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False"
                   HeadersVisibility="Column" GridLinesVisibility="All"
                   SelectionMode="Single" SelectionUnit="FullRow" ClipboardCopyMode="None">
@@ -70,11 +58,9 @@
             </DataGrid.Columns>
         </DataGrid>
 
-        <DockPanel Grid.Row="4" Margin="0,10,0,0">
+        <DockPanel Grid.Row="3" Margin="0,10,0,0">
             <Button DockPanel.Dock="Right" Content="{lex:Loc Common_Close}" MinWidth="84" Padding="10,3" Margin="8,0,0,0"
                     IsCancel="True"/>
-            <Button DockPanel.Dock="Right" Content="{lex:Loc PreIssue_BlacklistRemove}" MinWidth="84" Padding="10,3"
-                    Click="Btn_Remove_Click"/>
             <TextBlock x:Name="txt_status" VerticalAlignment="Center" Foreground="{DynamicResource StatusWarnBrush}"/>
         </DockPanel>
     </Grid>

@@ -3143,7 +3143,7 @@
     <value>最小化到后台</value>
   </data>
   <data name="Settings_MinimizeToTrayHint" xml:space="preserve">
-    <value>勾选：关闭主窗口时不退出，收进右下角托盘继续运行（顺手清理一次内存），自动扫描与邮件提醒照常执行；右键托盘图标可显示主窗口或退出程序。不勾选：关闭主窗口即直接退出程序。最小化时右下角会弹一次提示，同一天只弹一次。</value>
+    <value>勾选：关闭主窗口时不退出，收进右下角托盘继续运行（顺手清理一次内存），自动扫描与邮件提醒照常执行；右键托盘图标可显示主窗口或退出程序。不勾选：关闭主窗口即直接退出程序。</value>
   </data>
   <data name="Settings_AutoStart" xml:space="preserve">
     <value>开机自启（当前用户）</value>
@@ -3169,12 +3169,6 @@
   </data>
   <data name="Main_TrayExit" xml:space="preserve">
     <value>退出程序</value>
-  </data>
-  <data name="Main_TrayBalloonTitle" xml:space="preserve">
-    <value>已最小化到后台</value>
-  </data>
-  <data name="Main_TrayBalloonText" xml:space="preserve">
-    <value>程序仍在后台运行（自动扫描、邮件提醒照常执行），右键托盘图标可显示主窗口。如不需要，可在「设置 → 后台运行」里取消勾选「最小化到后台」，之后关闭主窗口就会直接退出程序。</value>
   </data>
   <data name="Main_TrayTip" xml:space="preserve">
     <value>ORT实验室管理系统（在后台运行，右键可显示主窗口）</value>
@@ -3684,5 +3678,74 @@
   </data>
   <data name="PreIssue_OnlyPendingDeletable" xml:space="preserve">
     <value>只有「待开单」的记录可以删除（已开单的请到领用系统处理）</value>
+  </data>
+  <data name="PreIssue_BlacklistEditTitle" xml:space="preserve">
+    <value>黑名单条目</value>
+  </data>
+  <data name="PreIssue_BlacklistEditHint" xml:space="preserve">
+    <value>先核对内容（可改成同系列正则），确认无误后点「完成」才加入黑名单。</value>
+  </data>
+  <data name="PreIssue_BlacklistToSeries" xml:space="preserve">
+    <value>按系列生成正则</value>
+  </data>
+  <data name="PreIssue_BlacklistSeriesTip" xml:space="preserve">
+    <value>前 6 位相同的机种视为同一系列：把 FSL020-00AG 变成 ^FSL020-[A-Za-z0-9]{4}$</value>
+  </data>
+  <data name="PreIssue_BlacklistSeriesInfo" xml:space="preserve">
+    <value>系列 {0} · 客户短码 {1} · 版本 {2}</value>
+  </data>
+  <data name="PreIssue_BlacklistSeriesUnsupported" xml:space="preserve">
+    <value>这个机种不是「前 6 位-后 4 位」的形状，无法按系列生成正则。</value>
+  </data>
+  <data name="PreIssue_BlacklistPreview" xml:space="preserve">
+    <value>本月会命中 {0} 个机种：{1}</value>
+  </data>
+  <data name="PreIssue_BlacklistPreviewNone" xml:space="preserve">
+    <value>本月没有机种会被这条规则命中。</value>
+  </data>
+  <data name="PreIssue_BlacklistNew" xml:space="preserve">
+    <value>新增条目</value>
+  </data>
+  <data name="PreIssue_Menu_Sort" xml:space="preserve">
+    <value>排序</value>
+  </data>
+  <data name="PreIssue_Menu_SortAsc" xml:space="preserve">
+    <value>正序</value>
+  </data>
+  <data name="PreIssue_Menu_SortDesc" xml:space="preserve">
+    <value>倒序</value>
+  </data>
+  <data name="PreIssue_Menu_SortNone" xml:space="preserve">
+    <value>不排序</value>
+  </data>
+  <data name="PreIssue_Menu_Filter" xml:space="preserve">
+    <value>筛选</value>
+  </data>
+  <data name="PreIssue_Menu_FilterEmpty" xml:space="preserve">
+    <value>这一列没有可筛选的值</value>
+  </data>
+  <data name="PreIssue_Menu_FilterTooMany" xml:space="preserve">
+    <value>这一列的值太多（{0} 个），请先用上面的搜索框缩小范围</value>
+  </data>
+  <data name="PreIssue_Menu_FilterBlank" xml:space="preserve">
+    <value>（空白）</value>
+  </data>
+  <data name="PreIssue_Menu_FilterClear" xml:space="preserve">
+    <value>清除本列筛选</value>
+  </data>
+  <data name="PreIssue_Menu_FilterClearAll" xml:space="preserve">
+    <value>清除全部筛选</value>
+  </data>
+  <data name="PreIssue_ReqEditDenied" xml:space="preserve">
+    <value>没有编辑准备领用的权限（需要计划编辑权限）</value>
+  </data>
+  <data name="PreIssue_ReqSaveFailed" xml:space="preserve">
+    <value>保存失败：{0}</value>
+  </data>
+  <data name="PreIssue_ReqSavedFormat" xml:space="preserve">
+    <value>已保存：{0}（{1} 处改动）</value>
+  </data>
+  <data name="PreIssue_BlacklistSeriesOnly" xml:space="preserve">
+    <value>系列 {0}（前 6 位相同即视为同一系列）</value>
   </data>
 </root>

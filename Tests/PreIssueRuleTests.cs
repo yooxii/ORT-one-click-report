@@ -348,6 +348,83 @@ namespace ORT一键报告.Tests
             Assert.That(matcher.Match("ABC"), Is.Null);
         }
 
+        /* ------------------ 机种 → 同系列正则 ------------------ */
+
+        [Test]
+        public void SeriesPattern_BuildsFromSixPlusFourModel()
+        {
+            Assert.That(OrtBlacklistMatcher.TryBuildSeriesPattern("FSL020-00AG", out string pattern,
+                out string series, out string customer, out string version), Is.True);
+            Assert.That(pattern, Is.EqualTo("^FSL020-[A-Za-z0-9]+$"));
+            Assert.That(series, Is.EqualTo("FSL020"));
+            Assert.That(customer, Is.EqualTo("00"));
+            Assert.That(version, Is.EqualTo("AG"));
+        }
+
+        /// <summary>后段 5 位的现场机种（如 WAS003-F90GB）：按系列生成正则，但不拆客户短码/版本</summary>
+        [Test]
+        public void SeriesPattern_WorksForFiveCharSuffixWithoutCustomerVersion()
+        {
+            Assert.That(OrtBlacklistMatcher.TryBuildSeriesPattern("WAS003-F90GB", out string pattern,
+                out string series, out string customer, out string version), Is.True);
+            Assert.That(pattern, Is.EqualTo("^WAS003-[A-Za-z0-9]+$"));
+            Assert.That(series, Is.EqualTo("WAS003"));
+            Assert.That(customer, Is.Null);
+            Assert.That(version, Is.Null);
+
+            OrtBlacklistMatcher matcher = OrtBlacklistMatcher.Create(
+            [
+                new OrtBlacklistItem { Model = pattern, IsPattern = true }
+            ]);
+            Assert.That(matcher.Matches("WAS003-F90GK"), Is.True);
+            Assert.That(matcher.Matches("WAS003-F91GB"), Is.True);
+            Assert.That(matcher.Matches("WAR008-F91GF"), Is.False);
+        }
+
+        [Test]
+        public void SeriesPattern_GeneratedRuleMatchesWholeSeriesOnly()
+        {
+            OrtBlacklistMatcher.TryBuildSeriesPattern("FSL020-00AG", out string pattern, out _, out _, out _);
+            OrtBlacklistMatcher matcher = OrtBlacklistMatcher.Create(
+            [
+                new OrtBlacklistItem { Model = pattern, IsPattern = true }
+            ]);
+            // 同一个系列（前 6 位相同）：客户短码与版本随意
+            Assert.That(matcher.Matches("FSL020-00AG"), Is.True);
+            Assert.That(matcher.Matches("FSL020-171G"), Is.True);
+            Assert.That(matcher.Matches("fsl020-7kag"), Is.True);
+            // 别的系列 / 形状不对
+            Assert.That(matcher.Matches("FSL021-171G"), Is.False);
+            Assert.That(matcher.Matches("FSL0200-171G"), Is.False);
+            Assert.That(matcher.Matches("FSL020-171"), Is.True);      // 同系列，后段位数不同也挡
+            Assert.That(matcher.Matches("FSL020-171GX"), Is.True);
+            Assert.That(matcher.Matches("FSL020"), Is.False);
+            Assert.That(matcher.Matches("FSL020_171G"), Is.False);
+        }
+
+        [TestCase("FSL020-00AG", "FSL020", "00", "AG")]
+        [TestCase("fsl020-7kag", "fsl020", "7k", "ag")]
+        public void SeriesParse_HandlesCase(string model, string series, string customer, string version)
+        {
+            Assert.That(OrtBlacklistMatcher.TryParseSeries(model, out string s, out string c, out string v), Is.True);
+            Assert.That(s, Is.EqualTo(series));
+            Assert.That(c, Is.EqualTo(customer));
+            Assert.That(v, Is.EqualTo(version));
+        }
+
+        [TestCase("FSL020")]
+        [TestCase("FSL02-00AG")]
+        [TestCase("FSL0200-00AG")]
+        [TestCase("FSL020-")]
+        [TestCase("FSL020_00AG")]
+        [TestCase("FSL020-00AG-X")]
+        [TestCase("")]
+        public void SeriesPattern_RejectsOtherShapes(string model)
+        {
+            Assert.That(OrtBlacklistMatcher.TryBuildSeriesPattern(model, out _, out _, out _, out _), Is.False);
+            Assert.That(OrtBlacklistMatcher.IsSeriesModel(model), Is.False);
+        }
+
         /* ------------------ 看板行比对键 ------------------ */
 
         [Test]

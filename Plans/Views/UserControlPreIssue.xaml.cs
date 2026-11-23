@@ -5,10 +5,12 @@ using ORT一键报告.Services;
 using ORT一键报告.Utils;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -34,6 +36,14 @@ namespace ORT一键报告.Plans.Views
         public UserControlPreIssue()
         {
             InitializeComponent();
+            // 准备领用：列头的右键菜单（筛选 / 排序）由本类自己弹，别让表格的右键菜单跟着一起冒出来
+            dg_req.ContextMenuOpening += (s, e) =>
+            {
+                if (e.OriginalSource is DependencyObject source && FindAncestor<DataGridColumnHeader>(source) != null)
+                {
+                    e.Handled = true;
+                }
+            };
             Loaded += (s, e) => Attach();
             DataContextChanged += (s, e) => Attach();
             // 浮动/回到窗口会把控件挪到另一个窗口：Unloaded 会先触发，这里只解除事件，不动数据
@@ -255,23 +265,31 @@ namespace ORT一键报告.Plans.Views
 
         private void Menu_BoardAddBlacklist_Click(object sender, RoutedEventArgs e) => SafeRun(
             LanguageService.Get("PreIssue_AddBlacklistTitle"),
-            () =>
-            {
-                if (_vm != null && _contextRow is OrtBoardRow row && !string.IsNullOrWhiteSpace(row.Model))
-                {
-                    _vm.AddBlacklistModel(row.Model, LanguageService.Get("PreIssue_BlacklistFromBoard"));
-                }
-            });
+            () => OpenBlacklistEditor(_contextRow is OrtBoardRow board ? board.Model : null));
 
         private void Menu_ReqAddBlacklist_Click(object sender, RoutedEventArgs e) => SafeRun(
             LanguageService.Get("PreIssue_AddBlacklistTitle"),
-            () =>
+            () => OpenBlacklistEditor(_contextRow is PreIssueRequisition req ? req.PartNo : null));
+
+        /// <summary>
+        /// 加入黑名单统一走「黑名单条目编辑框」：先把机种填进去，用户可以再改/换成同系列正则，
+        /// 点「完成」才真正写入。
+        /// </summary>
+        private void OpenBlacklistEditor(string model)
+        {
+            if (_vm == null || string.IsNullOrWhiteSpace(model))
             {
-                if (_vm != null && _contextRow is PreIssueRequisition row && !string.IsNullOrWhiteSpace(row.PartNo))
-                {
-                    _vm.AddBlacklistModel(row.PartNo, LanguageService.Get("PreIssue_BlacklistFromBoard"));
-                }
-            });
+                return;
+            }
+            WindowOrtBlacklistEdit dialog = new(_vm, model)
+            {
+                Owner = Window.GetWindow(this)
+            };
+            if (dialog.ShowDialog() == true && _vm.AddBlacklistModel(dialog.Value, dialog.Reason, dialog.IsPattern))
+            {
+                _vm.ReloadAfterBlacklistChange();
+            }
+        }
 
         private void Menu_DeletePending_Click(object sender, RoutedEventArgs e) => SafeRun(
             LanguageService.Get("PreIssue_DeletePendingTitle"),
@@ -300,6 +318,13 @@ namespace ORT一键报告.Plans.Views
                 _contextRow = null;
                 if (sender is not DataGrid grid || e.OriginalSource is not DependencyObject source)
                 {
+                    return;
+                }
+                // 准备领用：右键列头 = 筛选 / 排序 菜单（不弹单元格菜单）
+                if (ReferenceEquals(grid, dg_req) && FindAncestor<DataGridColumnHeader>(source) is DataGridColumnHeader header)
+                {
+                    ShowReqHeaderMenu(header);
+                    e.Handled = true;
                     return;
                 }
                 DataGridCell cell = FindAncestor<DataGridCell>(source);
@@ -332,6 +357,176 @@ namespace ORT一键报告.Plans.Views
             }
         }
 
+        /* ###############################  准备领用：双击编辑  ################################ */
+
+        /// <summary>没有编辑权限时拦住进入编辑；有权限才允许改</summary>
+        private void Dg_Req_BeginningEdit(object sender, DataGridBeginningEditEventArgs e)
+        {
+            if (_vm == null || _vm.CanEditRequisitionData)
+            {
+                return;
+            }
+            e.Cancel = true;
+            _ = MessageBox.Show(LanguageService.Get("PreIssue_ReqEditDenied"),
+                LanguageService.Get("PreIssue_RequisitionTab"), MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+
+        /// <summary>
+        /// 单元格编辑结束（提交）后保存这一行：绑定是即时更新（UpdateSourceTrigger=PropertyChanged），
+        /// 这里延后到下一轮消息循环再写库，避免打断 DataGrid 自己的提交事务。
+        /// </summary>
+        private void Dg_Req_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
+        {
+            if (e.EditAction != DataGridEditAction.Commit || e.Row.Item is not PreIssueRequisition row || _vm == null)
+            {
+                return;
+            }
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                try
+                {
+                    _vm.SaveReqRow(row);
+                }
+                catch (Exception ex)
+                {
+                    _logger.Warn($"保存准备领用手工修改失败: {ex.Message}");
+                }
+            }), System.Windows.Threading.DispatcherPriority.Background);
+        }
+
+        /* ###############################  准备领用：列头筛选 / 排序  ################################ */
+
+        /// <summary>列对应的属性名（优先 SortMemberPath，其次绑定的路径）</summary>
+        private static string PropertyOf(DataGridColumn column)
+        {
+            if (column == null)
+            {
+                return null;
+            }
+            if (!string.IsNullOrWhiteSpace(column.SortMemberPath))
+            {
+                return column.SortMemberPath;
+            }
+            if (column is DataGridBoundColumn bound && bound.Binding is Binding binding)
+            {
+                return binding.Path?.Path;
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// 准备领用的列头右键菜单：排序（正序 / 倒序 / 不排序）+ 筛选（按该列的值勾选）。
+        /// </summary>
+        private void ShowReqHeaderMenu(DataGridColumnHeader header)
+        {
+            try
+            {
+                string property = PropertyOf(header?.Column);
+                if (_vm == null || string.IsNullOrEmpty(property))
+                {
+                    return;
+                }
+                ContextMenu menu = new()
+                {
+                    PlacementTarget = header,
+                    Placement = PlacementMode.Bottom
+                };
+
+                // ---- 排序 ----
+                MenuItem sort = new() { Header = LanguageService.Get("PreIssue_Menu_Sort") };
+                (string Property, ListSortDirection Direction)? current = _vm.CurrentReqSort;
+                bool sameColumn = current.HasValue && string.Equals(current.Value.Property, property, StringComparison.Ordinal);
+                sort.Items.Add(BuildSortItem(LanguageService.Get("PreIssue_Menu_SortAsc"), property,
+                    ListSortDirection.Ascending, sameColumn && current.Value.Direction == ListSortDirection.Ascending));
+                sort.Items.Add(BuildSortItem(LanguageService.Get("PreIssue_Menu_SortDesc"), property,
+                    ListSortDirection.Descending, sameColumn && current.Value.Direction == ListSortDirection.Descending));
+                sort.Items.Add(BuildSortItem(LanguageService.Get("PreIssue_Menu_SortNone"), property,
+                    null, !sameColumn));
+                menu.Items.Add(sort);
+
+                // ---- 筛选（按值多选） ----
+                MenuItem filter = new() { Header = LanguageService.Get("PreIssue_Menu_Filter") };
+                List<string> values = _vm.GetReqColumnValues(property);
+                HashSet<string> selection = _vm.GetReqColumnSelection(property);
+                if (values.Count == 0)
+                {
+                    menu.Items.Add(new MenuItem { Header = LanguageService.Get("PreIssue_Menu_FilterEmpty"), IsEnabled = false });
+                }
+                else if (values.Count > 80)
+                {
+                    menu.Items.Add(new MenuItem
+                    {
+                        Header = string.Format(LanguageService.Get("PreIssue_Menu_FilterTooMany"), values.Count),
+                        IsEnabled = false
+                    });
+                }
+                else
+                {
+                    List<(string Value, MenuItem Item)> items = [];
+                    foreach (string value in values)
+                    {
+                        MenuItem item = new()
+                        {
+                            Header = string.IsNullOrEmpty(value) ? LanguageService.Get("PreIssue_Menu_FilterBlank") : value,
+                            IsCheckable = true,
+                            IsChecked = selection == null || selection.Contains(value)
+                        };
+                        string captured = value;
+                        item.Click += (s, e) => ApplyHeaderFilter(property, values, items);
+                        items.Add((value, item));
+                        filter.Items.Add(item);
+                    }
+                    menu.Items.Add(filter);
+                }
+                menu.Items.Add(new Separator());
+                menu.Items.Add(BuildMenuItem(LanguageService.Get("PreIssue_Menu_FilterClear"), () =>
+                {
+                    _vm.ClearReqColumnFilter(property);
+                }));
+                menu.Items.Add(BuildMenuItem(LanguageService.Get("PreIssue_Menu_FilterClearAll"), _vm.ClearAllReqColumnFilters));
+
+                menu.IsOpen = true;
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn($"弹出准备领用列头菜单失败: {ex.Message}");
+            }
+        }
+
+        /// <summary>把筛选菜单当前的勾选状态应用到该列（全选 = 等于没筛选）</summary>
+        private void ApplyHeaderFilter(string property, List<string> allValues, List<(string Value, MenuItem Item)> items)
+        {
+            if (_vm == null || items == null)
+            {
+                return;
+            }
+            List<string> checkedValues = items.Where(pair => pair.Item.IsChecked).Select(pair => pair.Value).ToList();
+            if (checkedValues.Count == 0 || checkedValues.Count == allValues.Count)
+            {
+                _vm.ClearReqColumnFilter(property);   // 一个都没勾 / 全都勾上：等于不筛选
+                return;
+            }
+            _vm.SetReqColumnFilter(property, checkedValues);
+        }
+
+        private MenuItem BuildSortItem(string header, string property, ListSortDirection? direction, bool isChecked)
+        {
+            MenuItem item = new()
+            {
+                Header = header,
+                IsCheckable = true,
+                IsChecked = isChecked
+            };
+            item.Click += (s, e) => _vm?.SortRequisitions(property, direction);
+            return item;
+        }
+
+        private static MenuItem BuildMenuItem(string header, Action click)
+        {
+            MenuItem item = new() { Header = header };
+            item.Click += (s, e) => click();
+            return item;
+        }
         /// <summary>右键菜单里的动作统一兜底：出错只提示，不把程序带崩</summary>
         private void SafeRun(string action, Action run)
         {

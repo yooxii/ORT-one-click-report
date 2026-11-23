@@ -16,6 +16,16 @@
             <Setter Property="Margin" Value="0"/>
             <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
         </Style>
+        <!-- 可编辑单元格里的输入框：无边框铺满、内容居中（准备领用表格双击编辑用） -->
+        <Style x:Key="PreEdit" TargetType="TextBox">
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+        </Style>
         <!-- 单元格：无内边距、内容居中，选中仍可见 -->
         <Style x:Key="PreCell" TargetType="DataGridCell">
             <Setter Property="Padding" Value="0"/>
@@ -288,16 +298,19 @@
                     <TextBlock Grid.Row="1" Text="{Binding ReqHint}" Margin="2,0,0,4" TextWrapping="Wrap"
                                Foreground="{DynamicResource StatusWarnBrush}"/>
 
-                    <!-- 开单数据只保留这 10 列（VCHNO … PC），待开单阶段只有 PART_NO 有值 -->
+                    <!-- 开单数据只保留这 10 列（VCHNO … PC），待开单阶段只有 PART_NO 有值；
+                         双击单元格可直接改（改完即写库，失败会恢复原值）；列头右键有筛选/排序 -->
                     <DataGrid x:Name="dg_req" Grid.Row="2"
                               ItemsSource="{Binding ReqView}"
                               SelectedItem="{Binding SelectedReqRow, Mode=TwoWay}"
-                              AutoGenerateColumns="False" IsReadOnly="True"
+                              AutoGenerateColumns="False" IsReadOnly="False"
                               CanUserSortColumns="True" CanUserAddRows="False"
                               HeadersVisibility="All" GridLinesVisibility="All"
                               SelectionMode="Extended" SelectionUnit="FullRow"
                               ClipboardCopyMode="None"
                               VirtualizingPanel.IsVirtualizing="True"
+                              BeginningEdit="Dg_Req_BeginningEdit"
+                              CellEditEnding="Dg_Req_CellEditEnding"
                               PreviewMouseRightButtonDown="DataGrid_PreviewMouseRightButtonDown">
                         <DataGrid.CellStyle>
                             <StaticResource ResourceKey="PreCell"/>
@@ -325,17 +338,39 @@
                             </ContextMenu>
                         </DataGrid.ContextMenu>
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="{lex:Loc PreIssue_Column_State}" Binding="{Binding PhaseText}" Width="95" ElementStyle="{StaticResource PreText}"/>
-                            <DataGridTextColumn Header="VCHNO" Binding="{Binding Vchno}" Width="120" ElementStyle="{StaticResource PreText}"/>
-                            <DataGridTextColumn Header="WARE_CODE" Binding="{Binding WareCode}" Width="85" ElementStyle="{StaticResource PreText}"/>
-                            <DataGridTextColumn Header="TR_CODE" Binding="{Binding TrCode}" Width="70" ElementStyle="{StaticResource PreText}"/>
-                            <DataGridTextColumn Header="PART_NO" Binding="{Binding PartNo}" Width="120" ElementStyle="{StaticResource PreText}"/>
-                            <DataGridTextColumn Header="REQ_QTY" Binding="{Binding ReqQty}" Width="75" ElementStyle="{StaticResource PreText}"/>
-                            <DataGridTextColumn Header="IVER_ID" Binding="{Binding IverId}" Width="70" ElementStyle="{StaticResource PreText}"/>
-                            <DataGridTextColumn Header="VCH_STATUS" Binding="{Binding VchStatus}" Width="110" ElementStyle="{StaticResource PreText}"/>
-                            <DataGridTextColumn Header="ISSUE_DEPT" Binding="{Binding IssueDept}" Width="90" ElementStyle="{StaticResource PreText}"/>
-                            <DataGridTextColumn Header="CLOSE_CODE" Binding="{Binding CloseCode}" Width="85" ElementStyle="{StaticResource PreText}"/>
-                            <DataGridTextColumn Header="PC" Binding="{Binding Pc}" Width="85" ElementStyle="{StaticResource PreText}"/>
+                            <DataGridTextColumn Header="{lex:Loc PreIssue_Column_State}" Binding="{Binding PhaseText}"
+                                                SortMemberPath="PhaseText" IsReadOnly="True" Width="95"
+                                                ElementStyle="{StaticResource PreText}"/>
+                            <DataGridTextColumn Header="VCHNO" Binding="{Binding Vchno, UpdateSourceTrigger=PropertyChanged}"
+                                                SortMemberPath="Vchno" Width="120"
+                                                ElementStyle="{StaticResource PreText}" EditingElementStyle="{StaticResource PreEdit}"/>
+                            <DataGridTextColumn Header="WARE_CODE" Binding="{Binding WareCode, UpdateSourceTrigger=PropertyChanged}"
+                                                SortMemberPath="WareCode" Width="85"
+                                                ElementStyle="{StaticResource PreText}" EditingElementStyle="{StaticResource PreEdit}"/>
+                            <DataGridTextColumn Header="TR_CODE" Binding="{Binding TrCode, UpdateSourceTrigger=PropertyChanged}"
+                                                SortMemberPath="TrCode" Width="70"
+                                                ElementStyle="{StaticResource PreText}" EditingElementStyle="{StaticResource PreEdit}"/>
+                            <DataGridTextColumn Header="PART_NO" Binding="{Binding PartNo, UpdateSourceTrigger=PropertyChanged}"
+                                                SortMemberPath="PartNo" Width="120"
+                                                ElementStyle="{StaticResource PreText}" EditingElementStyle="{StaticResource PreEdit}"/>
+                            <DataGridTextColumn Header="REQ_QTY" Binding="{Binding ReqQty, UpdateSourceTrigger=PropertyChanged}"
+                                                SortMemberPath="ReqQty" Width="75"
+                                                ElementStyle="{StaticResource PreText}" EditingElementStyle="{StaticResource PreEdit}"/>
+                            <DataGridTextColumn Header="IVER_ID" Binding="{Binding IverId, UpdateSourceTrigger=PropertyChanged}"
+                                                SortMemberPath="IverId" Width="70"
+                                                ElementStyle="{StaticResource PreText}" EditingElementStyle="{StaticResource PreEdit}"/>
+                            <DataGridTextColumn Header="VCH_STATUS" Binding="{Binding VchStatus, UpdateSourceTrigger=PropertyChanged}"
+                                                SortMemberPath="VchStatus" Width="110"
+                                                ElementStyle="{StaticResource PreText}" EditingElementStyle="{StaticResource PreEdit}"/>
+                            <DataGridTextColumn Header="ISSUE_DEPT" Binding="{Binding IssueDept, UpdateSourceTrigger=PropertyChanged}"
+                                                SortMemberPath="IssueDept" Width="90"
+                                                ElementStyle="{StaticResource PreText}" EditingElementStyle="{StaticResource PreEdit}"/>
+                            <DataGridTextColumn Header="CLOSE_CODE" Binding="{Binding CloseCode, UpdateSourceTrigger=PropertyChanged}"
+                                                SortMemberPath="CloseCode" Width="85"
+                                                ElementStyle="{StaticResource PreText}" EditingElementStyle="{StaticResource PreEdit}"/>
+                            <DataGridTextColumn Header="PC" Binding="{Binding Pc, UpdateSourceTrigger=PropertyChanged}"
+                                                SortMemberPath="Pc" Width="85"
+                                                ElementStyle="{StaticResource PreText}" EditingElementStyle="{StaticResource PreEdit}"/>
                         </DataGrid.Columns>
                     </DataGrid>
                 </Grid>

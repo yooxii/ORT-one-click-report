@@ -1569,6 +1569,206 @@ namespace ORT一键报告.Services
             return true;
         }
 
+        /* ###############################  黑名单清理待开单  ################################ */
+
+        /// <summary>
+        /// 把某月「命中黑名单（含正则）」的待开单清掉：机种后来被加入黑名单的，刷新时不该再留在准备领用里。
+        /// 只清「待开单」、且没有开单号的记录；已开单的已经在领用系统里开出去了，不能动。
+        /// 清理结果记进变动记录。
+        /// </summary>
+        public int PurgeBlacklistedPending(string month, out List<string> removed)
+        {
+            removed = [];
+            try
+            {
+                OrtBlacklistMatcher blacklist = BuildBlacklistMatcher();
+                if (blacklist.Count == 0)
+                {
+                    return 0;
+                }
+                List<PreIssueRequisition> pending = _db.FreeSql.Select<PreIssueRequisition>()
+                    .Where(a => a.Month == month).ToList()
+                    .Where(a => PreIssueCodes.IsPendingState(a.State) && string.IsNullOrWhiteSpace(a.Vchno))
+                    .Where(a => !string.IsNullOrWhiteSpace(a.PartNo))
+                    .ToList();
+                foreach (PreIssueRequisition row in pending)
+                {
+                    if (!blacklist.Matches(row.PartNo))
+                    {
+                        continue;
+                    }
+                    long id = row.Id;
+                    _db.FreeSql.Delete<PreIssueRequisition>().Where(a => a.Id == id).ExecuteAffrows();
+                    removed.Add($"{row.PartNo}（{OrtBlacklistMatcher.Describe(blacklist.Match(row.PartNo))}）");
+                }
+                if (removed.Count > 0)
+                {
+                    _db.FreeSql.Insert(new PreIssueChangeLog
+                    {
+                        Month = month,
+                        Source = PreIssueCodes.SourceRequisition,
+                        Kind = PreIssueCodes.KindRemoved,
+                        Target = string.Join("、", removed.Take(20)),
+                        Note = $"刷新时按黑名单清理 {removed.Count} 个待开单",
+                        Operator = _permission?.CurrentUser,
+                        CreatedAt = DateTime.Now
+                    }).ExecuteAffrows();
+                    _logger.Info($"按黑名单清理 {month} 的待开单 {removed.Count} 条：{string.Join("、", removed.Take(10))}");
+                }
+                return removed.Count;
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn($"按黑名单清理待开单失败: {ex.Message}");
+                return 0;
+            }
+        }
+
+        /* ###############################  准备领用：手工编辑  ################################ */
+
+        /// <summary>
+        /// 保存准备领用里手工改过的一行（表格里双击编辑）：与库里旧值逐列比对，
+        /// 有变化才写库并记变动记录；<paramref name="stateChanged"/> 说明阶段（待开单/已开单）是否变了。
+        /// 开单号有值 = 已开单，没值 = 待开单。
+        /// </summary>
+        public bool SaveRequisition(PreIssueRequisition row, out string error, out int changedFields)
+        {
+            error = null;
+            changedFields = 0;
+            if (row == null)
+            {
+                error = "没有要保存的记录";
+                return false;
+            }
+            if (string.IsNullOrWhiteSpace(row.PartNo))
+            {
+                error = "机种（PART_NO）不能为空";
+                return false;
+            }
+            try
+            {
+                PreIssueRequisition old = _db.FreeSql.Select<PreIssueRequisition>().Where(a => a.Id == row.Id).First();
+                if (old == null)
+                {
+                    error = "这条记录已经不在库里了，请刷新后再改";
+                    return false;
+                }
+                List<PreIssueChangeLog> logs = [];
+                foreach ((string Field, string OldValue, string NewValue) diff in DiffRequisitionEntity(old, row))
+                {
+                    logs.Add(Change(old.Month, PreIssueCodes.SourceRequisition, PreIssueCodes.KindModified,
+                        row.PartNo, diff.Field, diff.OldValue, diff.NewValue, "表格里手工修改"));
+                }
+                changedFields = logs.Count;
+                string state = string.IsNullOrWhiteSpace(row.Vchno)
+                    ? PreIssueCodes.PendingState
+                    : PreIssueCodes.OpenedState;
+                if (!string.Equals(old.State, state, StringComparison.Ordinal))
+                {
+                    logs.Add(Change(old.Month, PreIssueCodes.SourceRequisition, PreIssueCodes.KindOpened, row.PartNo,
+                        "階段", old.State ?? PreIssueCodes.PendingState, state, "表格里手工修改"));
+                    changedFields++;
+                }
+                if (changedFields == 0)
+                {
+                    return true;
+                }
+                string user = _permission?.CurrentUser;
+                _db.FreeSql.Update<PreIssueRequisition>()
+                    .Set(a => a.Vchno, NullIfBlank(row.Vchno))
+                    .Set(a => a.WareCode, NullIfBlank(row.WareCode))
+                    .Set(a => a.TrCode, NullIfBlank(row.TrCode))
+                    .Set(a => a.PartNo, row.PartNo.Trim())
+                    .Set(a => a.ReqQty, NullIfBlank(row.ReqQty))
+                    .Set(a => a.IverId, NullIfBlank(row.IverId))
+                    .Set(a => a.VchStatus, NullIfBlank(row.VchStatus))
+                    .Set(a => a.IssueDept, NullIfBlank(row.IssueDept))
+                    .Set(a => a.CloseCode, NullIfBlank(row.CloseCode))
+                    .Set(a => a.Pc, NullIfBlank(row.Pc))
+                    .Set(a => a.State, state)
+                    .Set(a => a.UpdatedAt, DateTime.Now)
+                    .Set(a => a.UpdatedBy, user)
+                    .Where(a => a.Id == old.Id)
+                    .ExecuteAffrows();
+                if (logs.Count > 0)
+                {
+                    _db.FreeSql.Insert(logs).ExecuteAffrows();
+                }
+                _logger.Info($"准备领用手工修改：{row.PartNo}，{changedFields} 个字段");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "保存准备领用手工修改失败");
+                error = ex.Message;
+                return false;
+            }
+        }
+
+        private static string NullIfBlank(string value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+        private static IEnumerable<(string Field, string OldValue, string NewValue)> DiffRequisitionEntity(
+            PreIssueRequisition old, PreIssueRequisition now)
+        {
+            (string Field, string OldValue, string NewValue)[] pairs =
+            [
+                ("VCHNO", old.Vchno, now.Vchno),
+                ("WARE_CODE", old.WareCode, now.WareCode),
+                ("TR_CODE", old.TrCode, now.TrCode),
+                ("PART_NO", old.PartNo, now.PartNo),
+                ("REQ_QTY", old.ReqQty, now.ReqQty),
+                ("IVER_ID", old.IverId, now.IverId),
+                ("VCH_STATUS", old.VchStatus, now.VchStatus),
+                ("ISSUE_DEPT", old.IssueDept, now.IssueDept),
+                ("CLOSE_CODE", old.CloseCode, now.CloseCode),
+                ("PC", old.Pc, now.Pc)
+            ];
+            foreach ((string Field, string OldValue, string NewValue) pair in pairs)
+            {
+                if (!string.Equals(Norm(pair.OldValue), Norm(pair.NewValue), StringComparison.Ordinal))
+                {
+                    yield return pair;
+                }
+            }
+        }
+
+        /// <summary>
+        /// 预览一条黑名单规则会命中本月的哪些机种（编辑窗口确认前给用户看一眼）：
+        /// 取本月看板与准备领用里出现过的机种去匹配，返回命中的机种列表（去重、最多 20 个）。
+        /// </summary>
+        public List<string> PreviewBlacklistRule(string value, bool isPattern)
+        {
+            List<string> hits = [];
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return hits;
+            }
+            OrtBlacklistMatcher matcher = new();
+            if (!matcher.Add(value, isPattern))
+            {
+                return hits;
+            }
+            string month = CurrentMonth;
+            List<string> models = [];
+            try
+            {
+                models.AddRange(_db.FreeSql.Select<OrtBoardRow>().Where(a => a.Month == month).ToList(a => a.Model));
+                models.AddRange(_db.FreeSql.Select<PreIssueRequisition>().Where(a => a.Month == month).ToList(a => a.PartNo));
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn($"预览黑名单规则时读数据失败: {ex.Message}");
+            }
+            foreach (string model in models.Where(m => !string.IsNullOrWhiteSpace(m))
+                .Select(m => m.Trim()).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(m => m, StringComparer.OrdinalIgnoreCase))
+            {
+                if (matcher.Matches(model))
+                {
+                    hits.Add(model);
+                }
+            }
+            return hits;
+        }
         /* ###############################  黑名单  ################################ */
 
         /// <summary>

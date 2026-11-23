@@ -507,11 +507,8 @@ namespace ORT一键报告.Plans.ViewModels
                 ReqRows.Add(row);
             }
             RefreshView(ReqView);
+            UpdateReqSummary();
             int pending = _reqAll.Count(r => PreIssueCodes.IsPendingState(r.State) || string.IsNullOrWhiteSpace(r.Vchno));
-            int opened = _reqAll.Count - pending;
-            ReqSummary = _reqAll.Count == 0
-                ? "没有记录"
-                : $"{_reqAll.Count} 条 · 待开单 {pending} · 已开单 {opened}";
             ReqHint = pending > 0
                 ? $"有 {pending} 个机种待开单：开好单后把下载的开单数据（11.XLS 一类）导入进来补全"
                 : "待开单都开好了：可在开单流程有变化时再次导入开单数据，同步 VCH_STATUS / CLOSE_CODE";
@@ -531,6 +528,20 @@ namespace ORT一键报告.Plans.ViewModels
             if (ReqStateFilter == PreIssueCodes.OpenedState && pending)
             {
                 return false;
+            }
+            // 列头筛选：每列勾选的值里命中任意一个就算通过
+            foreach (KeyValuePair<string, HashSet<string>> filter in _reqColumnFilters)
+            {
+                System.Reflection.PropertyInfo info = typeof(PreIssueRequisition).GetProperty(filter.Key);
+                if (info == null)
+                {
+                    continue;
+                }
+                string value = info.GetValue(row) as string ?? "";
+                if (!filter.Value.Contains(value))
+                {
+                    return false;
+                }
             }
             string keyword = ReqSearch?.Trim();
             if (string.IsNullOrEmpty(keyword))
@@ -648,6 +659,8 @@ namespace ORT一键报告.Plans.ViewModels
         {
             try
             {
+                // 机种后来被加入黑名单（含正则）的，刷新时把它的待开单清掉——ORT 做不了的不该留在准备领用里
+                PurgeBlacklistedPending();
                 LoadSchedule();
                 LoadBoard();
                 LoadRequisition();
@@ -664,6 +677,224 @@ namespace ORT一键报告.Plans.ViewModels
                 StatusMessage = "刷新失败：" + ex.Message;
             }
         }
+
+        /// <summary>按黑名单清理本月的待开单（有清理时提示一条；已开单的不动）</summary>
+        private void PurgeBlacklistedPending()
+        {
+            try
+            {
+                int removed = _service.PurgeBlacklistedPending(Month, out List<string> models);
+                if (removed > 0)
+                {
+                    string sample = string.Join("、", models.Take(6)) + (models.Count > 6 ? "…" : "");
+                    string message = $"已按黑名单清理 {removed} 个待开单：{sample}";
+                    StatusMessage = message;
+                    ToastService.Show(message);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn($"按黑名单清理待开单失败: {ex.Message}");
+            }
+        }
+
+        /* ###############################  准备领用：手工编辑  ################################ */
+
+        /// <summary>能不能在表格里手工改准备领用（需要计划编辑权限）</summary>
+        public bool CanEditRequisitionData => _permission.Can("plan.edit");
+
+        /// <summary>表格里改完一格后保存这一行（失败时从库里把旧值读回来覆盖界面）</summary>
+        public bool SaveReqRow(PreIssueRequisition row)
+        {
+            if (row == null)
+            {
+                return false;
+            }
+            if (!CanEditRequisitionData)
+            {
+                _ = MessageBox.Show(LanguageService.Get("PreIssue_ReqEditDenied"),
+                    LanguageService.Get("PreIssue_RequisitionTab"), MessageBoxButton.OK, MessageBoxImage.Warning);
+                ReloadRowFromDb(row);
+                return false;
+            }
+            if (!_service.SaveRequisition(row, out string error, out int changed))
+            {
+                _ = MessageBox.Show(string.Format(LanguageService.Get("PreIssue_ReqSaveFailed"), error),
+                    LanguageService.Get("PreIssue_RequisitionTab"), MessageBoxButton.OK, MessageBoxImage.Warning);
+                ReloadRowFromDb(row);
+                return false;
+            }
+            if (changed > 0)
+            {
+                StatusMessage = string.Format(LanguageService.Get("PreIssue_ReqSavedFormat"), row.PartNo, changed);
+                // 阶段可能跟着开单号变了、汇总也要更新
+                UpdateReqSummary();
+                RefreshView(ReqView);
+            }
+            return true;
+        }
+
+        /// <summary>保存失败时把这一行恢复成库里的值（避免界面显示"改成功了"）</summary>
+        private void ReloadRowFromDb(PreIssueRequisition row)
+        {
+            try
+            {
+                PreIssueRequisition fresh = _service.LoadRequisition(Month).FirstOrDefault(r => r.Id == row.Id);
+                if (fresh == null)
+                {
+                    return;
+                }
+                row.Vchno = fresh.Vchno;
+                row.WareCode = fresh.WareCode;
+                row.TrCode = fresh.TrCode;
+                row.PartNo = fresh.PartNo;
+                row.ReqQty = fresh.ReqQty;
+                row.IverId = fresh.IverId;
+                row.VchStatus = fresh.VchStatus;
+                row.IssueDept = fresh.IssueDept;
+                row.CloseCode = fresh.CloseCode;
+                row.Pc = fresh.Pc;
+                row.State = fresh.State;
+                RefreshView(ReqView);
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn($"恢复准备领用旧值失败: {ex.Message}");
+            }
+        }
+
+        /* ###############################  准备领用：列筛选 / 排序  ################################ */
+
+        /// <summary>准备领用的列筛选（property → 勾选的值；多选，命中任意一个即显示）</summary>
+        private readonly Dictionary<string, HashSet<string>> _reqColumnFilters = new(StringComparer.Ordinal);
+
+        /// <summary>这一列有没有筛选</summary>
+        public bool HasReqColumnFilter(string property) =>
+            !string.IsNullOrEmpty(property) && _reqColumnFilters.ContainsKey(property);
+
+        /// <summary>有没有任何列筛选</summary>
+        public bool HasAnyReqColumnFilter => _reqColumnFilters.Count > 0;
+
+        /// <summary>某一列当前勾选的值（没有筛选时返回 null = 全部显示）</summary>
+        public HashSet<string> GetReqColumnSelection(string property) =>
+            !string.IsNullOrEmpty(property) && _reqColumnFilters.TryGetValue(property, out HashSet<string> set)
+                ? new HashSet<string>(set, StringComparer.Ordinal)
+                : null;
+
+        /// <summary>取一列的去重值（列头筛选菜单用）</summary>
+        public List<string> GetReqColumnValues(string property)
+        {
+            System.Reflection.PropertyInfo info = typeof(PreIssueRequisition).GetProperty(property ?? "");
+            if (info == null)
+            {
+                return [];
+            }
+            return _reqAll
+                .Select(row => info.GetValue(row) as string ?? "")
+                .Distinct(StringComparer.Ordinal)
+                .OrderBy(v => v, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        /// <summary>设置某一列的筛选（values 为空 = 清除该列筛选）</summary>
+        public void SetReqColumnFilter(string property, IEnumerable<string> values)
+        {
+            if (string.IsNullOrEmpty(property))
+            {
+                return;
+            }
+            HashSet<string> set = new(values ?? [], StringComparer.Ordinal);
+            if (set.Count == 0)
+            {
+                _reqColumnFilters.Remove(property);
+            }
+            else
+            {
+                _reqColumnFilters[property] = set;
+            }
+            RefreshView(ReqView);
+            UpdateReqSummary();
+        }
+
+        /// <summary>清除某一列 / 全部列筛选</summary>
+        public void ClearReqColumnFilter(string property)
+        {
+            if (string.IsNullOrEmpty(property))
+            {
+                return;
+            }
+            _reqColumnFilters.Remove(property);
+            RefreshView(ReqView);
+            UpdateReqSummary();
+        }
+
+        /// <summary>清除全部列筛选</summary>
+        public void ClearAllReqColumnFilters()
+        {
+            _reqColumnFilters.Clear();
+            RefreshView(ReqView);
+            UpdateReqSummary();
+        }
+
+        /// <summary>按列排序（direction 为空 = 不排序，恢复默认顺序）</summary>
+        public void SortRequisitions(string property, ListSortDirection? direction)
+        {
+            try
+            {
+                using (ReqView.DeferRefresh())
+                {
+                    ReqView.SortDescriptions.Clear();
+                    if (!string.IsNullOrEmpty(property) && direction.HasValue)
+                    {
+                        ReqView.SortDescriptions.Add(new SortDescription(property, direction.Value));
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn($"准备领用排序失败: {ex.Message}");
+            }
+        }
+
+        /// <summary>当前排序（列头菜单打勾用）：没有排序返回 null</summary>
+        public (string Property, ListSortDirection Direction)? CurrentReqSort
+        {
+            get
+            {
+                SortDescriptionCollection descriptions = ReqView.SortDescriptions;
+                return descriptions.Count == 0 ? null : (descriptions[0].PropertyName, descriptions[0].Direction);
+            }
+        }
+
+        /// <summary>重新算「可见 N 条」的汇总</summary>
+        private void UpdateReqSummary()
+        {
+            int pending = _reqAll.Count(r => PreIssueCodes.IsPendingState(r.State) || string.IsNullOrWhiteSpace(r.Vchno));
+            int opened = _reqAll.Count - pending;
+            int visible = 0;
+            foreach (object row in ReqView)
+            {
+                _ = row;
+                visible++;
+            }
+            string baseText = _reqAll.Count == 0
+                ? "没有记录"
+                : $"{_reqAll.Count} 条 · 待开单 {pending} · 已开单 {opened}";
+            ReqSummary = visible == _reqAll.Count
+                ? baseText
+                : baseText + $" · 可见 {visible} 条";
+        }
+
+        /* ###############################  黑名单：编辑框辅助  ################################ */
+
+        /// <summary>把单个机种拆成「同系列」正则的预览（编辑窗口用）</summary>
+        public static bool TryBuildSeriesPattern(string model, out string pattern, out string series,
+            out string customer, out string version) =>
+            OrtBlacklistMatcher.TryBuildSeriesPattern(model, out pattern, out series, out customer, out version);
+
+        /// <summary>一条黑名单规则本月会命中哪些机种（编辑窗口确认前预览）</summary>
+        public List<string> PreviewBlacklistRule(string value, bool isPattern) =>
+            _service.PreviewBlacklistRule(value, isPattern);
 
         private void PrevWeek() => StepWeek(-1);
 

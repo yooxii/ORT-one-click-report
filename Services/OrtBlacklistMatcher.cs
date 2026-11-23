@@ -120,6 +120,57 @@ namespace ORT一键报告.Services
 
         private bool TryCompile(string pattern, out Regex regex) => TryCompile(pattern, out regex, out _);
 
+        /* ------------------ 「机种 → 同系列正则」 ------------------ */
+
+        /// <summary>
+        /// 机种形状：前 6 位 + '-' + 一段字母数字（例：FSL020-00AG；现场也有 5 位的，如 WAS003-F90GB）。
+        /// **前 6 位相同就算同一个系列**；后段正好 4 位时再拆出客户短码（前 2）与版本（后 2）。
+        /// </summary>
+        private static readonly Regex SeriesModelPattern =
+            new(@"^([A-Za-z0-9]{6})-([A-Za-z0-9]{1,8})$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
+        /// <summary>机种是不是「前 6 位-后 4 位」的形状</summary>
+        public static bool IsSeriesModel(string model) => TryParseSeries(model, out _, out _, out _);
+
+        /// <summary>拆机种：系列（前 6 位）、客户短码（后 4 位前 2）、版本（后 4 位后 2）</summary>
+        public static bool TryParseSeries(string model, out string series, out string customer, out string version)
+        {
+            series = null;
+            customer = null;
+            version = null;
+            Match match = SeriesModelPattern.Match((model ?? "").Trim());
+            if (!match.Success)
+            {
+                return false;
+            }
+            string prefix = match.Groups[1].Value;
+            string suffix = match.Groups[2].Value;
+            series = prefix;
+            // 后段正好 4 位才按「客户短码 2 + 版本 2」拆；其它长度只给出系列
+            if (suffix.Length == 4)
+            {
+                customer = suffix.Substring(0, 2);
+                version = suffix.Substring(2, 2);
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// 把单个机种转成「同系列」正则：前 6 位相同、横线后面任意字母数字。
+        /// 例：FSL020-00AG → ^FSL020-[A-Za-z0-9]+$（同系列里后段位数不一样的机种也能一起挡掉）
+        /// </summary>
+        public static bool TryBuildSeriesPattern(string model, out string pattern, out string series,
+            out string customer, out string version)
+        {
+            pattern = null;
+            if (!TryParseSeries(model, out series, out customer, out version))
+            {
+                return false;
+            }
+            pattern = "^" + Regex.Escape(series) + "-[A-Za-z0-9]+$";
+            return true;
+        }
+
         /// <summary>命中的规则说明（例如「正则 FSL0.*」）</summary>
         public static string Describe(OrtBlacklistRule rule) =>
             rule == null ? null : (rule.IsPattern ? "正则 " + rule.Value : rule.Value);

@@ -1,17 +1,15 @@
 using ORT一键报告.Models;
 using ORT一键报告.Plans.ViewModels;
 using ORT一键报告.Services;
-using System;
 using System.Collections.Generic;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Media;
 
 namespace ORT一键报告.Plans.Views
 {
     /// <summary>
-    /// ORT 黑名单管理：有些机种 ORT 做不了、不需要领用，加进黑名单后看板变动不再推进到准备领用。
-    /// 条目支持两种类型——「機種」精确匹配、「正则」按正则包含匹配（可一条挡住一整组机种）。
+    /// ORT 黑名单管理：列出已加入的条目（機種 / 正则），新增走「黑名单条目编辑框」，
+    /// 也可以把选中的条目移出黑名单。ORT 做不了、不需要领用的机种加进来后，
+    /// 看板变动不再推进到准备领用，刷新时也会把已有的待开单清掉。
     /// </summary>
     public partial class WindowOrtBlacklist : Window
     {
@@ -21,27 +19,7 @@ namespace ORT一键报告.Plans.Views
         {
             InitializeComponent();
             _vm = vm;
-            List<KindOption> kinds =
-            [
-                new KindOption { IsPattern = false, Text = PreIssueCodes.BlacklistKindExact },
-                new KindOption { IsPattern = true, Text = PreIssueCodes.BlacklistKindPattern }
-            ];
-            cb_kind.ItemsSource = kinds;
-            cb_kind.SelectedIndex = 0;
             Reload();
-        }
-
-        private bool IsPatternSelected => cb_kind.SelectedItem is KindOption option && option.IsPattern;
-
-        private void Cb_Kind_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (txt_pattern_hint == null)
-            {
-                return;   // XAML 还在加载
-            }
-            bool pattern = IsPatternSelected;
-            txt_pattern_hint.Visibility = pattern ? Visibility.Visible : Visibility.Collapsed;
-            txt_model.ToolTip = pattern ? txt_pattern_hint.Text : null;
         }
 
         private void Reload()
@@ -61,30 +39,21 @@ namespace ORT一键报告.Plans.Views
                 : string.Format(LanguageService.Get("PreIssue_BlacklistCount"), items.Count, patterns);
         }
 
-        private void Btn_Add_Click(object sender, RoutedEventArgs e)
+        /// <summary>新增条目：先打开编辑框让用户再确认/修改，点「完成」才写入</summary>
+        private void Btn_New_Click(object sender, RoutedEventArgs e)
         {
-            string value = (txt_model.Text ?? "").Trim();
-            bool pattern = IsPatternSelected;
-            if (value.Length == 0)
+            WindowOrtBlacklistEdit dialog = new(_vm, null)
             {
-                _ = MessageBox.Show(pattern ? LanguageService.Get("PreIssue_BlacklistPatternRequired")
-                        : LanguageService.Get("PreIssue_ModelRequired"),
-                    Title, MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-            if (pattern && !PreIssueViewModel.ValidateBlacklistPattern(value, out string patternError))
+                Owner = this
+            };
+            if (dialog.ShowDialog() == true)
             {
-                _ = MessageBox.Show(string.Format(LanguageService.Get("PreIssue_BlacklistPatternInvalid"), patternError),
-                    Title, MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-            if (_vm.AddBlacklistModel(value, (txt_reason.Text ?? "").Trim(), pattern))
-            {
-                txt_model.Clear();
-                txt_reason.Clear();
-                Reload();
-                txt_status.Text = string.Format(LanguageService.Get("PreIssue_BlacklistAdded"), value);
-                _vm.ReloadAfterBlacklistChange();
+                if (_vm.AddBlacklistModel(dialog.Value, dialog.Reason, dialog.IsPattern))
+                {
+                    Reload();
+                    txt_status.Text = string.Format(LanguageService.Get("PreIssue_BlacklistAdded"), dialog.Value);
+                    _vm.ReloadAfterBlacklistChange();
+                }
             }
         }
 
@@ -101,14 +70,6 @@ namespace ORT一键报告.Plans.Views
                 txt_status.Text = string.Format(LanguageService.Get("PreIssue_BlacklistRemoved"), item.Model);
                 _vm.ReloadAfterBlacklistChange();
             }
-        }
-
-        /// <summary>类型下拉项（機種 / 正则）</summary>
-        private sealed class KindOption
-        {
-            public bool IsPattern { get; set; }
-            public string Text { get; set; }
-            public override string ToString() => Text;
         }
     }
 }

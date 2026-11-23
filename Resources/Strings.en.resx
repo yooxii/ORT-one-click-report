@@ -3143,7 +3143,7 @@ Exit now and discard them?</value>
     <value>Minimize to background</value>
   </data>
   <data name="Settings_MinimizeToTrayHint" xml:space="preserve">
-    <value>Checked: closing the main window keeps the app running in the notification area (memory is freed once) while automatic scans and mail reminders continue; right-click the tray icon to show the window or exit. Unchecked: closing the main window exits the program. A one-time tip appears when minimizing, at most once a day.</value>
+    <value>Checked: closing the main window keeps the app running in the notification area (memory is freed once) while automatic scans and mail reminders continue; right-click the tray icon to show the window or exit. Unchecked: closing the main window exits the program.</value>
   </data>
   <data name="Settings_AutoStart" xml:space="preserve">
     <value>Start with Windows (current user)</value>
@@ -3169,12 +3169,6 @@ Programs on a remote path (network share or mapped network drive) cannot start w
   </data>
   <data name="Main_TrayExit" xml:space="preserve">
     <value>Exit</value>
-  </data>
-  <data name="Main_TrayBalloonTitle" xml:space="preserve">
-    <value>Minimized to background</value>
-  </data>
-  <data name="Main_TrayBalloonText" xml:space="preserve">
-    <value>The app is still running in the background (automatic scans and mail reminders continue). Right-click the tray icon to show the window. If you do not need this, clear "Minimize to background" in Settings > Background and closing the main window will exit the program.</value>
   </data>
   <data name="Main_TrayTip" xml:space="preserve">
     <value>ORT Lab Management System (running in the background; right-click to show the window)</value>
@@ -3684,5 +3678,74 @@ Yes = delete and blacklist, No = delete only, Cancel = do nothing</value>
   </data>
   <data name="PreIssue_OnlyPendingDeletable" xml:space="preserve">
     <value>Only "pending" rows can be deleted (opened ones are handled in the requisition system)</value>
+  </data>
+  <data name="PreIssue_BlacklistEditTitle" xml:space="preserve">
+    <value>Blacklist entry</value>
+  </data>
+  <data name="PreIssue_BlacklistEditHint" xml:space="preserve">
+    <value>Review the entry (optionally switch to a series regex); it is added to the blacklist only after you click OK.</value>
+  </data>
+  <data name="PreIssue_BlacklistToSeries" xml:space="preserve">
+    <value>Make series regex</value>
+  </data>
+  <data name="PreIssue_BlacklistSeriesTip" xml:space="preserve">
+    <value>Models sharing the first 6 characters are one series: FSL020-00AG becomes ^FSL020-[A-Za-z0-9]{4}$</value>
+  </data>
+  <data name="PreIssue_BlacklistSeriesInfo" xml:space="preserve">
+    <value>Series {0} · customer code {1} · version {2}</value>
+  </data>
+  <data name="PreIssue_BlacklistSeriesUnsupported" xml:space="preserve">
+    <value>This model is not in the 6+4 form, so a series regex cannot be generated.</value>
+  </data>
+  <data name="PreIssue_BlacklistPreview" xml:space="preserve">
+    <value>Matches {0} models this month: {1}</value>
+  </data>
+  <data name="PreIssue_BlacklistPreviewNone" xml:space="preserve">
+    <value>No model this month is matched by this rule.</value>
+  </data>
+  <data name="PreIssue_BlacklistNew" xml:space="preserve">
+    <value>Add entry</value>
+  </data>
+  <data name="PreIssue_Menu_Sort" xml:space="preserve">
+    <value>Sort</value>
+  </data>
+  <data name="PreIssue_Menu_SortAsc" xml:space="preserve">
+    <value>Ascending</value>
+  </data>
+  <data name="PreIssue_Menu_SortDesc" xml:space="preserve">
+    <value>Descending</value>
+  </data>
+  <data name="PreIssue_Menu_SortNone" xml:space="preserve">
+    <value>No sort</value>
+  </data>
+  <data name="PreIssue_Menu_Filter" xml:space="preserve">
+    <value>Filter</value>
+  </data>
+  <data name="PreIssue_Menu_FilterEmpty" xml:space="preserve">
+    <value>No values to filter in this column</value>
+  </data>
+  <data name="PreIssue_Menu_FilterTooMany" xml:space="preserve">
+    <value>Too many values ({0}) in this column; narrow it with the search box first</value>
+  </data>
+  <data name="PreIssue_Menu_FilterBlank" xml:space="preserve">
+    <value>(blank)</value>
+  </data>
+  <data name="PreIssue_Menu_FilterClear" xml:space="preserve">
+    <value>Clear this column filter</value>
+  </data>
+  <data name="PreIssue_Menu_FilterClearAll" xml:space="preserve">
+    <value>Clear all filters</value>
+  </data>
+  <data name="PreIssue_ReqEditDenied" xml:space="preserve">
+    <value>No permission to edit the requisition prep table (plans edit permission required)</value>
+  </data>
+  <data name="PreIssue_ReqSaveFailed" xml:space="preserve">
+    <value>Save failed: {0}</value>
+  </data>
+  <data name="PreIssue_ReqSavedFormat" xml:space="preserve">
+    <value>Saved: {0} ({1} changes)</value>
+  </data>
+  <data name="PreIssue_BlacklistSeriesOnly" xml:space="preserve">
+    <value>Series {0} (models sharing the first 6 characters belong to one series)</value>
   </data>
 </root>
