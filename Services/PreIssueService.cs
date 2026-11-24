@@ -23,14 +23,19 @@ namespace ORT一键报告.Services
         private readonly Logger _logger = LogManager.GetCurrentClassLogger();
         private readonly DatabaseService _db;
         private readonly IPermissionService _permission;
+        private readonly AppSettingsService _settings;
 
         /// <summary>一次导入最多逐条记录的变条数（超出只记摘要，避免首次导入刷出几千条）</summary>
         private const int MaxLoggedChanges = 300;
 
-        public PreIssueService(DatabaseService db, IPermissionService permission)
+        /// <summary>同系列客户优先级的设置键（存在 app_settings 表里，多台电脑共用）</summary>
+        public const string CustomerPrioritySettingKey = "preissue.customerPriority";
+
+        public PreIssueService(DatabaseService db, IPermissionService permission, AppSettingsService settings)
         {
             _db = db;
             _permission = permission;
+            _settings = settings;
         }
 
         /* ###############################  月份与读取  ################################ */
@@ -735,6 +740,7 @@ namespace ORT一键报告.Services
 
             int added = 0, removed = 0, changed = 0, stocked = 0;
             List<PreIssueChangeLog> logs = [];
+            List<OrtBoardRow> addedRows = [];
             HashSet<string> stockedKeys = new(StringComparer.OrdinalIgnoreCase);
             int logged = 0;
 
@@ -743,6 +749,7 @@ namespace ORT一键报告.Services
                 if (!oldMap.TryGetValue(row.MatchKey, out OrtBoardRow old))
                 {
                     added++;
+                    addedRows.Add(row);
                     if (logged++ < MaxLoggedChanges)
                     {
                         logs.Add(Change(month, PreIssueCodes.SourceBoard, PreIssueCodes.KindAdded, row.Model,
@@ -786,40 +793,66 @@ namespace ORT一键报告.Services
                     null, null, null, $"变动较多，只登记了前 {MaxLoggedChanges} 条"));
             }
 
-            // 入库（SIM87 = Y）的机种推进到准备领用：看板上打「已转」标记，黑名单（含正则）里的不推
+            // 入库（SIM87 = Y）的机种推进到准备领用：
+            // 同一个系列（前 6 位相同）只需要开一张单，按客户优先级挑一个机种，其它同系列的不再生成；
+            // 黑名单（含正则）里的不推；这个月已经有记录（待开单或已开单）的系列也不推。
             OrtBlacklistMatcher blacklist = BuildBlacklistMatcher();
+            PreIssueSeriesPriority priority = BuildSeriesPriority();
+            List<PreIssueRequisition> existingReqs = _db.FreeSql.Select<PreIssueRequisition>().Where(a => a.Month == month).ToList();
             HashSet<string> existingModels = new(
-                _db.FreeSql.Select<PreIssueRequisition>().Where(a => a.Month == month).ToList()
-                    .Where(a => !string.IsNullOrWhiteSpace(a.PartNo))
-                    .Select(a => a.PartNo.Trim()),
+                existingReqs.Where(a => !string.IsNullOrWhiteSpace(a.PartNo)).Select(a => a.PartNo.Trim()),
+                StringComparer.OrdinalIgnoreCase);
+            HashSet<string> coveredSeries = new(
+                existingReqs.Where(a => !string.IsNullOrWhiteSpace(a.PartNo)).Select(a => priority.SeriesKey(a.PartNo)),
                 StringComparer.OrdinalIgnoreCase);
 
-            // 第一遍：算清哪些机种这次要新建待开单（同一机种多行只建一条，工令取第一条）
-            Dictionary<string, OrtBoardRow> willCreate = new(StringComparer.OrdinalIgnoreCase);
-            foreach (OrtBoardRow row in newRows)
+            // 第一遍：先把候选机种按系列归堆（同一机种多行只取第一条 = 工令取第一条）
+            Dictionary<string, List<OrtBoardRow>> candidates = new(StringComparer.OrdinalIgnoreCase);
+            foreach (IGrouping<string, OrtBoardRow> group in newRows
+                .Where(r => PreIssueCodes.IsYes(r.Stocked87) && !string.IsNullOrWhiteSpace(r.Model))
+                .GroupBy(r => r.Model.Trim(), StringComparer.OrdinalIgnoreCase))
             {
-                if (!PreIssueCodes.IsYes(row.Stocked87) || string.IsNullOrWhiteSpace(row.Model))
-                {
-                    continue;
-                }
-                string model = row.Model.Trim();
-                if (stockedKeys.Contains(row.MatchKey))
+                string model = group.Key;
+                if (stockedKeys.Contains(group.First().MatchKey))
                 {
                     stocked++;
                 }
-                if (blacklist.Matches(model) || existingModels.Contains(model) || willCreate.ContainsKey(model))
+                if (blacklist.Matches(model) || existingModels.Contains(model))
                 {
                     continue;
                 }
-                willCreate[model] = row;
+                string series = priority.SeriesKey(model);
+                if (coveredSeries.Contains(series))
+                {
+                    continue;
+                }
+                if (!candidates.TryGetValue(series, out List<OrtBoardRow> list))
+                {
+                    candidates[series] = list = [];
+                }
+                list.Add(group.First());
             }
-            // 看板行打「已转待开单」标记（含以前就转过的）
+
+            // 第二遍：每个系列只留下优先级最高的那个机种
+            Dictionary<string, OrtBoardRow> willCreate = new(StringComparer.OrdinalIgnoreCase);
+            foreach (KeyValuePair<string, List<OrtBoardRow>> pair in candidates)
+            {
+                string picked = priority.PickRepresentative(pair.Value.Select(r => r.Model));
+                OrtBoardRow row = pair.Value.FirstOrDefault(r => string.Equals(r.Model.Trim(), picked, StringComparison.OrdinalIgnoreCase));
+                if (row == null)
+                {
+                    continue;
+                }
+                willCreate[row.Model.Trim()] = row;
+                coveredSeries.Add(pair.Key);
+            }
+
+            // 看板行打「已转待开单」标记（含以前就转过的、以及同系列已经转过的那几个）
             foreach (OrtBoardRow row in newRows)
             {
                 if (!string.IsNullOrWhiteSpace(row.Model))
                 {
-                    string model = row.Model.Trim();
-                    row.HasRequisition = existingModels.Contains(model) || willCreate.ContainsKey(model);
+                    row.HasRequisition = coveredSeries.Contains(priority.SeriesKey(row.Model.Trim()));
                 }
             }
 
@@ -828,7 +861,7 @@ namespace ORT一键报告.Services
             _db.FreeSql.Delete<OrtBoardRow>().Where(a => a.Month == month).ExecuteAffrows();
             _db.FreeSql.Insert(newRows).ExecuteAffrows();
 
-            // 第二遍：真正生成待开单
+            // 第三遍：真正生成待开单
             DateTime now = DateTime.Now;
             foreach (KeyValuePair<string, OrtBoardRow> pair in willCreate)
             {
@@ -848,6 +881,9 @@ namespace ORT一键报告.Services
                 logs.Add(Change(month, PreIssueCodes.SourceRequisition, PreIssueCodes.KindStocked, pair.Key,
                     "SIM87入庫否", "N", "Y", $"看板入库自动转待开单（工令 {row.JobNo}）"));
             }
+
+            // 看板里「類別 = EMI」的新增行记进借用表
+            result.BorrowCreated += RecordBorrowItems(month, addedRows, result.File, logs, ref logged);
 
             result.Stocked += stocked;
             result.Added += added;
@@ -1442,18 +1478,25 @@ namespace ORT一键报告.Services
 
         /// <summary>
         /// 把看板里「SIM87入庫否 = Y 且不在黑名单、还没进准备领用」的机种补成待开单。
+        /// 同一个系列（前 6 位相同）只补一个：按客户优先级挑最高的那个机种。
         /// 返回新建条数。
         /// </summary>
         public int SyncPendingFromBoard(string month, out List<string> created)
         {
             created = [];
             OrtBlacklistMatcher blacklist = BuildBlacklistMatcher();
+            PreIssueSeriesPriority priority = BuildSeriesPriority();
+            List<PreIssueRequisition> existingReqs = _db.FreeSql.Select<PreIssueRequisition>().Where(a => a.Month == month).ToList();
             HashSet<string> existing = new(
-                _db.FreeSql.Select<PreIssueRequisition>().Where(a => a.Month == month).ToList()
-                    .Where(a => !string.IsNullOrWhiteSpace(a.PartNo)).Select(a => a.PartNo.Trim()),
+                existingReqs.Where(a => !string.IsNullOrWhiteSpace(a.PartNo)).Select(a => a.PartNo.Trim()),
+                StringComparer.OrdinalIgnoreCase);
+            HashSet<string> coveredSeries = new(
+                existingReqs.Where(a => !string.IsNullOrWhiteSpace(a.PartNo)).Select(a => priority.SeriesKey(a.PartNo)),
                 StringComparer.OrdinalIgnoreCase);
             List<OrtBoardRow> board = LoadBoard(month);
-            DateTime now = DateTime.Now;
+
+            // 先按系列归堆，再每个系列挑一个优先级最高的机种
+            Dictionary<string, List<OrtBoardRow>> candidates = new(StringComparer.OrdinalIgnoreCase);
             foreach (IGrouping<string, OrtBoardRow> group in board
                 .Where(b => PreIssueCodes.IsYes(b.Stocked87) && !string.IsNullOrWhiteSpace(b.Model))
                 .GroupBy(b => b.Model.Trim(), StringComparer.OrdinalIgnoreCase))
@@ -1463,7 +1506,28 @@ namespace ORT一键报告.Services
                 {
                     continue;
                 }
-                OrtBoardRow first = group.First();
+                string series = priority.SeriesKey(model);
+                if (coveredSeries.Contains(series))
+                {
+                    continue;
+                }
+                if (!candidates.TryGetValue(series, out List<OrtBoardRow> list))
+                {
+                    candidates[series] = list = [];
+                }
+                list.Add(group.First());
+            }
+
+            DateTime now = DateTime.Now;
+            foreach (KeyValuePair<string, List<OrtBoardRow>> pair in candidates)
+            {
+                string picked = priority.PickRepresentative(pair.Value.Select(r => r.Model));
+                OrtBoardRow first = pair.Value.FirstOrDefault(r => string.Equals(r.Model.Trim(), picked, StringComparison.OrdinalIgnoreCase));
+                if (first == null)
+                {
+                    continue;
+                }
+                string model = first.Model.Trim();
                 _db.FreeSql.Insert(new PreIssueRequisition
                 {
                     Month = month,
@@ -1475,6 +1539,7 @@ namespace ORT一键报告.Services
                     UpdatedAt = now
                 }).ExecuteAffrows();
                 existing.Add(model);
+                coveredSeries.Add(pair.Key);
                 created.Add(model);
             }
             if (created.Count > 0)
@@ -1485,7 +1550,7 @@ namespace ORT一键报告.Services
                     Source = PreIssueCodes.SourceRequisition,
                     Kind = PreIssueCodes.KindStocked,
                     Target = string.Join("、", created.Take(20)),
-                    Note = $"从看板补全待开单 {created.Count} 个机种",
+                    Note = $"从看板补全待开单 {created.Count} 个机种（同系列按客户优先级只留一个）",
                     Operator = _permission?.CurrentUser,
                     CreatedAt = now
                 }).ExecuteAffrows();
@@ -1850,6 +1915,286 @@ namespace ORT一键报告.Services
             return true;
         }
 
+        /* ###############################  同系列客户优先级  ################################ */
+
+        /// <summary>当前生效的客户优先级代码（从高到低；库里没配过时用默认 GA → 4C → 93 → 00）</summary>
+        public List<string> LoadCustomerPriorityCodes()
+        {
+            try
+            {
+                List<string> codes = PreIssueSeriesPriority.ParseStored(_settings?.GetText(CustomerPrioritySettingKey));
+                return codes.Count > 0 ? codes : [.. PreIssueSeriesPriority.DefaultCodes];
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn($"读取客户优先级失败，按默认顺序处理: {ex.Message}");
+                return [.. PreIssueSeriesPriority.DefaultCodes];
+            }
+        }
+
+        /// <summary>保存客户优先级（按顺序从高到低，存在 app_settings 表里，多台电脑共用）</summary>
+        public void SaveCustomerPriorityCodes(IEnumerable<string> codes)
+        {
+            string text = PreIssueSeriesPriority.Format(codes);
+            _settings?.SetText(CustomerPrioritySettingKey, text);
+        }
+
+        /// <summary>按当前配置构造同系列优先级规则</summary>
+        public PreIssueSeriesPriority BuildSeriesPriority() => new(LoadCustomerPriorityCodes());
+
+        /// <summary>
+        /// 客户代码 → 客户名称（来自主数据库的客户代码表：code_mappings 的 C 类，取不到再看 customers 表的代码列）。
+        /// 键忽略大小写。
+        /// </summary>
+        public Dictionary<string, string> LoadCustomerCodeNames()
+        {
+            Dictionary<string, string> names = new(StringComparer.OrdinalIgnoreCase);
+            try
+            {
+                foreach (CodeMapping mapping in _db.FreeSql.Select<CodeMapping>().Where(m => m.CodeType == "C").ToList())
+                {
+                    string code = (mapping.Code ?? "").Trim();
+                    if (code.Length > 0 && !string.IsNullOrWhiteSpace(mapping.Name) && !names.ContainsKey(code))
+                    {
+                        names[code] = mapping.Name.Trim();
+                    }
+                }
+                foreach (Customer customer in _db.FreeSql.Select<Customer>().ToList())
+                {
+                    string code = (customer.Code ?? "").Trim();
+                    if (code.Length > 0 && !string.IsNullOrWhiteSpace(customer.Name) && !names.ContainsKey(code))
+                    {
+                        names[code] = customer.Name.Trim();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn($"读取客户代码表失败: {ex.Message}");
+            }
+            return names;
+        }
+
+        /// <summary>
+        /// 优先级编辑窗口的候选代码：客户代码表里的全部代码 + 当前配置里的代码 + 默认代码，按代码排序。
+        /// </summary>
+        public List<string> LoadCustomerCodeCandidates()
+        {
+            List<string> codes = [.. LoadCustomerCodeNames().Keys, .. LoadCustomerPriorityCodes(), .. PreIssueSeriesPriority.DefaultCodes];
+            return PreIssueSeriesPriority.Normalize(codes).OrderBy(c => c, StringComparer.OrdinalIgnoreCase).ToList();
+        }
+
+        /* ###############################  借用表  ################################ */
+
+        /// <summary>借用记录（month 为空表示全部月份；最新在前）</summary>
+        public List<PreIssueBorrowItem> LoadBorrowItems(string month = null)
+        {
+            ISelect<PreIssueBorrowItem> select = _db.FreeSql.Select<PreIssueBorrowItem>();
+            string key = NormalizeMonth(month);
+            if (key != null)
+            {
+                select = select.Where(a => a.Month == key);
+            }
+            return select.OrderByDescending(a => a.Id).ToList();
+        }
+
+        /// <summary>保存借用表里改过的一行（状态 / 机种 / 数量 / 日期都可改）</summary>
+        public bool SaveBorrowItem(PreIssueBorrowItem row, out string error)
+        {
+            error = null;
+            if (row == null)
+            {
+                error = "记录已不存在";
+                return false;
+            }
+            try
+            {
+                PreIssueBorrowItem old = _db.FreeSql.Select<PreIssueBorrowItem>().Where(a => a.Id == row.Id).First();
+                if (old == null)
+                {
+                    error = "记录已不存在";
+                    return false;
+                }
+                string status = string.IsNullOrWhiteSpace(row.Status) ? PreIssueCodes.BorrowPending : row.Status.Trim();
+                row.Status = status;
+                row.Model = string.IsNullOrWhiteSpace(row.Model) ? null : row.Model.Trim();
+                row.Qty = string.IsNullOrWhiteSpace(row.Qty) ? null : row.Qty.Trim();
+                row.UpdatedAt = DateTime.Now;
+                row.UpdatedBy = _permission?.CurrentUser;
+                _db.FreeSql.Update<PreIssueBorrowItem>()
+                    .Set(a => a.Status, row.Status)
+                    .Set(a => a.Model, row.Model)
+                    .Set(a => a.Qty, row.Qty)
+                    .Set(a => a.BorrowDate, row.BorrowDate)
+                    .Set(a => a.ReturnDate, row.ReturnDate)
+                    .Set(a => a.UpdatedAt, row.UpdatedAt)
+                    .Set(a => a.UpdatedBy, row.UpdatedBy)
+                    .Where(a => a.Id == row.Id)
+                    .ExecuteAffrows();
+                List<PreIssueChangeLog> logs = [];
+                foreach ((string field, string before, string after) in new[]
+                {
+                    ("状态", old.Status, row.Status),
+                    ("机种名称", old.Model, row.Model),
+                    ("数量", old.Qty, row.Qty),
+                    ("借用日期", DateText(old.BorrowDate), DateText(row.BorrowDate)),
+                    ("归还日期", DateText(old.ReturnDate), DateText(row.ReturnDate))
+                })
+                {
+                    if (string.Equals(before ?? "", after ?? "", StringComparison.Ordinal))
+                    {
+                        continue;
+                    }
+                    logs.Add(Change(old.Month, PreIssueCodes.SourceBorrow, PreIssueCodes.KindModified,
+                        row.Model ?? old.Model, field, before, after, "借用表手工修改"));
+                }
+                WriteBorrowLogs(logs);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn($"保存借用记录失败: {ex.Message}");
+                error = ex.Message;
+                return false;
+            }
+        }
+
+        /// <summary>登记借用：状态 → 借用中，借用日期填今天（已有日期时保留）</summary>
+        public bool MarkBorrowed(long id, out string error) =>
+            ChangeBorrowState(id, PreIssueCodes.Borrowing, true, out error);
+
+        /// <summary>登记归还：状态 → 已归还，归还日期填今天（已有日期时保留）</summary>
+        public bool MarkReturned(long id, out string error) =>
+            ChangeBorrowState(id, PreIssueCodes.BorrowReturned, false, out error);
+
+        private bool ChangeBorrowState(long id, string status, bool borrowing, out string error)
+        {
+            error = null;
+            try
+            {
+                PreIssueBorrowItem row = _db.FreeSql.Select<PreIssueBorrowItem>().Where(a => a.Id == id).First();
+                if (row == null)
+                {
+                    error = "记录已不存在";
+                    return false;
+                }
+                string current = string.IsNullOrWhiteSpace(row.Status) ? PreIssueCodes.BorrowPending : row.Status.Trim();
+                if (!borrowing && current == PreIssueCodes.BorrowPending)
+                {
+                    error = "这条记录还没登记借用，不能直接归还";
+                    return false;
+                }
+                string before = row.Status;
+                row.Status = status;
+                if (borrowing)
+                {
+                    row.BorrowDate ??= DateTime.Today;
+                }
+                else
+                {
+                    row.ReturnDate ??= DateTime.Today;
+                }
+                row.UpdatedAt = DateTime.Now;
+                row.UpdatedBy = _permission?.CurrentUser;
+                _db.FreeSql.Update<PreIssueBorrowItem>()
+                    .Set(a => a.Status, row.Status)
+                    .Set(a => a.BorrowDate, row.BorrowDate)
+                    .Set(a => a.ReturnDate, row.ReturnDate)
+                    .Set(a => a.UpdatedAt, row.UpdatedAt)
+                    .Set(a => a.UpdatedBy, row.UpdatedBy)
+                    .Where(a => a.Id == id)
+                    .ExecuteAffrows();
+                WriteBorrowLogs([Change(row.Month, PreIssueCodes.SourceBorrow,
+                    borrowing ? PreIssueCodes.KindBorrow : PreIssueCodes.KindReturn,
+                    row.Model, "状态", before, row.Status,
+                    borrowing ? $"登记借用（{DateText(row.BorrowDate)}）" : $"登记归还（{DateText(row.ReturnDate)}）")]);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn($"借用表登记{status}失败: {ex.Message}");
+                error = ex.Message;
+                return false;
+            }
+        }
+
+        private void WriteBorrowLogs(List<PreIssueChangeLog> logs)
+        {
+            if (logs == null || logs.Count == 0)
+            {
+                return;
+            }
+            try
+            {
+                _db.FreeSql.Insert(logs).ExecuteAffrows();
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn($"写借用表变动记录失败: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 看板导入后把「類別 = EMI」的新增行记进借用表（同一月份 + 工令 + 机种只记一次），返回新增条数。
+        /// </summary>
+        private int RecordBorrowItems(string month, List<OrtBoardRow> addedRows, string file,
+            List<PreIssueChangeLog> logs, ref int logged)
+        {
+            List<OrtBoardRow> emi = (addedRows ?? [])
+                .Where(r => PreIssueCodes.IsEmiCategory(r.Category) && !string.IsNullOrWhiteSpace(r.Model))
+                .ToList();
+            if (emi.Count == 0)
+            {
+                return 0;
+            }
+            try
+            {
+                HashSet<string> existing = new(
+                    _db.FreeSql.Select<PreIssueBorrowItem>().Where(a => a.Month == month).ToList()
+                        .Select(a => a.MatchKey),
+                    StringComparer.OrdinalIgnoreCase);
+                DateTime now = DateTime.Now;
+                int created = 0;
+                foreach (OrtBoardRow row in emi)
+                {
+                    string key = PreIssueCodes.BorrowMatchKey(month, row.JobNo, row.Model, row.ReportDate);
+                    if (!existing.Add(key))
+                    {
+                        continue;
+                    }
+                    _db.FreeSql.Insert(new PreIssueBorrowItem
+                    {
+                        Month = month,
+                        Status = PreIssueCodes.BorrowPending,
+                        Model = row.Model.Trim(),
+                        Qty = string.IsNullOrWhiteSpace(row.Qty) ? null : row.Qty.Trim(),
+                        JobNo = string.IsNullOrWhiteSpace(row.JobNo) ? null : row.JobNo.Trim(),
+                        ReportDate = row.ReportDate,
+                        SourceCategory = row.Category,
+                        Note = $"看板 EMI 变更（{file}）",
+                        CreatedAt = now,
+                        CreatedBy = _permission?.CurrentUser
+                    }).ExecuteAffrows();
+                    created++;
+                    if (logged++ < MaxLoggedChanges)
+                    {
+                        logs.Add(Change(month, PreIssueCodes.SourceBorrow, PreIssueCodes.KindAdded, row.Model,
+                            null, null, row.Qty, $"看板 EMI 变更自动记入借用表（工令 {row.JobNo}）"));
+                    }
+                }
+                return created;
+            }
+            catch (Exception ex)
+            {
+                // 借用表记不进去不该把整次看板导入判成失败：记日志后照常完成导入
+                _logger.Warn($"看板 EMI 变更写入借用表失败: {ex.Message}");
+                return 0;
+            }
+        }
+
+        private static string DateText(DateTime? date) =>
+            date?.ToString("yyyy/M/d", CultureInfo.InvariantCulture) ?? "";
+
         /* ###############################  变动记录  ################################ */
 
         private PreIssueChangeLog Change(string month, string source, string kind, string target,
@@ -1939,6 +2284,9 @@ namespace ORT一键报告.Services
         /// <summary>准备领用：本次由待开单补全成已开单的条数</summary>
         public int Opened { get; set; }
 
+        /// <summary>看板导入时自动记入借用表（EMI 变更）的条数</summary>
+        public int BorrowCreated { get; set; }
+
         /// <summary>界面提示文本</summary>
         public string Summary()
         {
@@ -1952,6 +2300,7 @@ namespace ORT一键报告.Services
             if (Changed > 0) parts.Add($"修改 {Changed}");
             if (Opened > 0) parts.Add($"补全开单 {Opened}");
             if (PendingCreated > 0) parts.Add($"转待开单 {PendingCreated}");
+            if (BorrowCreated > 0) parts.Add($"EMI 借用 {BorrowCreated}");
             string detail = parts.Count == 0 ? "没有变动" : string.Join("、", parts);
             return string.IsNullOrWhiteSpace(Message) ? detail : detail + "（" + Message + "）";
         }

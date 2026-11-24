@@ -266,7 +266,6 @@
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
                         <RowDefinition/>
                     </Grid.RowDefinitions>
 
@@ -282,6 +281,8 @@
                                 Click="Btn_Changes_Click"/>
                         <Button Style="{StaticResource PreButton}" Content="{lex:Loc PreIssue_Blacklist}"
                                 Click="Btn_Blacklist_Click"/>
+                        <Button Style="{StaticResource PreButton}" Content="{lex:Loc PreIssue_CustomerPriority}"
+                                Click="Btn_CustomerPriority_Click" ToolTip="{lex:Loc PreIssue_CustomerPriorityTip}"/>
                         <Button Style="{StaticResource PreButton}" Content="{lex:Loc PreIssue_Refresh}"
                                 Command="{Binding RefreshCommand}"/>
                         <Separator Margin="4,0"/>
@@ -295,12 +296,9 @@
                                    Foreground="{DynamicResource TextSecondaryBrush}"/>
                     </WrapPanel>
 
-                    <TextBlock Grid.Row="1" Text="{Binding ReqHint}" Margin="2,0,0,4" TextWrapping="Wrap"
-                               Foreground="{DynamicResource StatusWarnBrush}"/>
-
                     <!-- 开单数据只保留这 10 列（VCHNO … PC），待开单阶段只有 PART_NO 有值；
                          双击单元格可直接改（改完即写库，失败会恢复原值）；列头右键有筛选/排序 -->
-                    <DataGrid x:Name="dg_req" Grid.Row="2"
+                    <DataGrid x:Name="dg_req" Grid.Row="1"
                               ItemsSource="{Binding ReqView}"
                               SelectedItem="{Binding SelectedReqRow, Mode=TwoWay}"
                               AutoGenerateColumns="False" IsReadOnly="False"
@@ -371,6 +369,113 @@
                             <DataGridTextColumn Header="PC" Binding="{Binding Pc, UpdateSourceTrigger=PropertyChanged}"
                                                 SortMemberPath="Pc" Width="85"
                                                 ElementStyle="{StaticResource PreText}" EditingElementStyle="{StaticResource PreEdit}"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </TabItem>
+
+            <!-- ============================ 借用表 ============================ -->
+            <!-- ORT 看板里「類別 = EMI」的新行导入时自动记进来；右键「借用」「归还」登记，五列都可双击改 -->
+            <TabItem Header="{lex:Loc PreIssue_BorrowTab}" ToolTip="{lex:Loc PreIssue_BorrowTabTip}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition/>
+                    </Grid.RowDefinitions>
+
+                    <WrapPanel Grid.Row="0" Margin="0,2,0,4" Orientation="Horizontal">
+                        <Button Style="{StaticResource PreButton}" Content="{lex:Loc PreIssue_Refresh}"
+                                Command="{Binding RefreshCommand}"/>
+                        <Separator Margin="4,0"/>
+                        <TextBlock Text="{lex:Loc PreIssue_Borrow_Status}" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                        <ComboBox Width="90" VerticalAlignment="Center" Margin="0,0,8,0"
+                                  ItemsSource="{Binding BorrowStatusOptions}"
+                                  SelectedItem="{Binding BorrowStatusFilter, Mode=TwoWay}"/>
+                        <TextBlock Text="{Binding BorrowSummary}" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"/>
+                    </WrapPanel>
+
+                    <DataGrid x:Name="dg_borrow" Grid.Row="1"
+                              ItemsSource="{Binding BorrowView}"
+                              SelectedItem="{Binding SelectedBorrowRow, Mode=TwoWay}"
+                              AutoGenerateColumns="False" IsReadOnly="False"
+                              CanUserSortColumns="True" CanUserAddRows="False"
+                              HeadersVisibility="All" GridLinesVisibility="All"
+                              SelectionMode="Extended" SelectionUnit="FullRow"
+                              ClipboardCopyMode="None"
+                              VirtualizingPanel.IsVirtualizing="True"
+                              BeginningEdit="Dg_Borrow_BeginningEdit"
+                              CellEditEnding="Dg_Borrow_CellEditEnding"
+                              PreviewMouseRightButtonDown="DataGrid_PreviewMouseRightButtonDown">
+                        <DataGrid.CellStyle>
+                            <StaticResource ResourceKey="PreCell"/>
+                        </DataGrid.CellStyle>
+                        <DataGrid.RowStyle>
+                            <Style TargetType="DataGridRow">
+                                <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Status}" Value="借用中">
+                                        <Setter Property="Background" Value="{DynamicResource StatusWarnBgBrush}"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Status}" Value="已归还">
+                                        <Setter Property="Background" Value="{DynamicResource StatusOkBgBrush}"/>
+                                    </DataTrigger>
+                                    <Trigger Property="IsSelected" Value="True">
+                                        <Setter Property="Background" Value="{DynamicResource TableRowSelectedBrush}"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </DataGrid.RowStyle>
+                        <DataGrid.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="{lex:Loc PreIssue_Borrow_Menu_Borrow}" Click="Menu_Borrow_Click"/>
+                                <MenuItem Header="{lex:Loc PreIssue_Borrow_Menu_Return}" Click="Menu_BorrowReturn_Click"/>
+                                <Separator/>
+                                <MenuItem Header="{lex:Loc PreIssue_Menu_CopyRow}" Click="Menu_CopyBorrowRow_Click"/>
+                                <MenuItem Header="{lex:Loc PreIssue_Menu_CopyCell}" Click="Menu_CopyCell_Click"/>
+                            </ContextMenu>
+                        </DataGrid.ContextMenu>
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="{lex:Loc PreIssue_Borrow_Status}"
+                                                Binding="{Binding Status, UpdateSourceTrigger=PropertyChanged}"
+                                                SortMemberPath="Status" Width="95"
+                                                ElementStyle="{StaticResource PreText}" EditingElementStyle="{StaticResource PreEdit}"/>
+                            <DataGridTextColumn Header="{lex:Loc PreIssue_Borrow_Model}"
+                                                Binding="{Binding Model, UpdateSourceTrigger=PropertyChanged}"
+                                                SortMemberPath="Model" Width="150"
+                                                ElementStyle="{StaticResource PreText}" EditingElementStyle="{StaticResource PreEdit}"/>
+                            <DataGridTextColumn Header="{lex:Loc PreIssue_Borrow_Qty}"
+                                                Binding="{Binding Qty, UpdateSourceTrigger=PropertyChanged}"
+                                                SortMemberPath="Qty" Width="80"
+                                                ElementStyle="{StaticResource PreText}" EditingElementStyle="{StaticResource PreEdit}"/>
+                            <DataGridTemplateColumn Header="{lex:Loc PreIssue_Borrow_BorrowDate}" Width="110"
+                                                    SortMemberPath="BorrowDate">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding BorrowDate, StringFormat={}{0:yyyy/M/d}}"
+                                                   Style="{StaticResource PreText}"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                                <DataGridTemplateColumn.CellEditingTemplate>
+                                    <DataTemplate>
+                                        <DatePicker SelectedDate="{Binding BorrowDate, UpdateSourceTrigger=PropertyChanged}"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellEditingTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="{lex:Loc PreIssue_Borrow_ReturnDate}" Width="110"
+                                                    SortMemberPath="ReturnDate">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding ReturnDate, StringFormat={}{0:yyyy/M/d}}"
+                                                   Style="{StaticResource PreText}"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                                <DataGridTemplateColumn.CellEditingTemplate>
+                                    <DataTemplate>
+                                        <DatePicker SelectedDate="{Binding ReturnDate, UpdateSourceTrigger=PropertyChanged}"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellEditingTemplate>
+                            </DataGridTemplateColumn>
                         </DataGrid.Columns>
                     </DataGrid>
                 </Grid>

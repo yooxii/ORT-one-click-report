@@ -209,6 +209,20 @@ namespace ORT一键报告.Plans.Views
             dialog.ShowDialog();
         }
 
+        /// <summary>同系列客户优先级：编辑「前 6 位相同则只开一单」时优先挑哪个客户代码</summary>
+        private void Btn_CustomerPriority_Click(object sender, RoutedEventArgs e)
+        {
+            if (_vm == null)
+            {
+                return;
+            }
+            WindowPreIssueCustomerPriority dialog = new(_vm)
+            {
+                Owner = Window.GetWindow(this)
+            };
+            dialog.ShowDialog();
+        }
+
         /* ###############################  右键：复制 / 黑名单 / 删除  ################################ */
 
         private void Menu_CopyCell_Click(object sender, RoutedEventArgs e) => SafeRun(
@@ -301,6 +315,74 @@ namespace ORT一键报告.Plans.Views
                 }
             });
 
+        /* ###############################  借用表：右键借用 / 归还  ################################ */
+
+        /// <summary>右键「登记借用」：选中的（或右键那一行）改成借用中并填借用日期</summary>
+        private void Menu_Borrow_Click(object sender, RoutedEventArgs e) => SafeRun(
+            LanguageService.Get("PreIssue_Borrow_Menu_Borrow"),
+            () =>
+            {
+                foreach (PreIssueBorrowItem row in BorrowTargets())
+                {
+                    if (!_vm.MarkBorrowedRow(row))
+                    {
+                        break;
+                    }
+                }
+            });
+
+        /// <summary>右键「归还」：选中的（或右键那一行）改成已归还并填归还日期</summary>
+        private void Menu_BorrowReturn_Click(object sender, RoutedEventArgs e) => SafeRun(
+            LanguageService.Get("PreIssue_Borrow_Menu_Return"),
+            () =>
+            {
+                foreach (PreIssueBorrowItem row in BorrowTargets())
+                {
+                    if (!_vm.MarkReturnedRow(row))
+                    {
+                        break;
+                    }
+                }
+            });
+
+        /// <summary>右键作用范围：右键落在多选范围内就整批处理，否则只处理右键那一行</summary>
+        private List<PreIssueBorrowItem> BorrowTargets()
+        {
+            List<PreIssueBorrowItem> targets = [];
+            if (_vm == null)
+            {
+                return targets;
+            }
+            if (_contextRow is PreIssueBorrowItem hit && dg_borrow.SelectedItems.Contains(hit))
+            {
+                foreach (object item in dg_borrow.SelectedItems)
+                {
+                    if (item is PreIssueBorrowItem row)
+                    {
+                        targets.Add(row);
+                    }
+                }
+            }
+            if (targets.Count == 0 && _contextRow is PreIssueBorrowItem single)
+            {
+                targets.Add(single);
+            }
+            return targets;
+        }
+
+        private void Menu_CopyBorrowRow_Click(object sender, RoutedEventArgs e)
+        {
+            if (_contextRow is PreIssueBorrowItem row)
+            {
+                string text = string.Join("\t", new[]
+                {
+                    row.Status ?? "", row.Model ?? "", row.Qty ?? "",
+                    row.BorrowDate?.ToString("yyyy/M/d") ?? "", row.ReturnDate?.ToString("yyyy/M/d") ?? ""
+                });
+                RightClickCopy.Copy(text);
+            }
+        }
+
         /* ###############################  右键定位  ################################ */
 
         /// <summary>
@@ -390,6 +472,40 @@ namespace ORT一键报告.Plans.Views
                 catch (Exception ex)
                 {
                     _logger.Warn($"保存准备领用手工修改失败: {ex.Message}");
+                }
+            }), System.Windows.Threading.DispatcherPriority.Background);
+        }
+
+        /* ###############################  借用表：双击编辑  ################################ */
+
+        /// <summary>没有编辑权限时拦住进入编辑</summary>
+        private void Dg_Borrow_BeginningEdit(object sender, DataGridBeginningEditEventArgs e)
+        {
+            if (_vm == null || _vm.CanEditBorrowData)
+            {
+                return;
+            }
+            e.Cancel = true;
+            _ = MessageBox.Show(LanguageService.Get("PreIssue_ReqEditDenied"),
+                LanguageService.Get("PreIssue_BorrowTab"), MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+
+        /// <summary>借用表改完一格后保存这一行（同样延后到下一轮消息循环，避免打断提交事务）</summary>
+        private void Dg_Borrow_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
+        {
+            if (e.EditAction != DataGridEditAction.Commit || e.Row.Item is not PreIssueBorrowItem row || _vm == null)
+            {
+                return;
+            }
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                try
+                {
+                    _vm.SaveBorrowRow(row);
+                }
+                catch (Exception ex)
+                {
+                    _logger.Warn($"保存借用表修改失败: {ex.Message}");
                 }
             }), System.Windows.Threading.DispatcherPriority.Background);
         }

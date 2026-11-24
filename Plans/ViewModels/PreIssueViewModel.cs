@@ -36,6 +36,8 @@ namespace ORT一键报告.Plans.ViewModels
             BoardView.Filter = FilterBoard;
             ReqView = CollectionViewSource.GetDefaultView(ReqRows);
             ReqView.Filter = FilterRequisition;
+            BorrowView = CollectionViewSource.GetDefaultView(BorrowRows);
+            BorrowView.Filter = FilterBorrow;
             LoadMonths();
         }
 
@@ -478,9 +480,6 @@ namespace ORT一键报告.Plans.ViewModels
         private string _reqSummary;
         public string ReqSummary { get => _reqSummary; private set => SetProperty(ref _reqSummary, value); }
 
-        private string _reqHint;
-        public string ReqHint { get => _reqHint; private set => SetProperty(ref _reqHint, value); }
-
         private List<PreIssueRequisition> _reqAll = [];
 
         private void LoadRequisition()
@@ -508,10 +507,6 @@ namespace ORT一键报告.Plans.ViewModels
             }
             RefreshView(ReqView);
             UpdateReqSummary();
-            int pending = _reqAll.Count(r => PreIssueCodes.IsPendingState(r.State) || string.IsNullOrWhiteSpace(r.Vchno));
-            ReqHint = pending > 0
-                ? $"有 {pending} 个机种待开单：开好单后把下载的开单数据（11.XLS 一类）导入进来补全"
-                : "待开单都开好了：可在开单流程有变化时再次导入开单数据，同步 VCH_STATUS / CLOSE_CODE";
         }
 
         private bool FilterRequisition(object obj)
@@ -602,7 +597,7 @@ namespace ORT一键报告.Plans.ViewModels
         public bool CanImport => _permission.Can("plan.import");
 
         /// <summary>当前是否有数据可以翻阅</summary>
-        public bool HasAnyData => _scheduleItems.Count > 0 || _boardAll.Count > 0 || _reqAll.Count > 0;
+        public bool HasAnyData => _scheduleItems.Count > 0 || _boardAll.Count > 0 || _reqAll.Count > 0 || _borrowAll.Count > 0;
 
         /// <summary>总体提示（预领页签顶部的一行说明）</summary>
         public string OverallHint
@@ -610,9 +605,12 @@ namespace ORT一键报告.Plans.ViewModels
             get
             {
                 string month = MonthTitle;
-                return _scheduleItems.Count == 0 && _boardAll.Count == 0 && _reqAll.Count == 0
-                    ? $"{month} 还没有预领数据：先导入月排程，再每天导入 ORT 看板，开单后导入开单数据"
-                    : $"{month}：月排程 {_scheduleItems.Count} 格 · 看板 {_boardAll.Count} 行 · 准备领用 {_reqAll.Count} 条";
+                if (_scheduleItems.Count == 0 && _boardAll.Count == 0 && _reqAll.Count == 0 && _borrowAll.Count == 0)
+                {
+                    return $"{month} 还没有预领数据：先导入月排程，再每天导入 ORT 看板，开单后导入开单数据";
+                }
+                return $"{month}：月排程 {_scheduleItems.Count} 格 · 看板 {_boardAll.Count} 行 · 准备领用 {_reqAll.Count} 条"
+                    + (_borrowAll.Count > 0 ? $" · 借用 {_borrowAll.Count} 条" : "");
             }
         }
 
@@ -664,6 +662,7 @@ namespace ORT一键报告.Plans.ViewModels
                 LoadSchedule();
                 LoadBoard();
                 LoadRequisition();
+                LoadBorrow();
                 OnPropertyChanged(nameof(HasAnyData));
                 OnPropertyChanged(nameof(OverallHint));
                 if (string.IsNullOrWhiteSpace(StatusMessage) || StatusMessage == "已刷新")
@@ -888,6 +887,218 @@ namespace ORT一键报告.Plans.ViewModels
             ReqSummary = visible == _reqAll.Count
                 ? baseText
                 : baseText + $" · 可见 {visible} 条";
+        }
+
+        /* ###############################  借用表  ################################ */
+
+        /// <summary>借用记录（全部月份，最新在前；状态筛选只管显示）</summary>
+        public ObservableCollection<PreIssueBorrowItem> BorrowRows { get; } = [];
+
+        public ICollectionView BorrowView { get; }
+
+        private PreIssueBorrowItem _selectedBorrowRow;
+        public PreIssueBorrowItem SelectedBorrowRow
+        {
+            get => _selectedBorrowRow;
+            set => SetProperty(ref _selectedBorrowRow, value);
+        }
+
+        /// <summary>状态筛选（全部 / 待借用 / 借用中 / 已归还）</summary>
+        public ObservableCollection<string> BorrowStatusOptions { get; } = [];
+
+        private string _borrowStatusFilter;
+        public string BorrowStatusFilter
+        {
+            get => _borrowStatusFilter;
+            set
+            {
+                if (SetProperty(ref _borrowStatusFilter, value))
+                {
+                    RefreshView(BorrowView);
+                    UpdateBorrowSummary();
+                }
+            }
+        }
+
+        private string _borrowSummary;
+        public string BorrowSummary { get => _borrowSummary; private set => SetProperty(ref _borrowSummary, value); }
+
+        private List<PreIssueBorrowItem> _borrowAll = [];
+
+        private void LoadBorrow()
+        {
+            if (BorrowStatusOptions.Count == 0)
+            {
+                BorrowStatusOptions.Add("全部");
+                BorrowStatusOptions.Add(PreIssueCodes.BorrowPending);
+                BorrowStatusOptions.Add(PreIssueCodes.Borrowing);
+                BorrowStatusOptions.Add(PreIssueCodes.BorrowReturned);
+                _borrowStatusFilter = "全部";
+            }
+            try
+            {
+                _borrowAll = _service.LoadBorrowItems();
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn($"读取借用表失败: {ex.Message}");
+                _borrowAll = [];
+            }
+            BorrowRows.Clear();
+            foreach (PreIssueBorrowItem row in _borrowAll)
+            {
+                BorrowRows.Add(row);
+            }
+            OnPropertyChanged(nameof(BorrowStatusFilter));
+            RefreshView(BorrowView);
+            UpdateBorrowSummary();
+        }
+
+        private bool FilterBorrow(object obj)
+        {
+            if (obj is not PreIssueBorrowItem row)
+            {
+                return false;
+            }
+            string filter = BorrowStatusFilter;
+            if (string.IsNullOrEmpty(filter) || filter == "全部")
+            {
+                return true;
+            }
+            return string.Equals(StatusOf(row), filter, StringComparison.Ordinal);
+        }
+
+        private static string StatusOf(PreIssueBorrowItem row) =>
+            string.IsNullOrWhiteSpace(row?.Status) ? PreIssueCodes.BorrowPending : row.Status.Trim();
+
+        private void UpdateBorrowSummary()
+        {
+            if (_borrowAll.Count == 0)
+            {
+                BorrowSummary = "没有借用记录";
+                return;
+            }
+            int pending = _borrowAll.Count(r => StatusOf(r) == PreIssueCodes.BorrowPending);
+            int borrowing = _borrowAll.Count(r => StatusOf(r) == PreIssueCodes.Borrowing);
+            int returned = _borrowAll.Count(r => StatusOf(r) == PreIssueCodes.BorrowReturned);
+            int visible = 0;
+            foreach (object row in BorrowView)
+            {
+                _ = row;
+                visible++;
+            }
+            string text = $"{_borrowAll.Count} 条 · 待借用 {pending} · 借用中 {borrowing} · 已归还 {returned}";
+            BorrowSummary = visible == _borrowAll.Count ? text : text + $" · 可见 {visible} 条";
+        }
+
+        /// <summary>能不能改借用表（需要计划编辑权限）</summary>
+        public bool CanEditBorrowData => _permission.Can("plan.edit");
+
+        /// <summary>借用表里改完一格后保存这一行（失败时从库里读回旧值）</summary>
+        public bool SaveBorrowRow(PreIssueBorrowItem row)
+        {
+            if (row == null)
+            {
+                return false;
+            }
+            if (!CanEditBorrowData)
+            {
+                _ = MessageBox.Show(LanguageService.Get("PreIssue_ReqEditDenied"),
+                    LanguageService.Get("PreIssue_BorrowTab"), MessageBoxButton.OK, MessageBoxImage.Warning);
+                ReloadBorrowRow(row);
+                return false;
+            }
+            if (!_service.SaveBorrowItem(row, out string error))
+            {
+                _ = MessageBox.Show($"保存借用记录失败：{error}", LanguageService.Get("PreIssue_BorrowTab"),
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                ReloadBorrowRow(row);
+                return false;
+            }
+            // 服务端会把状态/机种/数量规整一遍（就地写回同一个对象），这里刷新汇总即可
+            UpdateBorrowSummary();
+            RefreshView(BorrowView);
+            StatusMessage = $"已保存借用记录：{row.Model}";
+            return true;
+        }
+
+        /// <summary>
+        /// 保存失败时把这一行恢复成库里的值。
+        /// 只改这一行的字段、不重建集合：单元格还处在编辑事务里，换整个 ItemsSource 会抛
+        /// 「在 AddNew 或 EditItem 事务过程中不允许 …」。
+        /// </summary>
+        private void ReloadBorrowRow(PreIssueBorrowItem row)
+        {
+            try
+            {
+                PreIssueBorrowItem fresh = _service.LoadBorrowItems().FirstOrDefault(r => r.Id == row.Id);
+                if (fresh == null)
+                {
+                    return;
+                }
+                row.Status = fresh.Status;
+                row.Model = fresh.Model;
+                row.Qty = fresh.Qty;
+                row.BorrowDate = fresh.BorrowDate;
+                row.ReturnDate = fresh.ReturnDate;
+                RefreshView(BorrowView);
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn($"恢复借用记录旧值失败: {ex.Message}");
+            }
+        }
+
+        /// <summary>右键「登记借用」：状态 → 借用中，借用日期填今天</summary>
+        public bool MarkBorrowedRow(PreIssueBorrowItem row) => ChangeBorrowState(row, true);
+
+        /// <summary>右键「登记归还」：状态 → 已归还，归还日期填今天</summary>
+        public bool MarkReturnedRow(PreIssueBorrowItem row) => ChangeBorrowState(row, false);
+
+        private bool ChangeBorrowState(PreIssueBorrowItem row, bool borrowing)
+        {
+            if (row == null)
+            {
+                return false;
+            }
+            if (!CanEditBorrowData)
+            {
+                _ = MessageBox.Show(LanguageService.Get("PreIssue_ReqEditDenied"),
+                    LanguageService.Get("PreIssue_BorrowTab"), MessageBoxButton.OK, MessageBoxImage.Warning);
+                return false;
+            }
+            string action = borrowing ? LanguageService.Get("PreIssue_Borrow_Menu_Borrow") : LanguageService.Get("PreIssue_Borrow_Menu_Return");
+            bool ok = borrowing
+                ? _service.MarkBorrowed(row.Id, out string error)
+                : _service.MarkReturned(row.Id, out error);
+            if (!ok)
+            {
+                _ = MessageBox.Show(error, action, MessageBoxButton.OK, MessageBoxImage.Warning);
+                return false;
+            }
+            ReloadBorrowRow(row);
+            UpdateBorrowSummary();
+            StatusMessage = $"{action}：{row.Model}";
+            ToastService.Show(StatusMessage);
+            return true;
+        }
+
+        /* ###############################  同系列客户优先级  ################################ */
+
+        /// <summary>当前生效的客户优先级代码（从高到低）</summary>
+        public List<string> LoadCustomerPriorityCodes() => _service.LoadCustomerPriorityCodes();
+
+        /// <summary>客户代码 → 客户名称（主数据库的客户代码表）</summary>
+        public Dictionary<string, string> LoadCustomerCodeNames() => _service.LoadCustomerCodeNames();
+
+        /// <summary>优先级编辑窗口的候选客户代码</summary>
+        public List<string> LoadCustomerCodeCandidates() => _service.LoadCustomerCodeCandidates();
+
+        /// <summary>保存客户优先级（存数据库，多台电脑共用）</summary>
+        public void SaveCustomerPriorityCodes(IEnumerable<string> codes)
+        {
+            _service.SaveCustomerPriorityCodes(codes);
+            StatusMessage = "客户优先级已保存：" + string.Join(" → ", _service.LoadCustomerPriorityCodes());
         }
 
         /* ###############################  黑名单：编辑框辅助  ################################ */

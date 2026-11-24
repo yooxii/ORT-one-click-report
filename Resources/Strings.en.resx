@@ -3766,4 +3766,82 @@ Yes = delete and blacklist, No = delete only, Cancel = do nothing</value>
   <data name="Menu_HeaderMenuError" xml:space="preserve">
     <value>Header menu failed to open (see log)</value>
   </data>
+  <data name="PreIssue_BorrowTab" xml:space="preserve">
+    <value>Loan table</value>
+  </data>
+  <data name="PreIssue_BorrowTabTip" xml:space="preserve">
+    <value>Newly imported ORT board rows with 類別 = EMI are recorded here; right-click to register a loan / return, all five columns are editable; all months are shown</value>
+  </data>
+  <data name="PreIssue_Borrow_Status" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="PreIssue_Borrow_Model" xml:space="preserve">
+    <value>Model</value>
+  </data>
+  <data name="PreIssue_Borrow_Qty" xml:space="preserve">
+    <value>Qty</value>
+  </data>
+  <data name="PreIssue_Borrow_BorrowDate" xml:space="preserve">
+    <value>Loaned on</value>
+  </data>
+  <data name="PreIssue_Borrow_ReturnDate" xml:space="preserve">
+    <value>Returned on</value>
+  </data>
+  <data name="PreIssue_Borrow_Menu_Borrow" xml:space="preserve">
+    <value>借用</value>
+  </data>
+  <data name="PreIssue_Borrow_Menu_Return" xml:space="preserve">
+    <value>归还</value>
+  </data>
+  <data name="PreIssue_CustomerPriority" xml:space="preserve">
+    <value>Customer priority</value>
+  </data>
+  <data name="PreIssue_CustomerPriorityTip" xml:space="preserve">
+    <value>When one voucher per series (same first 6 characters) is enough, the customer code is picked by this order</value>
+  </data>
+  <data name="PreIssue_CustomerPriorityHint" xml:space="preserve">
+    <value>One voucher per series is enough: when importing the board or filling pending rows from the board, the model whose customer code ranks highest here is picked and the rest of the series are skipped. Default GA → 4C → 93 → 00 (00 = standard, last); codes not listed also come last. Customer names come from the customer code table in the main database.</value>
+  </data>
+  <data name="PreIssue_CustomerPriorityOrder" xml:space="preserve">
+    <value>Order</value>
+  </data>
+  <data name="PreIssue_CustomerPriorityCode" xml:space="preserve">
+    <value>Customer code</value>
+  </data>
+  <data name="PreIssue_CustomerPriorityName" xml:space="preserve">
+    <value>Customer name</value>
+  </data>
+  <data name="PreIssue_CustomerPriorityAdd" xml:space="preserve">
+    <value>Add</value>
+  </data>
+  <data name="PreIssue_CustomerPriorityAddTip" xml:space="preserve">
+    <value>Type or pick a customer code (first 2 characters of the model suffix), then press Enter or click Add to append it</value>
+  </data>
+  <data name="PreIssue_CustomerPriorityUp" xml:space="preserve">
+    <value>Move up</value>
+  </data>
+  <data name="PreIssue_CustomerPriorityDown" xml:space="preserve">
+    <value>Move down</value>
+  </data>
+  <data name="PreIssue_CustomerPriorityRemove" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+  <data name="PreIssue_CustomerPriorityReset" xml:space="preserve">
+    <value>Restore default order</value>
+  </data>
+  <data name="PreIssue_CustomerPriorityEmpty" xml:space="preserve">
+    <value>No priority configured: nothing is picked on import; click Restore default order</value>
+  </data>
+  <data name="PreIssue_CustomerPriorityAddEmpty" xml:space="preserve">
+    <value>Type a customer code first</value>
+  </data>
+  <data name="PreIssue_CustomerPriorityExists" xml:space="preserve">
+    <value>"{0}" is already in the list</value>
+  </data>
+  <data name="PreIssue_CustomerPrioritySelectFirst" xml:space="preserve">
+    <value>Select a row in the list first</value>
+  </data>
+  <data name="PreIssue_CustomerPriorityNoName" xml:space="preserve">
+    <value>{0} (not found in the customer code table)</value>
+  </data>
 </root>

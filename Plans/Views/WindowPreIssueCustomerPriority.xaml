@@ -1,0 +1,83 @@
+<Window x:Class="ORT一键报告.Plans.Views.WindowPreIssueCustomerPriority"
+        Background="{DynamicResource WindowBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:lex="http://wpflocalizeextension.codeplex.com"
+        mc:Ignorable="d"
+        Title="{lex:Loc PreIssue_CustomerPriority}" Width="620" Height="520" MinWidth="520" MinHeight="420"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
+
+    <Window.Resources>
+        <Style x:Key="ListText" TargetType="TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="TextAlignment" Value="Center"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+            <Setter Property="Margin" Value="0"/>
+        </Style>
+        <Style x:Key="ListCell" TargetType="DataGridCell">
+            <Setter Property="Padding" Value="2,0"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="{lex:Loc PreIssue_CustomerPriorityHint}" TextWrapping="Wrap"
+                   Foreground="{DynamicResource TextSecondaryBrush}"/>
+
+        <DataGrid x:Name="dg_priority" Grid.Row="1" Margin="0,10,0,0"
+                  AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False"
+                  HeadersVisibility="Column" GridLinesVisibility="All"
+                  SelectionMode="Single" SelectionUnit="FullRow" ClipboardCopyMode="None"
+                  SelectionChanged="Dg_Priority_SelectionChanged">
+            <DataGrid.CellStyle>
+                <StaticResource ResourceKey="ListCell"/>
+            </DataGrid.CellStyle>
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="{lex:Loc PreIssue_CustomerPriorityOrder}" Binding="{Binding Order}" Width="70"
+                                    ElementStyle="{StaticResource ListText}"/>
+                <DataGridTextColumn Header="{lex:Loc PreIssue_CustomerPriorityCode}" Binding="{Binding Code}" Width="120"
+                                    ElementStyle="{StaticResource ListText}"/>
+                <DataGridTextColumn Header="{lex:Loc PreIssue_CustomerPriorityName}" Binding="{Binding Name}" Width="*"
+                                    ElementStyle="{StaticResource ListText}"/>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <WrapPanel Grid.Row="2" Margin="0,10,0,0">
+            <ComboBox x:Name="cb_code" Width="180" VerticalContentAlignment="Center" IsEditable="True"
+                      ToolTip="{lex:Loc PreIssue_CustomerPriorityAddTip}"
+                      SelectionChanged="Cb_Code_SelectionChanged"
+                      KeyDown="Cb_Code_KeyDown"/>
+            <Button Content="{lex:Loc PreIssue_CustomerPriorityAdd}" MinWidth="84" Padding="10,3" Margin="8,0,0,0"
+                    Click="Btn_Add_Click"/>
+            <Button Content="{lex:Loc PreIssue_CustomerPriorityRemove}" MinWidth="84" Padding="10,3" Margin="8,0,0,0"
+                    Click="Btn_Remove_Click"/>
+            <Button Content="{lex:Loc PreIssue_CustomerPriorityUp}" MinWidth="72" Padding="10,3" Margin="8,0,0,0"
+                    Click="Btn_Up_Click"/>
+            <Button Content="{lex:Loc PreIssue_CustomerPriorityDown}" MinWidth="72" Padding="10,3" Margin="8,0,0,0"
+                    Click="Btn_Down_Click"/>
+            <Button Content="{lex:Loc PreIssue_CustomerPriorityReset}" MinWidth="96" Padding="10,3" Margin="8,0,0,0"
+                    Click="Btn_Reset_Click"/>
+        </WrapPanel>
+
+        <DockPanel Grid.Row="3" Margin="0,12,0,0">
+            <Button DockPanel.Dock="Right" Content="{lex:Loc Common_OK}" MinWidth="84" Padding="10,3" Margin="8,0,0,0"
+                    IsDefault="True" Click="Btn_Ok_Click"/>
+            <Button DockPanel.Dock="Right" Content="{lex:Loc Common_Cancel}" MinWidth="84" Padding="10,3" Margin="8,0,0,0"
+                    IsCancel="True"/>
+            <TextBlock x:Name="txt_status" VerticalAlignment="Center" TextWrapping="Wrap"
+                       Foreground="{DynamicResource TextSecondaryBrush}"/>
+        </DockPanel>
+    </Grid>
+</Window>

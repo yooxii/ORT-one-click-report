@@ -3766,4 +3766,82 @@
   <data name="Menu_HeaderMenuError" xml:space="preserve">
     <value>列头菜单打不开（详见日志）</value>
   </data>
+  <data name="PreIssue_BorrowTab" xml:space="preserve">
+    <value>借用表</value>
+  </data>
+  <data name="PreIssue_BorrowTabTip" xml:space="preserve">
+    <value>ORT看板里「類別 = EMI」的新行导入时自动记一条；右键可登记借用 / 归还，五列都能双击改；表里显示全部月份的记录</value>
+  </data>
+  <data name="PreIssue_Borrow_Status" xml:space="preserve">
+    <value>状态</value>
+  </data>
+  <data name="PreIssue_Borrow_Model" xml:space="preserve">
+    <value>机种名称</value>
+  </data>
+  <data name="PreIssue_Borrow_Qty" xml:space="preserve">
+    <value>数量</value>
+  </data>
+  <data name="PreIssue_Borrow_BorrowDate" xml:space="preserve">
+    <value>借用日期</value>
+  </data>
+  <data name="PreIssue_Borrow_ReturnDate" xml:space="preserve">
+    <value>归还日期</value>
+  </data>
+  <data name="PreIssue_Borrow_Menu_Borrow" xml:space="preserve">
+    <value>借用</value>
+  </data>
+  <data name="PreIssue_Borrow_Menu_Return" xml:space="preserve">
+    <value>归还</value>
+  </data>
+  <data name="PreIssue_CustomerPriority" xml:space="preserve">
+    <value>客户优先级</value>
+  </data>
+  <data name="PreIssue_CustomerPriorityTip" xml:space="preserve">
+    <value>同系列（前 6 位相同）只开一张单时，按这里的顺序挑客户代码</value>
+  </data>
+  <data name="PreIssue_CustomerPriorityHint" xml:space="preserve">
+    <value>同一个系列只需要开一张单：导入看板、「从看板补全待开单」时按这里的顺序挑客户代码优先级最高的机种，其余同系列的不再生成。默认 GA → 4C → 93 → 00（00 = 标准，排最后）；没列出的客户代码也排最后。客户名称来自主数据库的客户代码表。</value>
+  </data>
+  <data name="PreIssue_CustomerPriorityOrder" xml:space="preserve">
+    <value>顺序</value>
+  </data>
+  <data name="PreIssue_CustomerPriorityCode" xml:space="preserve">
+    <value>客户代码</value>
+  </data>
+  <data name="PreIssue_CustomerPriorityName" xml:space="preserve">
+    <value>客户名称</value>
+  </data>
+  <data name="PreIssue_CustomerPriorityAdd" xml:space="preserve">
+    <value>添加</value>
+  </data>
+  <data name="PreIssue_CustomerPriorityAddTip" xml:space="preserve">
+    <value>输入或选择客户代码（机种后段前 2 位），回车或点「添加」加到最后</value>
+  </data>
+  <data name="PreIssue_CustomerPriorityUp" xml:space="preserve">
+    <value>上移</value>
+  </data>
+  <data name="PreIssue_CustomerPriorityDown" xml:space="preserve">
+    <value>下移</value>
+  </data>
+  <data name="PreIssue_CustomerPriorityRemove" xml:space="preserve">
+    <value>移除</value>
+  </data>
+  <data name="PreIssue_CustomerPriorityReset" xml:space="preserve">
+    <value>恢复默认顺序</value>
+  </data>
+  <data name="PreIssue_CustomerPriorityEmpty" xml:space="preserve">
+    <value>还没配置优先级：导入不会挑机种，建议点「恢复默认顺序」</value>
+  </data>
+  <data name="PreIssue_CustomerPriorityAddEmpty" xml:space="preserve">
+    <value>先输入客户代码再添加</value>
+  </data>
+  <data name="PreIssue_CustomerPriorityExists" xml:space="preserve">
+    <value>「{0}」已经在列表里了</value>
+  </data>
+  <data name="PreIssue_CustomerPrioritySelectFirst" xml:space="preserve">
+    <value>先在列表里选一条</value>
+  </data>
+  <data name="PreIssue_CustomerPriorityNoName" xml:space="preserve">
+    <value>{0}（客户代码表里没有这个代码）</value>
+  </data>
 </root>

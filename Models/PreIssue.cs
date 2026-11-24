@@ -422,6 +422,94 @@ namespace ORT一键报告.Models
     }
 
     /// <summary>
+    /// 预领·借用表（pre_issue_borrow_items 表）：
+    /// ORT 看板里「類別 = EMI」的行在导入时新出现的，自动记一条借用记录；
+    /// 界面上只用「状态 / 机种名称 / 数量 / 借用日期 / 归还日期」五列（都可编辑），
+    /// 右键「借用」「归还」改状态并自动填日期。工令、看板日期只用于去重与回溯，不显示。
+    /// </summary>
+    [Table(Name = "pre_issue_borrow_items")]
+    [Index("idx_pre_issue_borrow_month", nameof(Month), false)]
+    public class PreIssueBorrowItem : ObservableObject
+    {
+        [Column(IsPrimary = true, IsIdentity = true)]
+        public long Id { get; set; }
+
+        /// <summary>月份（yyyyMM，取自看板的日期列）</summary>
+        [Column(StringLength = 6, IsNullable = true)]
+        public string Month { get; set; }
+
+        /// <summary>状态：待借用 / 借用中 / 已归还（见 <see cref="PreIssueCodes"/>）</summary>
+        [Column(StringLength = 16, IsNullable = true)]
+        public string Status
+        {
+            get => _status;
+            set
+            {
+                if (SetProperty(ref _status, value))
+                {
+                    OnPropertyChanged(nameof(StatusHint));
+                }
+            }
+        }
+        private string _status;
+
+        /// <summary>机种名称</summary>
+        [Column(StringLength = 64, IsNullable = true)]
+        public string Model { get; set; }
+
+        /// <summary>数量（看板的生產數量原样）</summary>
+        [Column(StringLength = 32, IsNullable = true)]
+        public string Qty { get; set; }
+
+        /// <summary>借用日期</summary>
+        public DateTime? BorrowDate { get; set; }
+
+        /// <summary>归还日期</summary>
+        public DateTime? ReturnDate { get; set; }
+
+        /// <summary>看板工令（去重与回溯用，不显示）</summary>
+        [Column(StringLength = 64, IsNullable = true)]
+        public string JobNo { get; set; }
+
+        /// <summary>看板日期（去重与回溯用，不显示）</summary>
+        [Column(StringLength = 32, IsNullable = true)]
+        public string ReportDate { get; set; }
+
+        /// <summary>来源类别（记录当时的看板類別）</summary>
+        [Column(StringLength = 32, IsNullable = true)]
+        public string SourceCategory { get; set; }
+
+        /// <summary>备注（来源文件等）</summary>
+        [Column(StringLength = 256, IsNullable = true)]
+        public string Note { get; set; }
+
+        public DateTime? CreatedAt { get; set; }
+
+        [Column(StringLength = 64, IsNullable = true)]
+        public string CreatedBy { get; set; }
+
+        public DateTime? UpdatedAt { get; set; }
+
+        [Column(StringLength = 64, IsNullable = true)]
+        public string UpdatedBy { get; set; }
+
+        /// <summary>状态提示（表格悬浮说明用）</summary>
+        [Column(IsIgnore = true)]
+        [Newtonsoft.Json.JsonIgnore]
+        public string StatusHint => Status switch
+        {
+            PreIssueCodes.BorrowReturned => "已归还",
+            PreIssueCodes.Borrowing => "借用中（右键「归还」登记归还日期）",
+            _ => "待借用（右键「借用」登记借用日期）"
+        };
+
+        /// <summary>去重键：月份 + 工令 + 机种（没有工令时带上日期）</summary>
+        [Column(IsIgnore = true)]
+        [Newtonsoft.Json.JsonIgnore]
+        public string MatchKey => PreIssueCodes.BorrowMatchKey(Month, JobNo, Model, ReportDate);
+    }
+
+    /// <summary>
     /// 预领模块用到的固定文案/常量（存库值不随界面语言变化）
     /// </summary>
     public static class PreIssueCodes
@@ -464,6 +552,39 @@ namespace ORT一键报告.Models
 
         /// <summary>变动类型：黑名单</summary>
         public const string KindBlacklist = "黑名单";
+
+        /// <summary>变动记录来源：借用表</summary>
+        public const string SourceBorrow = "借用表";
+
+        /// <summary>借用状态：待借用（看板新出现的 EMI 行刚记进来）</summary>
+        public const string BorrowPending = "待借用";
+
+        /// <summary>借用状态：借用中（已登记借用日期）</summary>
+        public const string Borrowing = "借用中";
+
+        /// <summary>借用状态：已归还（已登记归还日期）</summary>
+        public const string BorrowReturned = "已归还";
+
+        /// <summary>变动类型：借用（登记借用日期）</summary>
+        public const string KindBorrow = "借用";
+
+        /// <summary>变动类型：归还（登记归还日期）</summary>
+        public const string KindReturn = "归还";
+
+        /// <summary>看板类别是否算 EMI（忽略大小写、包含即算，如 EMI / EMI測試 / EMI-ORT）</summary>
+        public static bool IsEmiCategory(string category) =>
+            !string.IsNullOrWhiteSpace(category)
+            && category.IndexOf("EMI", StringComparison.OrdinalIgnoreCase) >= 0;
+
+        /// <summary>借用记录的去重键：月份 + 工令 + 机种（没有工令时用日期兜底）</summary>
+        public static string BorrowMatchKey(string month, string jobNo, string model, string reportDate)
+        {
+            string key = (month ?? "").Trim() + "|" + (model ?? "").Trim();
+            string job = (jobNo ?? "").Trim();
+            return string.IsNullOrEmpty(job)
+                ? key + "|" + (reportDate ?? "").Trim()
+                : key + "|" + job;
+        }
 
         /// <summary>变动类型：撤销上次导入（还原成导入前的数据）</summary>
         public const string KindUndo = "撤销";

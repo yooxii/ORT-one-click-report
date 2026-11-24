@@ -2,6 +2,7 @@ using NUnit.Framework;
 using ORT一键报告.Models;
 using ORT一键报告.Services;
 using System;
+using System.Linq;
 
 namespace ORT一键报告.Tests
 {
@@ -444,6 +445,104 @@ namespace ORT一键报告.Tests
             Assert.That(row.Stocked, Is.False);
             row.Stocked87 = "Y";
             Assert.That(row.Stocked, Is.True);
+        }
+
+        /* ------------------ 同系列客户优先级（只开一张单） ------------------ */
+
+        [Test]
+        public void SeriesPriority_DefaultOrder_PrefersGa4C93Then00()
+        {
+            PreIssueSeriesPriority priority = PreIssueSeriesPriority.CreateDefault();
+            string[] series = ["FSL020-00AG", "FSL020-4CAG", "FSL020-93AG", "FSL020-GAAG"];
+
+            Assert.That(priority.PickRepresentative(series), Is.EqualTo("FSL020-GAAG"));
+            Assert.That(priority.PickRepresentative(series.Where(m => m != "FSL020-GAAG")), Is.EqualTo("FSL020-4CAG"));
+            Assert.That(priority.PickRepresentative(series.Where(m => m is not ("FSL020-GAAG" or "FSL020-4CAG"))),
+                Is.EqualTo("FSL020-93AG"));
+            Assert.That(priority.PickRepresentative(["FSL020-00AG"]), Is.EqualTo("FSL020-00AG"));
+        }
+
+        /// <summary>00 = 标准，只有其它客户代码都没出现时才选它</summary>
+        [Test]
+        public void SeriesPriority_StandardIsLowestButStillPickedWhenAlone()
+        {
+            PreIssueSeriesPriority priority = PreIssueSeriesPriority.CreateDefault();
+            Assert.That(priority.PickRepresentative(["FSL020-00AG", "FSL020-GAAG"]), Is.EqualTo("FSL020-GAAG"));
+            Assert.That(priority.RankOf("FSL020-00AG"), Is.GreaterThan(priority.RankOf("FSL020-93AG")));
+        }
+
+        /// <summary>没列出的客户代码、以及拆不出代码的机种都排最后</summary>
+        [Test]
+        public void SeriesPriority_UnlistedCodeAndBrokenShapeComeLast()
+        {
+            PreIssueSeriesPriority priority = PreIssueSeriesPriority.CreateDefault();
+            Assert.That(priority.PickRepresentative(["FSL020-7KAG", "FSL020-00AG"]), Is.EqualTo("FSL020-00AG"));
+            Assert.That(priority.RankOf("FSL020-7KAG"), Is.EqualTo(int.MaxValue));
+            Assert.That(priority.RankOf("WAS003-F90GB"), Is.EqualTo(int.MaxValue));
+            Assert.That(priority.PickRepresentative(["WAS003-F90GB", "FSL020-00AG"]), Is.EqualTo("FSL020-00AG"));
+        }
+
+        [Test]
+        public void SeriesPriority_CustomOrderWins()
+        {
+            PreIssueSeriesPriority priority = new(["00", "4C"]);
+            Assert.That(priority.Codes, Is.EqualTo(new[] { "00", "4C" }));
+            Assert.That(priority.PickRepresentative(["FSL020-4CAG", "FSL020-00AG"]), Is.EqualTo("FSL020-00AG"));
+        }
+
+        [TestCase("GA,4C,93,00", new[] { "GA", "4C", "93", "00" })]
+        [TestCase(" ga ; 4c | 93 ", new[] { "GA", "4C", "93" })]
+        [TestCase("", new string[0])]
+        [TestCase(null, new string[0])]
+        public void SeriesPriority_ParsesStoredText(string text, string[] expected)
+        {
+            Assert.That(PreIssueSeriesPriority.ParseStored(text), Is.EqualTo(expected));
+        }
+
+        [Test]
+        public void SeriesPriority_FormatNormalizesCodes()
+        {
+            Assert.That(PreIssueSeriesPriority.Format([" ga ", "GA", "", "4c"]), Is.EqualTo("GA,4C"));
+        }
+
+        [TestCase("FSL020-00AG", "FSL020")]
+        [TestCase("fsl020-gaag", "FSL020")]
+        [TestCase("WAS003-F90GB", "WAS003")]
+        [TestCase("ABC123", "ABC123")]
+        public void SeriesPriority_SeriesKeyGroupsByFirstSix(string model, string expected)
+        {
+            Assert.That(PreIssueSeriesPriority.SeriesKeyOf(model), Is.EqualTo(expected));
+        }
+
+        [TestCase("FSE052-GAAG", "GA")]
+        [TestCase("FSG032-A2AG", "A2")]
+        [TestCase("OTD026-00BG", "00")]
+        [TestCase("WAS003-F90GB", null)]
+        public void SeriesPriority_CustomerCodeComesFromSuffix(string model, string expected)
+        {
+            Assert.That(PreIssueSeriesPriority.CustomerCodeOf(model), Is.EqualTo(expected));
+        }
+
+        /* ------------------ 借用表（EMI 变更） ------------------ */
+
+        [TestCase("EMI", true)]
+        [TestCase("emi", true)]
+        [TestCase("EMI測試", true)]
+        [TestCase("ORT", false)]
+        [TestCase("", false)]
+        [TestCase(null, false)]
+        public void Borrow_EmiCategoryDetection(string category, bool expected)
+        {
+            Assert.That(PreIssueCodes.IsEmiCategory(category), Is.EqualTo(expected));
+        }
+
+        [Test]
+        public void Borrow_MatchKeyUsesJobNoOrDate()
+        {
+            Assert.That(PreIssueCodes.BorrowMatchKey("202611", "AH0027EA0024", "ADC027-YEAG", "20261205"),
+                Is.EqualTo("202611|ADC027-YEAG|AH0027EA0024"));
+            Assert.That(PreIssueCodes.BorrowMatchKey("202611", null, "ADC027-YEAG", "20261205"),
+                Is.EqualTo("202611|ADC027-YEAG|20261205"));
         }
     }
 }

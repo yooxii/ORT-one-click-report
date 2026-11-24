@@ -40,6 +40,7 @@ namespace ORT一键报告.Plans.Views
                 PreIssueCodes.SourceSchedule,
                 PreIssueCodes.SourceBoard,
                 PreIssueCodes.SourceRequisition,
+                PreIssueCodes.SourceBorrow,
                 PreIssueCodes.SourceBlacklist
             };
             cb_source.SelectedIndex = 0;
