@@ -68,19 +68,10 @@ namespace ORT一键报告.Plans.Views
                 RestoreColumnState();
                 _vm.LoadSearchHistory();
                 _vm.Refresh();
-                // 菜单子项必须在菜单展开之前就存在：WPF 对没有子项的 MenuItem 不会展开，
-                // 也就不会触发 SubmenuOpened（否则「排序/显示隐藏列」点开是空的）
-                BuildSortMenu(menu_window_sort, ActiveGrid());
-                BuildColumnMenu(menu_window_columns, ActiveGrid());
                 RefreshHeaderStyles();
                 RunPendingActionOnce();
             };
             // 右键菜单同理：在打开前构建子项
-            dg_requisitions.ContextMenuOpening += (s, e) =>
-            {
-                BuildSortMenu(menu_req_sort, dg_requisitions);
-                BuildColumnMenu(menu_req_columns, dg_requisitions);
-            };
             dg_plans.ContextMenuOpening += (s, e) =>
             {
                 BuildSortMenu(menu_plan_sort, dg_plans);
@@ -319,6 +310,15 @@ namespace ORT一键报告.Plans.Views
             MenuItem descending = new() { Header = LanguageService.Get("Common_Descending") };
             descending.Click += (s, args) => ApplySort(grid, property, ListSortDirection.Descending);
             menu.Items.Add(descending);
+
+            // 计划表：显示/隐藏列（原先在 视图→列 与 领退表右键菜单里，现在统一放这里）
+            if (isPlan)
+            {
+                menu.Items.Add(new Separator());
+                MenuItem columns = new() { Header = LanguageService.Get("Menu_Columns") };
+                BuildColumnMenu(columns, grid);
+                menu.Items.Add(columns);
+            }
 
             if (string.IsNullOrWhiteSpace(property))
             {
@@ -2774,16 +2774,7 @@ namespace ORT一键报告.Plans.Views
         private string _planSortField;
         private ListSortDirection _planSortDirection = ListSortDirection.Ascending;
 
-        /// <summary>窗口菜单「排序」：作用于当前 Tab 对应的表</summary>
-        private void Menu_Sort_SubmenuOpened(object sender, RoutedEventArgs e)
-        {
-            if (sender is MenuItem item)
-            {
-                BuildSortMenu(item, ActiveGrid());
-            }
-        }
-
-        /// <summary>右键菜单「排序」：按 Tag 指明是领退表(req)还是计划表(plan)</summary>
+        /// <summary>右键菜单「排序」：只有计划表有（领退表的排序/列菜单已并入表头右键）</summary>
         private void Menu_ContextSort_SubmenuOpened(object sender, RoutedEventArgs e)
         {
             if (sender is MenuItem item)
@@ -2791,23 +2782,6 @@ namespace ORT一键报告.Plans.Views
                 BuildSortMenu(item, (item.Tag as string) == "plan" ? dg_plans : dg_requisitions);
             }
         }
-
-        /// <summary>窗口菜单「视图」：显示/隐藏列（作用于当前 Tab 对应的表）</summary>
-        private void Menu_View_SubmenuOpened(object sender, RoutedEventArgs e)
-        {
-            if (sender is MenuItem item)
-            {
-                BuildColumnMenu(item, ActiveGrid());
-            }
-        }
-
-        /// <summary>当前 Tab 对应的表格（0=领退表，1=计划表）</summary>
-        private DataGrid ActiveGrid() => _activePane switch
-        {
-            PanePlans => dg_plans,
-            PaneRequisitions => dg_requisitions,
-            _ => null
-        };
 
         /// <summary>
         /// 构建排序菜单（类似资源管理器的"排序方式"）：默认顺序 + 各可排序字段 + 升序/降序。
@@ -2905,11 +2879,6 @@ namespace ORT一键报告.Plans.Views
         }
 
         /* ###############################  显示/隐藏列  ################################ */
-
-        private void Menu_ReqColumns_SubmenuOpened(object sender, RoutedEventArgs e)
-        {
-            BuildColumnMenu(menu_req_columns, dg_requisitions);
-        }
 
         private void Menu_PlanColumns_SubmenuOpened(object sender, RoutedEventArgs e)
         {
@@ -3205,9 +3174,6 @@ namespace ORT一键报告.Plans.Views
             _activePane = id;
             ApplyPaneVisibility();
             BuildTabBar();
-            // 窗口菜单（排序 / 显示隐藏列）作用于当前页签的表格
-            BuildSortMenu(menu_window_sort, ActiveGrid());
-            BuildColumnMenu(menu_window_columns, ActiveGrid());
             if (save && !_closing)
             {
                 SaveTabsLayout();
@@ -3233,8 +3199,6 @@ namespace ORT一键报告.Plans.Views
             }
             ApplyPaneVisibility();
             BuildTabBar();
-            BuildSortMenu(menu_window_sort, ActiveGrid());
-            BuildColumnMenu(menu_window_columns, ActiveGrid());
             SaveTabsLayout();
         }
 
@@ -3290,8 +3254,6 @@ namespace ORT一键报告.Plans.Views
             }
             ApplyPaneVisibility();
             BuildTabBar();
-            BuildSortMenu(menu_window_sort, ActiveGrid());
-            BuildColumnMenu(menu_window_columns, ActiveGrid());
             window.Show();
             SaveTabsLayout();
         }

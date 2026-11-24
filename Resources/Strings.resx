@@ -3667,11 +3667,7 @@
     <value>黑名单是空的</value>
   </data>
   <data name="PreIssue_DeletePendingAsk" xml:space="preserve">
-    <value>删除待开单「{0}」？
-
-顺便把它加入黑名单吗（加入后 ORT 看板变动不再推进这个机种）？
-
-「是」= 删除并加入黑名单　「否」= 只删除　「取消」= 不删</value>
+    <value>删除待开单「{0}」？</value>
   </data>
   <data name="PreIssue_BlacklistFromDelete" xml:space="preserve">
     <value>删除待开单时加入</value>
@@ -3840,5 +3836,20 @@
   </data>
     <data name="PreIssue_CustomerPriorityInvalid" xml:space="preserve">
     <value>「{0}」的优先级要填 0 或正整数</value>
+  </data>
+  <data name="PreIssue_AddPendingQty" xml:space="preserve">
+    <value>数量</value>
+  </data>
+  <data name="PreIssue_AddPendingNoteTip" xml:space="preserve">
+    <value>同机种重复领用时写原因（会记进变动记录）</value>
+  </data>
+  <data name="PreIssue_DeletePendingYes" xml:space="preserve">
+    <value>是</value>
+  </data>
+  <data name="PreIssue_DeletePendingYesBlacklist" xml:space="preserve">
+    <value>是并加入黑名单</value>
+  </data>
+  <data name="PreIssue_DeletePendingNo" xml:space="preserve">
+    <value>否</value>
   </data>
 </root>

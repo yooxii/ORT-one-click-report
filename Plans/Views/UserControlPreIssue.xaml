@@ -137,6 +137,8 @@
                         </DataGrid.CellStyle>
                         <DataGrid.ContextMenu>
                             <ContextMenu>
+                                <MenuItem Header="{lex:Loc PreIssue_AddPending}" Click="Menu_ScheduleAddPending_Click"/>
+                                <Separator/>
                                 <MenuItem Header="{lex:Loc PreIssue_Menu_CopyRow}" Click="Menu_CopyScheduleRow_Click"/>
                                 <MenuItem Header="{lex:Loc PreIssue_Menu_CopyCell}" Click="Menu_CopyCell_Click"/>
                             </ContextMenu>

@@ -15,7 +15,7 @@
     <MapFileExtensions>true</MapFileExtensions>
     <PublisherName>Lucas Li%28AcBel ORT%29</PublisherName>
     <ApplicationRevision>0</ApplicationRevision>
-    <ApplicationVersion>0.6.5.1</ApplicationVersion>
+    <ApplicationVersion>0.6.6.0</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <CreateDesktopShortcut>true</CreateDesktopShortcut>
     <PublishWizardCompleted>true</PublishWizardCompleted>
@@ -280,6 +280,9 @@
     </Compile>
     <Compile Include="Plans\Views\WindowPreIssueCustomerPriority.xaml.cs">
       <DependentUpon>WindowPreIssueCustomerPriority.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Plans\Views\WindowPreIssueDeletePending.xaml.cs">
+      <DependentUpon>WindowPreIssueDeletePending.xaml</DependentUpon>
     </Compile>
     <Compile Include="Utils\SmartTableExtractor.cs" />
     <Compile Include="Utils\SnVerification.cs" />
@@ -565,6 +568,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Plans\Views\WindowPreIssueCustomerPriority.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Plans\Views\WindowPreIssueDeletePending.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

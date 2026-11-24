@@ -3667,11 +3667,7 @@ This cannot be restored directly but is logged; prefer Undo import if you only p
     <value>The blacklist is empty</value>
   </data>
   <data name="PreIssue_DeletePendingAsk" xml:space="preserve">
-    <value>Delete pending "{0}"?
-
-Also add it to the blacklist (so ORT board changes will not push this model again)?
-
-Yes = delete and blacklist, No = delete only, Cancel = do nothing</value>
+    <value>Delete pending row "{0}"?</value>
   </data>
   <data name="PreIssue_BlacklistFromDelete" xml:space="preserve">
     <value>Added while deleting a pending model</value>
@@ -3840,5 +3836,20 @@ Yes = delete and blacklist, No = delete only, Cancel = do nothing</value>
   </data>
     <data name="PreIssue_CustomerPriorityInvalid" xml:space="preserve">
     <value>Priority of "{0}" must be 0 or a positive integer</value>
+  </data>
+  <data name="PreIssue_AddPendingQty" xml:space="preserve">
+    <value>Qty</value>
+  </data>
+  <data name="PreIssue_AddPendingNoteTip" xml:space="preserve">
+    <value>Note why this model is requisitioned again (recorded in the change log)</value>
+  </data>
+  <data name="PreIssue_DeletePendingYes" xml:space="preserve">
+    <value>Yes</value>
+  </data>
+  <data name="PreIssue_DeletePendingYesBlacklist" xml:space="preserve">
+    <value>Yes, add to blacklist</value>
+  </data>
+  <data name="PreIssue_DeletePendingNo" xml:space="preserve">
+    <value>No</value>
   </data>
 </root>

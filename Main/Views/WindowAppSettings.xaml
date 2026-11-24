@@ -151,20 +151,6 @@
                                 </ComboBox.ItemTemplate>
                             </ComboBox>
                         </Grid>
-                        <Grid Margin="0,10,0,0">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto" SharedSizeGroup="SettingsLabel"/>
-                                <ColumnDefinition Width="Auto" MinWidth="180"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="{lex:Loc Settings_ToastPosition}" VerticalAlignment="Center" ToolTip="{lex:Loc Settings_ToastPositionHint}"/>
-                            <ComboBox x:Name="cb_toastPos" Grid.Column="1" VerticalContentAlignment="Center" SelectedValuePath="Code">
-                                <ComboBox.ItemTemplate>
-                                    <DataTemplate>
-                                        <TextBlock Text="{Binding DisplayName}"/>
-                                    </DataTemplate>
-                                </ComboBox.ItemTemplate>
-                            </ComboBox>
-                        </Grid>
                         <!-- 主界面背景图：铺满主界面，可自行更换或清除 -->
                         <Grid Margin="0,10,0,0">
                             <Grid.ColumnDefinitions>

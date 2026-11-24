@@ -46,6 +46,14 @@ namespace ORT一键报告.Plans.Views
             };
             Loaded += (s, e) => Attach();
             DataContextChanged += (s, e) => Attach();
+            // 月排程：列头右键是筛选菜单（由本类自己弹），别让表格的单元格右键菜单跟着一起冒出来
+            dg_schedule.ContextMenuOpening += (s, e) =>
+            {
+                if (e.OriginalSource is DependencyObject source && FindAncestor<DataGridColumnHeader>(source) != null)
+                {
+                    e.Handled = true;
+                }
+            };
             // 浮动/回到窗口会把控件挪到另一个窗口：Unloaded 会先触发，这里只解除事件，不动数据
             Unloaded += (s, e) => Detach();
         }
@@ -96,6 +104,7 @@ namespace ORT一键报告.Plans.Views
                 {
                     Header = LanguageService.Get("PreIssue_Line"),
                     Binding = new Binding(nameof(PreScheduleRow.Line)),
+                    SortMemberPath = nameof(PreScheduleRow.Line),
                     Width = new DataGridLength(64),
                     ElementStyle = (Style)Resources["PreText"]
                 });
@@ -103,6 +112,7 @@ namespace ORT一键报告.Plans.Views
                 {
                     Header = LanguageService.Get("PreIssue_Model"),
                     Binding = new Binding(nameof(PreScheduleRow.Model)),
+                    SortMemberPath = nameof(PreScheduleRow.Model),
                     Width = new DataGridLength(140),
                     ElementStyle = (Style)Resources["PreText"]
                 });
@@ -169,9 +179,29 @@ namespace ORT一键报告.Plans.Views
             };
             if (dialog.ShowDialog() == true)
             {
-                _vm.AddPendingModel(dialog.Model, dialog.JobNo);
+                _vm.AddPendingModel(dialog.Model, dialog.JobNo, dialog.Qty, dialog.Note);
             }
         }
+
+        /// <summary>月排程右键「添加到待开单」：机种与本月合计数量预填进添加窗口</summary>
+        private void Menu_ScheduleAddPending_Click(object sender, RoutedEventArgs e) => SafeRun(
+            LanguageService.Get("PreIssue_AddPendingTitle"),
+            () =>
+            {
+                if (_vm == null || _contextRow is not PreScheduleRow row || string.IsNullOrWhiteSpace(row.Model))
+                {
+                    return;
+                }
+                WindowPreIssuePending dialog = new(_vm.PendingModelCandidates(), row.Model, null,
+                    row.Total > 0 ? row.Total.ToString(System.Globalization.CultureInfo.InvariantCulture) : null)
+                {
+                    Owner = Window.GetWindow(this)
+                };
+                if (dialog.ShowDialog() == true)
+                {
+                    _vm.AddPendingModel(dialog.Model, dialog.JobNo, dialog.Qty, dialog.Note);
+                }
+            });
 
         private void Btn_Blacklist_Click(object sender, RoutedEventArgs e)
         {
@@ -309,10 +339,26 @@ namespace ORT一键报告.Plans.Views
             LanguageService.Get("PreIssue_DeletePendingTitle"),
             () =>
             {
-                if (_vm != null && _contextRow is PreIssueRequisition row)
+                if (_vm == null || _contextRow is not PreIssueRequisition row)
                 {
-                    _vm.DeletePendingCommand.Execute(row);
+                    return;
                 }
+                if (!_vm.CanDeletePending(row))
+                {
+                    _ = MessageBox.Show(LanguageService.Get("PreIssue_OnlyPendingDeletable"),
+                        LanguageService.Get("PreIssue_DeletePendingTitle"), MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+                // 三按钮确认：是（只删）/ 是并加入黑名单（删 + 加黑名单）/ 否
+                WindowPreIssueDeletePending dialog = new(row.PartNo)
+                {
+                    Owner = Window.GetWindow(this)
+                };
+                if (dialog.ShowDialog() != true)
+                {
+                    return;
+                }
+                _vm.DeletePending(row, dialog.AddBlacklist);
             });
 
         /* ###############################  借用表：右键借用 / 归还  ################################ */
@@ -406,6 +452,13 @@ namespace ORT一键报告.Plans.Views
                 if (ReferenceEquals(grid, dg_req) && FindAncestor<DataGridColumnHeader>(source) is DataGridColumnHeader header)
                 {
                     ShowReqHeaderMenu(header);
+                    e.Handled = true;
+                    return;
+                }
+                // 月排程：右键线别 / 机种列头 = 筛选菜单
+                if (ReferenceEquals(grid, dg_schedule) && FindAncestor<DataGridColumnHeader>(source) is DataGridColumnHeader scheduleHeader)
+                {
+                    ShowScheduleHeaderMenu(scheduleHeader);
                     e.Handled = true;
                     return;
                 }
@@ -680,6 +733,140 @@ namespace ORT一键报告.Plans.Views
             catch (Exception ex)
             {
                 _logger.Warn($"弹出准备领用列头菜单失败: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 月排程的列头右键菜单：線別 / 機種 两列按值筛选（与准备领用一样是惰性的，点「确定」才应用）。
+        /// </summary>
+        private void ShowScheduleHeaderMenu(DataGridColumnHeader header)
+        {
+            try
+            {
+                string property = PropertyOf(header?.Column);
+                if (_vm == null
+                    || (property != nameof(PreScheduleRow.Line) && property != nameof(PreScheduleRow.Model)))
+                {
+                    return;
+                }
+                ContextMenu menu = new()
+                {
+                    PlacementTarget = header,
+                    Placement = PlacementMode.Bottom
+                };
+                MenuItem filter = new() { Header = LanguageService.Get("PreIssue_Menu_Filter") };
+                List<string> values = _vm.GetScheduleColumnValues(property);
+                HashSet<string> selection = _vm.GetScheduleColumnSelection(property);
+                if (values.Count == 0)
+                {
+                    menu.Items.Add(new MenuItem { Header = LanguageService.Get("PreIssue_Menu_FilterEmpty"), IsEnabled = false });
+                }
+                else if (values.Count > 80)
+                {
+                    menu.Items.Add(new MenuItem
+                    {
+                        Header = string.Format(LanguageService.Get("PreIssue_Menu_FilterTooMany"), values.Count),
+                        IsEnabled = false
+                    });
+                }
+                else
+                {
+                    HashSet<string> pending = selection == null
+                        ? new HashSet<string>(values, StringComparer.Ordinal)
+                        : new HashSet<string>(selection, StringComparer.Ordinal);
+                    List<(string Value, MenuItem Item)> items = [];
+                    MenuItem applyFilter = new()
+                    {
+                        Header = LanguageService.Get("Common_OK"),
+                        FontWeight = FontWeights.Bold,
+                        ToolTip = LanguageService.Get("Filter_LazyHint")
+                    };
+
+                    void SyncApplyText()
+                    {
+                        applyFilter.Header = pending.Count == 0
+                            ? string.Format(LanguageService.Get("Filter_ApplyNoneFormat"), values.Count)
+                            : string.Format(LanguageService.Get("Filter_ApplyCountFormat"), pending.Count, values.Count);
+                    }
+
+                    void RefreshChecks()
+                    {
+                        foreach ((string value, MenuItem item) in items)
+                        {
+                            item.IsChecked = pending.Contains(value);
+                        }
+                        SyncApplyText();
+                    }
+
+                    filter.Items.Add(BuildBulkFilterItem(LanguageService.Get("Filter_SelectAll"), () =>
+                    {
+                        pending.Clear();
+                        pending.UnionWith(values);
+                        RefreshChecks();
+                    }));
+                    filter.Items.Add(BuildBulkFilterItem(LanguageService.Get("Filter_SelectNone"), () =>
+                    {
+                        pending.Clear();
+                        RefreshChecks();
+                    }));
+                    filter.Items.Add(BuildBulkFilterItem(LanguageService.Get("Filter_Invert"), () =>
+                    {
+                        List<string> inverted = values.Where(v => !pending.Contains(v)).ToList();
+                        pending.Clear();
+                        pending.UnionWith(inverted);
+                        RefreshChecks();
+                    }));
+                    filter.Items.Add(new Separator());
+
+                    foreach (string value in values)
+                    {
+                        MenuItem item = new()
+                        {
+                            Header = string.IsNullOrEmpty(value) ? LanguageService.Get("PreIssue_Menu_FilterBlank") : value,
+                            IsCheckable = true,
+                            IsChecked = pending.Contains(value),
+                            StaysOpenOnClick = true
+                        };
+                        string captured = value;
+                        item.Click += (s, e) =>
+                        {
+                            if (item.IsChecked)
+                            {
+                                pending.Add(captured);
+                            }
+                            else
+                            {
+                                pending.Remove(captured);
+                            }
+                            RefreshChecks();
+                        };
+                        items.Add((value, item));
+                        filter.Items.Add(item);
+                    }
+
+                    filter.Items.Add(new Separator());
+                    applyFilter.Click += (s, e) =>
+                    {
+                        _vm.SetScheduleColumnFilter(property, pending);
+                        menu.IsOpen = false;
+                    };
+                    filter.Items.Add(applyFilter);
+                    MenuItem cancelFilter = new() { Header = LanguageService.Get("Common_Cancel") };
+                    cancelFilter.Click += (s, e) => menu.IsOpen = false;
+                    filter.Items.Add(cancelFilter);
+                    SyncApplyText();
+                    menu.Items.Add(filter);
+                }
+                menu.Items.Add(new Separator());
+                menu.Items.Add(BuildMenuItem(LanguageService.Get("PreIssue_Menu_FilterClear"), () =>
+                    _vm.ClearScheduleColumnFilter(property)));
+                menu.Items.Add(BuildMenuItem(LanguageService.Get("PreIssue_Menu_FilterClearAll"), () =>
+                    _vm.ClearScheduleColumnFilter(null)));
+                menu.IsOpen = true;
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn($"弹出月排程列头菜单失败: {ex.Message}");
             }
         }
 

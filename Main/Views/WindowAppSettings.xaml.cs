@@ -212,25 +212,6 @@ namespace ORT一键报告.Main.Views
         }
 
         /// <summary>
-        /// 填充 Toast 位置选项（默认右上角）
-        /// </summary>
-        private void LoadToastPositions()
-        {
-            var list = new List<ThemeOption>
-            {
-                new ThemeOption("TopRight", LanguageService.Get("Toast_Pos_TopRight"), null),
-                new ThemeOption("TopLeft", LanguageService.Get("Toast_Pos_TopLeft"), null),
-                new ThemeOption("BottomRight", LanguageService.Get("Toast_Pos_BottomRight"), null),
-                new ThemeOption("BottomLeft", LanguageService.Get("Toast_Pos_BottomLeft"), null),
-            };
-            _loading = true;
-            cb_toastPos.ItemsSource = list;
-            cb_toastPos.SelectedValuePath = "Code";
-            cb_toastPos.SelectedValue = _settings.Settings.UI.ToastPosition ?? "TopRight";
-            _loading = false;
-        }
-
-        /// <summary>
         /// 填充字重选项（默认常规；中文字体多无 Medium 字面，选中等会被合成为粗体）
         /// </summary>
         private void LoadFontWeightOptions()
@@ -530,7 +511,6 @@ namespace ORT一键报告.Main.Views
             cb_fontFamily.SelectedItem = settings.UI.FontFamily;
             cb_fontSize.Text = settings.UI.FontSize.ToString();
             LoadFontWeightOptions();
-            LoadToastPositions();
             txt_background.Text = settings.UI.BackgroundImage ?? "";
             if (_isAdmin)
             {
@@ -759,10 +739,6 @@ namespace ORT一键报告.Main.Views
                 return false;
             }
             settings.UI.FontSize = size;
-            if (cb_toastPos.SelectedValue is string toastPos && !string.IsNullOrEmpty(toastPos))
-            {
-                settings.UI.ToastPosition = toastPos;
-            }
             if (cb_fontWeight.SelectedValue is string fontWeight && !string.IsNullOrEmpty(fontWeight))
             {
                 settings.UI.FontWeight = fontWeight;

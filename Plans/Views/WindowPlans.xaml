@@ -104,7 +104,6 @@
                 <MenuItem Header="{lex:Loc Plans_ExportRequisition}" Command="{Binding ExportRequisitionCommand}"/>
                 <MenuItem Header="{lex:Loc Plans_ExportPlan}" Command="{Binding ExportScheduleCommand}"/>
             </MenuItem>
-            <MenuItem x:Name="menu_window_sort" Header="{lex:Loc Common_Sort}" SubmenuOpened="Menu_Sort_SubmenuOpened"/>
             <MenuItem Header="{lex:Loc MainWindow_Menu_Tools}">
                 <MenuItem Header="{lex:Loc Plans_Menu_ReportTemplate}" Click="Menu_ReportTemplate_Click"
                           ToolTip="{lex:Loc Plans_ToolTip_ReportTemplate}"/>
@@ -141,8 +140,6 @@
                     <MenuItem x:Name="menu_tab_pre" Header="{lex:Loc PreIssue_Tab}" Tag="preissue"
                               IsCheckable="True" Click="Menu_TabToggle_Click"/>
                 </MenuItem>
-                <Separator/>
-                <MenuItem x:Name="menu_window_columns" Header="{lex:Loc Menu_Columns}" SubmenuOpened="Menu_View_SubmenuOpened"/>
                 <Separator/>
                 <MenuItem Header="{lex:Loc Common_Refresh}" Command="{Binding RefreshCommand}"/>
             </MenuItem>
@@ -278,9 +275,6 @@
                             <MenuItem Header="{lex:Loc Common_CopyRow}" Click="Menu_CopyReqRow_Click"/>
                             <MenuItem Header="{lex:Loc Common_CopyCell}" Click="Menu_CopyReqCell_Click"/>
                             <MenuItem Header="{lex:Loc Common_Paste}" Click="Menu_PasteReq_Click"/>
-                            <Separator/>
-                            <MenuItem x:Name="menu_req_sort" Header="{lex:Loc Common_Sort}" Tag="req" SubmenuOpened="Menu_ContextSort_SubmenuOpened"/>
-                            <MenuItem Header="{lex:Loc Plans_ShowHideColumns}" x:Name="menu_req_columns" SubmenuOpened="Menu_ReqColumns_SubmenuOpened"/>
                         </ContextMenu>
                     </DataGrid.ContextMenu>
                     <DataGrid.CellStyle>

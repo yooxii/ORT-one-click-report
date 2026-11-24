@@ -1558,8 +1558,24 @@ namespace ORT一键报告.Services
             return created.Count;
         }
 
-        /// <summary>手工加一条待开单</summary>
-        public bool AddPending(string month, string model, string jobNo, out string error)
+        /// <summary>本月某个机种的记录条数（待开单 / 已开单都算；重复添加时提示用）</summary>
+        public int CountRequisitionsByModel(string month, string model)
+        {
+            if (string.IsNullOrWhiteSpace(month) || string.IsNullOrWhiteSpace(model))
+            {
+                return 0;
+            }
+            string m = model.Trim();
+            return (int)_db.FreeSql.Select<PreIssueRequisition>()
+                .Where(a => a.Month == month && a.PartNo == m).Count();
+        }
+
+        /// <summary>
+        /// 手工加一条待开单（数量、备注可选）。
+        /// 同一个机种在本月已经有记录时**也允许再加**（重复领用的情况），
+        /// 原因写进备注（备注为空时自动记「同月同机种重复添加」），都进变动记录。
+        /// </summary>
+        public bool AddPending(string month, string model, string jobNo, string qty, string note, out string error)
         {
             error = null;
             if (string.IsNullOrWhiteSpace(model))
@@ -1574,31 +1590,33 @@ namespace ORT一键报告.Services
                 error = $"「{m}」在黑名单里（命中规则：{OrtBlacklistMatcher.Describe(rule)}，ORT 做不了、不需要领用）";
                 return false;
             }
-            bool exists = _db.FreeSql.Select<PreIssueRequisition>()
-                .Where(a => a.Month == month && a.PartNo == m).Count() > 0;
-            if (exists)
-            {
-                error = $"「{m}」在这个月已经有一条记录了";
-                return false;
-            }
+            int existing = CountRequisitionsByModel(month, m);
             DateTime now = DateTime.Now;
             _db.FreeSql.Insert(new PreIssueRequisition
             {
                 Month = month,
                 PartNo = m,
                 JobNo = string.IsNullOrWhiteSpace(jobNo) ? null : jobNo.Trim(),
+                ReqQty = string.IsNullOrWhiteSpace(qty) ? null : qty.Trim(),
                 State = PreIssueCodes.PendingState,
                 CreatedAt = now,
                 CreatedBy = _permission?.CurrentUser,
                 UpdatedAt = now
             }).ExecuteAffrows();
+            string logNote = existing > 0
+                ? $"手工添加待开单（同月同机种已有 {existing} 条——重复领用建议备注原因）"
+                : "手工添加待开单";
+            if (!string.IsNullOrWhiteSpace(note))
+            {
+                logNote += "：" + note.Trim();
+            }
             _db.FreeSql.Insert(new PreIssueChangeLog
             {
                 Month = month,
                 Source = PreIssueCodes.SourceRequisition,
                 Kind = PreIssueCodes.KindAdded,
                 Target = m,
-                Note = "手工添加待开单",
+                Note = logNote,
                 Operator = _permission?.CurrentUser,
                 CreatedAt = now
             }).ExecuteAffrows();

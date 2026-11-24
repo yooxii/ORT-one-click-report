@@ -304,6 +304,12 @@ namespace ORT一键报告.Plans.ViewModels
                 {
                     continue;
                 }
+                // 线别 / 机种列头筛选（多选，命中任意一个即显示）
+                if (!ScheduleColumnAllows(nameof(PreScheduleRow.Line), row.Line)
+                    || !ScheduleColumnAllows(nameof(PreScheduleRow.Model), row.Model))
+                {
+                    continue;
+                }
                 rows.Add(row);
             }
             foreach (PreScheduleRow row in rows
@@ -315,6 +321,75 @@ namespace ORT一键报告.Plans.ViewModels
             ScheduleSummary = _scheduleItems.Count == 0
                 ? "没有排程数据"
                 : $"{ScheduleRows.Count} 个機種 · {_scheduleItems.Count} 个排班格 · 合计 {_scheduleItems.Sum(i => (long)i.Qty):N0} pcs";
+        }
+
+        /* ------------------ 月排程：线别 / 机种列头筛选 ------------------ */
+
+        /// <summary>月排程的列筛选（属性名 → 勾选的值；目前只有線別 / 機種两列）</summary>
+        private readonly Dictionary<string, HashSet<string>> _scheduleColumnFilters = new(StringComparer.Ordinal);
+
+        private bool ScheduleColumnAllows(string property, string value) =>
+            !_scheduleColumnFilters.TryGetValue(property, out HashSet<string> set)
+            || set.Contains((value ?? "").Trim());
+
+        /// <summary>这一列有没有筛选</summary>
+        public bool HasScheduleColumnFilter(string property) =>
+            !string.IsNullOrEmpty(property) && _scheduleColumnFilters.ContainsKey(property);
+
+        /// <summary>某一列当前勾选的值（没有筛选时返回 null = 全部显示）</summary>
+        public HashSet<string> GetScheduleColumnSelection(string property) =>
+            !string.IsNullOrEmpty(property) && _scheduleColumnFilters.TryGetValue(property, out HashSet<string> set)
+                ? new HashSet<string>(set, StringComparer.Ordinal)
+                : null;
+
+        /// <summary>取一列的去重值（列头筛选菜单用）</summary>
+        public List<string> GetScheduleColumnValues(string property)
+        {
+            bool byLine = property == nameof(PreScheduleRow.Line);
+            if (!byLine && property != nameof(PreScheduleRow.Model))
+            {
+                return [];
+            }
+            return _scheduleItems
+                .Select(i => ((byLine ? i.Line : i.Model) ?? "").Trim())
+                .Distinct(StringComparer.Ordinal)
+                .OrderBy(v => v, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        /// <summary>设置某一列的筛选：没勾 / 全部勾上 都等于「不筛选」</summary>
+        public void SetScheduleColumnFilter(string property, IEnumerable<string> values)
+        {
+            if (string.IsNullOrEmpty(property))
+            {
+                return;
+            }
+            HashSet<string> set = new((values ?? []).Select(v => (v ?? "").Trim()), StringComparer.Ordinal);
+            List<string> all = GetScheduleColumnValues(property);
+            bool everything = all.Count == 0 || (set.Count >= all.Count && all.All(set.Contains));
+            if (set.Count == 0 || everything)
+            {
+                _scheduleColumnFilters.Remove(property);
+            }
+            else
+            {
+                _scheduleColumnFilters[property] = set;
+            }
+            BuildScheduleRows();
+        }
+
+        /// <summary>清除某一列筛选；property 为空时清除全部（线别 + 机种）</summary>
+        public void ClearScheduleColumnFilter(string property)
+        {
+            if (string.IsNullOrEmpty(property))
+            {
+                _scheduleColumnFilters.Clear();
+            }
+            else
+            {
+                _scheduleColumnFilters.Remove(property);
+            }
+            BuildScheduleRows();
         }
 
         /* ###############################  ORT 看板  ################################ */
@@ -630,9 +705,6 @@ namespace ORT一键报告.Plans.ViewModels
 
         private ICommand _syncPendingCommand;
         public ICommand SyncPendingCommand => _syncPendingCommand ??= new RelayCommand(SyncPending, () => CanImport);
-
-        private ICommand _deletePendingCommand;
-        public ICommand DeletePendingCommand => _deletePendingCommand ??= new CommunityToolkit.Mvvm.Input.RelayCommand<object>(DeletePending, p => CanImport && p is PreIssueRequisition);
 
         private ICommand _addBlacklistCommand;
         public ICommand AddBlacklistCommand => _addBlacklistCommand ??= new CommunityToolkit.Mvvm.Input.RelayCommand<object>(AddToBlacklist, p => CanImport && p is OrtBoardRow);
@@ -1357,17 +1429,40 @@ namespace ORT一键报告.Plans.ViewModels
             }
         }
 
-        /// <summary>手工添加一个待开单机种（窗口由界面层弹出，拿到机种后调这里）</summary>
-        public bool AddPendingModel(string model, string jobNo)
+        /// <summary>
+        /// 手工添加一个待开单机种（窗口由界面层弹出，拿到机种 / 工令 / 数量 / 备注后调这里）。
+        /// 同机种本月已有记录时**允许再加**，但先提醒一句：重复领用建议在备注里写明原因。
+        /// </summary>
+        public bool AddPendingModel(string model, string jobNo, string qty = null, string note = null)
         {
-            if (!_service.AddPending(Month, model, jobNo, out string error))
+            int existing = _service.CountRequisitionsByModel(Month, model);
+            if (existing > 0)
+            {
+                string ask = $"本月已经有 {existing} 条「{model}」的记录，还要再添加一条吗？\n\n"
+                    + "同机种重复领用，建议在「备注」里写明原因（备注会记进变动记录）。";
+                if (MessageBox.Show(ask, LanguageService.Get("PreIssue_AddPendingTitle"),
+                    MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
+                {
+                    return false;
+                }
+            }
+            if (!_service.AddPending(Month, model, jobNo, qty, note, out string error))
             {
                 _ = MessageBox.Show(error, LanguageService.Get("PreIssue_AddPendingTitle"),
                     MessageBoxButton.OK, MessageBoxImage.Warning);
                 return false;
             }
             ReloadAll();
-            StatusMessage = $"已添加待开单：{model}";
+            string message = $"已添加待开单：{model}";
+            if (!string.IsNullOrWhiteSpace(qty))
+            {
+                message += $"（数量 {qty}）";
+            }
+            if (existing > 0)
+            {
+                message += $"；本月同机种第 {existing + 1} 条";
+            }
+            StatusMessage = message;
             return true;
         }
 
@@ -1379,31 +1474,29 @@ namespace ORT一键报告.Plans.ViewModels
             .OrderBy(m => m, StringComparer.OrdinalIgnoreCase)
             .ToList();
 
+        /// <summary>能不能删（只有「待开单」且没有开单号的记录可删）</summary>
+        public bool CanDeletePending(PreIssueRequisition row) =>
+            row != null
+            && PreIssueCodes.IsPendingState(row.State)
+            && string.IsNullOrWhiteSpace(row.Vchno);
+
         /// <summary>
-        /// 删除待开单：先问「要不要顺便加入黑名单」——
-        /// 是 = 删除 + 加入黑名单（以后看板变动不再推进它），否 = 只删除，取消 = 什么都不做。
+        /// 删除待开单：确认框由界面层弹（三个按钮——是 / 是并加入黑名单 / 否），
+        /// addBlacklist = true 时删除后再把机种加入黑名单（以后看板变动不再推进它）。
         /// </summary>
-        private void DeletePending(object parameter)
+        public void DeletePending(PreIssueRequisition row, bool addBlacklist)
         {
-            if (parameter is not PreIssueRequisition row)
+            if (row == null)
             {
                 return;
             }
-            if (!PreIssueCodes.IsPendingState(row.State) || !string.IsNullOrWhiteSpace(row.Vchno))
+            if (!CanDeletePending(row))
             {
                 _ = MessageBox.Show(LanguageService.Get("PreIssue_OnlyPendingDeletable"),
                     LanguageService.Get("PreIssue_DeletePendingTitle"), MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
             string part = row.PartNo ?? "";
-            string ask = string.Format(LanguageService.Get("PreIssue_DeletePendingAsk"), part);
-            MessageBoxResult choice = MessageBox.Show(ask, LanguageService.Get("PreIssue_DeletePendingTitle"),
-                MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
-            if (choice == MessageBoxResult.Cancel)
-            {
-                return;
-            }
-            bool addBlacklist = choice == MessageBoxResult.Yes;
             if (!_service.DeletePending(row.Id, out string error))
             {
                 _ = MessageBox.Show(error, LanguageService.Get("PreIssue_DeletePendingTitle"),

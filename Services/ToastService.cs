@@ -7,8 +7,8 @@ using System.Windows;
 namespace ORT一键报告.Services
 {
     /// <summary>
-    /// Toast 提示服务：在“当前聚焦窗口”的指定角落（设置可配，默认右上角）弹出轻量提示，
-    /// 数秒后自动淡出。用于替代部分非阻塞式提醒（如下拉修改提示、报告路径未设置提醒）。
+    /// Toast 提示服务：在“当前聚焦窗口”的**内部居中**位置弹出轻量提示，数秒后自动淡出。
+    /// 用于替代部分非阻塞式提醒（如下拉修改提示、报告路径未设置提醒）。
     /// </summary>
     public static class ToastService
     {
@@ -45,14 +45,13 @@ namespace ORT一键报告.Services
                 }
 
                 // 找不到可见的聚焦窗口时退回主窗口；主窗口也可能还没打开过
-                // （开机自启到后台、尚未从托盘恢复），此时按「无 Owner」处理，放到屏幕角落
+                // （开机自启到后台、尚未从托盘恢复），此时按「无 Owner」处理，放到屏幕正中
                 Window owner = Application.Current.Windows.OfType<Window>()
                     .FirstOrDefault(w => w.IsActive && w.IsVisible && w is not WindowToast)
                     ?? (Application.Current.MainWindow is { IsVisible: true } mainWindow ? mainWindow : null);
 
                 var toast = new WindowToast(message, type);
-                toast.PositionNear(owner, GetPosition());
-                toast.BeginDisplay();
+                toast.BeginDisplay(owner);
                 _current = toast;
             }
             catch (Exception ex)
@@ -78,22 +77,6 @@ namespace ORT一键报告.Services
             catch
             {
                 // 忽略：提醒失败不应阻断主流程
-            }
-        }
-
-        /// <summary>
-        /// 读取设置中的 Toast 位置（默认右上角）
-        /// </summary>
-        private static string GetPosition()
-        {
-            try
-            {
-                return App.ServiceProvider?.GetService<AppSettingsService>()?.Settings?.UI?.ToastPosition
-                    ?? "TopRight";
-            }
-            catch
-            {
-                return "TopRight";
             }
         }
     }

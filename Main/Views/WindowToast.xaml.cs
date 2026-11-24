@@ -1,5 +1,6 @@
 using System;
 using System.Windows;
+using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 
@@ -7,7 +8,7 @@ namespace ORT一键报告.Main.Views
 {
     /// <summary>
     /// Toast 提示窗口：无边框透明、不抢焦点、置顶，显示数秒后淡出自动关闭。
-    /// 位置由 <see cref="PositionNear"/> 按设置（默认聚焦窗口右上角）计算。
+    /// 位置固定为「窗口内部居中」（没有可见窗口时放屏幕正中）。
     /// </summary>
     public partial class WindowToast : Window
     {
@@ -38,54 +39,56 @@ namespace ORT一键报告.Main.Views
         }
 
         /// <summary>
-        /// 按位置设置把 Toast 放到目标窗口（默认聚焦窗口）的对应角落
+        /// 显示并把 Toast 放到目标窗口（默认聚焦窗口）的**内部居中**位置，再开始计时淡出。
+        /// 必须先 Show 再定位：SizeToContent 的 ActualWidth/Height 在显示前是 0，
+        /// 早算会把它摆到窗口外（右侧），正是之前「跑到窗口外面右边」的原因。
         /// </summary>
-        public void PositionNear(Window owner, string position)
+        public void BeginDisplay(Window owner)
         {
+            Show();
             UpdateLayout();
-            double w = ActualWidth;
-            double h = ActualHeight;
-            const double margin = 14;
+            PositionInCenter(owner);
+            _timer.Start();
+        }
 
-            if (owner == null)
+        /// <summary>在 owner 窗口内部居中；owner 不可见/为空时放主屏幕正中</summary>
+        private void PositionInCenter(Window owner)
+        {
+            double w = ActualWidth > 0 ? ActualWidth : DesiredSize.Width;
+            double h = ActualHeight > 0 ? ActualHeight : DesiredSize.Height;
+            if (double.IsNaN(w) || double.IsNaN(h) || w <= 0 || h <= 0)
             {
-                // 无Owner时放主屏幕右上角
-                var wa = SystemParameters.WorkArea;
-                Left = wa.Right - w - margin;
-                Top = wa.Top + margin;
+                w = 360;
+                h = 60;
+            }
+
+            if (owner == null || !owner.IsVisible || owner.ActualWidth <= 0 || owner.ActualHeight <= 0)
+            {
+                Rect area = SystemParameters.WorkArea;
+                Left = area.Left + (area.Width - w) / 2;
+                Top = area.Top + (area.Height - h) / 2;
                 return;
             }
 
-            double ol = owner.Left, ot = owner.Top, ow = owner.ActualWidth, oh = owner.ActualHeight;
-            // 顶部预留标题栏高度，避免遮挡系统标题栏
-            const double caption = 36;
-
-            switch (position)
+            try
             {
-                case "TopLeft":
-                    Left = ol + margin;
-                    Top = ot + caption + margin;
-                    break;
-                case "BottomRight":
-                    Left = ol + ow - w - margin;
-                    Top = ot + oh - h - margin;
-                    break;
-                case "BottomLeft":
-                    Left = ol + margin;
-                    Top = ot + oh - h - margin;
-                    break;
-                case "TopRight":
-                default:
-                    Left = ol + ow - w - margin;
-                    Top = ot + caption + margin;
-                    break;
+                // owner 可能最大化 / 跨屏：用屏幕坐标取它的矩形，再按 DPI 换算成 DIP，
+                // 这样不依赖 Window.Left/Top（最大化时它们不代表实际位置）
+                PresentationSource source = PresentationSource.FromVisual(owner);
+                Matrix toDip = source?.CompositionTarget?.TransformFromDevice ?? Matrix.Identity;
+                Point topLeft = toDip.Transform(owner.PointToScreen(new Point(0, 0)));
+                Point bottomRight = toDip.Transform(owner.PointToScreen(new Point(owner.ActualWidth, owner.ActualHeight)));
+                double width = Math.Max(1, bottomRight.X - topLeft.X);
+                double height = Math.Max(1, bottomRight.Y - topLeft.Y);
+                Left = topLeft.X + Math.Max(0, (width - w) / 2);
+                Top = topLeft.Y + Math.Max(0, (height - h) / 2);
             }
-        }
-
-        public void BeginDisplay()
-        {
-            Show();
-            _timer.Start();
+            catch
+            {
+                // 取屏幕坐标失败时退回按窗口 Left/Top 估算，不影响提示本身
+                Left = owner.Left + Math.Max(0, (owner.ActualWidth - w) / 2);
+                Top = owner.Top + Math.Max(0, (owner.ActualHeight - h) / 2);
+            }
         }
 
         private void FadeOutAndClose()
