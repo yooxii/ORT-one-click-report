@@ -16,6 +16,15 @@
             <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
             <Setter Property="Margin" Value="0"/>
         </Style>
+        <Style x:Key="ListEdit" TargetType="TextBox">
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+        </Style>
         <Style x:Key="ListCell" TargetType="DataGridCell">
             <Setter Property="Padding" Value="2,0"/>
             <Setter Property="BorderThickness" Value="0"/>
@@ -37,19 +46,26 @@
                    Foreground="{DynamicResource TextSecondaryBrush}"/>
 
         <DataGrid x:Name="dg_priority" Grid.Row="1" Margin="0,10,0,0"
-                  AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False"
+                  AutoGenerateColumns="False" IsReadOnly="False" CanUserAddRows="False"
                   HeadersVisibility="Column" GridLinesVisibility="All"
                   SelectionMode="Single" SelectionUnit="FullRow" ClipboardCopyMode="None"
+                  CellEditEnding="Dg_Priority_CellEditEnding"
                   SelectionChanged="Dg_Priority_SelectionChanged">
             <DataGrid.CellStyle>
                 <StaticResource ResourceKey="ListCell"/>
             </DataGrid.CellStyle>
             <DataGrid.Columns>
-                <DataGridTextColumn Header="{lex:Loc PreIssue_CustomerPriorityOrder}" Binding="{Binding Order}" Width="70"
+                <!-- 优先级用数字：越小越优先，可以填相同的数字表示并列 -->
+                <DataGridTextColumn Header="{lex:Loc PreIssue_CustomerPriorityLevel}"
+                                    Binding="{Binding Priority, UpdateSourceTrigger=PropertyChanged}"
+                                    SortMemberPath="Priority" Width="90"
+                                    ElementStyle="{StaticResource ListText}"
+                                    EditingElementStyle="{StaticResource ListEdit}"/>
+                <DataGridTextColumn Header="{lex:Loc PreIssue_CustomerPriorityCode}" Binding="{Binding Code}"
+                                    IsReadOnly="True" Width="120"
                                     ElementStyle="{StaticResource ListText}"/>
-                <DataGridTextColumn Header="{lex:Loc PreIssue_CustomerPriorityCode}" Binding="{Binding Code}" Width="120"
-                                    ElementStyle="{StaticResource ListText}"/>
-                <DataGridTextColumn Header="{lex:Loc PreIssue_CustomerPriorityName}" Binding="{Binding Name}" Width="*"
+                <DataGridTextColumn Header="{lex:Loc PreIssue_CustomerPriorityName}" Binding="{Binding Name}"
+                                    IsReadOnly="True" Width="*"
                                     ElementStyle="{StaticResource ListText}"/>
             </DataGrid.Columns>
         </DataGrid>
@@ -63,11 +79,7 @@
                     Click="Btn_Add_Click"/>
             <Button Content="{lex:Loc PreIssue_CustomerPriorityRemove}" MinWidth="84" Padding="10,3" Margin="8,0,0,0"
                     Click="Btn_Remove_Click"/>
-            <Button Content="{lex:Loc PreIssue_CustomerPriorityUp}" MinWidth="72" Padding="10,3" Margin="8,0,0,0"
-                    Click="Btn_Up_Click"/>
-            <Button Content="{lex:Loc PreIssue_CustomerPriorityDown}" MinWidth="72" Padding="10,3" Margin="8,0,0,0"
-                    Click="Btn_Down_Click"/>
-            <Button Content="{lex:Loc PreIssue_CustomerPriorityReset}" MinWidth="96" Padding="10,3" Margin="8,0,0,0"
+            <Button Content="{lex:Loc PreIssue_CustomerPriorityReset}" MinWidth="110" Padding="10,3" Margin="8,0,0,0"
                     Click="Btn_Reset_Click"/>
         </WrapPanel>
 

@@ -1917,30 +1917,29 @@ namespace ORT一键报告.Services
 
         /* ###############################  同系列客户优先级  ################################ */
 
-        /// <summary>当前生效的客户优先级代码（从高到低；库里没配过时用默认 GA → 4C → 93 → 00）</summary>
-        public List<string> LoadCustomerPriorityCodes()
+        /// <summary>
+        /// 当前生效的客户优先级（数字越小越优先，可并列；库里没配过时用默认 GA=1 / 4C=2 / 93=3 / 00=9）
+        /// </summary>
+        public List<CustomerPriorityEntry> LoadCustomerPriority()
         {
             try
             {
-                List<string> codes = PreIssueSeriesPriority.ParseStored(_settings?.GetText(CustomerPrioritySettingKey));
-                return codes.Count > 0 ? codes : [.. PreIssueSeriesPriority.DefaultCodes];
+                List<CustomerPriorityEntry> entries = PreIssueSeriesPriority.ParseStored(_settings?.GetText(CustomerPrioritySettingKey));
+                return entries.Count > 0 ? entries : PreIssueSeriesPriority.DefaultEntries();
             }
             catch (Exception ex)
             {
-                _logger.Warn($"读取客户优先级失败，按默认顺序处理: {ex.Message}");
-                return [.. PreIssueSeriesPriority.DefaultCodes];
+                _logger.Warn($"读取客户优先级失败，按默认优先级处理: {ex.Message}");
+                return PreIssueSeriesPriority.DefaultEntries();
             }
         }
 
-        /// <summary>保存客户优先级（按顺序从高到低，存在 app_settings 表里，多台电脑共用）</summary>
-        public void SaveCustomerPriorityCodes(IEnumerable<string> codes)
-        {
-            string text = PreIssueSeriesPriority.Format(codes);
-            _settings?.SetText(CustomerPrioritySettingKey, text);
-        }
+        /// <summary>保存客户优先级（代码 + 优先级数字，存在 app_settings 表里，多台电脑共用）</summary>
+        public void SaveCustomerPriority(IEnumerable<CustomerPriorityEntry> entries) =>
+            _settings?.SetText(CustomerPrioritySettingKey, PreIssueSeriesPriority.Format(entries));
 
         /// <summary>按当前配置构造同系列优先级规则</summary>
-        public PreIssueSeriesPriority BuildSeriesPriority() => new(LoadCustomerPriorityCodes());
+        public PreIssueSeriesPriority BuildSeriesPriority() => new(LoadCustomerPriority());
 
         /// <summary>
         /// 客户代码 → 客户名称（来自主数据库的客户代码表：code_mappings 的 C 类，取不到再看 customers 表的代码列）。
@@ -1980,8 +1979,18 @@ namespace ORT一键报告.Services
         /// </summary>
         public List<string> LoadCustomerCodeCandidates()
         {
-            List<string> codes = [.. LoadCustomerCodeNames().Keys, .. LoadCustomerPriorityCodes(), .. PreIssueSeriesPriority.DefaultCodes];
-            return PreIssueSeriesPriority.Normalize(codes).OrderBy(c => c, StringComparer.OrdinalIgnoreCase).ToList();
+            List<string> codes =
+            [
+                .. LoadCustomerCodeNames().Keys,
+                .. LoadCustomerPriority().Select(e => e.Code),
+                .. PreIssueSeriesPriority.DefaultEntries().Select(e => e.Code)
+            ];
+            return codes
+                .Where(c => !string.IsNullOrWhiteSpace(c))
+                .Select(c => c.Trim().ToUpperInvariant())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(c => c, StringComparer.OrdinalIgnoreCase)
+                .ToList();
         }
 
         /* ###############################  借用表  ################################ */

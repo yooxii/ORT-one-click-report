@@ -2,6 +2,7 @@ using NUnit.Framework;
 using ORT一键报告.Models;
 using ORT一键报告.Services;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace ORT一键报告.Tests
@@ -449,6 +450,9 @@ namespace ORT一键报告.Tests
 
         /* ------------------ 同系列客户优先级（只开一张单） ------------------ */
 
+        private static List<CustomerPriorityEntry> Priorities(params (string Code, int Priority)[] items) =>
+            items.Select(i => new CustomerPriorityEntry { Code = i.Code, Priority = i.Priority }).ToList();
+
         [Test]
         public void SeriesPriority_DefaultOrder_PrefersGa4C93Then00()
         {
@@ -471,6 +475,27 @@ namespace ORT一键报告.Tests
             Assert.That(priority.RankOf("FSL020-00AG"), Is.GreaterThan(priority.RankOf("FSL020-93AG")));
         }
 
+        /// <summary>优先级是数字、可以并列：数字相同按客户代码再按机种名排，结果稳定</summary>
+        [Test]
+        public void SeriesPriority_TiesAreAllowedAndBrokenByCodeThenModel()
+        {
+            PreIssueSeriesPriority priority = new(Priorities(("4C", 1), ("GA", 1), ("93", 5)));
+            Assert.That(priority.RankOf("FSL020-GAAG"), Is.EqualTo(1));
+            Assert.That(priority.RankOf("FSL020-4CAG"), Is.EqualTo(1));
+            // 并列时客户代码排序：4C 在前
+            Assert.That(priority.PickRepresentative(["FSL020-GAAG", "FSL020-4CAG"]), Is.EqualTo("FSL020-4CAG"));
+            // 同代码不同版本时按机种名排序
+            Assert.That(priority.PickRepresentative(["FSL020-4CBG", "FSL020-4CAG"]), Is.EqualTo("FSL020-4CAG"));
+        }
+
+        /// <summary>数字越小越优先</summary>
+        [Test]
+        public void SeriesPriority_SmallerNumberWins()
+        {
+            PreIssueSeriesPriority priority = new(Priorities(("GA", 9), ("93", 1)));
+            Assert.That(priority.PickRepresentative(["FSL020-GAAG", "FSL020-93AG"]), Is.EqualTo("FSL020-93AG"));
+        }
+
         /// <summary>没列出的客户代码、以及拆不出代码的机种都排最后</summary>
         [Test]
         public void SeriesPriority_UnlistedCodeAndBrokenShapeComeLast()
@@ -483,26 +508,35 @@ namespace ORT一键报告.Tests
         }
 
         [Test]
-        public void SeriesPriority_CustomOrderWins()
+        public void SeriesPriority_CustomNumbersApply()
         {
-            PreIssueSeriesPriority priority = new(["00", "4C"]);
-            Assert.That(priority.Codes, Is.EqualTo(new[] { "00", "4C" }));
+            PreIssueSeriesPriority priority = new(Priorities(("00", 1), ("4C", 2)));
+            Assert.That(priority.Entries.Select(e => e.Code), Is.EqualTo(new[] { "00", "4C" }));
             Assert.That(priority.PickRepresentative(["FSL020-4CAG", "FSL020-00AG"]), Is.EqualTo("FSL020-00AG"));
         }
 
-        [TestCase("GA,4C,93,00", new[] { "GA", "4C", "93", "00" })]
-        [TestCase(" ga ; 4c | 93 ", new[] { "GA", "4C", "93" })]
+        [TestCase("GA:1,4C:1,93:2,00:9", new[] { "GA:1", "4C:1", "93:2", "00:9" })]
+        [TestCase(" ga = 3 ; 4c=1 ", new[] { "GA:3", "4C:1" })]
+        [TestCase("GA,4C,93,00", new[] { "GA:1", "4C:2", "93:3", "00:4" })]
         [TestCase("", new string[0])]
         [TestCase(null, new string[0])]
-        public void SeriesPriority_ParsesStoredText(string text, string[] expected)
+        public void SeriesPriority_ParsesStoredText_WithLegacyFallback(string text, string[] expected)
         {
-            Assert.That(PreIssueSeriesPriority.ParseStored(text), Is.EqualTo(expected));
+            List<CustomerPriorityEntry> entries = PreIssueSeriesPriority.ParseStored(text);
+            Assert.That(entries.Select(e => $"{e.Code}:{e.Priority}"), Is.EqualTo(expected));
         }
 
         [Test]
-        public void SeriesPriority_FormatNormalizesCodes()
+        public void SeriesPriority_FormatUsesNumbers()
         {
-            Assert.That(PreIssueSeriesPriority.Format([" ga ", "GA", "", "4c"]), Is.EqualTo("GA,4C"));
+            Assert.That(PreIssueSeriesPriority.Format(Priorities(("ga", 2), ("4c", 1), ("GA", 3))),
+                Is.EqualTo("4C:1,GA:2"));
+        }
+
+        [Test]
+        public void SeriesPriority_DescribeShowsNumbers()
+        {
+            Assert.That(PreIssueSeriesPriority.Describe(Priorities(("GA", 1), ("00", 9))), Is.EqualTo("GA=1、00=9"));
         }
 
         [TestCase("FSL020-00AG", "FSL020")]

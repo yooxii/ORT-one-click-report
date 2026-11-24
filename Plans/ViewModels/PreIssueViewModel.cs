@@ -1085,8 +1085,8 @@ namespace ORT一键报告.Plans.ViewModels
 
         /* ###############################  同系列客户优先级  ################################ */
 
-        /// <summary>当前生效的客户优先级代码（从高到低）</summary>
-        public List<string> LoadCustomerPriorityCodes() => _service.LoadCustomerPriorityCodes();
+        /// <summary>当前生效的客户优先级（数字越小越优先，可并列）</summary>
+        public List<CustomerPriorityEntry> LoadCustomerPriority() => _service.LoadCustomerPriority();
 
         /// <summary>客户代码 → 客户名称（主数据库的客户代码表）</summary>
         public Dictionary<string, string> LoadCustomerCodeNames() => _service.LoadCustomerCodeNames();
@@ -1095,10 +1095,11 @@ namespace ORT一键报告.Plans.ViewModels
         public List<string> LoadCustomerCodeCandidates() => _service.LoadCustomerCodeCandidates();
 
         /// <summary>保存客户优先级（存数据库，多台电脑共用）</summary>
-        public void SaveCustomerPriorityCodes(IEnumerable<string> codes)
+        public void SaveCustomerPriority(IEnumerable<CustomerPriorityEntry> entries)
         {
-            _service.SaveCustomerPriorityCodes(codes);
-            StatusMessage = "客户优先级已保存：" + string.Join(" → ", _service.LoadCustomerPriorityCodes());
+            List<CustomerPriorityEntry> saved = PreIssueSeriesPriority.Normalize(entries);
+            _service.SaveCustomerPriority(saved);
+            StatusMessage = "客户优先级已保存：" + PreIssueSeriesPriority.Describe(saved);
         }
 
         /* ###############################  黑名单：编辑框辅助  ################################ */

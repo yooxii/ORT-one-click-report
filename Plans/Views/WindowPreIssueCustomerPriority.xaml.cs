@@ -12,8 +12,9 @@ using System.Windows.Input;
 namespace ORT一键报告.Plans.Views
 {
     /// <summary>
-    /// 同系列客户优先级（前 6 位相同的机种只开一张单，按这里的顺序挑客户代码）：
-    /// 列表前面的优先，默认 GA → 4C → 93 → 00（00 = 标准，排最后）；没列出的代码也排最后。
+    /// 同系列客户优先级（前 6 位相同的机种只开一张单，按这里的优先级挑客户代码）：
+    /// 优先级用数字表示，**数字越小越优先，可以填相同的数字表示并列**
+    /// （并列时再按客户代码、机种名排序），没列出的客户代码排最后。
     /// 客户名称从主数据库的客户代码表带出。保存进数据库，多台电脑共用。
     /// </summary>
     public partial class WindowPreIssueCustomerPriority : Window
@@ -29,41 +30,54 @@ namespace ORT一键报告.Plans.Views
             _names = _vm.LoadCustomerCodeNames();
             dg_priority.ItemsSource = _rows;
             cb_code.ItemsSource = _vm.LoadCustomerCodeCandidates();
-            foreach (string code in _vm.LoadCustomerPriorityCodes())
+            foreach (CustomerPriorityEntry entry in _vm.LoadCustomerPriority())
             {
-                _rows.Add(BuildRow(code));
+                _rows.Add(BuildRow(entry.Code, entry.Priority));
             }
-            Renumber();
-            ShowOrder();
+            SortRows();
+            ShowSummary();
         }
 
-        /* ###############################  行构造 / 顺序  ################################ */
+        /* ###############################  行构造 / 排序  ################################ */
 
-        private PriorityRow BuildRow(string code)
+        private PriorityRow BuildRow(string code, int priority)
         {
             string text = (code ?? "").Trim().ToUpperInvariant();
             return new PriorityRow
             {
                 Code = text,
-                Name = _names.TryGetValue(text, out string name) ? name : ""
+                Name = _names.TryGetValue(text, out string name) ? name : "",
+                Priority = priority
             };
         }
 
-        /// <summary>重排序号（顺序 = 优先级，1 最高）</summary>
-        private void Renumber()
+        /// <summary>按优先级数字从优到劣排序（并列按客户代码）</summary>
+        private void SortRows()
         {
-            for (int index = 0; index < _rows.Count; index++)
+            List<PriorityRow> sorted = _rows
+                .OrderBy(r => r.Priority)
+                .ThenBy(r => r.Code, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            for (int index = 0; index < sorted.Count; index++)
             {
-                _rows[index].Order = index + 1;
+                int current = _rows.IndexOf(sorted[index]);
+                if (current != index)
+                {
+                    _rows.Move(current, index);
+                }
             }
         }
 
-        /// <summary>底部状态：当前完整顺序</summary>
-        private void ShowOrder()
+        private List<CustomerPriorityEntry> CurrentEntries() => _rows
+            .Select(r => new CustomerPriorityEntry { Code = r.Code, Priority = r.Priority })
+            .ToList();
+
+        /// <summary>底部状态：当前优先级一览（数字小的在前）</summary>
+        private void ShowSummary()
         {
             txt_status.Text = _rows.Count == 0
                 ? LanguageService.Get("PreIssue_CustomerPriorityEmpty")
-                : string.Join(" → ", _rows.Select(r => r.Code));
+                : PreIssueSeriesPriority.Describe(CurrentEntries());
         }
 
         private void Dg_Priority_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -71,9 +85,19 @@ namespace ORT一键报告.Plans.Views
             if (dg_priority.SelectedItem is PriorityRow row)
             {
                 txt_status.Text = row.Name.Length > 0
-                    ? $"第 {row.Order} 优先：{row.Code} = {row.Name}"
-                    : $"第 {row.Order} 优先：{row.Code}";
+                    ? $"优先级 {row.Priority}：{row.Code} = {row.Name}"
+                    : $"优先级 {row.Priority}：{row.Code}";
             }
+        }
+
+        /// <summary>改完优先级数字后刷新底部一览（不在编辑中重排，避免行跳来跳去）</summary>
+        private void Dg_Priority_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
+        {
+            if (e.EditAction != DataGridEditAction.Commit)
+            {
+                return;
+            }
+            Dispatcher.BeginInvoke(new Action(ShowSummary), System.Windows.Threading.DispatcherPriority.Background);
         }
 
         private void Cb_Code_SelectionChanged(object sender, SelectionChangedEventArgs e) => ShowInputName();
@@ -98,7 +122,7 @@ namespace ORT一键报告.Plans.Views
             return bracket > 0 ? text.Substring(0, bracket).Trim() : text;
         }
 
-        /* ###############################  增删改 / 排序  ################################ */
+        /* ###############################  增删 / 恢复默认  ################################ */
 
         private void Btn_Add_Click(object sender, RoutedEventArgs e) => AddCode();
 
@@ -125,13 +149,15 @@ namespace ORT一键报告.Plans.Views
                 txt_status.Text = string.Format(LanguageService.Get("PreIssue_CustomerPriorityExists"), text);
                 return;
             }
-            PriorityRow row = BuildRow(text);
+            // 新加的代码默认排在最后（现有最大数字 + 1），之后可以改成想要的值
+            int next = _rows.Count == 0 ? 1 : _rows.Max(r => r.Priority) + 1;
+            PriorityRow row = BuildRow(text, next);
             _rows.Add(row);
-            Renumber();
+            SortRows();
             dg_priority.SelectedItem = row;
             dg_priority.ScrollIntoView(row);
             cb_code.Text = "";
-            ShowOrder();
+            ShowSummary();
         }
 
         private void Btn_Remove_Click(object sender, RoutedEventArgs e)
@@ -142,49 +168,36 @@ namespace ORT一键报告.Plans.Views
                 return;
             }
             _rows.Remove(row);
-            Renumber();
-            ShowOrder();
-        }
-
-        private void Btn_Up_Click(object sender, RoutedEventArgs e) => Move(-1);
-
-        private void Btn_Down_Click(object sender, RoutedEventArgs e) => Move(1);
-
-        private void Move(int delta)
-        {
-            if (dg_priority.SelectedItem is not PriorityRow row)
-            {
-                txt_status.Text = LanguageService.Get("PreIssue_CustomerPrioritySelectFirst");
-                return;
-            }
-            int from = _rows.IndexOf(row);
-            int to = from + delta;
-            if (to < 0 || to >= _rows.Count)
-            {
-                return;
-            }
-            _rows.Move(from, to);
-            Renumber();
-            dg_priority.SelectedItem = row;
-            ShowOrder();
+            ShowSummary();
         }
 
         private void Btn_Reset_Click(object sender, RoutedEventArgs e)
         {
             _rows.Clear();
-            foreach (string code in PreIssueSeriesPriority.DefaultCodes)
+            foreach (CustomerPriorityEntry entry in PreIssueSeriesPriority.DefaultEntries())
             {
-                _rows.Add(BuildRow(code));
+                _rows.Add(BuildRow(entry.Code, entry.Priority));
             }
-            Renumber();
-            ShowOrder();
+            SortRows();
+            ShowSummary();
         }
+
+        /* ###############################  保存  ################################ */
 
         private void Btn_Ok_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                _vm.SaveCustomerPriorityCodes(_rows.Select(r => r.Code));
+                // 优先级只允许 0 / 正整数：负数没有意义，容易把「最优先」写成 -1 让人看不出来
+                PriorityRow invalid = _rows.FirstOrDefault(r => r.Priority < 0);
+                if (invalid != null)
+                {
+                    txt_status.Text = string.Format(LanguageService.Get("PreIssue_CustomerPriorityInvalid"), invalid.Code);
+                    dg_priority.SelectedItem = invalid;
+                    dg_priority.ScrollIntoView(invalid);
+                    return;
+                }
+                _vm.SaveCustomerPriority(CurrentEntries());
                 DialogResult = true;
             }
             catch (Exception ex)
@@ -195,18 +208,18 @@ namespace ORT一键报告.Plans.Views
         }
     }
 
-    /// <summary>优先级列表里的一行（顺序 / 客户代码 / 客户名称）</summary>
+    /// <summary>优先级列表里的一行（优先级数字 / 客户代码 / 客户名称）</summary>
     public class PriorityRow : ObservableObject
     {
-        private int _order;
+        private int _priority;
         private string _code;
         private string _name;
 
-        /// <summary>顺序（1 = 最优先）</summary>
-        public int Order
+        /// <summary>优先级：数字越小越优先，相同即并列</summary>
+        public int Priority
         {
-            get => _order;
-            set => SetProperty(ref _order, value);
+            get => _priority;
+            set => SetProperty(ref _priority, value);
         }
 
         /// <summary>客户代码（机种后段前 2 位）</summary>

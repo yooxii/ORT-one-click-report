@@ -3797,13 +3797,13 @@ Yes = delete and blacklist, No = delete only, Cancel = do nothing</value>
     <value>Customer priority</value>
   </data>
   <data name="PreIssue_CustomerPriorityTip" xml:space="preserve">
-    <value>When one voucher per series (same first 6 characters) is enough, the customer code is picked by this order</value>
+    <value>When one voucher per series (same first 6 characters) is enough, pick the customer code by this priority: a smaller number wins, ties are allowed</value>
   </data>
   <data name="PreIssue_CustomerPriorityHint" xml:space="preserve">
-    <value>One voucher per series is enough: when importing the board or filling pending rows from the board, the model whose customer code ranks highest here is picked and the rest of the series are skipped. Default GA → 4C → 93 → 00 (00 = standard, last); codes not listed also come last. Customer names come from the customer code table in the main database.</value>
+    <value>One voucher per series is enough: when importing the board or filling pending rows from the board, the model whose customer code has the highest priority here (smallest number) is picked; equal numbers count as a tie (then ordered by customer code and model name) and codes not listed come last. Customer names come from the customer code table in the main database.</value>
   </data>
-  <data name="PreIssue_CustomerPriorityOrder" xml:space="preserve">
-    <value>Order</value>
+  <data name="PreIssue_CustomerPriorityLevel" xml:space="preserve">
+    <value>Priority</value>
   </data>
   <data name="PreIssue_CustomerPriorityCode" xml:space="preserve">
     <value>Customer code</value>
@@ -3815,22 +3815,16 @@ Yes = delete and blacklist, No = delete only, Cancel = do nothing</value>
     <value>Add</value>
   </data>
   <data name="PreIssue_CustomerPriorityAddTip" xml:space="preserve">
-    <value>Type or pick a customer code (first 2 characters of the model suffix), then press Enter or click Add to append it</value>
-  </data>
-  <data name="PreIssue_CustomerPriorityUp" xml:space="preserve">
-    <value>Move up</value>
-  </data>
-  <data name="PreIssue_CustomerPriorityDown" xml:space="preserve">
-    <value>Move down</value>
+    <value>Type or pick a customer code (first 2 characters of the model suffix), then press Enter or click Add (the priority defaults to last and can be changed)</value>
   </data>
   <data name="PreIssue_CustomerPriorityRemove" xml:space="preserve">
     <value>Remove</value>
   </data>
   <data name="PreIssue_CustomerPriorityReset" xml:space="preserve">
-    <value>Restore default order</value>
+    <value>Restore default priority</value>
   </data>
   <data name="PreIssue_CustomerPriorityEmpty" xml:space="preserve">
-    <value>No priority configured: nothing is picked on import; click Restore default order</value>
+    <value>No priority configured: nothing is picked on import; click Restore default priority</value>
   </data>
   <data name="PreIssue_CustomerPriorityAddEmpty" xml:space="preserve">
     <value>Type a customer code first</value>
@@ -3843,5 +3837,8 @@ Yes = delete and blacklist, No = delete only, Cancel = do nothing</value>
   </data>
   <data name="PreIssue_CustomerPriorityNoName" xml:space="preserve">
     <value>{0} (not found in the customer code table)</value>
+  </data>
+    <data name="PreIssue_CustomerPriorityInvalid" xml:space="preserve">
+    <value>Priority of "{0}" must be 0 or a positive integer</value>
   </data>
 </root>

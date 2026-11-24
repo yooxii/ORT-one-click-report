@@ -3797,13 +3797,13 @@
     <value>客戶優先級</value>
   </data>
   <data name="PreIssue_CustomerPriorityTip" xml:space="preserve">
-    <value>同系列（前 6 位相同）只開一張單時，按這裡的順序挑客戶代碼</value>
+    <value>同系列（前 6 位相同）只開一張單時，按這裡的優先級挑客戶代碼：數字越小越優先，可以並列</value>
   </data>
   <data name="PreIssue_CustomerPriorityHint" xml:space="preserve">
-    <value>同一個系列只需要開一張單：匯入看板、「從看板補全待開單」時按這裡的順序挑客戶代碼優先級最高的機種，其餘同系列的不再產生。預設 GA → 4C → 93 → 00（00 = 標準，排最後）；沒列出的客戶代碼也排最後。客戶名稱來自主資料庫的客戶代碼表。</value>
+    <value>同一個系列只需要開一張單：匯入看板、「從看板補全待開單」時按這裡的優先級挑客戶代碼優先級最高（數字最小）的機種，可以並列（數字相同再按客戶代碼、機種名排序），沒列出的客戶代碼排最後。客戶名稱來自主資料庫的客戶代碼表。</value>
   </data>
-  <data name="PreIssue_CustomerPriorityOrder" xml:space="preserve">
-    <value>順序</value>
+  <data name="PreIssue_CustomerPriorityLevel" xml:space="preserve">
+    <value>優先級</value>
   </data>
   <data name="PreIssue_CustomerPriorityCode" xml:space="preserve">
     <value>客戶代碼</value>
@@ -3815,22 +3815,16 @@
     <value>新增</value>
   </data>
   <data name="PreIssue_CustomerPriorityAddTip" xml:space="preserve">
-    <value>輸入或選擇客戶代碼（機種後段前 2 位），按 Enter 或點「新增」加到最後</value>
-  </data>
-  <data name="PreIssue_CustomerPriorityUp" xml:space="preserve">
-    <value>上移</value>
-  </data>
-  <data name="PreIssue_CustomerPriorityDown" xml:space="preserve">
-    <value>下移</value>
+    <value>輸入或選擇客戶代碼（機種後段前 2 位），按 Enter 或點「新增」加進來（優先級預設排最後，可再改）</value>
   </data>
   <data name="PreIssue_CustomerPriorityRemove" xml:space="preserve">
     <value>移除</value>
   </data>
   <data name="PreIssue_CustomerPriorityReset" xml:space="preserve">
-    <value>還原預設順序</value>
+    <value>還原預設優先級</value>
   </data>
   <data name="PreIssue_CustomerPriorityEmpty" xml:space="preserve">
-    <value>還沒設定優先級：匯入不會挑機種，建議點「還原預設順序」</value>
+    <value>還沒設定優先級：匯入不會挑機種，建議點「還原預設優先級」</value>
   </data>
   <data name="PreIssue_CustomerPriorityAddEmpty" xml:space="preserve">
     <value>先輸入客戶代碼再新增</value>
@@ -3843,5 +3837,8 @@
   </data>
   <data name="PreIssue_CustomerPriorityNoName" xml:space="preserve">
     <value>{0}（客戶代碼表裡沒有這個代碼）</value>
+  </data>
+    <data name="PreIssue_CustomerPriorityInvalid" xml:space="preserve">
+    <value>「{0}」的優先級要填 0 或正整數</value>
   </data>
 </root>
