@@ -3852,4 +3852,7 @@ This cannot be restored directly but is logged; prefer Undo import if you only p
   <data name="PreIssue_DeletePendingNo" xml:space="preserve">
     <value>No</value>
   </data>
+  <data name="Plans_View_TabDragHint" xml:space="preserve">
+    <value>Drag a tab to reorder it, or drag it out of the tab strip to float it in its own window (double-click also floats)</value>
+  </data>
 </root>

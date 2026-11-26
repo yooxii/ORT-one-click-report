@@ -2954,11 +2954,19 @@ namespace ORT一键报告.Plans.Views
 
         private static readonly string[] AllPanes = [PaneRequisitions, PanePlans, PanePreIssue];
 
-        /// <summary>当前显示在窗口里的页签（按固定顺序：领退表 / 计划表 / 预领）</summary>
+        /// <summary>当前显示在窗口里的页签（按页签条上的排列顺序）</summary>
         private readonly List<string> _visiblePanes = [];
+
+        /// <summary>页签的排列顺序（拖动页签可改；记在本机设置里，下次打开照原样）</summary>
+        private readonly List<string> _tabOrder = [];
 
         /// <summary>浮在窗口外的页签窗口</summary>
         private readonly Dictionary<string, Window> _floatingPanes = new(StringComparer.Ordinal);
+
+        /* 页签拖动：按住页签左右拖 = 改顺序；拖出页签条松手 = 浮出去 */
+        private string _dragTabId;
+        private Point _dragTabStart;
+        private bool _draggingTab;
 
         /// <summary>当前活动页签</summary>
         private string _activePane = PanePlans;
@@ -3023,6 +3031,22 @@ namespace ORT一键报告.Plans.Views
             {
                 _visiblePanes.Add(PanePlans);   // 默认只显示计划表
             }
+            // 页签顺序：上次拖动的顺序优先，缺的/认不出的按默认顺序补在后面
+            _tabOrder.Clear();
+            foreach (string id in layout?.Order ?? [])
+            {
+                if (AllPanes.Contains(id) && !_tabOrder.Contains(id))
+                {
+                    _tabOrder.Add(id);
+                }
+            }
+            foreach (string id in AllPanes)
+            {
+                if (!_tabOrder.Contains(id))
+                {
+                    _tabOrder.Add(id);
+                }
+            }
             _savedBounds = layout?.Bounds ?? new Dictionary<string, string>();
             _activePane = layout?.Active != null && _visiblePanes.Contains(layout.Active)
                 ? layout.Active
@@ -3072,19 +3096,26 @@ namespace ORT一键报告.Plans.Views
             {
                 tabbar.Visibility = _visiblePanes.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
                 tabbar_items.Children.Clear();
-                foreach (string id in AllPanes.Where(p => _visiblePanes.Contains(p) || _floatingPanes.ContainsKey(p)))
+                // _tabOrder 在 InitTabs 里按上次拖动的顺序填好；万一还没初始化就按默认顺序
+                IEnumerable<string> order = _tabOrder.Count > 0 ? _tabOrder : AllPanes;
+                foreach (string id in order.Where(p => _visiblePanes.Contains(p) || _floatingPanes.ContainsKey(p)))
                 {
                     bool floating = _floatingPanes.ContainsKey(id);
                     bool active = id == _activePane && !floating;
                     Border chip = new()
                     {
+                        Tag = id,
                         CornerRadius = new CornerRadius(4, 4, 0, 0),
                         Padding = new Thickness(8, 2, 4, 2),
                         Margin = new Thickness(0, 0, 2, 0),
                         Background = active ? FindBrush("CardBackgroundBrush") : Brushes.Transparent,
                         BorderBrush = active ? FindBrush("BorderSubtleBrush") : Brushes.Transparent,
-                        BorderThickness = new Thickness(1, 1, 1, 0)
+                        BorderThickness = new Thickness(1, 1, 1, 0),
+                        ToolTip = LanguageService.Get("Plans_View_TabDragHint")
                     };
+                    chip.PreviewMouseLeftButtonDown += TabChip_MouseDown;
+                    chip.PreviewMouseMove += TabChip_MouseMove;
+                    chip.PreviewMouseLeftButtonUp += TabChip_MouseUp;
                     StackPanel panel = new() { Orientation = Orientation.Horizontal };
                     string capturedId = id;
                     TextBlock label = new()
@@ -3132,6 +3163,107 @@ namespace ORT一键报告.Plans.Views
             {
                 _logger.Warn($"重建页签条失败: {ex.Message}");
             }
+        }
+
+        /* ------------------ 页签拖动：左右拖改顺序 / 拖出页签条浮空 ------------------ */
+
+        /// <summary>页签按下：只记起点，先不捕获鼠标（否则 ⇱ / ✕ 按钮的点击会被抢掉）</summary>
+        private void TabChip_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is FrameworkElement chip && chip.Tag is string id)
+            {
+                _dragTabId = id;
+                _dragTabStart = e.GetPosition(tabbar_items);
+                _draggingTab = false;
+            }
+        }
+
+        /// <summary>移动超过 6px 才算拖动；一旦开始拖动就捕获鼠标，移出页签条也收得到事件</summary>
+        private void TabChip_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (_dragTabId == null || e.LeftButton != MouseButtonState.Pressed)
+            {
+                return;
+            }
+            Point now = e.GetPosition(tabbar_items);
+            if (!_draggingTab)
+            {
+                if (Math.Abs(now.X - _dragTabStart.X) < 6 && Math.Abs(now.Y - _dragTabStart.Y) < 6)
+                {
+                    return;
+                }
+                _draggingTab = true;
+                if (sender is FrameworkElement chip)
+                {
+                    chip.Cursor = Cursors.SizeAll;
+                    chip.Opacity = 0.6;
+                    chip.CaptureMouse();
+                }
+            }
+        }
+
+        /// <summary>松手：落在页签条里 = 换顺序；拖到页签条外面 = 浮出去</summary>
+        private void TabChip_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            if (_dragTabId == null)
+            {
+                return;
+            }
+            string id = _dragTabId;
+            bool dragging = _draggingTab;
+            _dragTabId = null;
+            _draggingTab = false;
+            // 先算落点再释放鼠标捕获（释放会触发 LostMouseCapture）
+            Point point = e.GetPosition(tabbar_items);
+            if (sender is FrameworkElement chip && dragging)
+            {
+                chip.ReleaseMouseCapture();
+                chip.Opacity = 1;
+                chip.Cursor = Cursors.Hand;
+            }
+            if (!dragging)
+            {
+                return;
+            }
+            if (point.Y < -12 || point.Y > tabbar_items.ActualHeight + 12)
+            {
+                FloatPane(id);
+                return;
+            }
+            MoveTab(id, TabDropIndex(id, point.X));
+        }
+
+        /// <summary>落下位置 → 新的插入下标（按各页签中线判断左右）</summary>
+        private int TabDropIndex(string id, double x)
+        {
+            int index = 0;
+            foreach (object child in tabbar_items.Children)
+            {
+                if (child is not FrameworkElement chip
+                    || chip.Tag is not string chipId
+                    || chipId == id)
+                {
+                    continue;
+                }
+                Point center = chip.TranslatePoint(new Point(chip.ActualWidth / 2, 0), tabbar_items);
+                if (x > center.X)
+                {
+                    index++;
+                }
+            }
+            return index;
+        }
+
+        /// <summary>把页签挪到指定位置并记住顺序</summary>
+        private void MoveTab(string id, int index)
+        {
+            List<string> order = _tabOrder.Where(t => t != id).ToList();
+            index = Math.Max(0, Math.Min(index, order.Count));
+            order.Insert(index, id);
+            _tabOrder.Clear();
+            _tabOrder.AddRange(order);
+            BuildTabBar();
+            SaveTabsLayout();
         }
 
         /// <summary>页签上的小图标按钮（浮动 / 关闭）</summary>
@@ -3365,6 +3497,7 @@ namespace ORT一键报告.Plans.Views
                 }
                 LocalSettingsStore.Update(s => s.PlansTabs = new PlansTabsLayout
                 {
+                    Order = [.. _tabOrder],
                     Visible = [.. _visiblePanes],
                     Active = _activePane,
                     Floating = [.. _floatingPanes.Keys],

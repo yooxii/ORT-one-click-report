@@ -236,6 +236,7 @@
                         </DataGrid.RowStyle>
                         <DataGrid.ContextMenu>
                             <ContextMenu>
+                                <MenuItem Header="{lex:Loc PreIssue_AddPending}" Click="Menu_BoardAddPending_Click"/>
                                 <MenuItem Header="{lex:Loc PreIssue_Menu_AddBlacklist}" Click="Menu_BoardAddBlacklist_Click"/>
                                 <Separator/>
                                 <MenuItem Header="{lex:Loc PreIssue_Menu_CopyRow}" Click="Menu_CopyBoardRow_Click"/>

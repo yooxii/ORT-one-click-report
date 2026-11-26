@@ -3852,4 +3852,7 @@
   <data name="PreIssue_DeletePendingNo" xml:space="preserve">
     <value>否</value>
   </data>
+  <data name="Plans_View_TabDragHint" xml:space="preserve">
+    <value>拖动页签可改变顺序，拖出页签条松手即可浮出成独立窗口（双击也能浮出）</value>
+  </data>
 </root>

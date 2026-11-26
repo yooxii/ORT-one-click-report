@@ -203,6 +203,25 @@ namespace ORT一键报告.Plans.Views
                 }
             });
 
+        /// <summary>ORT看板右键「添加到待开单」：机种 / 工令 / 生產數量预填进添加窗口</summary>
+        private void Menu_BoardAddPending_Click(object sender, RoutedEventArgs e) => SafeRun(
+            LanguageService.Get("PreIssue_AddPendingTitle"),
+            () =>
+            {
+                if (_vm == null || _contextRow is not OrtBoardRow row || string.IsNullOrWhiteSpace(row.Model))
+                {
+                    return;
+                }
+                WindowPreIssuePending dialog = new(_vm.PendingModelCandidates(), row.Model, row.JobNo, row.Qty)
+                {
+                    Owner = Window.GetWindow(this)
+                };
+                if (dialog.ShowDialog() == true)
+                {
+                    _vm.AddPendingModel(dialog.Model, dialog.JobNo, dialog.Qty, dialog.Note);
+                }
+            });
+
         private void Btn_Blacklist_Click(object sender, RoutedEventArgs e)
         {
             if (_vm == null)

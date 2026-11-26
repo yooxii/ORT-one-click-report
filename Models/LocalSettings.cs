@@ -55,11 +55,14 @@ namespace ORT一键报告.Models
 
     /// <summary>
     /// 领退和计划窗口的外层页签布局（本机保存）：
-    /// 三个页签（领退表 / 计划表 / 预领）可以显示或隐藏、可以浮在窗口外单独摆放，
+    /// 三个页签（领退表 / 计划表 / 预领）可以显示或隐藏、可以拖动改顺序、可以浮在窗口外单独摆放，
     /// 关闭窗口时把状态记到这里，下次打开按记忆恢复。
     /// </summary>
     public class PlansTabsLayout
     {
+        /// <summary>页签的排列顺序（拖动页签改的顺序；缺的页签按默认顺序补在后面）</summary>
+        public List<string> Order { get; set; }
+
         /// <summary>当前显示的页签 id（requisitions / plans / preissue），按顺序排列</summary>
         public List<string> Visible { get; set; }
 
