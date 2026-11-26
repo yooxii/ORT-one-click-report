@@ -1,4 +1,4 @@
-﻿using ORT一键报告.Models;
+using ORT一键报告.Models;
 using System.Collections.Generic;
 
 namespace ORT一键报告.Services
@@ -95,6 +95,18 @@ namespace ORT一键报告.Services
                 case "report.submit":
                     return isTech || isAdmin;
                 case "report.review":
+                    return isReviewer || isAdmin;
+
+                // 技术员及以上：看板平台配置（ORT 看板的取数条件与链接配置，入口在领退的工具菜单）
+                case "ort.settings":
+                    return isTech || isReviewer || isAdmin;
+
+                // 任何已登录用户：申请更高身份组（管理员身份不可申请，只能由管理员指定）
+                case "role.apply":
+                    return isGeneral || isTech || isReviewer || isAdmin;
+
+                // 审核员及以上：审批身份组申请（审核员身份的申请只允许管理员通过，见 ReviewService）
+                case "role.approve":
                     return isReviewer || isAdmin;
 
                 // 管理员：管理模块

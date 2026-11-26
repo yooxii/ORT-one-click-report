@@ -20,6 +20,9 @@ namespace ORT一键报告.Services
         private readonly MailNotifier _notifier;
 
         public const string TypePlan = "计划表单";
+
+        /// <summary>身份组申请（用户在用户中心申请技术员 / 审核员；管理员不能申请）</summary>
+        public const string TypeRole = "身份组申请";
         public const string StatusPending = "待审核";
         public const string StatusApproved = "已通过";
         public const string StatusRejected = "已驳回";
@@ -90,6 +93,103 @@ namespace ORT一键报告.Services
             _db.FreeSql.Insert(request).ExecuteAffrows();
             _logger.Info($"提交领退审核请求: {summary} (请求人: {requester}, 待审核人: {request.AssigneeName ?? "-"})");
             _notifier?.NotifyReviewSubmitted(request);
+        }
+
+        /// <summary>
+        /// 提交身份组申请（用户在用户中心发起）：技术员或审核员，审批人自己指定一名审核员或管理员。
+        /// 审核员身份组的申请只有管理员能通过（见 <see cref="Approve"/>）；管理员身份不能申请。
+        /// 成功返回 null，否则返回错误信息。
+        /// </summary>
+        public string SubmitRoleRequest(long userId, string requester, UserRole requestedRole,
+            string assigneeName, string note)
+        {
+            if (!RoleRequestRules.IsRequestable(requestedRole))
+            {
+                return "只有技术员、审核员身份组可以申请；管理员身份只能由管理员直接指定";
+            }
+            if (userId <= 0 || string.IsNullOrWhiteSpace(requester))
+            {
+                return "请先登录后再申请";
+            }
+            ReviewRequest pending = GetPendingRoleRequest(userId);
+            if (pending != null)
+            {
+                return $"你已经有一条待审批的身份组申请（{pending.Action}），等审批结果出来再提交";
+            }
+            assigneeName = (assigneeName ?? "").Trim();
+            string assigneeProblem = CheckAssignee(requestedRole, assigneeName);
+            if (assigneeProblem != null)
+            {
+                return assigneeProblem;
+            }
+            string roleName = RoleRequestRules.DisplayName(requestedRole);
+            ReviewRequest request = new()
+            {
+                Type = TypeRole,
+                Action = "申请" + roleName,
+                TargetId = userId,
+                Summary = $"身份组申请: {roleName}"
+                          + (string.IsNullOrWhiteSpace(note) ? "" : $"（{note.Trim()}）"),
+                PayloadJson = JsonConvert.SerializeObject(new RoleRequestPayload
+                {
+                    RequestedRole = requestedRole.ToString(),
+                    Note = note?.Trim()
+                }),
+                RequesterName = requester,
+                AssigneeName = string.IsNullOrEmpty(assigneeName) ? PickPendingReviewer() : assigneeName,
+                Status = StatusPending,
+                CreatedAt = DateTime.Now
+            };
+            _db.FreeSql.Insert(request).ExecuteAffrows();
+            _logger.Info($"提交身份组申请: {roleName}（申请人: {requester}, 审批人: {request.AssigneeName ?? "-"}）");
+            _notifier?.NotifyReviewSubmitted(request);
+            return null;
+        }
+
+        /// <summary>某个账号当前待审批的身份组申请（没有则 null，用于用户中心提示与防重复提交）</summary>
+        public ReviewRequest GetPendingRoleRequest(long userId)
+            => _db.FreeSql.Select<ReviewRequest>()
+                .Where(r => r.Type == TypeRole && r.Status == StatusPending && r.TargetId == userId)
+                .OrderByDescending(r => r.Id)
+                .First();
+
+        /// <summary>
+        /// 校验指定的审批人身份：审核员申请只能交给管理员；技术员申请交给审核员或管理员。
+        /// 通过返回 null，否则返回错误信息。
+        /// </summary>
+        private string CheckAssignee(UserRole requestedRole, string assigneeName)
+        {
+            if (string.IsNullOrEmpty(assigneeName))
+            {
+                return null;   // 没指定就退回自动指派
+            }
+            User assignee = _db.FreeSql.Select<User>().Where(u => u.Username == assigneeName).First();
+            if (assignee == null || !assignee.IsActive)
+            {
+                return $"找不到可用的审批人：{assigneeName}";
+            }
+            (bool isAdmin, bool isReviewer) = RolesOf(assigneeName);
+            if (!RoleRequestRules.CanApprove(requestedRole, isAdmin, isReviewer))
+            {
+                return requestedRole == UserRole.Reviewer
+                    ? "审核员身份组的申请只能交给管理员审批"
+                    : "技术员身份组的申请只能交给审核员或管理员审批";
+            }
+            return null;
+        }
+
+        /// <summary>按账号名取身份（管理员 / 审核员）</summary>
+        private (bool IsAdmin, bool IsReviewer) RolesOf(string username)
+        {
+            User user = _db.FreeSql.Select<User>().Where(u => u.Username == username).First();
+            if (user == null)
+            {
+                return (false, false);
+            }
+            List<string> roles = _db.FreeSql.Select<UserRoleRow>()
+                .Where(r => r.UserId == user.Id)
+                .ToList(r => r.Role);
+            return (roles.Contains(nameof(UserRole.Administrator)), roles.Contains(nameof(UserRole.Reviewer)));
         }
 
         /// <summary>
@@ -174,7 +274,19 @@ namespace ORT一键报告.Services
             }
             try
             {
-                ApplyPlanChange(request);
+                if (request.Type == TypeRole)
+                {
+                    // 身份组申请：先把申请的身份授予申请人（审核员申请只允许管理员批）
+                    string roleError = ApplyRoleChange(request, reviewerName);
+                    if (roleError != null)
+                    {
+                        return roleError;
+                    }
+                }
+                else
+                {
+                    ApplyPlanChange(request);
+                }
             }
             catch (Exception ex)
             {
@@ -311,6 +423,64 @@ namespace ORT一键报告.Services
                 default:
                     throw new NotSupportedException($"暂不支持的操作: {request.Action}");
             }
+        }
+
+        /// <summary>
+        /// 应用身份组申请：给申请人加上申请的身份组。
+        /// 审核员身份组的申请只允许管理员通过；管理员身份不在这里授予（由管理员在人员管理里直接指定）。
+        /// 成功返回 null，否则返回错误信息。
+        /// </summary>
+        private string ApplyRoleChange(ReviewRequest request, string reviewerName)
+        {
+            if (string.Equals(request.RequesterName, reviewerName, StringComparison.OrdinalIgnoreCase))
+            {
+                return "不能审批自己提交的身份组申请";
+            }
+            RoleRequestPayload payload;
+            try
+            {
+                payload = string.IsNullOrWhiteSpace(request.PayloadJson)
+                    ? null
+                    : JsonConvert.DeserializeObject<RoleRequestPayload>(request.PayloadJson);
+            }
+            catch
+            {
+                return "申请内容无法解析，无法授予身份组";
+            }
+            UserRole? requested = payload?.ParsedRole;
+            if (requested == null)
+            {
+                return "申请里没有有效的身份组";
+            }
+            if (!RoleRequestRules.IsRequestable(requested.Value))
+            {
+                return "该身份组不能通过申请授予（管理员只能在人员管理里直接指定）";
+            }
+            (bool isAdmin, bool isReviewer) = RolesOf(reviewerName);
+            if (!RoleRequestRules.CanApprove(requested.Value, isAdmin, isReviewer))
+            {
+                return "审核员身份组的申请需要管理员通过；你当前的权限不能审批这条申请";
+            }
+            if (request.TargetId == null)
+            {
+                return "申请缺少申请人账号，无法授予身份组";
+            }
+            long userId = request.TargetId.Value;
+            User target = _db.FreeSql.Select<User>().Where(u => u.Id == userId).First();
+            if (target == null)
+            {
+                return "申请人账号不存在（可能已被移除）";
+            }
+            bool exists = _db.FreeSql.Select<UserRoleRow>()
+                .Where(r => r.UserId == userId && r.Role == requested.Value.ToString())
+                .Any();
+            if (!exists)
+            {
+                _db.FreeSql.Insert(new UserRoleRow { UserId = userId, Role = requested.Value.ToString() })
+                    .ExecuteAffrows();
+            }
+            _logger.Info($"身份组申请通过: {target.Username} 获得 {requested.Value}（审批人: {reviewerName}）");
+            return null;
         }
 
         /// <summary>

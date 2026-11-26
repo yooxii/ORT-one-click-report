@@ -126,6 +126,10 @@
                 <!--数据体检：领退表「回线RT工令」编号月段与领用日期不符、或不是编号形状的历史脏数据（只读提示）-->
                 <MenuItem Header="{lex:Loc Plans_Menu_ReturnRtCheck}" Click="Menu_ReturnRtCheck_Click"
                           ToolTip="{lex:Loc Plans_ToolTip_ReturnRtCheck}"/>
+                <Separator/>
+                <!--看板平台配置：取数条件与平台链接，技术员及以上可改（入口放领退，不要求管理员）-->
+                <MenuItem x:Name="menu_ortSettings" Header="{lex:Loc Plans_Menu_OrtSettings}" Click="Menu_OrtSettings_Click"
+                          ToolTip="{lex:Loc Plans_ToolTip_OrtSettings}"/>
             </MenuItem>
             <MenuItem Header="{lex:Loc Common_View}">
                 <MenuItem x:Name="menu_view_toolbar" Header="{lex:Loc Menu_Toolbar}" IsCheckable="True" Click="Menu_View_Toggle_Click"/>
@@ -165,6 +169,8 @@
                 <Button Content="{lex:Loc Plans_Menu_ReportTemplate}" Click="Menu_ReportTemplate_Click" ToolTip="{lex:Loc Plans_ToolTip_ReportTemplate}"/>
                 <Button Content="{lex:Loc Plans_RefreshReports}" Click="Menu_RefreshReportLinks_Click" ToolTip="{lex:Loc Plans_ToolTip_RefreshReports}"/>
                 <Button Content="{lex:Loc Plans_Menu_PlanIndex}" Click="Menu_PlanIndex_Click" ToolTip="{lex:Loc PlanIndex_ToolTip_Build}"/>
+                <Button x:Name="btn_ortSettings" Content="{lex:Loc Plans_Menu_OrtSettings}" Click="Menu_OrtSettings_Click"
+                        ToolTip="{lex:Loc Plans_ToolTip_OrtSettings}"/>
                 <Separator/>
                 <Button Content="{lex:Loc Common_Refresh}" Command="{Binding RefreshCommand}" ToolTip="{lex:Loc Plans_ToolTip_Reload}"/>
             </ToolBar>

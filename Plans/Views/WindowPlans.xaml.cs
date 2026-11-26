@@ -35,6 +35,9 @@ namespace ORT一键报告.Plans.Views
         private readonly PlansViewModel _vm;
         private readonly AppSettingsService _appSettings;
 
+        /// <summary>权限服务：看板平台配置要求技术员及以上</summary>
+        private readonly IPermissionService _permission;
+
         /// <summary>
         /// 界面完全就绪（首次 Loaded 之后）才执行的一次性动作：托盘菜单让本窗口「新增领用 / 批量回线…」时用。
         /// 必须等表格建好再执行——这些动作会操作 DataGrid、弹权限提示，构造函数里跑太早。
@@ -57,6 +60,11 @@ namespace ORT一键报告.Plans.Views
             Height = Math.Min(Height, SystemParameters.WorkArea.Height);
             _vm = App.ServiceProvider.GetRequiredService<PlansViewModel>();
             _appSettings = App.ServiceProvider.GetRequiredService<AppSettingsService>();
+            _permission = App.ServiceProvider.GetRequiredService<IPermissionService>();
+            // 看板平台配置：技术员及以上才可改；没权限就直接禁用入口（免得点了才发现不行）
+            bool canOrtSettings = _permission.Can("ort.settings");
+            menu_ortSettings.IsEnabled = canOrtSettings;
+            btn_ortSettings.IsEnabled = canOrtSettings;
             DataContext = _vm;
             // 预领页签自己一套视图模型（三个内层页签共用一个月份）
             _preVm = App.ServiceProvider.GetRequiredService<PreIssueViewModel>();
@@ -1469,6 +1477,22 @@ namespace ORT一键报告.Plans.Views
             {
                 Owner = this
             };
+            _ = window.ShowDialog();
+        }
+
+        /// <summary>
+        /// 工具菜单「看板平台配置」：直接改 ORT 看板的取数条件（日期 / MoType）与高级链接配置。
+        /// 权限开放到技术员及以上，与「设置 → ORT 看板取数」是同一份配置（同一个控件、同一份存储）。
+        /// </summary>
+        private void Menu_OrtSettings_Click(object sender, RoutedEventArgs e)
+        {
+            if (!_permission.Can("ort.settings"))
+            {
+                _ = MessageBox.Show(LanguageService.Get("Msg_OrtSettingsNeedRole"),
+                    LanguageService.Get("Cap_NoPermission"), MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+            WindowOrtSettings window = new() { Owner = this };
             _ = window.ShowDialog();
         }
 

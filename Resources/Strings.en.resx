@@ -3939,6 +3939,9 @@ This cannot be restored directly but is logged; prefer Undo import if you only p
   <data name="Ort_Settings_EntryId" xml:space="preserve">
     <value>TargetEntryId</value>
   </data>
+  <data name="Ort_Settings_ExtractEntryTip" xml:space="preserve">
+    <value>Paste a board link to fill in the target report id automatically</value>
+  </data>
   <data name="Ort_Settings_ExtractEntry" xml:space="preserve">
     <value>Extract from link</value>
   </data>
@@ -4158,4 +4161,57 @@ This cannot be restored directly but is logged; prefer Undo import if you only p
   <data name="PortalAccounts_Saved" xml:space="preserve">
     <value>Saved</value>
   </data>
-</root>
+  <data name="Plans_Menu_OrtSettings" xml:space="preserve">
+    <value>Board platform settings…</value>
+  </data>
+  <data name="Plans_ToolTip_OrtSettings" xml:space="preserve">
+    <value>Edit the ORT board query options and portal links (Technician or above)</value>
+  </data>
+  <data name="Ort_Settings_Saved" xml:space="preserve">
+    <value>Board platform settings saved</value>
+  </data>
+  <data name="Msg_OrtSettingsNeedRole" xml:space="preserve">
+    <value>Board platform settings need the Technician role or above; you can apply for a role in the user center</value>
+  </data>
+  <data name="UserCenter_RoleApplySection" xml:space="preserve">
+    <value>Role application</value>
+  </data>
+  <data name="UserCenter_RoleApplyTarget" xml:space="preserve">
+    <value>Role to apply for</value>
+  </data>
+  <data name="UserCenter_RoleApplyApprover" xml:space="preserve">
+    <value>Approver</value>
+  </data>
+  <data name="UserCenter_RoleApplyNote" xml:space="preserve">
+    <value>Reason</value>
+  </data>
+  <data name="UserCenter_RoleApplyNoteHint" xml:space="preserve">
+    <value>Briefly say why you need this role (optional)</value>
+  </data>
+  <data name="UserCenter_RoleApplySubmit" xml:space="preserve">
+    <value>Submit application</value>
+  </data>
+  <data name="UserCenter_RoleApplyHint" xml:space="preserve">
+    <value>Submitting creates one pending request in Review. Reviewer applications can only be approved by an administrator; the Administrator role can only be assigned directly by an administrator and cannot be applied for.</value>
+  </data>
+  <data name="UserCenter_RoleApplyNoApprover" xml:space="preserve">
+    <value>No approver available yet — ask an administrator to assign a reviewer or administrator first</value>
+  </data>
+  <data name="UserCenter_RoleApplyPendingFormat" xml:space="preserve">
+    <value>Submitted "{0}", waiting for {1} to approve</value>
+  </data>
+  <data name="UserCenter_RoleApplyConfirm" xml:space="preserve">
+    <value>Apply to {1} for the {0} role? It takes effect once approved.</value>
+  </data>
+  <data name="UserCenter_RoleApplySubmitted" xml:space="preserve">
+    <value>Application submitted, waiting for approval</value>
+  </data>
+  <data name="Review_RoleRequest_AdminOnly" xml:space="preserve">
+    <value>Reviewer role applications must be approved by an administrator</value>
+  </data>
+  <data name="RoleRequest_TargetRole" xml:space="preserve">
+    <value>Requested role</value>
+  </data>
+  <data name="RoleRequest_Note" xml:space="preserve">
+    <value>Reason</value>
+  </data></root>

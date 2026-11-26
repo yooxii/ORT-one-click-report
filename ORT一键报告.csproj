@@ -15,7 +15,7 @@
     <MapFileExtensions>true</MapFileExtensions>
     <PublisherName>Lucas Li%28AcBel ORT%29</PublisherName>
     <ApplicationRevision>0</ApplicationRevision>
-    <ApplicationVersion>0.6.7.0</ApplicationVersion>
+    <ApplicationVersion>0.6.8.0</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <CreateDesktopShortcut>true</CreateDesktopShortcut>
     <PublishWizardCompleted>true</PublishWizardCompleted>
@@ -123,9 +123,11 @@
     <Compile Include="Models\Settings.cs" />
     <Compile Include="Services\FileService.cs" />
     <Compile Include="Utils\RelayCommand.cs" />
+    <Compile Include="Utils\RoleRequestRules.cs" />
     <Compile Include="Services\PathService.cs" />
     <Compile Include="Models\User.cs" />
     <Compile Include="Models\PortalAccount.cs" />
+    <Compile Include="Models\RoleRequest.cs" />
     <Compile Include="Models\OrtBoardSettings.cs" />
     <Compile Include="Services\FineReportClient.cs" />
     <Compile Include="Services\OrtBoardSettingsService.cs" />
@@ -203,6 +205,12 @@
     </Compile>
     <Compile Include="Main\Views\WindowPortalAccounts.xaml.cs">
       <DependentUpon>WindowPortalAccounts.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Main\Views\UserControlOrtSettings.xaml.cs">
+      <DependentUpon>UserControlOrtSettings.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Main\Views\WindowOrtSettings.xaml.cs">
+      <DependentUpon>WindowOrtSettings.xaml</DependentUpon>
     </Compile>
     <Compile Include="Main\Views\WindowInterruptWait.xaml.cs">
       <DependentUpon>WindowInterruptWait.xaml</DependentUpon>
@@ -594,6 +602,14 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Main\Views\WindowPortalAccounts.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Main\Views\UserControlOrtSettings.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Main\Views\WindowOrtSettings.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

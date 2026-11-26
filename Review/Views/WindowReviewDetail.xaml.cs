@@ -3,6 +3,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using ORT一键报告.Models;
 using ORT一键报告.Services;
+using ORT一键报告.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -60,6 +61,11 @@ namespace ORT一键报告.Review.Views
             btn_approve.IsEnabled = pending;
             btn_reject.IsEnabled = pending;
             txt_comment.IsEnabled = pending;
+            // 身份组申请里「审核员」这一档只有管理员能通过：审核员自己打开时把「通过」禁用并说明原因
+            if (pending && request.Type == ReviewService.TypeRole)
+            {
+                ApplyRoleRequestGate(request);
+            }
             if (!pending && request.ReviewComment != null)
             {
                 txt_comment.Text = request.ReviewComment;
@@ -112,7 +118,11 @@ namespace ORT一键报告.Review.Views
             {
                 try
                 {
-                    if (request.Type == "领退表单")
+                    if (request.Type == ReviewService.TypeRole)
+                    {
+                        rows = BuildRoleRows(request);
+                    }
+                    else if (request.Type == "领退表单")
                     {
                         rows = BuildRows(JsonConvert.DeserializeObject<Requisition>(request.PayloadJson), request);
                     }
@@ -133,6 +143,74 @@ namespace ORT一键报告.Review.Views
             txt_noFields.Visibility = empty ? Visibility.Visible : Visibility.Collapsed;
             sv_fields.Visibility = empty ? Visibility.Collapsed : Visibility.Visible;
             exp_raw.IsExpanded = empty;   // 没有可读字段时直接展开原始数据
+        }
+
+        /// <summary>
+        /// 身份组申请：字段表只列「目标身份」与「申请说明」（payload 是 RoleRequestPayload，不是计划/领退）。
+        /// </summary>
+        private static List<FieldRow> BuildRoleRows(ReviewRequest request)
+        {
+            List<FieldRow> rows = [];
+            RoleRequestPayload payload;
+            try
+            {
+                payload = JsonConvert.DeserializeObject<RoleRequestPayload>(request.PayloadJson ?? "");
+            }
+            catch
+            {
+                return rows;
+            }
+            UserRole? role = payload?.ParsedRole;
+            if (role != null)
+            {
+                rows.Add(new FieldRow
+                {
+                    Label = LanguageService.Get("RoleRequest_TargetRole"),
+                    Value = UserView.RoleDisplayName(role.Value)
+                });
+            }
+            if (!string.IsNullOrWhiteSpace(payload?.Note))
+            {
+                rows.Add(new FieldRow
+                {
+                    Label = LanguageService.Get("RoleRequest_Note"),
+                    Value = payload.Note.Trim()
+                });
+            }
+            return rows;
+        }
+
+        /// <summary>
+        /// 身份组申请的审批把关：申请「审核员」时只有管理员能通过，
+        /// 审核员打开详情时禁用「通过」并说明原因（服务端 <see cref="ReviewService.Approve"/> 同样会拦）。
+        /// </summary>
+        private void ApplyRoleRequestGate(ReviewRequest request)
+        {
+            RoleRequestPayload payload;
+            try
+            {
+                payload = JsonConvert.DeserializeObject<RoleRequestPayload>(request.PayloadJson ?? "");
+            }
+            catch
+            {
+                return;
+            }
+            UserRole? requested = payload?.ParsedRole;
+            if (requested == null)
+            {
+                return;
+            }
+            bool isAdmin = _auth.HasRole(UserRole.Administrator);
+            bool isReviewer = _auth.HasRole(UserRole.Reviewer);
+            if (RoleRequestRules.CanApprove(requested.Value, isAdmin, isReviewer))
+            {
+                return;
+            }
+            string hint = LanguageService.Get("Review_RoleRequest_AdminOnly");
+            btn_approve.IsEnabled = false;
+            btn_approve.ToolTip = hint;
+            txt_decided.Text = hint;
+            txt_decided.Visibility = Visibility.Visible;
         }
 
         /// <summary>把对象序列化成 JObject 再逐字段取值，避免为两个模型各写一遍映射</summary>
