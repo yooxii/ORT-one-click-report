@@ -8,6 +8,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Globalization;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Input;
@@ -26,12 +27,15 @@ namespace ORT一键报告.Plans.ViewModels
         private readonly PreIssueService _service;
         private readonly IPermissionService _permission;
         private readonly IPathService _pathService;
+        private readonly OrtBoardService _board;
 
-        public PreIssueViewModel(PreIssueService service, IPermissionService permission, IPathService pathService)
+        public PreIssueViewModel(PreIssueService service, IPermissionService permission, IPathService pathService,
+            OrtBoardService board)
         {
             _service = service;
             _permission = permission;
             _pathService = pathService;
+            _board = board;
             BoardView = CollectionViewSource.GetDefaultView(BoardRows);
             BoardView.Filter = FilterBoard;
             ReqView = CollectionViewSource.GetDefaultView(ReqRows);
@@ -700,6 +704,29 @@ namespace ORT一键报告.Plans.ViewModels
         private ICommand _importBoardCommand;
         public ICommand ImportBoardCommand => _importBoardCommand ??= new RelayCommand(ImportBoard, () => CanImport);
 
+        private ICommand _fetchBoardCommand;
+        /// <summary>从公司平台直接取看板（登录 → 帆软看板 → 取数 → 入库），替代手工导出 Excel</summary>
+        public ICommand FetchBoardCommand => _fetchBoardCommand ??= new RelayCommand(
+            () => _ = FetchBoardFromPortalAsync(), () => CanImport && !FetchingBoard);
+
+        /// <summary>正在从平台取数（按钮禁用 + 提示）</summary>
+        public bool FetchingBoard
+        {
+            get => _fetchingBoard;
+            private set
+            {
+                if (SetProperty(ref _fetchingBoard, value))
+                {
+                    OnPropertyChanged(nameof(FetchBoardButtonText));
+                }
+            }
+        }
+        private bool _fetchingBoard;
+
+        /// <summary>取数按钮文字（取数中显示进度）</summary>
+        public string FetchBoardButtonText
+            => FetchingBoard ? "取数中…" : LanguageService.Get("PreIssue_FetchBoard");
+
         private ICommand _importRequisitionCommand;
         public ICommand ImportRequisitionCommand => _importRequisitionCommand ??= new RelayCommand(ImportRequisition, () => CanImport);
 
@@ -1257,6 +1284,53 @@ namespace ORT一键报告.Plans.ViewModels
                 return;
             }
             RunImport(() => _service.ImportBoard(file), LanguageService.Get("PreIssue_BoardTab"));
+        }
+
+        /// <summary>
+        /// 从公司平台直接取 ORT 看板：登录（必要时用保存的密码重登）→ 打开目标看板 → 取数 → 认表头还原成行
+        /// → 先预览确认（和 Excel 导入一样的确认框）→ 走同一套入库/变动记录。
+        /// 取数条件（日期区间、MoType）与链接配置在「设置 → ORT看板取数」里维护。
+        /// </summary>
+        private async Task FetchBoardFromPortalAsync()
+        {
+            string label = LanguageService.Get("PreIssue_BoardTab");
+            if (FetchingBoard)
+            {
+                return;
+            }
+            FetchingBoard = true;
+            StatusMessage = "正在从公司平台取看板…";
+            try
+            {
+                OrtBoardFetchResult result = await _board.FetchAsync().ConfigureAwait(true);
+                if (!result.Success)
+                {
+                    StatusMessage = "从平台取数失败：" + result.Message;
+                    _ = MessageBox.Show(result.Message ?? "取数失败", label, MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                    return;
+                }
+                StatusMessage = $"已取到 {result.Rows.Count} 行（{result.QueryText}）";
+                PreIssueImportPreview preview = _board.Preview(result.Rows,
+                    $"平台取数（{result.Widget}）");
+                if (!ConfirmImport(preview, label))
+                {
+                    StatusMessage = "已取消导入（取到的数据没有写库）";
+                    return;
+                }
+                string source = $"平台取数 {DateTime.Now:yyyy-MM-dd HH:mm}";
+                RunImport(() => _board.Import(result.Rows, source), label);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "从平台取看板失败");
+                StatusMessage = "从平台取数失败：" + ex.Message;
+                _ = MessageBox.Show(ex.Message, label, MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                FetchingBoard = false;
+            }
         }
 
         private void ImportRequisition()

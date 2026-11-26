@@ -5,24 +5,19 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:lex="http://wpflocalizeextension.codeplex.com"
         mc:Ignorable="d"
-        Title="{lex:Loc WindowLogin_Title}" Height="320" MinWidth="360" Width="360" ResizeMode="NoResize"
+        Title="{lex:Loc WindowLogin_Title}" Height="440" MinWidth="400" Width="440" ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner">
 
     <Grid Margin="20">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="auto"/>
-            <ColumnDefinition/>
-        </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="auto"/>
-            <RowDefinition Height="auto"/>
-            <RowDefinition Height="auto"/>
             <RowDefinition/>
+            <RowDefinition Height="auto"/>
             <RowDefinition Height="auto"/>
         </Grid.RowDefinitions>
 
         <!--上次登录 cookie 提示（分行展示：提示在上、按钮在下，避免按钮溢出）-->
-        <Border x:Name="panel_cookie" Grid.ColumnSpan="2" Margin="0,0,0,8" Padding="8,6"
+        <Border x:Name="panel_cookie" Grid.Row="0" Margin="0,0,0,8" Padding="8,6"
                 Background="{DynamicResource ItemSelectedBrush}" BorderBrush="{DynamicResource PrimaryBrush}" BorderThickness="1" CornerRadius="3" Visibility="Collapsed">
             <StackPanel>
                 <TextBlock x:Name="txt_cookieHint" TextWrapping="Wrap" Margin="0,0,0,6"/>
@@ -30,23 +25,76 @@
             </StackPanel>
         </Border>
 
-        <Label Content="{lex:Loc WindowLogin_Label_Username}" Grid.Row="1" VerticalContentAlignment="Center"/>
-        <TextBox x:Name="txt_username" Grid.Row="1" Grid.Column="1" Margin="5" VerticalContentAlignment="Center"/>
+        <!--两种登录方式：公司平台账号（日常）/ 本地账号（超级管理员兜底）-->
+        <TabControl x:Name="tabs" Grid.Row="1" Margin="0,2,0,0" SelectionChanged="Tabs_SelectionChanged">
+            <TabItem Header="{lex:Loc WindowLogin_Tab_Portal}">
+                <Grid Margin="4,14,4,6">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="auto"/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="auto"/>
+                        <RowDefinition Height="auto"/>
+                        <RowDefinition Height="auto"/>
+                        <RowDefinition/>
+                    </Grid.RowDefinitions>
 
-        <Label Content="{lex:Loc WindowLogin_Label_Password}" Grid.Row="2" VerticalContentAlignment="Center"/>
-        <PasswordBox x:Name="txt_password" Grid.Row="2" Grid.Column="1" Margin="5" VerticalContentAlignment="Center"
-                     KeyDown="Txt_Password_KeyDown"/>
+                    <Label Content="{lex:Loc WindowLogin_Account}" Grid.Row="0" VerticalContentAlignment="Center"/>
+                    <TextBox x:Name="txt_account" Grid.Row="0" Grid.Column="1" Margin="5" VerticalContentAlignment="Center"
+                             ToolTip="{lex:Loc WindowLogin_AccountTip}"/>
 
-        <TextBlock Grid.Row="3" Grid.ColumnSpan="2" Text="{lex:Loc Login_NoPasswordHint}" TextWrapping="Wrap"
-                   Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Top"/>
-        <TextBlock x:Name="txt_error" Grid.Row="3" Grid.ColumnSpan="2" Foreground="{DynamicResource StatusErrorBrush}"
-                   TextWrapping="Wrap" VerticalAlignment="Bottom"/>
+                    <Label Content="{lex:Loc WindowLogin_Label_Password}" Grid.Row="1" VerticalContentAlignment="Center"/>
+                    <PasswordBox x:Name="txt_portalPassword" Grid.Row="1" Grid.Column="1" Margin="5" VerticalContentAlignment="Center"
+                                 KeyDown="Txt_Password_KeyDown"/>
 
-        <StackPanel Grid.Row="4" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right">
-            <Button Content="{lex:Loc WindowLogin_Button_Login}" Width="90" Click="Btn_Login_Click" IsDefault="True"/>
-            <Button Content="{lex:Loc Login_GuestButton}" Width="90" Margin="10,0,0,0" Click="Btn_Guest_Click"
-                    ToolTip="{lex:Loc Login_GuestButtonHint}"/>
-            <Button Content="{lex:Loc Login_ExitButton}" Width="90" Margin="10,0,0,0" Click="Btn_Cancel_Click" IsCancel="True"/>
-        </StackPanel>
+                    <Label x:Name="lbl_savedAccounts" Content="{lex:Loc WindowLogin_SavedAccounts}" Grid.Row="2" VerticalContentAlignment="Center"/>
+                    <ComboBox x:Name="cb_savedAccounts" Grid.Row="2" Grid.Column="1" Margin="5" VerticalContentAlignment="Center"
+                              DisplayMemberPath="DisplayName" SelectionChanged="Cb_SavedAccounts_SelectionChanged"
+                              ToolTip="{lex:Loc WindowLogin_SavedAccountsTip}"/>
+
+                    <TextBlock Grid.Row="3" Grid.ColumnSpan="2" Text="{lex:Loc WindowLogin_PortalHint}" TextWrapping="Wrap"
+                               Margin="2,10,2,0" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Top"/>
+                </Grid>
+            </TabItem>
+
+            <TabItem Header="{lex:Loc WindowLogin_Tab_Local}" x:Name="tab_local">
+                <Grid Margin="4,14,4,6">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="auto"/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="auto"/>
+                        <RowDefinition Height="auto"/>
+                        <RowDefinition/>
+                    </Grid.RowDefinitions>
+
+                    <Label Content="{lex:Loc WindowLogin_Label_Username}" Grid.Row="0" VerticalContentAlignment="Center"/>
+                    <TextBox x:Name="txt_username" Grid.Row="0" Grid.Column="1" Margin="5" VerticalContentAlignment="Center"/>
+
+                    <Label Content="{lex:Loc WindowLogin_Label_Password}" Grid.Row="1" VerticalContentAlignment="Center"/>
+                    <PasswordBox x:Name="txt_password" Grid.Row="1" Grid.Column="1" Margin="5" VerticalContentAlignment="Center"
+                                 KeyDown="Txt_Password_KeyDown"/>
+
+                    <TextBlock Grid.Row="2" Grid.ColumnSpan="2" Text="{lex:Loc WindowLogin_LocalHint}" TextWrapping="Wrap"
+                               Margin="2,10,2,0" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Top"/>
+                </Grid>
+            </TabItem>
+        </TabControl>
+
+        <TextBlock x:Name="txt_error" Grid.Row="2" Foreground="{DynamicResource StatusErrorBrush}"
+                   TextWrapping="Wrap" Margin="0,6,0,4" MinHeight="18"/>
+
+        <Grid Grid.Row="3">
+            <TextBlock x:Name="txt_busy" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"
+                       Visibility="Collapsed"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button x:Name="btn_login" Content="{lex:Loc WindowLogin_Button_Login}" Width="90" Click="Btn_Login_Click" IsDefault="True"/>
+                <Button Content="{lex:Loc Login_GuestButton}" Width="90" Margin="10,0,0,0" Click="Btn_Guest_Click"
+                        ToolTip="{lex:Loc Login_GuestButtonHint}"/>
+                <Button Content="{lex:Loc Login_ExitButton}" Width="90" Margin="10,0,0,0" Click="Btn_Cancel_Click" IsCancel="True"/>
+            </StackPanel>
+        </Grid>
     </Grid>
 </Window>

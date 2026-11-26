@@ -127,6 +127,53 @@ namespace ORT一键报告.Services
         }
 
         /// <summary>
+        /// 平台账号登录成功后由 <see cref="PortalAccountService"/> 调用：
+        /// 直接以该程序账号建立登录态（不再校验本地密码——平台已经验证过本人了），
+        /// 并把平台密码存进本机登录 cookie，供「继续上次登录」使用。
+        /// </summary>
+        public bool SignInPortalUser(long userId, string platformPassword)
+        {
+            try
+            {
+                User user = _db.FreeSql.Select<User>().Where(u => u.Id == userId).First();
+                if (user == null || !user.IsActive)
+                {
+                    return false;
+                }
+                CurrentUser = user;
+                CurrentRoles = LoadRoles(user.Id);
+                PasswordlessLogin = false;
+                _logger.Info($"用户登录（公司平台）: {user.Username}（角色: {string.Join(",", CurrentRoles)}）");
+                if (!string.IsNullOrEmpty(platformPassword))
+                {
+                    SaveLoginCookie(user.Username, platformPassword);
+                }
+                AuthChanged?.Invoke();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "平台账号登录失败");
+                return false;
+            }
+        }
+
+        /// <summary>按主键取用户（平台账号同步用）</summary>
+        public User FindUser(long userId) => userId <= 0
+            ? null
+            : _db.FreeSql.Select<User>().Where(u => u.Id == userId).First();
+
+        /// <summary>读取某用户的身份列表</summary>
+        public List<UserRole> LoadRoles(long userId)
+            => _db.FreeSql.Select<UserRoleRow>()
+                .Where(r => r.UserId == userId)
+                .ToList()
+                .Select(r => Enum.TryParse<UserRole>(r.Role, out UserRole role) ? role : (UserRole?)null)
+                .Where(r => r.HasValue)
+                .Select(r => r.Value)
+                .ToList();
+
+        /// <summary>
         /// 登出，回到游客身份；同时完全清除本地登录 cookie
         /// </summary>
         public void Logout()

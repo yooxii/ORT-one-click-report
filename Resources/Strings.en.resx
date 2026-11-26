@@ -3855,4 +3855,307 @@ This cannot be restored directly but is logged; prefer Undo import if you only p
   <data name="Plans_View_TabDragHint" xml:space="preserve">
     <value>Drag a tab to reorder it, or drag it out of the tab strip to float it in its own window (double-click also floats)</value>
   </data>
+  <data name="WindowLogin_Tab_Portal" xml:space="preserve">
+    <value>Company account</value>
+  </data>
+  <data name="WindowLogin_Tab_Local" xml:space="preserve">
+    <value>Local account</value>
+  </data>
+  <data name="WindowLogin_Account" xml:space="preserve">
+    <value>Account (employee ID)</value>
+  </data>
+  <data name="WindowLogin_AccountTip" xml:space="preserve">
+    <value>Company EIP portal account, usually your Windows/employee ID, e.g. 22400616</value>
+  </data>
+  <data name="WindowLogin_SavedAccounts" xml:space="preserve">
+    <value>Saved accounts</value>
+  </data>
+  <data name="WindowLogin_SavedAccountsTip" xml:space="preserve">
+    <value>Pick an account that logged in before: its password is kept on this PC (DPAPI)</value>
+  </data>
+  <data name="WindowLogin_PortalHint" xml:space="preserve">
+    <value>Sign in with your company account: the portal verifies it, the returned name becomes your user name here, and your role group comes from the department account list.</value>
+  </data>
+  <data name="WindowLogin_LocalHint" xml:space="preserve">
+    <value>Local account is for the built-in super administrator (admin) or PCs without portal accounts; an account without a password can sign in with its user name only.</value>
+  </data>
+  <data name="WindowLogin_EnterAccount" xml:space="preserve">
+    <value>Enter your company account (employee ID)</value>
+  </data>
+  <data name="WindowLogin_EnterPassword" xml:space="preserve">
+    <value>Enter your company password</value>
+  </data>
+  <data name="WindowLogin_SigningIn" xml:space="preserve">
+    <value>Signing in to the company portal…</value>
+  </data>
+  <data name="WindowLogin_LoginFailed" xml:space="preserve">
+    <value>Sign-in failed, please try again later</value>
+  </data>
+  <data name="PreIssue_FetchBoard" xml:space="preserve">
+    <value>Fetch from portal</value>
+  </data>
+  <data name="PreIssue_FetchBoardTip" xml:space="preserve">
+    <value>Sign in with your company account and pull the latest ORT board from the report site (date and type are set in Settings - ORT board)</value>
+  </data>
+  <data name="Ort_Settings_Title" xml:space="preserve">
+    <value>ORT board data</value>
+  </data>
+  <data name="Ort_Settings_Hint" xml:space="preserve">
+    <value>Configuration for pulling the ORT board: Basic has only the date range and type, Advanced holds the target report and every link (defaults are the currently working set).</value>
+  </data>
+  <data name="Ort_Settings_Basic" xml:space="preserve">
+    <value>Basic</value>
+  </data>
+  <data name="Ort_Settings_Advanced" xml:space="preserve">
+    <value>Advanced</value>
+  </data>
+  <data name="Ort_Settings_WholeMonth" xml:space="preserve">
+    <value>Whole current month (1st to today)</value>
+  </data>
+  <data name="Ort_Settings_WholeMonthHint" xml:space="preserve">
+    <value>The range follows the current month; clear it to choose dates yourself (e.g. re-pull last month)</value>
+  </data>
+  <data name="Ort_Settings_DateFrom" xml:space="preserve">
+    <value>From</value>
+  </data>
+  <data name="Ort_Settings_DateTo" xml:space="preserve">
+    <value>To</value>
+  </data>
+  <data name="Ort_Settings_MoType" xml:space="preserve">
+    <value>Type (MoType)</value>
+  </data>
+  <data name="Ort_Settings_MoTypeHint" xml:space="preserve">
+    <value>Matches the Type control on the report; leave empty for all</value>
+  </data>
+  <data name="Ort_Settings_BasicHint" xml:space="preserve">
+    <value>Fetch from portal uses these dates and type, then asks you to confirm before importing.</value>
+  </data>
+  <data name="Ort_Settings_TargetGroup" xml:space="preserve">
+    <value>Target report (the two values discovered at run time)</value>
+  </data>
+  <data name="Ort_Settings_TargetHint" xml:space="preserve">
+    <value>These two belong to a specific board, so they have no default: TargetEntryId can be extracted from a board link, WidgetHint can be read back from the server.</value>
+  </data>
+  <data name="Ort_Settings_EntryId" xml:space="preserve">
+    <value>TargetEntryId</value>
+  </data>
+  <data name="Ort_Settings_ExtractEntry" xml:space="preserve">
+    <value>Extract from link</value>
+  </data>
+  <data name="Ort_Settings_ExtractEntryPrompt" xml:space="preserve">
+    <value>Paste the board URL from the browser (like …/decision/v10/entry/access/xxxx-xxxx…)</value>
+  </data>
+  <data name="Ort_Settings_ExtractEntryFailed" xml:space="preserve">
+    <value>No entryId found in that text; make sure it is a board entry URL</value>
+  </data>
+  <data name="Ort_Settings_Widget" xml:space="preserve">
+    <value>WidgetHint</value>
+  </data>
+  <data name="Ort_Settings_ProbeWidget" xml:space="preserve">
+    <value>Read widgets</value>
+  </data>
+  <data name="Ort_Settings_ProbeWidgetTip" xml:space="preserve">
+    <value>Open this board with the current account and read its widget list back, then pick the data widget</value>
+  </data>
+  <data name="Ort_Settings_ProbeHint" xml:space="preserve">
+    <value>An empty WidgetHint falls back to the first non-title widget; widget names are case sensitive, so prefer Read widgets.</value>
+  </data>
+  <data name="Ort_Settings_ProbePickHint" xml:space="preserve">
+    <value>Pick the data widget (usually lower case, like report2)</value>
+  </data>
+  <data name="Ort_Settings_ProbeFailed" xml:space="preserve">
+    <value>Failed to read the widget list</value>
+  </data>
+  <data name="Ort_Settings_EntryRequired" xml:space="preserve">
+    <value>Fill in or extract TargetEntryId first</value>
+  </data>
+  <data name="Ort_Settings_LinkGroup" xml:space="preserve">
+    <value>Link configuration</value>
+  </data>
+  <data name="Ort_Settings_LoginUrl" xml:space="preserve">
+    <value>Portal login API</value>
+  </data>
+  <data name="Ort_Settings_RedirectUrl" xml:space="preserve">
+    <value>Report ticket API</value>
+  </data>
+  <data name="Ort_Settings_ReportHost" xml:space="preserve">
+    <value>Report site</value>
+  </data>
+  <data name="Ort_Settings_PortalOrigin" xml:space="preserve">
+    <value>Portal Origin</value>
+  </data>
+  <data name="Ort_Settings_EntryPath" xml:space="preserve">
+    <value>Board entry path</value>
+  </data>
+  <data name="Ort_Settings_ConfigPath" xml:space="preserve">
+    <value>Widget list path</value>
+  </data>
+  <data name="Ort_Settings_LoadPath" xml:space="preserve">
+    <value>Data path</value>
+  </data>
+  <data name="Ort_Settings_RequestGroup" xml:space="preserve">
+    <value>Headers and parameters</value>
+  </data>
+  <data name="Ort_Settings_DeviceUuid" xml:space="preserve">
+    <value>Device UUID</value>
+  </data>
+  <data name="Ort_Settings_DeviceUuidHint" xml:space="preserve">
+    <value>Empty means generate once and remember it; normally no change needed</value>
+  </data>
+  <data name="Ort_Settings_UserRegion" xml:space="preserve">
+    <value>User-Region</value>
+  </data>
+  <data name="Ort_Settings_UserLanguage" xml:space="preserve">
+    <value>User-Language</value>
+  </data>
+  <data name="Ort_Settings_Width" xml:space="preserve">
+    <value>Board width</value>
+  </data>
+  <data name="Ort_Settings_Height" xml:space="preserve">
+    <value>Board height</value>
+  </data>
+  <data name="Ort_Settings_RefererHeight" xml:space="preserve">
+    <value>Referer height</value>
+  </data>
+  <data name="Ort_Settings_PageIndex" xml:space="preserve">
+    <value>Page index</value>
+  </data>
+  <data name="Ort_Settings_DateKeys" xml:space="preserve">
+    <value>Date parameter keys (from / to)</value>
+  </data>
+  <data name="Ort_Settings_DateToKeyHint" xml:space="preserve">
+    <value>Right one is the end date key</value>
+  </data>
+  <data name="Ort_Settings_MoTypeKey" xml:space="preserve">
+    <value>Type parameter key</value>
+  </data>
+  <data name="Ort_Settings_LabelKeys" xml:space="preserve">
+    <value>Label keys (date / type)</value>
+  </data>
+  <data name="Ort_Settings_LabelKeysHint" xml:space="preserve">
+    <value>Separate the two keys with /</value>
+  </data>
+  <data name="Ort_Settings_LabelTexts" xml:space="preserve">
+    <value>Label texts (date / type)</value>
+  </data>
+  <data name="Ort_Settings_LabelTextsHint" xml:space="preserve">
+    <value>Separate the two texts with / and keep them equal to the report labels (e.g. 日期: / 类型:)</value>
+  </data>
+  <data name="Ort_Settings_RestoreDefaults" xml:space="preserve">
+    <value>Restore defaults</value>
+  </data>
+  <data name="Ort_Settings_RestoreDefaultsTip" xml:space="preserve">
+    <value>Reset every link to its default; TargetEntryId and WidgetHint are cleared because they are discovered at run time</value>
+  </data>
+  <data name="Ort_Settings_RestoreHint" xml:space="preserve">
+    <value>Restore defaults touches Advanced only; the date range and type stay</value>
+  </data>
+  <data name="Ort_Settings_RestoreConfirm" xml:space="preserve">
+    <value>Restore all link settings to their defaults and clear TargetEntryId / WidgetHint?
+
+(The date range and type in Basic are not affected)</value>
+  </data>
+  <data name="Ort_Settings_RestoreDone" xml:space="preserve">
+    <value>Defaults restored; click Save to apply</value>
+  </data>
+  <data name="Ort_Settings_UrlInvalidFormat" xml:space="preserve">
+    <value>"{0}" is not a valid URL (include https://)</value>
+  </data>
+  <data name="Portal_Settings_Title" xml:space="preserve">
+    <value>Sign-in and identity</value>
+  </data>
+  <data name="Portal_Settings_Hint" xml:space="preserve">
+    <value>Sign-in now uses company portal accounts: a same-department account is enrolled on first login, other departments are refused, and the local super administrator still uses a local password.</value>
+  </data>
+  <data name="Portal_Settings_AutoEnroll" xml:space="preserve">
+    <value>Auto-enroll same-department accounts on first login</value>
+  </data>
+  <data name="Portal_Settings_AutoEnrollHint" xml:space="preserve">
+    <value>When cleared, only accounts listed under Department accounts can sign in (stricter)</value>
+  </data>
+  <data name="Portal_Settings_Regions" xml:space="preserve">
+    <value>Department regions</value>
+  </data>
+  <data name="Portal_Settings_RegionsHint" xml:space="preserve">
+    <value>Regions returned by the portal, comma separated, e.g. DG</value>
+  </data>
+  <data name="Portal_Settings_DefaultRole" xml:space="preserve">
+    <value>Enrolled role</value>
+  </data>
+  <data name="Portal_Settings_EmailDomain" xml:space="preserve">
+    <value>Mail domain</value>
+  </data>
+  <data name="Portal_Settings_EmailHint" xml:space="preserve">
+    <value>Mail account = employee ID + @domain, e.g. 22400616@acbel.com, used for notifications</value>
+  </data>
+  <data name="Portal_Settings_EmailRequired" xml:space="preserve">
+    <value>Mail domain cannot be empty</value>
+  </data>
+  <data name="Portal_Settings_ManageAccounts" xml:space="preserve">
+    <value>Manage department accounts…</value>
+  </data>
+  <data name="Portal_Settings_ManageHint" xml:space="preserve">
+    <value>Register who belongs to this department and with which role; a disabled account can no longer sign in</value>
+  </data>
+  <data name="PortalAccounts_Title" xml:space="preserve">
+    <value>Department accounts</value>
+  </data>
+  <data name="PortalAccounts_Hint" xml:space="preserve">
+    <value>This list decides which company accounts belong to this department and which role they get. Same-department accounts are enrolled on first login; you can also register them in advance here.</value>
+  </data>
+  <data name="PortalAccounts_Account" xml:space="preserve">
+    <value>Account (employee ID)</value>
+  </data>
+  <data name="PortalAccounts_Name" xml:space="preserve">
+    <value>Name (read back on login)</value>
+  </data>
+  <data name="PortalAccounts_Role" xml:space="preserve">
+    <value>Role group</value>
+  </data>
+  <data name="PortalAccounts_Email" xml:space="preserve">
+    <value>Mail</value>
+  </data>
+  <data name="PortalAccounts_Active" xml:space="preserve">
+    <value>Active</value>
+  </data>
+  <data name="PortalAccounts_LastLogin" xml:space="preserve">
+    <value>Last sign-in</value>
+  </data>
+  <data name="PortalAccounts_Add" xml:space="preserve">
+    <value>Add</value>
+  </data>
+  <data name="PortalAccounts_Delete" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="PortalAccounts_Close" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="PortalAccounts_Empty" xml:space="preserve">
+    <value>No account registered yet: same-department accounts are enrolled on first login, or click Add here</value>
+  </data>
+  <data name="PortalAccounts_CountFormat" xml:space="preserve">
+    <value>{0} account(s) registered</value>
+  </data>
+  <data name="PortalAccounts_DeleteConfirm" xml:space="preserve">
+    <value>Delete these account registrations?
+
+{0}
+
+(History in this program is kept; only portal sign-in is blocked)</value>
+  </data>
+  <data name="PortalAccounts_DeletedFormat" xml:space="preserve">
+    <value>Removed {0} registration(s); click Save to apply</value>
+  </data>
+  <data name="PortalAccounts_AccountRequired" xml:space="preserve">
+    <value>Account (employee ID) cannot be empty</value>
+  </data>
+  <data name="PortalAccounts_DuplicateFormat" xml:space="preserve">
+    <value>Account {0} appears twice</value>
+  </data>
+  <data name="PortalAccounts_SelectFirst" xml:space="preserve">
+    <value>Select the rows to delete first</value>
+  </data>
+  <data name="PortalAccounts_Saved" xml:space="preserve">
+    <value>Saved</value>
+  </data>
 </root>

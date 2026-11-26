@@ -119,6 +119,11 @@ namespace ORT一键报告
                 services.AddSingleton<ReportService>();
                 services.AddSingleton<DatabaseService>();
                 services.AddSingleton<AuthService>();
+                // 公司平台（EIP）账号登录 + ORT 看板取数：登录态与会话、取数设置、报表取数
+                services.AddSingleton<FineReportClient>();
+                services.AddSingleton<OrtBoardSettingsService>();
+                services.AddSingleton<PortalAccountService>();
+                services.AddSingleton<OrtBoardService>();
                 services.AddSingleton<IPermissionService, PermissionService>();
                 services.AddSingleton<PlanExcelService>();
                 services.AddSingleton<AdminService>();

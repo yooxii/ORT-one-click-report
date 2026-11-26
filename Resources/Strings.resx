@@ -3855,4 +3855,307 @@
   <data name="Plans_View_TabDragHint" xml:space="preserve">
     <value>拖动页签可改变顺序，拖出页签条松手即可浮出成独立窗口（双击也能浮出）</value>
   </data>
+  <data name="WindowLogin_Tab_Portal" xml:space="preserve">
+    <value>公司平台账号</value>
+  </data>
+  <data name="WindowLogin_Tab_Local" xml:space="preserve">
+    <value>本地账号</value>
+  </data>
+  <data name="WindowLogin_Account" xml:space="preserve">
+    <value>账号（工号）</value>
+  </data>
+  <data name="WindowLogin_AccountTip" xml:space="preserve">
+    <value>公司平台（EIP 门户）账号，通常就是开机工号，例如 22400616</value>
+  </data>
+  <data name="WindowLogin_SavedAccounts" xml:space="preserve">
+    <value>已保存的账号</value>
+  </data>
+  <data name="WindowLogin_SavedAccountsTip" xml:space="preserve">
+    <value>选一个以前登录成功的账号：密码按本机（DPAPI）保存，选中后可直接登录</value>
+  </data>
+  <data name="WindowLogin_PortalHint" xml:space="preserve">
+    <value>用公司平台账号登录：平台验证通过即代表本人，登录成功后会取回你的姓名作为本程序用户名，身份组按部门账号登记走。</value>
+  </data>
+  <data name="WindowLogin_LocalHint" xml:space="preserve">
+    <value>本地账号用于超级管理员（admin）或还没开通平台账号的电脑；账号没设过密码时可以只填用户名登录。</value>
+  </data>
+  <data name="WindowLogin_EnterAccount" xml:space="preserve">
+    <value>请输入公司平台账号（工号）</value>
+  </data>
+  <data name="WindowLogin_EnterPassword" xml:space="preserve">
+    <value>请输入公司平台密码</value>
+  </data>
+  <data name="WindowLogin_SigningIn" xml:space="preserve">
+    <value>正在登录公司平台…</value>
+  </data>
+  <data name="WindowLogin_LoginFailed" xml:space="preserve">
+    <value>登录失败，请稍后再试</value>
+  </data>
+  <data name="PreIssue_FetchBoard" xml:space="preserve">
+    <value>从平台获取</value>
+  </data>
+  <data name="PreIssue_FetchBoardTip" xml:space="preserve">
+    <value>直接用公司账号登录，从帆软看板取回最新的 ORT 看板数据（日期与类型在「设置 → ORT看板取数」里设）</value>
+  </data>
+  <data name="Ort_Settings_Title" xml:space="preserve">
+    <value>ORT看板取数</value>
+  </data>
+  <data name="Ort_Settings_Hint" xml:space="preserve">
+    <value>每天取 ORT 看板用这里的配置：普通选项只放日期和类型，高级选项放目标报表与全部链接（默认值就是当前跑通的那一套），改错了可以「恢复默认」。</value>
+  </data>
+  <data name="Ort_Settings_Basic" xml:space="preserve">
+    <value>普通</value>
+  </data>
+  <data name="Ort_Settings_Advanced" xml:space="preserve">
+    <value>高级</value>
+  </data>
+  <data name="Ort_Settings_WholeMonth" xml:space="preserve">
+    <value>整月取数（本月 1 日 ~ 今天）</value>
+  </data>
+  <data name="Ort_Settings_WholeMonthHint" xml:space="preserve">
+    <value>勾上后日期区间自动跟随当前月份；取消勾选可以自己选区间（例如补取上个月）</value>
+  </data>
+  <data name="Ort_Settings_DateFrom" xml:space="preserve">
+    <value>开始日期</value>
+  </data>
+  <data name="Ort_Settings_DateTo" xml:space="preserve">
+    <value>结束日期</value>
+  </data>
+  <data name="Ort_Settings_MoType" xml:space="preserve">
+    <value>类型（MoType）</value>
+  </data>
+  <data name="Ort_Settings_MoTypeHint" xml:space="preserve">
+    <value>对应报表上的「类型:」控件；留空表示全部</value>
+  </data>
+  <data name="Ort_Settings_BasicHint" xml:space="preserve">
+    <value>「从平台获取」按这里的日期与类型取数，取到后还会先让你确认再入库。</value>
+  </data>
+  <data name="Ort_Settings_TargetGroup" xml:space="preserve">
+    <value>目标报表（需要动态获取的两项）</value>
+  </data>
+  <data name="Ort_Settings_TargetHint" xml:space="preserve">
+    <value>这两项跟具体看板绑定、不同看板不同值，所以不设默认值：TargetEntryId 可以粘贴看板链接自动提取，WidgetHint 可以点「读取控件列表」从服务器读回来再挑。</value>
+  </data>
+  <data name="Ort_Settings_EntryId" xml:space="preserve">
+    <value>TargetEntryId</value>
+  </data>
+  <data name="Ort_Settings_ExtractEntry" xml:space="preserve">
+    <value>从链接提取</value>
+  </data>
+  <data name="Ort_Settings_ExtractEntryPrompt" xml:space="preserve">
+    <value>粘贴浏览器里这张看板的地址（形如 …/decision/v10/entry/access/xxxx-xxxx…）</value>
+  </data>
+  <data name="Ort_Settings_ExtractEntryFailed" xml:space="preserve">
+    <value>这段文本里没找到 entryId，请确认粘贴的是看板入口地址</value>
+  </data>
+  <data name="Ort_Settings_Widget" xml:space="preserve">
+    <value>WidgetHint</value>
+  </data>
+  <data name="Ort_Settings_ProbeWidget" xml:space="preserve">
+    <value>读取控件列表</value>
+  </data>
+  <data name="Ort_Settings_ProbeWidgetTip" xml:space="preserve">
+    <value>用当前账号打开这张看板，把服务器返回的控件清单读回来，直接挑数据控件</value>
+  </data>
+  <data name="Ort_Settings_ProbeHint" xml:space="preserve">
+    <value>WidgetHint 留空会自动选 config 里第一个不是标题的控件；帆软控件名大小写敏感，建议用「读取控件列表」拿真实名字。</value>
+  </data>
+  <data name="Ort_Settings_ProbePickHint" xml:space="preserve">
+    <value>选一个数据控件（通常是小写的 report2 这类）</value>
+  </data>
+  <data name="Ort_Settings_ProbeFailed" xml:space="preserve">
+    <value>读取控件列表失败</value>
+  </data>
+  <data name="Ort_Settings_EntryRequired" xml:space="preserve">
+    <value>请先填写或提取 TargetEntryId</value>
+  </data>
+  <data name="Ort_Settings_LinkGroup" xml:space="preserve">
+    <value>链接配置</value>
+  </data>
+  <data name="Ort_Settings_LoginUrl" xml:space="preserve">
+    <value>门户登录接口</value>
+  </data>
+  <data name="Ort_Settings_RedirectUrl" xml:space="preserve">
+    <value>换报表票据接口</value>
+  </data>
+  <data name="Ort_Settings_ReportHost" xml:space="preserve">
+    <value>报表站点</value>
+  </data>
+  <data name="Ort_Settings_PortalOrigin" xml:space="preserve">
+    <value>门户 Origin</value>
+  </data>
+  <data name="Ort_Settings_EntryPath" xml:space="preserve">
+    <value>看板入口路径</value>
+  </data>
+  <data name="Ort_Settings_ConfigPath" xml:space="preserve">
+    <value>控件清单路径</value>
+  </data>
+  <data name="Ort_Settings_LoadPath" xml:space="preserve">
+    <value>取数路径</value>
+  </data>
+  <data name="Ort_Settings_RequestGroup" xml:space="preserve">
+    <value>请求头与参数</value>
+  </data>
+  <data name="Ort_Settings_DeviceUuid" xml:space="preserve">
+    <value>设备指纹</value>
+  </data>
+  <data name="Ort_Settings_DeviceUuidHint" xml:space="preserve">
+    <value>留空表示首次登录自动生成并记住，一般不用改</value>
+  </data>
+  <data name="Ort_Settings_UserRegion" xml:space="preserve">
+    <value>User-Region</value>
+  </data>
+  <data name="Ort_Settings_UserLanguage" xml:space="preserve">
+    <value>User-Language</value>
+  </data>
+  <data name="Ort_Settings_Width" xml:space="preserve">
+    <value>看板宽度</value>
+  </data>
+  <data name="Ort_Settings_Height" xml:space="preserve">
+    <value>看板高度</value>
+  </data>
+  <data name="Ort_Settings_RefererHeight" xml:space="preserve">
+    <value>取数 Referer 高度</value>
+  </data>
+  <data name="Ort_Settings_PageIndex" xml:space="preserve">
+    <value>页码</value>
+  </data>
+  <data name="Ort_Settings_DateKeys" xml:space="preserve">
+    <value>日期参数键（起 / 止）</value>
+  </data>
+  <data name="Ort_Settings_DateToKeyHint" xml:space="preserve">
+    <value>右侧是结束日期参数键</value>
+  </data>
+  <data name="Ort_Settings_MoTypeKey" xml:space="preserve">
+    <value>类型参数键</value>
+  </data>
+  <data name="Ort_Settings_LabelKeys" xml:space="preserve">
+    <value>标签键（日期 / 类型）</value>
+  </data>
+  <data name="Ort_Settings_LabelKeysHint" xml:space="preserve">
+    <value>两个键用 / 分隔</value>
+  </data>
+  <data name="Ort_Settings_LabelTexts" xml:space="preserve">
+    <value>标签文本（日期 / 类型）</value>
+  </data>
+  <data name="Ort_Settings_LabelTextsHint" xml:space="preserve">
+    <value>两个文本用 / 分隔，要与报表控件标签一致（如 日期: / 类型:）</value>
+  </data>
+  <data name="Ort_Settings_RestoreDefaults" xml:space="preserve">
+    <value>恢复默认</value>
+  </data>
+  <data name="Ort_Settings_RestoreDefaultsTip" xml:space="preserve">
+    <value>链接配置回到默认的一套；TargetEntryId / WidgetHint 会一并清空（它们要动态获取）</value>
+  </data>
+  <data name="Ort_Settings_RestoreHint" xml:space="preserve">
+    <value>恢复默认只影响高级选项，普通选项（日期 / 类型）不动</value>
+  </data>
+  <data name="Ort_Settings_RestoreConfirm" xml:space="preserve">
+    <value>把所有链接配置恢复成默认值，并清空 TargetEntryId / WidgetHint？
+
+（普通选项里的日期和类型不受影响）</value>
+  </data>
+  <data name="Ort_Settings_RestoreDone" xml:space="preserve">
+    <value>已恢复默认，点「保存」后生效</value>
+  </data>
+  <data name="Ort_Settings_UrlInvalidFormat" xml:space="preserve">
+    <value>「{0}」不是有效的网址，请检查（要带 https://）</value>
+  </data>
+  <data name="Portal_Settings_Title" xml:space="preserve">
+    <value>登录与身份</value>
+  </data>
+  <data name="Portal_Settings_Hint" xml:space="preserve">
+    <value>登录已改用公司平台账号验证：同部门账号首次登录自动登记并给出身份，非本部门账号拒绝登录；本地超级管理员（admin）仍用本地密码登录。</value>
+  </data>
+  <data name="Portal_Settings_AutoEnroll" xml:space="preserve">
+    <value>同部门账号首次登录自动登记身份</value>
+  </data>
+  <data name="Portal_Settings_AutoEnrollHint" xml:space="preserve">
+    <value>不勾选时，只有「部门账号」里登记过的账号能登录（更严格）</value>
+  </data>
+  <data name="Portal_Settings_Regions" xml:space="preserve">
+    <value>部门区域</value>
+  </data>
+  <data name="Portal_Settings_RegionsHint" xml:space="preserve">
+    <value>平台登录返回的区域，多个用逗号分隔，例如 DG</value>
+  </data>
+  <data name="Portal_Settings_DefaultRole" xml:space="preserve">
+    <value>自动登记的身份</value>
+  </data>
+  <data name="Portal_Settings_EmailDomain" xml:space="preserve">
+    <value>邮箱域</value>
+  </data>
+  <data name="Portal_Settings_EmailHint" xml:space="preserve">
+    <value>邮箱账号 = 登录工号 + @域，例如 22400616@acbel.com，供邮件通知使用</value>
+  </data>
+  <data name="Portal_Settings_EmailRequired" xml:space="preserve">
+    <value>邮箱域不能为空</value>
+  </data>
+  <data name="Portal_Settings_ManageAccounts" xml:space="preserve">
+    <value>管理部门账号…</value>
+  </data>
+  <data name="Portal_Settings_ManageHint" xml:space="preserve">
+    <value>在这里登记谁属于本部门、各自是什么身份组；停用后该账号就不能再登录</value>
+  </data>
+  <data name="PortalAccounts_Title" xml:space="preserve">
+    <value>部门账号</value>
+  </data>
+  <data name="PortalAccounts_Hint" xml:space="preserve">
+    <value>这张表决定「哪些公司平台账号属于本部门、进来算哪个身份」。同部门账号首次登录会自动加进来；也可以在这里直接登记（先登记、对方还没登录过也可以）。</value>
+  </data>
+  <data name="PortalAccounts_Account" xml:space="preserve">
+    <value>账号（工号）</value>
+  </data>
+  <data name="PortalAccounts_Name" xml:space="preserve">
+    <value>姓名（登录后自动取回）</value>
+  </data>
+  <data name="PortalAccounts_Role" xml:space="preserve">
+    <value>身份组</value>
+  </data>
+  <data name="PortalAccounts_Email" xml:space="preserve">
+    <value>邮箱</value>
+  </data>
+  <data name="PortalAccounts_Active" xml:space="preserve">
+    <value>启用</value>
+  </data>
+  <data name="PortalAccounts_LastLogin" xml:space="preserve">
+    <value>最近登录</value>
+  </data>
+  <data name="PortalAccounts_Add" xml:space="preserve">
+    <value>新增</value>
+  </data>
+  <data name="PortalAccounts_Delete" xml:space="preserve">
+    <value>删除</value>
+  </data>
+  <data name="PortalAccounts_Close" xml:space="preserve">
+    <value>关闭</value>
+  </data>
+  <data name="PortalAccounts_Empty" xml:space="preserve">
+    <value>还没有登记任何账号：同部门账号首次登录会自动加进来，也可以点「新增」手工登记</value>
+  </data>
+  <data name="PortalAccounts_CountFormat" xml:space="preserve">
+    <value>已登记 {0} 个账号</value>
+  </data>
+  <data name="PortalAccounts_DeleteConfirm" xml:space="preserve">
+    <value>要删除这些账号登记吗？
+
+{0}
+
+（程序内的历史数据不会删除，只是以后不能再从平台登录进来）</value>
+  </data>
+  <data name="PortalAccounts_DeletedFormat" xml:space="preserve">
+    <value>已删除 {0} 条登记，点「保存」后生效</value>
+  </data>
+  <data name="PortalAccounts_AccountRequired" xml:space="preserve">
+    <value>账号（工号）不能为空</value>
+  </data>
+  <data name="PortalAccounts_DuplicateFormat" xml:space="preserve">
+    <value>账号 {0} 重复了</value>
+  </data>
+  <data name="PortalAccounts_SelectFirst" xml:space="preserve">
+    <value>请先选中要删除的行</value>
+  </data>
+  <data name="PortalAccounts_Saved" xml:space="preserve">
+    <value>已保存</value>
+  </data>
 </root>

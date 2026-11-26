@@ -159,6 +159,10 @@
                     <WrapPanel Grid.Row="0" Margin="0,2,0,4" Orientation="Horizontal">
                         <Button Style="{StaticResource PreButton}" Content="{lex:Loc PreIssue_Import}" FontWeight="Bold"
                                 Command="{Binding ImportBoardCommand}" ToolTip="{lex:Loc PreIssue_ImportBoardTip}"/>
+                        <!--一键从公司平台取看板（登录 → 帆软看板 → 取数 → 入库），省掉每天手工导出 Excel-->
+                        <Button Style="{StaticResource PreButton}" Content="{Binding FetchBoardButtonText}"
+                                Command="{Binding FetchBoardCommand}" FontWeight="Bold"
+                                ToolTip="{lex:Loc PreIssue_FetchBoardTip}"/>
                         <Button Style="{StaticResource PreButton}" Content="{lex:Loc PreIssue_Undo}"
                                 Command="{Binding UndoImportCommand}" CommandParameter="board"
                                 ToolTip="{lex:Loc PreIssue_UndoTip}"/>

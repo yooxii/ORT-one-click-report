@@ -512,6 +512,30 @@ namespace ORT一键报告.Services
             return result;
         }
 
+        /// <summary>
+        /// 用已经解析好的看板行入库（「从平台获取」用）：
+        /// 与 Excel 导入完全同一条入库/比对/变动记录逻辑，只是数据来源换成了平台接口。
+        /// </summary>
+        public PreIssueImportResult ImportBoardRows(IList<OrtBoardRow> rows, string sourceName)
+        {
+            PreIssueImportResult result = new()
+            {
+                File = string.IsNullOrWhiteSpace(sourceName) ? "平台取数" : sourceName,
+                Source = PreIssueCodes.SourceBoard
+            };
+            if (rows == null || rows.Count == 0)
+            {
+                result.Success = false;
+                result.Message = "没有读到看板数据";
+                return result;
+            }
+            foreach (IGrouping<string, OrtBoardRow> group in rows.GroupBy(a => a.Month))
+            {
+                ImportBoardMonth(group.Key, group.ToList(), result);
+            }
+            return result;
+        }
+
         /// <summary>导入前预览（不写库）：文件对不对、哪些月份、多少行、会覆盖多少旧数据</summary>
         public PreIssueImportPreview PreviewBoard(string filePath)
         {
