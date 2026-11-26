@@ -1,4 +1,5 @@
 using NUnit.Framework;
+using ORT一键报告.Models;
 using ORT一键报告.Utils;
 
 namespace ORT一键报告.Tests
@@ -140,5 +141,52 @@ namespace ORT一键报告.Tests
         [TestCase("自定义写法")]
         public void 认不出的状况_归类为空(string raw)
             => Assert.That(PlanStatusKind.Of(raw), Is.Empty);
+
+        /* ------------------ 行快照与"未提交修改"比对 ------------------ */
+
+        [Test]
+        public void 行快照_克隆后值一致且互不影响()
+        {
+            Plan source = new()
+            {
+                Id = 7,
+                JobNo = "RT2611001",
+                ModelName = "FSL020-00AG",
+                Status = "Ongoing",
+                StartDate = new System.DateTime(2026, 11, 1)
+            };
+            Plan clone = RowSnapshot.Clone(source);
+
+            Assert.That(clone, Is.Not.SameAs(source));
+            Assert.That(RowSnapshot.AreSame(source, clone, RowSnapshot.TrackedProperties(typeof(Plan))), Is.True);
+
+            clone.JobNo = "RT2611002";
+            Assert.That(source.JobNo, Is.EqualTo("RT2611001"), "改克隆不该影响原对象");
+        }
+
+        [Test]
+        public void 行比对_改过任一会存字段就算不同()
+        {
+            System.Reflection.PropertyInfo[] tracked = RowSnapshot.TrackedProperties(typeof(Plan));
+            Plan before = RowSnapshot.Clone(new Plan { Id = 1, JobNo = "RT2611001", Status = "Ongoing" });
+            Plan after = RowSnapshot.Clone(before);
+
+            Assert.That(RowSnapshot.AreSame(before, after, tracked), Is.True);
+            after.Status = "Closed";
+            Assert.That(RowSnapshot.AreSame(before, after, tracked), Is.False);
+            after.Status = "Ongoing";
+            Assert.That(RowSnapshot.AreSame(before, after, tracked), Is.True, "改回原值就不算修改");
+        }
+
+        [Test]
+        public void 行比对_忽略不参与存储的显示字段()
+        {
+            System.Reflection.PropertyInfo[] tracked = RowSnapshot.TrackedProperties(typeof(Plan));
+            Plan plan = new() { Id = 1, JobNo = "RT2611001" };
+            Plan clone = RowSnapshot.Clone(plan);
+
+            clone.HasReportLink = !plan.HasReportLink;
+            Assert.That(RowSnapshot.AreSame(plan, clone, tracked), Is.True, "HasReportLink 是界面标记，不算修改");
+        }
     }
 }

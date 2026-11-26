@@ -209,18 +209,98 @@ namespace ORT一键报告.Plans.ViewModels
         private readonly Dictionary<long, Requisition> _pendingReqDeleted = [];
 
         /// <summary>
-        /// 是否有未提交的修改
+        /// 改过的存量行 Id（行对象一改属性就登记；判断"有没有未提交修改"不再逐行做 JSON 对比，
+        /// 避免每次单元格编辑、每次命令重新查询都把整张表序列化一遍——那是卡顿的主因）。
+        /// </summary>
+        private readonly HashSet<long> _planDirty = [];
+        private readonly HashSet<long> _reqDirty = [];
+
+        /// <summary>列头筛选候选项缓存（列 → 数据版本 + 去重值）；数据一变版本号就加一，缓存自然失效</summary>
+        private readonly Dictionary<(bool, string), (int Version, List<string> Values)> _columnValuesCache = [];
+        private int _columnValueVersion;
+
+        /// <summary>参与快照对比的属性（排除 [JsonIgnore] 的显示用属性，如 HasReportLink）</summary>
+        private static readonly System.Reflection.PropertyInfo[] PlanTracked = RowSnapshot.TrackedProperties(typeof(Plan));
+        private static readonly System.Reflection.PropertyInfo[] ReqTracked = RowSnapshot.TrackedProperties(typeof(Requisition));
+        private static readonly HashSet<string> PlanTrackedNames = new(PlanTracked.Select(p => p.Name), StringComparer.Ordinal);
+
+        /// <summary>
+        /// 行对象有改动就记到脏集合里（只登记参与存储/快照的属性）
+        /// </summary>
+        private void OnPlanRowChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (sender is not Plan plan || e.PropertyName == null || !PlanTrackedNames.Contains(e.PropertyName))
+            {
+                return;
+            }
+            _columnValueVersion++;
+            if (plan.Id > 0)
+            {
+                _planDirty.Add(plan.Id);
+            }
+        }
+
+        private void OnReqRowChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (sender is not Requisition req || e.PropertyName == null)
+            {
+                return;
+            }
+            _columnValueVersion++;
+            if (req.Id > 0)
+            {
+                _reqDirty.Add(req.Id);
+            }
+        }
+
+        private void AttachPlanRow(Plan plan)
+        {
+            if (plan != null)
+            {
+                plan.PropertyChanged += OnPlanRowChanged;
+            }
+        }
+
+        private void AttachReqRow(Requisition req)
+        {
+            if (req != null)
+            {
+                req.PropertyChanged += OnReqRowChanged;
+            }
+        }
+
+        /// <summary>行快照（对象本身都是字符串/日期等值类型字段，浅拷贝即等于深拷贝）</summary>
+        private static T CloneRow<T>(T source) where T : class => RowSnapshot.Clone(source);
+
+        /// <summary>按属性逐项比较两行是否一致（比 JSON 序列化比对快一个数量级）</summary>
+        private static bool SameValues(object a, object b, System.Reflection.PropertyInfo[] properties)
+            => RowSnapshot.AreSame(a, b, properties);
+
+        /// <summary>
+        /// 是否有未提交的修改（脏集合为空时直接判否，不再扫全表）
         /// </summary>
         public bool HasPendingChanges => _pendingPlanAdded.Count > 0 || _pendingReqAdded.Count > 0
             || _pendingPlanDeleted.Count > 0 || _pendingReqDeleted.Count > 0
-            || DetectPlanModifiedCount() > 0 || DetectReqModifiedCount() > 0;
+            || (_planDirty.Count > 0 && DetectPlanModifiedCount() > 0)
+            || (_reqDirty.Count > 0 && DetectReqModifiedCount() > 0);
 
         /// <summary>
-        /// 未提交修改的描述（状态栏显示）
+        /// 未提交修改的描述（状态栏显示）：修改条数只算一次
         /// </summary>
-        public string PendingText => HasPendingChanges
-            ? string.Format(LanguageService.Get("Plans_PendingFormat"), _pendingReqAdded.Count, _pendingPlanAdded.Count, DetectPlanModifiedCount() + DetectReqModifiedCount(), _pendingPlanDeleted.Count + _pendingReqDeleted.Count)
-            : LanguageService.Get("Plans_NoPending");
+        public string PendingText
+        {
+            get
+            {
+                int modified = DetectPlanModifiedCount() + DetectReqModifiedCount();
+                bool any = modified > 0
+                    || _pendingPlanAdded.Count > 0 || _pendingReqAdded.Count > 0
+                    || _pendingPlanDeleted.Count > 0 || _pendingReqDeleted.Count > 0;
+                return any
+                    ? string.Format(LanguageService.Get("Plans_PendingFormat"), _pendingReqAdded.Count, _pendingPlanAdded.Count,
+                        modified, _pendingPlanDeleted.Count + _pendingReqDeleted.Count)
+                    : LanguageService.Get("Plans_NoPending");
+            }
+        }
 
         /// <summary>
         /// 领退记录已暂存（新增窗口保存后触发）：界面据此把这条「待提交」的记录滚动到可见处选中，
@@ -285,6 +365,10 @@ namespace ORT一键报告.Plans.ViewModels
 
         private readonly DispatcherTimer _searchTimer;
         private string _searchKeyword;
+
+        /// <summary>去掉首尾空白的搜索关键字（逐行筛选时直接用，省掉每行一次 Trim）</summary>
+        private string _searchKeywordTrimmed = "";
+
         /// <summary>
         /// 搜索关键字（防抖）：一个搜索框同时过滤领退表与计划表
         /// </summary>
@@ -295,6 +379,7 @@ namespace ORT一键报告.Plans.ViewModels
             {
                 if (SetProperty(ref _searchKeyword, value))
                 {
+                    _searchKeywordTrimmed = (value ?? "").Trim();
                     _searchTimer.Stop();
                     _searchTimer.Start();
                 }
@@ -481,15 +566,27 @@ namespace ORT一键报告.Plans.ViewModels
         /// <summary>
         /// 某列的去重取值（按表格显示文本，日期为 yyyy/M/d；数字/日期按数值排序）。
         /// 空/null 单元格也作为一项返回（值为 ""，界面显示为「（空白）」，排在最前），便于筛选空值行。
+        /// 结果按数据版本缓存：同一列反复右键不会每次都把整张表反射一遍。
         /// </summary>
         public List<string> GetColumnValues(bool planTable, string property)
         {
+            if (string.IsNullOrWhiteSpace(property))
+            {
+                return [];
+            }
+            (bool, string) key = (planTable, property);
+            if (_columnValuesCache.TryGetValue(key, out (int Version, List<string> Values) cached)
+                && cached.Version == _columnValueVersion)
+            {
+                return [.. cached.Values];
+            }
             IEnumerable<object> rows = planTable ? Plans.Cast<object>() : Requisitions.Cast<object>();
             List<string> values = rows.Select(r => FormatValue(r, property))
                 .Distinct(StringComparer.Ordinal)
                 .ToList();
             values.Sort(CompareValues);
-            return values;
+            _columnValuesCache[key] = (_columnValueVersion, values);
+            return [.. values];
         }
 
         /// <summary>
@@ -638,6 +735,10 @@ namespace ORT一键报告.Plans.ViewModels
             RequisitionsView.Filter = RequisitionFilter;
             RequisitionsView.SortDescriptions.Add(new SortDescription(nameof(Requisition.Id), ListSortDirection.Descending));
 
+            // 行集合变化（新增行/删除行）也要让列头筛选候选项缓存失效
+            Plans.CollectionChanged += (s, e) => _columnValueVersion++;
+            Requisitions.CollectionChanged += (s, e) => _columnValueVersion++;
+
             _searchTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
             _searchTimer.Tick += (s, e) =>
             {
@@ -781,22 +882,26 @@ namespace ORT一键报告.Plans.ViewModels
                 List<Plan> plans = _db.FreeSql.Select<Plan>().OrderByDescending(p => p.Id).ToList();
                 Plans.Clear();
                 _planOriginals.Clear();
+                _planDirty.Clear();
                 _pendingPlanAdded.Clear();
                 _pendingPlanDeleted.Clear();
                 foreach (Plan plan in plans)
                 {
+                    AttachPlanRow(plan);
                     Plans.Add(plan);
                 }
 
                 List<Requisition> reqs = _db.FreeSql.Select<Requisition>().OrderByDescending(r => r.Id).ToList();
                 Requisitions.Clear();
                 _reqOriginals.Clear();
+                _reqDirty.Clear();
                 _pendingReqAdded.Clear();
                 _pendingReqDeleted.Clear();
                 foreach (Requisition req in reqs)
                 {
+                    AttachReqRow(req);
                     Requisitions.Add(req);
-                    _reqOriginals[req.Id] = CloneReq(req);
+                    _reqOriginals[req.Id] = CloneRow(req);
                 }
 
                 LoadCatalogs();
@@ -808,7 +913,7 @@ namespace ORT一键报告.Plans.ViewModels
                 // 计划表快照在报告标记（HasReportLink 已 JsonIgnore，不参与对比）加载后捕获
                 foreach (Plan plan in Plans)
                 {
-                    _planOriginals[plan.Id] = ClonePlan(plan);
+                    _planOriginals[plan.Id] = CloneRow(plan);
                 }
                 SafeRefresh(PlansView);
                 SafeRefresh(RequisitionsView);
@@ -1016,14 +1121,16 @@ namespace ORT一键报告.Plans.ViewModels
                 Plans.Clear();
                 foreach (Plan plan in plans)
                 {
+                    AttachPlanRow(plan);
                     Plans.Add(plan);
                 }
                 UpdatePlanReportFlags();
                 // 计划表快照同步更新（扫描写回的 ReportStatus 不算用户未提交修改）
                 _planOriginals.Clear();
+                _planDirty.Clear();
                 foreach (Plan plan in Plans)
                 {
-                    _planOriginals[plan.Id] = ClonePlan(plan);
+                    _planOriginals[plan.Id] = CloneRow(plan);
                 }
                 SafeRefresh(PlansView);
                 UpdateStatusCounts();
@@ -1052,12 +1159,6 @@ namespace ORT一键报告.Plans.ViewModels
             }
         }
 
-        private static Plan ClonePlan(Plan source)
-            => JsonConvert.DeserializeObject<Plan>(JsonConvert.SerializeObject(source));
-
-        private static Requisition CloneReq(Requisition source)
-            => JsonConvert.DeserializeObject<Requisition>(JsonConvert.SerializeObject(source));
-
         /// <summary>
         /// 列筛选是否通过（值以表格显示文本比较；Selected 为空表示该列不过滤）
         /// </summary>
@@ -1082,11 +1183,11 @@ namespace ORT一键报告.Plans.ViewModels
             {
                 return false;
             }
-            if (string.IsNullOrWhiteSpace(SearchKeyword))
+            string kw = _searchKeywordTrimmed;
+            if (kw.Length == 0)
             {
                 return true;
             }
-            string kw = SearchKeyword.Trim();
             return Contains(plan.ModelName, kw) || Contains(plan.JobNo, kw)
                 || Contains(plan.TestItem, kw) || Contains(plan.Owner, kw)
                 || Contains(plan.Product, kw) || Contains(plan.Customer, kw);
@@ -1106,11 +1207,11 @@ namespace ORT一键报告.Plans.ViewModels
             {
                 return false;
             }
-            if (string.IsNullOrWhiteSpace(SearchKeyword))
+            string kw = _searchKeywordTrimmed;
+            if (kw.Length == 0)
             {
                 return true;
             }
-            string kw = SearchKeyword.Trim();
             return Contains(req.ModelName, kw) || Contains(req.RequisitionNo, kw)
                 || Contains(req.WorkOrder, kw) || Contains(req.ReturnRtOrder, kw)
                 || Contains(req.SN, kw) || Contains(req.StockInNo, kw)
@@ -1247,8 +1348,36 @@ namespace ORT一键报告.Plans.ViewModels
         {
             OnPropertyChanged(nameof(HasPendingChanges));
             OnPropertyChanged(nameof(PendingText));
-            UpdateStatusCounts();
+            ScheduleStatusCounts();
             CommandManager.InvalidateRequerySuggested();
+        }
+
+        private bool _statusCountsScheduled;
+
+        /// <summary>
+        /// 状况统计延后到下一轮消息循环合并计算：连续编辑多格只算一次，不阻塞输入
+        /// </summary>
+        private void ScheduleStatusCounts()
+        {
+            if (_statusCountsScheduled)
+            {
+                return;
+            }
+            _statusCountsScheduled = true;
+            Dispatcher dispatcher = Application.Current?.Dispatcher ?? Dispatcher.CurrentDispatcher;
+            dispatcher.BeginInvoke(new Action(() =>
+            {
+                _statusCountsScheduled = false;
+                try
+                {
+                    UpdateStatusCounts();
+                }
+                catch (Exception ex)
+                {
+                    // 窗口正在关闭/视图已失效时忽略：统计只是界面提示，不能因此抛异常
+                    LogManager.GetCurrentClassLogger().Warn($"延后刷新状况统计失败: {ex.Message}");
+                }
+            }), DispatcherPriority.Background);
         }
 
         /* ###############################  增删改  ################################ */
@@ -1523,6 +1652,7 @@ namespace ORT一键报告.Plans.ViewModels
             else
             {
                 _pendingReqDeleted[req.Id] = req;
+                _reqDirty.Remove(req.Id);
                 Requisitions.Remove(req);
             }
         }
@@ -1581,6 +1711,7 @@ namespace ORT一键报告.Plans.ViewModels
             else
             {
                 _pendingPlanDeleted[plan.Id] = plan;
+                _planDirty.Remove(plan.Id);
                 Plans.Remove(plan);
             }
         }
@@ -1617,11 +1748,16 @@ namespace ORT一键报告.Plans.ViewModels
         /// </summary>
         private int DetectPlanModifiedCount()
         {
+            if (_planDirty.Count == 0)
+            {
+                return 0;
+            }
             int count = 0;
             foreach (Plan plan in Plans.Where(p => p.Id > 0))
             {
-                if (_planOriginals.TryGetValue(plan.Id, out Plan before)
-                    && JsonConvert.SerializeObject(plan) != JsonConvert.SerializeObject(before))
+                if (_planDirty.Contains(plan.Id)
+                    && _planOriginals.TryGetValue(plan.Id, out Plan before)
+                    && !SameValues(plan, before, PlanTracked))
                 {
                     count++;
                 }
@@ -1634,11 +1770,16 @@ namespace ORT一键报告.Plans.ViewModels
         /// </summary>
         private int DetectReqModifiedCount()
         {
+            if (_reqDirty.Count == 0)
+            {
+                return 0;
+            }
             int count = 0;
             foreach (Requisition req in Requisitions.Where(r => r.Id > 0))
             {
-                if (_reqOriginals.TryGetValue(req.Id, out Requisition before)
-                    && JsonConvert.SerializeObject(req) != JsonConvert.SerializeObject(before))
+                if (_reqDirty.Contains(req.Id)
+                    && _reqOriginals.TryGetValue(req.Id, out Requisition before)
+                    && !SameValues(req, before, ReqTracked))
                 {
                     count++;
                 }
@@ -1699,8 +1840,9 @@ namespace ORT一键报告.Plans.ViewModels
                 }
                 foreach (Plan plan in Plans.Where(p => p.Id > 0))
                 {
+                    if (!_planDirty.Contains(plan.Id)) continue;
                     if (!_planOriginals.TryGetValue(plan.Id, out Plan before)) continue;
-                    if (JsonConvert.SerializeObject(plan) == JsonConvert.SerializeObject(before)) continue;
+                    if (SameValues(plan, before, PlanTracked)) continue;
                     plan.UpdatedBy = op;
                     plan.UpdatedAt = DateTime.Now;
                     _db.FreeSql.Update<Plan>().SetSource(plan).Where(p => p.Id == plan.Id).ExecuteAffrows();
@@ -1726,8 +1868,9 @@ namespace ORT一键报告.Plans.ViewModels
                 }
                 foreach (Requisition req in Requisitions.Where(r => r.Id > 0))
                 {
+                    if (!_reqDirty.Contains(req.Id)) continue;
                     if (!_reqOriginals.TryGetValue(req.Id, out Requisition before)) continue;
-                    if (JsonConvert.SerializeObject(req) == JsonConvert.SerializeObject(before)) continue;
+                    if (SameValues(req, before, ReqTracked)) continue;
                     req.UpdatedBy = op;
                     req.UpdatedAt = DateTime.Now;
                     _db.FreeSql.Update<Requisition>().SetSource(req).Where(r => r.Id == req.Id).ExecuteAffrows();

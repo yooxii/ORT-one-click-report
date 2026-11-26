@@ -251,7 +251,8 @@
                           CellEditEnding="Dg_Requisitions_CellEditEnding"
                           CurrentCellChanged="Dg_Requisitions_CurrentCellChanged"
                           PreviewMouseRightButtonDown="Dg_Requisitions_PreviewMouseRightButtonDown"
-                          VirtualizingPanel.IsVirtualizing="True">
+                          VirtualizingPanel.IsVirtualizing="True"
+                          VirtualizingPanel.VirtualizationMode="Recycling">
                     <DataGrid.ContextMenu>
                         <ContextMenu>
                             <MenuItem Header="{lex:Loc Plans_EditDialog}" Click="Menu_EditRequisition_Click"/>
@@ -416,7 +417,8 @@
                           CellEditEnding="Dg_Plans_CellEditEnding"
                           CurrentCellChanged="Dg_Plans_CurrentCellChanged"
                           PreviewMouseRightButtonDown="Dg_Plans_PreviewMouseRightButtonDown"
-                          VirtualizingPanel.IsVirtualizing="True">
+                          VirtualizingPanel.IsVirtualizing="True"
+                          VirtualizingPanel.VirtualizationMode="Recycling">
                     <DataGrid.ContextMenu>
                         <ContextMenu>
                             <MenuItem Header="{lex:Loc Plans_EditDialog}" Click="Menu_EditPlan_Click"/>
