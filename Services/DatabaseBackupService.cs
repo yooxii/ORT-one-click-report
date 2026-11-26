@@ -66,7 +66,12 @@ namespace ORT一键报告.Services
         public const string DefaultFolderName = "Backups";
 
         private const string LockFileName = ".ort_backup.lock";
-        private const string RestoreTempName = ".ort_restore_tmp.db";
+
+        /// <summary>
+        /// 还原时的工作库文件前缀：还原在**本地临时目录**里展开（备份目录可能在网络共享上，
+        /// 直接在网络盘上回放增量既慢又容易中途断线），展开完再复制回正式库位置。
+        /// </summary>
+        private const string RestoreTempPrefix = "ort_restore_";
 
         /// <summary>锁文件超过这个时长视为上次备份异常中断留下的残留</summary>
         private static readonly TimeSpan LockStaleAfter = TimeSpan.FromMinutes(30);
@@ -157,14 +162,36 @@ namespace ORT一键报告.Services
         {
             string fileName = DatabaseBackupDiffer.FullFileName(DateTime.Now);
             string target = Path.Combine(root, fileName);
-            string temp = target + ".tmp";
+            // 备份目录可能配在网络共享上：SQLite 直接往共享写容易报错/写一半，
+            // 所以网络目录先在本地临时目录生成一致快照、再整份拷过去（先 .tmp 再改名）；
+            // 本地目录就直接 VACUUM INTO 到 .tmp，少一次整库拷贝。
+            bool networkTarget = FolderUtil.IsNetworkPath(root);
+            string localTemp = Path.Combine(Path.GetTempPath(), "ort_backup_" + Guid.NewGuid().ToString("N") + ".db");
+            string staging = target + ".tmp";
+            string snapshotPath = networkTarget ? localTemp : staging;
             try
             {
-                TryDelete(temp);
-                // VACUUM INTO：由 SQLite 自己生成一份一致的库文件（WAL 里的内容也会被合并进去）
-                _db.FreeSql.Ado.ExecuteNonQuery($"VACUUM INTO '{EscapeSql(target)}'");
+                TryDelete(staging);
+                TryDelete(localTemp);
+                if (!TryCreateSnapshot(snapshotPath, out string snapshotError))
+                {
+                    return DatabaseBackupResult.Fail($"全量备份失败：无法生成数据库快照（{snapshotError}）");
+                }
+                if (networkTarget)
+                {
+                    File.Copy(localTemp, staging, overwrite: true);
+                }
                 TryDelete(target);
-                File.Move(temp, target);
+                try
+                {
+                    File.Move(staging, target);
+                }
+                catch (IOException)
+                {
+                    // 网络共享上偶发改名失败（或被占用）：退回复制，保证备份能落地
+                    File.Copy(staging, target, overwrite: true);
+                    TryDelete(staging);
+                }
                 DatabaseBackupEntry entry = Describe(target, DatabaseBackupKind.Full);
                 entry.Machine = Environment.MachineName;
                 entry.User = Environment.UserName;
@@ -174,10 +201,42 @@ namespace ORT一键报告.Services
             }
             catch (Exception ex)
             {
-                TryDelete(temp);
                 _logger.Error(ex, $"全量备份失败（{reason}）");
                 return DatabaseBackupResult.Fail($"全量备份失败：{ex.Message}");
             }
+            finally
+            {
+                TryDelete(localTemp);
+                TryDelete(staging);
+            }
+        }
+
+        /// <summary>
+        /// 在本地临时目录生成一份一致的数据库快照：
+        /// 优先 VACUUM INTO（WAL 里的内容会一并并进去、写一半不会污染正式库），
+        /// 不支持或失败时退回「复制库文件 + 转回滚日志」（与数据文件夹放网络共享时的处理一致）。
+        /// </summary>
+        private bool TryCreateSnapshot(string localPath, out string error)
+        {
+            error = null;
+            try
+            {
+                TryDelete(localPath);
+                _db.FreeSql.Ado.ExecuteNonQuery($"VACUUM INTO '{EscapeSql(localPath)}'");
+                if (File.Exists(localPath) && new FileInfo(localPath).Length > 0)
+                {
+                    return true;
+                }
+                error = "VACUUM INTO 没有生成文件";
+                return false;
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn($"VACUUM INTO 生成快照失败（{ex.Message}），改用复制库文件的方式");
+                error = ex.Message;
+                TryDelete(localPath);
+            }
+            return SqliteFileUtil.CreateRollbackCopy(_db.DbPath, localPath, out error);
         }
 
         /// <summary>
@@ -396,10 +455,12 @@ namespace ORT一键报告.Services
                 return DatabaseBackupResult.Fail($"还原已取消：还原前的保底备份没有成功（{safety.Message}）");
             }
 
-            string temp = Path.Combine(root, RestoreTempName);
+            // 工作库放在本地临时目录：备份文件可能在网络共享上，读过来在本地展开最快也最稳
+            string temp = Path.Combine(Path.GetTempPath(),
+                RestoreTempPrefix + Guid.NewGuid().ToString("N") + ".db");
             try
             {
-                // 2) 基准全量复制成临时文件，再依次回放增量
+                // 2) 基准全量复制成本地临时文件，再依次回放增量
                 progress?.Report("正在展开快照…");
                 TryDelete(temp);
                 ClearSqlitePools();
