@@ -1,4 +1,4 @@
-<Window x:Class="ORT一键报告.Plans.Views.WindowSim44Return"
+﻿<Window x:Class="ORT一键报告.Plans.Views.WindowSim44Return"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -34,6 +34,8 @@
                                Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <Button x:Name="btn_settings" Content="{lex:Loc Sim44_Settings_Open}" Padding="10,3" Margin="0,0,8,0"
+                            Click="Btn_Settings_Click"/>
                     <Button x:Name="btn_selftest" Content="{lex:Loc Sim44_SelfTest}" Padding="10,3" Margin="0,0,8,0"
                             Click="Btn_SelfTest_Click"/>
                     <Button x:Name="btn_login" Content="{lex:Loc Sim44_Login}" Padding="10,3" Margin="0,0,8,0"

@@ -1,8 +1,9 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.OracleClient;
 using System.Globalization;
+using System.Linq;
 using System.Text;
 
 namespace MesBridge
@@ -121,6 +122,71 @@ namespace MesBridge
             return log;
         }
 
+        /// <summary>
+        /// 查数据字典，弄清「表到底在哪、这个账号能不能看见」：
+        /// ALL_TABLES 里有 = 有权限看到；ALL_SYNONYMS 里有 = 通过同义词访问。
+        /// 只用于排障，失败也不影响主流程。
+        /// </summary>
+        internal List<string> ProbeTables(string[] logicalTables)
+        {
+            List<string> lines = new List<string>();
+            if (!IsOpen || logicalTables == null || logicalTables.Length == 0)
+            {
+                return lines;
+            }
+            string list = string.Join(",", logicalTables
+                .Select(t => "'" + (t ?? "").Replace("'", "''") + "'")
+                .ToArray());
+            try
+            {
+                using (OracleCommand cmd = _conn.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT OWNER || '.' || TABLE_NAME FROM ALL_TABLES WHERE TABLE_NAME IN ("
+                                      + list + ") ORDER BY TABLE_NAME";
+                    List<string> found = new List<string>();
+                    using (OracleDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            found.Add(Convert.ToString(reader.GetValue(0)));
+                        }
+                    }
+                    lines.Add(found.Count == 0
+                        ? "数据字典里看不到名为 " + string.Join("/", logicalTables) + " 的表（没有权限或表名不对）"
+                        : "数据字典里能看到：" + string.Join("、", found.ToArray()));
+                }
+            }
+            catch (Exception ex)
+            {
+                lines.Add("查 ALL_TABLES 失败：" + ex.Message);
+            }
+            try
+            {
+                using (OracleCommand cmd = _conn.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT OWNER || '.' || SYNONYM_NAME || ' → ' || TABLE_OWNER || '.' || TABLE_NAME"
+                                      + " FROM ALL_SYNONYMS WHERE SYNONYM_NAME IN (" + list + ") ORDER BY SYNONYM_NAME";
+                    List<string> found = new List<string>();
+                    using (OracleDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            found.Add(Convert.ToString(reader.GetValue(0)));
+                        }
+                    }
+                    if (found.Count > 0)
+                    {
+                        lines.Add("同义词：" + string.Join("、", found.ToArray()));
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                lines.Add("查 ALL_SYNONYMS 失败：" + ex.Message);
+            }
+            return lines;
+        }
+
         /// <summary>逻辑表名 → 实际可访问的表名</summary>
         private string Table(string logical)
         {
@@ -173,7 +239,7 @@ namespace MesBridge
             string tried = string.Join("、", Candidates(logical).ToArray());
             return "登录成功，但账号（" + _user + "）访问不到 " + logical + " 表（试过：" + tried + "）。"
                  + "请让 DBA 给这个账号 SELECT/INSERT/UPDATE 权限或建同名同义词；"
-                 + "也可以在本机设置里把表名改成实际写法（例如 APITECH." + logical + "）。";
+                 + "也可以点登录框里的「连接设置」把表名改成实际写法（例如 APITECH." + logical + "）。";
         }
 
         /// <summary>按条件查询 SIM44</summary>

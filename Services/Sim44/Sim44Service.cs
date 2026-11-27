@@ -242,6 +242,13 @@ namespace ORT一键报告.Services.Sim44
             return _client.LookupLine(text, limit);
         }
 
+        /// <summary>查数据字典，用于「连接设置」里的探测按钮</summary>
+        public System.Collections.Generic.List<string> Probe()
+        {
+            RequireLogin();
+            return _client.Probe();
+        }
+
         /// <summary>
         /// 改数据库密码：成功后会同步更新本机保存的密码与「上次改密日期」（90 天重新计时）。
         /// </summary>

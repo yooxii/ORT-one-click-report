@@ -144,6 +144,14 @@ namespace ORT一键报告.Plans.Views
             SetStatus(LanguageService.Get("Sim44_Status_LoggedOut"));
         }
 
+        /// <summary>连接设置：数据源/表名/桥接路径（改完要重新登录）</summary>
+        private void Btn_Settings_Click(object sender, RoutedEventArgs e)
+        {
+            WindowSim44Settings settings = new() { Owner = this };
+            settings.ShowDialog();
+            SetStatus(LanguageService.Get("Sim44_Settings_ReloginHint"));
+        }
+
         private async void Btn_SelfTest_Click(object sender, RoutedEventArgs e)
         {
             btn_selftest.IsEnabled = false;

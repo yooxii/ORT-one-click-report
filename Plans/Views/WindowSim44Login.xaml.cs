@@ -125,6 +125,15 @@ namespace ORT一键报告.Plans.Views
             }
         }
 
+        /// <summary>改连接设置（数据源/表名/桥接路径）：登录成功却报表不存在时从这里改</summary>
+        private void Btn_Settings_Click(object sender, RoutedEventArgs e)
+        {
+            WindowSim44Settings settings = new() { Owner = this };
+            settings.ShowDialog();
+            // 设置改过之后提示重新登录，避免用旧设置继续试
+            ShowMessage(LanguageService.Get("Sim44_Settings_ReloginHint"));
+        }
+
         private void Btn_Cancel_Click(object sender, RoutedEventArgs e) => DialogResult = false;
     }
 }

@@ -4596,4 +4596,52 @@ Continue importing anyway? (fixing the backup folder first is recommended)</valu
   <data name="Sim44_Msg_NeedDba" xml:space="preserve">
     <value>If only privileges are missing, send this to the DBA: GRANT SELECT, INSERT, UPDATE ON APITECH.SIM44 TO &lt;your account&gt;;</value>
   </data>
+  <data name="Sim44_Settings_Title" xml:space="preserve">
+    <value>MES connection settings</value>
+  </data>
+  <data name="Sim44_Settings_Intro" xml:space="preserve">
+    <value>If sign-in works but the table is reported missing, try a different table name: SIM44 first, then schema.SIM44 (e.g. APITECH.SIM44). Sign in again after changing.</value>
+  </data>
+  <data name="Sim44_Settings_DataSource" xml:space="preserve">
+    <value>Database alias</value>
+  </data>
+  <data name="Sim44_Settings_Table" xml:space="preserve">
+    <value>Work order table</value>
+  </data>
+  <data name="Sim44_Settings_TableHint" xml:space="preserve">
+    <value>May include the schema, e.g. SIM44 or APITECH.SIM44</value>
+  </data>
+  <data name="Sim44_Settings_BridgePath" xml:space="preserve">
+    <value>Bridge program path</value>
+  </data>
+  <data name="Sim44_Settings_BridgeHint" xml:space="preserve">
+    <value>Leave empty to use MesBridge\MesBridge.exe under the program folder</value>
+  </data>
+  <data name="Sim44_Settings_Probe" xml:space="preserve">
+    <value>Probe tables</value>
+  </data>
+  <data name="Sim44_Settings_ProbeHint" xml:space="preserve">
+    <value>Sign in to the database before probing</value>
+  </data>
+  <data name="Sim44_Settings_ProbeUserFormat" xml:space="preserve">
+    <value>Signed in as {0}; click “Probe tables” to see where the three tables live.</value>
+  </data>
+  <data name="Sim44_Settings_ProbeEmpty" xml:space="preserve">
+    <value>The data dictionary returned nothing.</value>
+  </data>
+  <data name="Sim44_Settings_Open" xml:space="preserve">
+    <value>Connection…</value>
+  </data>
+  <data name="Sim44_Settings_Saved" xml:space="preserve">
+    <value>Connection settings saved</value>
+  </data>
+  <data name="Sim44_Settings_ReloginHint" xml:space="preserve">
+    <value>Settings changed — sign in to the database again to apply.</value>
+  </data>
+  <data name="Sim44_Settings_MsgDataSourceRequired" xml:space="preserve">
+    <value>Database alias is required</value>
+  </data>
+  <data name="Sim44_Settings_MsgTableRequired" xml:space="preserve">
+    <value>Work order table is required</value>
+  </data>
 </root>

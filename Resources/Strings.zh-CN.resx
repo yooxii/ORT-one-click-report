@@ -4209,4 +4209,52 @@
   <data name="Sim44_Msg_NeedDba" xml:space="preserve">
     <value>如果只是读取要权限，请把下面这句发给 DBA：GRANT SELECT, INSERT, UPDATE ON APITECH.SIM44 TO 你的账号;</value>
   </data>
+  <data name="Sim44_Settings_Title" xml:space="preserve">
+    <value>MES 连接设置</value>
+  </data>
+  <data name="Sim44_Settings_Intro" xml:space="preserve">
+    <value>登录成功却提示“表不存在”时，通常换个表名写法就能通：先试 SIM44，不行再试 库名.SIM44（例如 APITECH.SIM44）。改完重新登录生效。</value>
+  </data>
+  <data name="Sim44_Settings_DataSource" xml:space="preserve">
+    <value>数据库别名</value>
+  </data>
+  <data name="Sim44_Settings_Table" xml:space="preserve">
+    <value>工令表名</value>
+  </data>
+  <data name="Sim44_Settings_TableHint" xml:space="preserve">
+    <value>可带库名，例如 SIM44 或 APITECH.SIM44</value>
+  </data>
+  <data name="Sim44_Settings_BridgePath" xml:space="preserve">
+    <value>桥接程序路径</value>
+  </data>
+  <data name="Sim44_Settings_BridgeHint" xml:space="preserve">
+    <value>留空则用程序目录下的 MesBridge\MesBridge.exe</value>
+  </data>
+  <data name="Sim44_Settings_Probe" xml:space="preserve">
+    <value>探测表</value>
+  </data>
+  <data name="Sim44_Settings_ProbeHint" xml:space="preserve">
+    <value>探测需要先登录数据库</value>
+  </data>
+  <data name="Sim44_Settings_ProbeUserFormat" xml:space="preserve">
+    <value>当前登录账号：{0}，点「探测表」看三张表在哪个库、有没有同义词。</value>
+  </data>
+  <data name="Sim44_Settings_ProbeEmpty" xml:space="preserve">
+    <value>数据字典没有返回任何信息。</value>
+  </data>
+  <data name="Sim44_Settings_Open" xml:space="preserve">
+    <value>连接设置…</value>
+  </data>
+  <data name="Sim44_Settings_Saved" xml:space="preserve">
+    <value>连接设置已保存</value>
+  </data>
+  <data name="Sim44_Settings_ReloginHint" xml:space="preserve">
+    <value>设置已改，请重新登录数据库后再生效。</value>
+  </data>
+  <data name="Sim44_Settings_MsgDataSourceRequired" xml:space="preserve">
+    <value>数据库别名不能为空</value>
+  </data>
+  <data name="Sim44_Settings_MsgTableRequired" xml:space="preserve">
+    <value>工令表名不能为空</value>
+  </data>
 </root>

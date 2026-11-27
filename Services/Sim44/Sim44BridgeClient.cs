@@ -1,4 +1,4 @@
-using NLog;
+﻿using NLog;
 using Newtonsoft.Json.Linq;
 using ORT一键报告.Models;
 using System;
@@ -326,6 +326,24 @@ namespace ORT一键报告.Services.Sim44
             JObject reply = Send(new JObject { ["op"] = "lookupLine", ["text"] = text ?? "", ["limit"] = limit },
                 timeoutMs);
             return reply["rows"] as JArray ?? [];
+        }
+
+        /// <summary>
+        /// 查数据字典（表在哪、有没有同义词），用于排障。
+        /// 需要已登录。
+        /// </summary>
+        public System.Collections.Generic.List<string> Probe(int timeoutMs = 30000)
+        {
+            JObject reply = Send(new JObject { ["op"] = "probe" }, timeoutMs);
+            System.Collections.Generic.List<string> lines = new();
+            if (reply["lines"] is JArray items)
+            {
+                foreach (JToken item in items)
+                {
+                    lines.Add(item.ToString());
+                }
+            }
+            return lines;
         }
 
         /// <summary>改数据库密码</summary>

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data.OracleClient;
 using System.Globalization;
@@ -218,7 +218,14 @@ namespace MesBridge
                     }
                     catch (BridgeException ex)
                     {
-                        WriteError(ex.Code, ex.Message, repo.LastSql);
+                        // 表访问不到时顺带查一下数据字典，把「表在哪、有没有同义词」一并告诉用户
+                        string message = ex.Message;
+                        List<string> probe = repo.ProbeTables(new[] { "SIM44" });
+                        if (probe.Count > 0)
+                        {
+                            message += "｜数据字典：" + string.Join("；", probe);
+                        }
+                        WriteError(ex.Code, message, repo.LastSql);
                         return;
                     }
                     Write(new Dictionary<string, object>
@@ -227,6 +234,22 @@ namespace MesBridge
                         ["user"] = actualUser,
                         ["dataSource"] = dataSource,
                         ["tables"] = tables,
+                    });
+                    return;
+                }
+
+                case "probe":
+                {
+                    if (repo == null || !repo.IsOpen)
+                    {
+                        WriteError("nologin", "尚未登录数据库");
+                        return;
+                    }
+                    List<string> lines = repo.ProbeTables(new[] { "SIM44", "BMM04", "SIM11" });
+                    Write(new Dictionary<string, object>
+                    {
+                        ["ok"] = true,
+                        ["lines"] = lines,
                     });
                     return;
                 }
