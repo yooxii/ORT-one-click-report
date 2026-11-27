@@ -36,6 +36,12 @@ namespace ORT一键报告.Services
         /// <summary>fine_auth_token 过期时间（解析 JWT 的 exp，失败为 MinValue）</summary>
         public DateTime FineTokenExpiry { get; set; }
 
+        /// <summary>
+        /// 报表票据没拿到时的原因：登录只校验门户（eip.acbel.com），
+        /// 帆软站点维护/故障时票据会缺，登录仍然算成功，等取数时再把这条原因显给用户。
+        /// </summary>
+        public string ReportTicketError { get; set; }
+
         /// <summary>主区域</summary>
         public string Region => Regions.FirstOrDefault();
 
@@ -188,20 +194,35 @@ namespace ORT一键报告.Services
             }
             _logger.Info($"平台登录成功：{session.DisplayName}（区域 {string.Join(",", session.Regions)}）");
 
-            // ---- Step 2: 换取帆软 ssoToken 跳转地址 ----
-            string redirectUrl = await RequestSsoRedirectAsync(client, account.Trim(), accessToken, uuid, ep, ct)
-                .ConfigureAwait(false);
-            if (string.IsNullOrWhiteSpace(redirectUrl) || !redirectUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+            // ---- Step 2/3: 换帆软票据（只影响取数，不影响登录）----
+            // 登录身份只认门户（eip.acbel.com）：门户通过就代表本人。
+            // 帆软报表站点维护/故障时这里会失败——以前会把整次登录带崩，现在只在会话里记下原因，
+            // 等用户点「从平台取数」时再把「报表站点暂时不可用」讲清楚。
+            try
             {
-                throw new PortalAuthException(PortalLoginStatus.ServiceError,
-                    "换取报表票据失败：返回的不是跳转地址，" + Truncate(redirectUrl, 200));
-            }
+                string redirectUrl = await RequestSsoRedirectAsync(client, account.Trim(), accessToken, uuid, ep, ct)
+                    .ConfigureAwait(false);
+                if (string.IsNullOrWhiteSpace(redirectUrl) || !redirectUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new PortalAuthException(PortalLoginStatus.ServiceError,
+                        "换取报表票据失败：返回的不是跳转地址，" + Truncate(redirectUrl, 200));
+                }
 
-            // ---- Step 3: 访问跳转地址，帆软会 Set-Cookie 下发 fine_auth_token ----
-            string fineToken = await AcceptSsoTokenAsync(client, cookies, redirectUrl, ep, ct).ConfigureAwait(false);
-            session.FineToken = fineToken;
-            session.FineTokenExpiry = JwtExpiry(fineToken);
-            _logger.Info($"帆软票据获取成功，有效期至 {session.FineTokenExpiry:yyyy-MM-dd HH:mm:ss}");
+                // ---- Step 3: 访问跳转地址，帆软会 Set-Cookie 下发 fine_auth_token ----
+                string fineToken = await AcceptSsoTokenAsync(client, cookies, redirectUrl, ep, ct).ConfigureAwait(false);
+                session.FineToken = fineToken;
+                session.FineTokenExpiry = JwtExpiry(fineToken);
+                _logger.Info($"帆软票据获取成功，有效期至 {session.FineTokenExpiry:yyyy-MM-dd HH:mm:ss}");
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                session.ReportTicketError = ex is PortalAuthException ? ex.Message : "换取报表票据失败：" + ex.Message;
+                _logger.Warn($"登录成功，但没拿到帆软报表票据（不影响登录）：{session.ReportTicketError}");
+            }
             return session;
         }
 
@@ -298,7 +319,10 @@ namespace ORT一键报告.Services
         {
             if (session == null || string.IsNullOrWhiteSpace(session.FineToken))
             {
-                throw new PortalAuthException(PortalLoginStatus.ServiceError, "还没有登录，无法取数");
+                throw new PortalAuthException(PortalLoginStatus.ServiceError,
+                    "帆软报表站点暂时不可用，还不能取数"
+                    + (string.IsNullOrWhiteSpace(session?.ReportTicketError) ? "" : "：" + session.ReportTicketError)
+                    + "（登录与看板配置不受影响，等报表恢复后再试）");
             }
             ep ??= new OrtBoardEndpoints();
             query ??= new OrtBoardQuery();
@@ -457,7 +481,9 @@ namespace ORT一键报告.Services
         {
             if (session == null || string.IsNullOrWhiteSpace(session.FineToken))
             {
-                throw new PortalAuthException(PortalLoginStatus.ServiceError, "还没有登录，无法读取控件列表");
+                throw new PortalAuthException(PortalLoginStatus.ServiceError,
+                    "帆软报表站点暂时不可用，还读不到控件列表"
+                    + (string.IsNullOrWhiteSpace(session?.ReportTicketError) ? "" : "：" + session.ReportTicketError));
             }
             string entryUrl = ep.BuildEntryUrl();
             if (string.IsNullOrWhiteSpace(entryUrl))

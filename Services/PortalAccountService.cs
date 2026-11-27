@@ -155,6 +155,11 @@ namespace ORT一键报告.Services
                 }
 
                 _logger.Info($"平台账号登录成功：{account}（{displayName}）→ 程序账号 {user.Username}，身份 {stored.Role}");
+                if (string.IsNullOrWhiteSpace(session.FineToken))
+                {
+                    // 门户验证已通过就算登录成功；报表票据缺失只影响「从平台取数」
+                    _logger.Warn($"报表票据未取到（不影响登录）：{session.ReportTicketError ?? "帆软报表站点可能不可用"}");
+                }
                 return new PortalLoginOutcome
                 {
                     Status = PortalLoginStatus.Success,
