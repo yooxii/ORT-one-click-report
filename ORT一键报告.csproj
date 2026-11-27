@@ -15,7 +15,7 @@
     <MapFileExtensions>true</MapFileExtensions>
     <PublisherName>Lucas Li%28AcBel ORT%29</PublisherName>
     <ApplicationRevision>0</ApplicationRevision>
-    <ApplicationVersion>0.6.11.0</ApplicationVersion>
+    <ApplicationVersion>0.6.12.0</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <CreateDesktopShortcut>true</CreateDesktopShortcut>
     <PublishWizardCompleted>true</PublishWizardCompleted>
@@ -272,6 +272,9 @@
     </Compile>
     <Compile Include="Plans\Views\WindowOqcQuery.xaml.cs">
       <DependentUpon>WindowOqcQuery.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Plans\Views\WindowMesProductionQuery.xaml.cs">
+      <DependentUpon>WindowMesProductionQuery.xaml</DependentUpon>
     </Compile>
     <Compile Include="Plans\Views\WindowRequisitionStockIn.xaml.cs">
       <DependentUpon>WindowRequisitionStockIn.xaml</DependentUpon>
@@ -584,6 +587,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Plans\Views\WindowOqcQuery.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Plans\Views\WindowMesProductionQuery.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

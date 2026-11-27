@@ -85,7 +85,8 @@ namespace ORT一键报告.Models
                 Id = MoWorkOrderId,
                 NameKey = "SpPrograms_MoWorkOrder_Name",
                 DescriptionKey = "SpPrograms_MoWorkOrder_Desc",
-                Kind = SpProgramKind.Placeholder,
+                // 已改成原生查询（IVM540）
+                Kind = SpProgramKind.Internal,
                 DefaultPath = @"C:\acbelap\C_IVI540_BL.EXE",
             },
             new SpProgramInfo
@@ -93,7 +94,8 @@ namespace ORT一键报告.Models
                 Id = PreIssueId,
                 NameKey = "SpPrograms_PreIssue_Name",
                 DescriptionKey = "SpPrograms_PreIssue_Desc",
-                Kind = SpProgramKind.Placeholder,
+                // 已改成原生查询（IVM530_MP）
+                Kind = SpProgramKind.Internal,
                 DefaultPath = @"C:\acbelap\C_IVR621_BL.EXE",
             },
         ];

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.OracleClient;
@@ -193,6 +193,9 @@ namespace MesBridge
             return lines;
         }
 
+        /// <summary>给同进程里的其它模块用：按同样的「裸名 → APITECH.前缀」规则解析表名</summary>
+        internal string ResolveTable(string logical) => Table(logical);
+
         /// <summary>逻辑表名 → 实际可访问的表名</summary>
         private string Table(string logical)
         {
@@ -245,7 +248,8 @@ namespace MesBridge
             string tried = string.Join("、", Candidates(logical).ToArray());
             return "登录成功，但账号（" + _user + "）访问不到 " + logical + " 表（试过：" + tried + "）。"
                  + "请让 DBA 给这个账号 SELECT/INSERT/UPDATE 权限或建同名同义词；"
-                 + "也可以点登录框里的「连接设置」把表名改成实际写法（例如 APITECH." + logical + "）。";
+                 + "也可以点登录框里的「连接设置」把表名改成实际写法；"
+                 + "或改用 MES 原程式（C_SIM19）所用的共用账号登录（BDE 别名 BSFC 的 USER NAME，一般是 APIMIS）。";
         }
 
         /// <summary>按条件查询 SIM44</summary>

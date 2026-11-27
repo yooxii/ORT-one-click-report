@@ -4579,13 +4579,13 @@ Continue importing anyway? (fixing the backup folder first is recommended)</valu
     <value>Work order lookup (monthly schedule source)</value>
   </data>
   <data name="SpPrograms_MoWorkOrder_Desc" xml:space="preserve">
-    <value>Open the MES work order lookup (C_IVI540_BL); the monthly schedule data comes from here</value>
+    <value>Query the MES monthly schedule natively (IVM540) by date range / PCB; the pre-issue schedule comes from here</value>
   </data>
   <data name="SpPrograms_PreIssue_Name" xml:space="preserve">
     <value>Prepare issue (pre-issue import source)</value>
   </data>
   <data name="SpPrograms_PreIssue_Desc" xml:space="preserve">
-    <value>Open the MES prepare-issue program (C_IVR621_BL); pre-issue import data comes from here</value>
+    <value>Query MES prepare-issue vouchers natively (IVM530_MP) by date / voucher / part; the pre-issue import comes from here</value>
   </data>
   <data name="Plans_Batch_MesToolTip" xml:space="preserve">
     <value>Open the MES work order entry for the selected row (or the first one) with values pre-filled</value>
@@ -4712,5 +4712,44 @@ Continue importing anyway? (fixing the backup folder first is recommended)</valu
   </data>
   <data name="SpPrograms_State_Running" xml:space="preserve">
     <value>Running</value>
+  </data>
+  <data name="ProdQuery_Title" xml:space="preserve">
+    <value>MES production query (schedule / prepare issue)</value>
+  </data>
+  <data name="ProdQuery_TabSchedule" xml:space="preserve">
+    <value>Monthly schedule</value>
+  </data>
+  <data name="ProdQuery_TabPreIssue" xml:space="preserve">
+    <value>Prepare-issue vouchers</value>
+  </data>
+  <data name="ProdQuery_Date" xml:space="preserve">
+    <value>Date</value>
+  </data>
+  <data name="ProdQuery_User" xml:space="preserve">
+    <value>Created by</value>
+  </data>
+  <data name="ProdQuery_Vchno" xml:space="preserve">
+    <value>Voucher no.</value>
+  </data>
+  <data name="ProdQuery_Part" xml:space="preserve">
+    <value>Part no.</value>
+  </data>
+  <data name="ProdQuery_Msg_NeedLogin" xml:space="preserve">
+    <value>Sign in to the MES database first.</value>
+  </data>
+  <data name="ProdQuery_Msg_CountFormat" xml:space="preserve">
+    <value>{0} row(s)</value>
+  </data>
+  <data name="ProdQuery_Msg_ScheduleEmpty" xml:space="preserve">
+    <value>No schedule data in this range.</value>
+  </data>
+  <data name="ProdQuery_Msg_ScheduleFormat" xml:space="preserve">
+    <value>{0} schedule row(s) from IVM540 (source of the pre-issue monthly schedule)</value>
+  </data>
+  <data name="ProdQuery_Msg_PreIssueEmpty" xml:space="preserve">
+    <value>No prepare-issue vouchers in this range.</value>
+  </data>
+  <data name="ProdQuery_Msg_PreIssueFormat" xml:space="preserve">
+    <value>{0} prepare-issue row(s) from IVM530_MP (source of the pre-issue import)</value>
   </data>
 </root>

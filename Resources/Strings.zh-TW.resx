@@ -4192,13 +4192,13 @@
     <value>小工令查詢（月排程來源）</value>
   </data>
   <data name="SpPrograms_MoWorkOrder_Desc" xml:space="preserve">
-    <value>開啟 MES 小工令查詢（C_IVI540_BL）；預領的月排程資料來自這裡</value>
+    <value>原生查詢 MES 月排程（IVM540），依生產日期區間/PCB 過濾；預領的月排程來自這裡</value>
   </data>
   <data name="SpPrograms_PreIssue_Name" xml:space="preserve">
     <value>準備領用（預領匯入來源）</value>
   </data>
   <data name="SpPrograms_PreIssue_Desc" xml:space="preserve">
-    <value>開啟 MES 準備領用程式（C_IVR621_BL）；預領匯入的資料來自這裡</value>
+    <value>原生查詢 MES 準備領用單（IVM530_MP），依單據日期/單據號/料號過濾；預領匯入來自這裡</value>
   </data>
   <data name="Plans_Batch_MesToolTip" xml:space="preserve">
     <value>把清單裡選取的那筆（沒選就用第一筆）帶到 MES 工令登記視窗，工令/線別/日期/數量已預填</value>
@@ -4325,5 +4325,44 @@
   </data>
   <data name="SpPrograms_State_Running" xml:space="preserve">
     <value>已開啟</value>
+  </data>
+  <data name="ProdQuery_Title" xml:space="preserve">
+    <value>MES 生產查詢（月排程 / 準備領用）</value>
+  </data>
+  <data name="ProdQuery_TabSchedule" xml:space="preserve">
+    <value>月排程 / 小工令</value>
+  </data>
+  <data name="ProdQuery_TabPreIssue" xml:space="preserve">
+    <value>準備領用單</value>
+  </data>
+  <data name="ProdQuery_Date" xml:space="preserve">
+    <value>日期</value>
+  </data>
+  <data name="ProdQuery_User" xml:space="preserve">
+    <value>製單人</value>
+  </data>
+  <data name="ProdQuery_Vchno" xml:space="preserve">
+    <value>單據號</value>
+  </data>
+  <data name="ProdQuery_Part" xml:space="preserve">
+    <value>料號</value>
+  </data>
+  <data name="ProdQuery_Msg_NeedLogin" xml:space="preserve">
+    <value>請先登入 MES 資料庫。</value>
+  </data>
+  <data name="ProdQuery_Msg_CountFormat" xml:space="preserve">
+    <value>共 {0} 筆</value>
+  </data>
+  <data name="ProdQuery_Msg_ScheduleEmpty" xml:space="preserve">
+    <value>這個區間沒有排程資料。</value>
+  </data>
+  <data name="ProdQuery_Msg_ScheduleFormat" xml:space="preserve">
+    <value>月排程共 {0} 筆（IVM540，預領月排程的來源）</value>
+  </data>
+  <data name="ProdQuery_Msg_PreIssueEmpty" xml:space="preserve">
+    <value>這個區間沒有準備領用單據。</value>
+  </data>
+  <data name="ProdQuery_Msg_PreIssueFormat" xml:space="preserve">
+    <value>準備領用單共 {0} 筆（IVM530_MP，預領匯入的來源）</value>
   </data>
 </root>

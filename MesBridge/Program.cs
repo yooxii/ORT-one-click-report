@@ -273,6 +273,34 @@ namespace MesBridge
                     return;
                 }
 
+                case "schedquery":
+                {
+                    RequireLogin(repo);
+                    List<Dictionary<string, object>> rows = new ProductionRepository(repo).Schedule(
+                        BridgeProtocol.Str(request, "dateFrom"),
+                        BridgeProtocol.Str(request, "dateTo"),
+                        BridgeProtocol.Str(request, "pcb"),
+                        BridgeProtocol.Int(request, "limit", 500));
+                    Write(new Dictionary<string, object> { ["ok"] = true, ["rows"] = rows, ["count"] = rows.Count });
+                    return;
+                }
+
+                case "preissuequery":
+                {
+                    RequireLogin(repo);
+                    List<Dictionary<string, object>> rows = new ProductionRepository(repo).PrepareIssue(
+                        BridgeProtocol.Str(request, "dateFrom"),
+                        BridgeProtocol.Str(request, "dateTo"),
+                        BridgeProtocol.Str(request, "user"),
+                        BridgeProtocol.Str(request, "vchnoFrom"),
+                        BridgeProtocol.Str(request, "vchnoTo"),
+                        BridgeProtocol.Str(request, "partFrom"),
+                        BridgeProtocol.Str(request, "partTo"),
+                        BridgeProtocol.Int(request, "limit", 500));
+                    Write(new Dictionary<string, object> { ["ok"] = true, ["rows"] = rows, ["count"] = rows.Count });
+                    return;
+                }
+
                 case "probe":
                 {
                     if (repo == null || !repo.IsOpen)

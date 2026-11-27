@@ -246,6 +246,18 @@ namespace ORT一键报告.Main.Views
                 window.ShowDialog();
                 return;
             }
+            if (row.Info.Id == SpProgramCatalog.MoWorkOrderId)
+            {
+                WindowMesProductionQuery window = new(0) { Owner = this };
+                window.ShowDialog();
+                return;
+            }
+            if (row.Info.Id == SpProgramCatalog.PreIssueId)
+            {
+                WindowMesProductionQuery window = new(1) { Owner = this };
+                window.ShowDialog();
+                return;
+            }
             MessageBox.Show(this, string.Format(LanguageService.Get("SpPrograms_Msg_TodoFormat"), row.Name),
                 LanguageService.Get("Cap_Info"), MessageBoxButton.OK, MessageBoxImage.Information);
         }

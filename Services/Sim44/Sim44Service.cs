@@ -303,6 +303,21 @@ namespace ORT一键报告.Services.Sim44
             return table;
         }
 
+        /// <summary>月排程（IVM540）查询</summary>
+        public System.Data.DataTable QuerySchedule(string dateFrom, string dateTo, string pcb, int limit = 500)
+        {
+            RequireLogin();
+            return ToTable(_client.QuerySchedule(dateFrom, dateTo, pcb, limit));
+        }
+
+        /// <summary>准备领用单（IVM530_MP）查询</summary>
+        public System.Data.DataTable QueryPrepareIssue(string dateFrom, string dateTo, string user, string vchnoFrom,
+            string vchnoTo, string partFrom, string partTo, int limit = 500)
+        {
+            RequireLogin();
+            return ToTable(_client.QueryPrepareIssue(dateFrom, dateTo, user, vchnoFrom, vchnoTo, partFrom, partTo, limit));
+        }
+
         /// <summary>查数据字典，用于「连接设置」里的探测按钮</summary>
         public System.Collections.Generic.List<string> Probe()
         {

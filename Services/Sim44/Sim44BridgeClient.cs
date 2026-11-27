@@ -385,6 +385,39 @@ namespace ORT一键报告.Services.Sim44
             return reply["rows"] as JArray ?? [];
         }
 
+        /// <summary>月排程（IVM540）：按生产日期区间 + 可选 PCB 查</summary>
+        public JArray QuerySchedule(string dateFrom, string dateTo, string pcb, int limit = 500)
+        {
+            JObject reply = Send(new JObject
+            {
+                ["op"] = "schedquery",
+                ["dateFrom"] = dateFrom ?? "",
+                ["dateTo"] = dateTo ?? "",
+                ["pcb"] = pcb ?? "",
+                ["limit"] = limit,
+            }, 60000);
+            return reply["rows"] as JArray ?? [];
+        }
+
+        /// <summary>准备领用单（IVM530_MP）：按单据日期区间 / 单据号区间 / 料号区间 / 制单人查</summary>
+        public JArray QueryPrepareIssue(string dateFrom, string dateTo, string user, string vchnoFrom, string vchnoTo,
+            string partFrom, string partTo, int limit = 500)
+        {
+            JObject reply = Send(new JObject
+            {
+                ["op"] = "preissuequery",
+                ["dateFrom"] = dateFrom ?? "",
+                ["dateTo"] = dateTo ?? "",
+                ["user"] = user ?? "",
+                ["vchnoFrom"] = vchnoFrom ?? "",
+                ["vchnoTo"] = vchnoTo ?? "",
+                ["partFrom"] = partFrom ?? "",
+                ["partTo"] = partTo ?? "",
+                ["limit"] = limit,
+            }, 60000);
+            return reply["rows"] as JArray ?? [];
+        }
+
         /// <summary>改数据库密码</summary>
         public void ChangePassword(string oldPassword, string newPassword, int timeoutMs = 30000)
         {
