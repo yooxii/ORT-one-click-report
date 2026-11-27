@@ -4518,4 +4518,76 @@ Continue importing anyway? (fixing the backup folder first is recommended)</valu
   <data name="Common_Query" xml:space="preserve">
     <value>Query</value>
   </data>
+  <data name="MainWindow_Button_SpPrograms" xml:space="preserve">
+    <value>SP Programs</value>
+  </data>
+  <data name="MainWindow_ToolTip_SpPrograms" xml:space="preserve">
+    <value>Collection of frequently used MES programs: return work order entry, OQC query, and more</value>
+  </data>
+  <data name="SpPrograms_Title" xml:space="preserve">
+    <value>SP Programs</value>
+  </data>
+  <data name="SpPrograms_Hint" xml:space="preserve">
+    <value>Select a row and click Open, or just double-click. Programs marked “To do” are not wired up yet.</value>
+  </data>
+  <data name="SpPrograms_Col_Name" xml:space="preserve">
+    <value>Program</value>
+  </data>
+  <data name="SpPrograms_Col_Desc" xml:space="preserve">
+    <value>Description</value>
+  </data>
+  <data name="SpPrograms_Col_State" xml:space="preserve">
+    <value>State</value>
+  </data>
+  <data name="SpPrograms_State_Available" xml:space="preserve">
+    <value>Ready</value>
+  </data>
+  <data name="SpPrograms_State_Todo" xml:space="preserve">
+    <value>To do</value>
+  </data>
+  <data name="SpPrograms_Open" xml:space="preserve">
+    <value>Open</value>
+  </data>
+  <data name="SpPrograms_Msg_TodoFormat" xml:space="preserve">
+    <value>{0} is not wired up yet; it will be added next time.</value>
+  </data>
+  <data name="SpPrograms_Msg_NotFoundFormat" xml:space="preserve">
+    <value>Program not found: {0}</value>
+  </data>
+  <data name="SpPrograms_Msg_LaunchFailedFormat" xml:space="preserve">
+    <value>Failed to start: {0}</value>
+  </data>
+  <data name="SpPrograms_Sim44_Name" xml:space="preserve">
+    <value>Return work order entry (MES SIM44)</value>
+  </data>
+  <data name="SpPrograms_Sim44_Desc" xml:space="preserve">
+    <value>Register work order / part / line / date / qty into MES when returning units; supports query and modify</value>
+  </data>
+  <data name="SpPrograms_Oqc_Name" xml:space="preserve">
+    <value>OQC test records</value>
+  </data>
+  <data name="SpPrograms_Oqc_Desc" xml:space="preserve">
+    <value>Open the MES OQC test record query program (C_SII51)</value>
+  </data>
+  <data name="SpPrograms_Inventory_Name" xml:space="preserve">
+    <value>Finished goods inventory</value>
+  </data>
+  <data name="SpPrograms_Inventory_Desc" xml:space="preserve">
+    <value>Open the MES finished goods inventory program (C_IVI33)</value>
+  </data>
+  <data name="SpPrograms_MoWorkOrder_Name" xml:space="preserve">
+    <value>Work order lookup (monthly schedule source)</value>
+  </data>
+  <data name="SpPrograms_MoWorkOrder_Desc" xml:space="preserve">
+    <value>Open the MES work order lookup (C_IVI540_BL); the monthly schedule data comes from here</value>
+  </data>
+  <data name="SpPrograms_PreIssue_Name" xml:space="preserve">
+    <value>Prepare issue (pre-issue import source)</value>
+  </data>
+  <data name="SpPrograms_PreIssue_Desc" xml:space="preserve">
+    <value>Open the MES prepare-issue program (C_IVR621_BL); pre-issue import data comes from here</value>
+  </data>
+  <data name="Plans_Batch_MesToolTip" xml:space="preserve">
+    <value>Open the MES work order entry for the selected row (or the first one) with values pre-filled</value>
+  </data>
 </root>

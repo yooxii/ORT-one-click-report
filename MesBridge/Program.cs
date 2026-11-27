@@ -6,14 +6,18 @@ using System.IO;
 using System.Text;
 using System.Web.Script.Serialization;
 
-namespace Sim44Bridge
+namespace MesBridge
 {
     /// <summary>
-    /// SIM44 桥接进程（32 位）。主程序用 CreateProcess 拉起它，通过 stdin/stdout 一行一条 JSON 通信：
+    /// MES 桥接进程（32 位）。主程序用 CreateProcess 拉起它，通过 stdin/stdout 一行一条 JSON 通信。
+    /// 用法： MesBridge.exe sim44            持续会话，逐行收请求
+    ///        MesBridge.exe sim44 --selftest 离线检查 32 位 Oracle 客户端
+    /// 模块（第一个参数）决定走哪套实现：目前只有 sim44（MES 回线工令 SIM44）；
+    /// 以后 OQC 测试记录、成品库存等程式要直连老库时，在同一进程里加模块即可。
+    /// 请求示例：
     ///   {"op":"ping"}、{"op":"login","user":..,"pass":..,"dataSource":..}、{"op":"query",...}、
     ///   {"op":"insert","row":{...}}、{"op":"update","row":{...}}、{"op":"lookupPart","text":..}、
     ///   {"op":"lookupLine","text":..}、{"op":"changePassword","oldPass":..,"newPass":..}、{"op":"quit"}
-    /// 单独运行加 --selftest 可以离线检查本机 Oracle 客户端能不能被 32 位进程加载。
     /// </summary>
     internal static class Program
     {
@@ -24,7 +28,34 @@ namespace Sim44Bridge
             Console.OutputEncoding = new UTF8Encoding(false);
             Console.InputEncoding = Encoding.UTF8;
 
-            if (args.Length > 0 && string.Equals(args[0], "--selftest", StringComparison.OrdinalIgnoreCase))
+            // 第一个非开关参数是「桥接模块」：sim44 = MES 回线工令（后续 OQC、库存等模块往这里加）
+            string module = "sim44";
+            bool selftest = false;
+            foreach (string raw in args)
+            {
+                string arg = (raw ?? "").Trim();
+                if (arg.Length == 0)
+                {
+                    continue;
+                }
+                if (string.Equals(arg, "--selftest", StringComparison.OrdinalIgnoreCase))
+                {
+                    selftest = true;
+                    continue;
+                }
+                if (arg.StartsWith("--", StringComparison.Ordinal))
+                {
+                    continue;   // 预留：其它全局开关
+                }
+                module = arg.ToLowerInvariant();
+            }
+            if (!string.Equals(module, "sim44", StringComparison.Ordinal))
+            {
+                WriteError("nomodule", "不支持的桥接模块：" + module + "（目前支持 sim44）");
+                return 4;
+            }
+
+            if (selftest)
             {
                 (bool ok, string code, string message) = Sim44Repository.SelfTest();
                 Write(new Dictionary<string, object>
@@ -32,6 +63,7 @@ namespace Sim44Bridge
                     ["ok"] = ok,
                     ["code"] = code,
                     ["message"] = message,
+                    ["module"] = module,
                     ["bitness"] = Environment.Is64BitProcess ? "x64" : "x86",
                     ["clr"] = Environment.Version.ToString(),
                 });

@@ -1,4 +1,4 @@
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using NLog;
 using ORT一键报告.Admin.Views;
 using ORT一键报告.Main.Views;
@@ -889,6 +889,16 @@ namespace ORT一键报告
         }
 
         private void Button_YiJianBaoGao_Click(object sender, RoutedEventArgs e) => OpenReport();
+
+        /// <summary>
+        /// 打开「SP程序集」：把公司 MES 的常用旧程式（回线工令登记、OQC 测试记录查询等）
+        /// 集中到一个窗口里，点一下直接打开对应程式。
+        /// </summary>
+        private void Button_SpPrograms_Click(object sender, RoutedEventArgs e)
+        {
+            WindowSpPrograms window = new() { Owner = this };
+            window.ShowDialog();
+        }
 
         /// <summary>
         /// 打开一键报告窗口；<paramref name="reportType"/> 非空时（托盘菜单：Burn In / Thermal Shock / EMI）

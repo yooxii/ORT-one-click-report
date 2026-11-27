@@ -1,11 +1,11 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.OracleClient;
 using System.Globalization;
 using System.Text;
 
-namespace Sim44Bridge
+namespace MesBridge
 {
     /// <summary>
     /// SIM44（MES「重工工令」表）访问层。只在 32 位进程里跑：

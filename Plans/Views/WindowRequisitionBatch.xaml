@@ -118,6 +118,7 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
@@ -128,10 +129,14 @@
             <!--移除点错加入的记录-->
             <Button x:Name="btn_remove" Grid.Column="1" Content="{lex:Loc Plans_Batch_RemoveSelected}" Padding="8,2"
                     Margin="8,0,0,0" Click="Btn_Remove_Click"/>
-            <TextBlock Grid.Column="2" Margin="12,0,0,0" Text="{lex:Loc Plans_Batch_CopyHint}"
+            <!--把清单里的记录登记到 MES 工令表（SIM44），只在批量回线时出现-->
+            <Button x:Name="btn_mes" Grid.Column="2" Content="{lex:Loc ReqReturn_MesOpen}" Padding="8,2"
+                    Margin="8,0,0,0" Click="Btn_Mes_Click"
+                    ToolTip="{lex:Loc Plans_Batch_MesToolTip}"/>
+            <TextBlock Grid.Column="3" Margin="12,0,0,0" Text="{lex:Loc Plans_Batch_CopyHint}"
                        VerticalAlignment="Center" TextWrapping="Wrap"
                        Foreground="{DynamicResource TextSecondaryBrush}"/>
-            <StackPanel Grid.Column="3" Orientation="Horizontal">
+            <StackPanel Grid.Column="4" Orientation="Horizontal">
                 <Button x:Name="btn_confirm" Width="110" Click="Btn_Confirm_Click" IsDefault="True"/>
                 <Button Content="{lex:Loc Common_Cancel}" Width="90" Margin="10,0,0,0" Click="Btn_Cancel_Click" IsCancel="True"/>
             </StackPanel>

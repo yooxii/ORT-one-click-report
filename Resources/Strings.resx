@@ -4520,4 +4520,76 @@
   <data name="Common_Query" xml:space="preserve">
     <value>查询</value>
   </data>
+  <data name="MainWindow_Button_SpPrograms" xml:space="preserve">
+    <value>SP程序集</value>
+  </data>
+  <data name="MainWindow_ToolTip_SpPrograms" xml:space="preserve">
+    <value>公司 MES 常用旧程式的集合：回线工令登记、OQC 测试记录查询等，点一下直接打开</value>
+  </data>
+  <data name="SpPrograms_Title" xml:space="preserve">
+    <value>SP程序集</value>
+  </data>
+  <data name="SpPrograms_Hint" xml:space="preserve">
+    <value>选中一行点「打开」，或直接双击。状态为「待接入」的程式还没做进来。</value>
+  </data>
+  <data name="SpPrograms_Col_Name" xml:space="preserve">
+    <value>程式</value>
+  </data>
+  <data name="SpPrograms_Col_Desc" xml:space="preserve">
+    <value>说明</value>
+  </data>
+  <data name="SpPrograms_Col_State" xml:space="preserve">
+    <value>状态</value>
+  </data>
+  <data name="SpPrograms_State_Available" xml:space="preserve">
+    <value>可用</value>
+  </data>
+  <data name="SpPrograms_State_Todo" xml:space="preserve">
+    <value>待接入</value>
+  </data>
+  <data name="SpPrograms_Open" xml:space="preserve">
+    <value>打开</value>
+  </data>
+  <data name="SpPrograms_Msg_TodoFormat" xml:space="preserve">
+    <value>{0} 还没接入，下一次会做进来。</value>
+  </data>
+  <data name="SpPrograms_Msg_NotFoundFormat" xml:space="preserve">
+    <value>找不到程式：{0}</value>
+  </data>
+  <data name="SpPrograms_Msg_LaunchFailedFormat" xml:space="preserve">
+    <value>启动失败：{0}</value>
+  </data>
+  <data name="SpPrograms_Sim44_Name" xml:space="preserve">
+    <value>回线工令登记（MES SIM44）</value>
+  </data>
+  <data name="SpPrograms_Sim44_Desc" xml:space="preserve">
+    <value>回线时把工令、料号/机种、线别、日期、数量登记进 MES；可查询与修改</value>
+  </data>
+  <data name="SpPrograms_Oqc_Name" xml:space="preserve">
+    <value>OQC 测试记录查询</value>
+  </data>
+  <data name="SpPrograms_Oqc_Desc" xml:space="preserve">
+    <value>打开 MES 的 OQC 测试记录查询程式（C_SII51）</value>
+  </data>
+  <data name="SpPrograms_Inventory_Name" xml:space="preserve">
+    <value>成品库存查询</value>
+  </data>
+  <data name="SpPrograms_Inventory_Desc" xml:space="preserve">
+    <value>打开 MES 成品库存查询程式（C_IVI33）</value>
+  </data>
+  <data name="SpPrograms_MoWorkOrder_Name" xml:space="preserve">
+    <value>小工令查询（月排程来源）</value>
+  </data>
+  <data name="SpPrograms_MoWorkOrder_Desc" xml:space="preserve">
+    <value>打开 MES 小工令查询（C_IVI540_BL）；预领的月排程数据来自这里</value>
+  </data>
+  <data name="SpPrograms_PreIssue_Name" xml:space="preserve">
+    <value>准备领用（预领导入来源）</value>
+  </data>
+  <data name="SpPrograms_PreIssue_Desc" xml:space="preserve">
+    <value>打开 MES 准备领用程式（C_IVR621_BL）；预领导入的数据来自这里</value>
+  </data>
+  <data name="Plans_Batch_MesToolTip" xml:space="preserve">
+    <value>把清单里选中的那条（没选就用第一条）带到 MES 工令登记窗口，工令/线别/日期/数量已预填</value>
+  </data>
 </root>

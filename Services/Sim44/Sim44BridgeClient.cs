@@ -1,4 +1,4 @@
-using NLog;
+﻿using NLog;
 using Newtonsoft.Json.Linq;
 using ORT一键报告.Models;
 using System;
@@ -13,7 +13,7 @@ namespace ORT一键报告.Services.Sim44
     /// SIM44 桥接进程客户端。
     /// 为什么要多一个进程：MES 的 Oracle 8.1.7 客户端（C:\oracle\ora81）只有 32 位，
     /// 而本程序是 AnyCPU（64 位 Windows 上跑 64 位），进程内根本加载不了 32 位 OCI。
-    /// 所以把「连 Oracle」这件事交给随程序发布的 Sim44Bridge.exe（x86），
+    /// 所以把「连 Oracle」这件事交给随程序发布的 MesBridge.exe（x86，模块 sim44），
     /// 双方用 stdin/stdout 一行一条 JSON 通信。
     /// </summary>
     public sealed class Sim44BridgeClient : IDisposable
@@ -25,8 +25,11 @@ namespace ORT一键报告.Services.Sim44
         private StreamWriter _stdin;
         private StreamReader _stdout;
 
-        /// <summary>桥接程序文件名（随主程序发布在 Sim44Bridge 子目录）</summary>
-        public const string BridgeFileName = "Sim44Bridge.exe";
+        /// <summary>桥接程序文件名（随主程序发布在 MesBridge 子目录）</summary>
+        public const string BridgeFileName = "MesBridge.exe";
+
+        /// <summary>桥接模块名：sim44 = MES 回线工令（同一支 exe 里以后还会加别的模块）</summary>
+        public const string BridgeArguments = "sim44";
 
         /// <summary>当前登录的数据库账号（未登录为空）</summary>
         public string CurrentUser { get; private set; }
@@ -35,14 +38,14 @@ namespace ORT一键报告.Services.Sim44
         public string BridgePath => ResolveBridgePath();
 
         /// <summary>
-        /// 按「程序目录\Sim44Bridge\、程序目录\、本机设置里的覆盖路径」顺序找桥接程序。
+        /// 按「程序目录\MesBridge\、程序目录\、本机设置里的覆盖路径」顺序找桥接程序。
         /// </summary>
         private static string ResolveBridgePath()
         {
             string baseDir = AppDomain.CurrentDomain.BaseDirectory;
             string[] candidates =
             [
-                Path.Combine(baseDir, "Sim44Bridge", BridgeFileName),
+                Path.Combine(baseDir, "MesBridge", BridgeFileName),
                 Path.Combine(baseDir, BridgeFileName),
             ];
             foreach (string candidate in candidates)
@@ -84,7 +87,7 @@ namespace ORT一键报告.Services.Sim44
                 ProcessStartInfo psi = new()
                 {
                     FileName = path,
-                    Arguments = "--selftest",
+                    Arguments = BridgeArguments + " --selftest",
                     UseShellExecute = false,
                     CreateNoWindow = true,
                     RedirectStandardOutput = true,
@@ -120,11 +123,12 @@ namespace ORT一键报告.Services.Sim44
             if (!File.Exists(path))
             {
                 throw new Sim44Exception("nobridge",
-                    "找不到 SIM44 桥接程序（Sim44Bridge.exe）。请确认安装包完整，或重新解压发布包。路径：" + path);
+                    "找不到 MES 桥接程序（MesBridge.exe）。请确认安装包完整，或重新解压发布包。路径：" + path);
             }
             ProcessStartInfo psi = new()
             {
                 FileName = path,
+                Arguments = BridgeArguments,
                 UseShellExecute = false,
                 CreateNoWindow = true,
                 RedirectStandardInput = true,
@@ -154,7 +158,7 @@ namespace ORT一键报告.Services.Sim44
                     string line;
                     while ((line = _process.StandardError.ReadLine()) != null)
                     {
-                        _logger.Debug("[Sim44Bridge] " + line);
+                        _logger.Debug("[MesBridge] " + line);
                     }
                 }
                 catch

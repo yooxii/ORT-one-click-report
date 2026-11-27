@@ -4131,4 +4131,76 @@
   <data name="Common_Query" xml:space="preserve">
     <value>查詢</value>
   </data>
+  <data name="MainWindow_Button_SpPrograms" xml:space="preserve">
+    <value>SP程式集</value>
+  </data>
+  <data name="MainWindow_ToolTip_SpPrograms" xml:space="preserve">
+    <value>公司 MES 常用舊程式的集合：回線工令登記、OQC 測試記錄查詢等，點一下直接開啟</value>
+  </data>
+  <data name="SpPrograms_Title" xml:space="preserve">
+    <value>SP程式集</value>
+  </data>
+  <data name="SpPrograms_Hint" xml:space="preserve">
+    <value>選取一列點「開啟」，或直接雙擊。狀態為「待接入」的程式還沒做進來。</value>
+  </data>
+  <data name="SpPrograms_Col_Name" xml:space="preserve">
+    <value>程式</value>
+  </data>
+  <data name="SpPrograms_Col_Desc" xml:space="preserve">
+    <value>說明</value>
+  </data>
+  <data name="SpPrograms_Col_State" xml:space="preserve">
+    <value>狀態</value>
+  </data>
+  <data name="SpPrograms_State_Available" xml:space="preserve">
+    <value>可用</value>
+  </data>
+  <data name="SpPrograms_State_Todo" xml:space="preserve">
+    <value>待接入</value>
+  </data>
+  <data name="SpPrograms_Open" xml:space="preserve">
+    <value>開啟</value>
+  </data>
+  <data name="SpPrograms_Msg_TodoFormat" xml:space="preserve">
+    <value>{0} 還沒接入，下一次會做進來。</value>
+  </data>
+  <data name="SpPrograms_Msg_NotFoundFormat" xml:space="preserve">
+    <value>找不到程式：{0}</value>
+  </data>
+  <data name="SpPrograms_Msg_LaunchFailedFormat" xml:space="preserve">
+    <value>啟動失敗：{0}</value>
+  </data>
+  <data name="SpPrograms_Sim44_Name" xml:space="preserve">
+    <value>回線工令登記（MES SIM44）</value>
+  </data>
+  <data name="SpPrograms_Sim44_Desc" xml:space="preserve">
+    <value>回線時把工令、料號/機種、線別、日期、數量登記進 MES；可查詢與修改</value>
+  </data>
+  <data name="SpPrograms_Oqc_Name" xml:space="preserve">
+    <value>OQC 測試記錄查詢</value>
+  </data>
+  <data name="SpPrograms_Oqc_Desc" xml:space="preserve">
+    <value>開啟 MES 的 OQC 測試記錄查詢程式（C_SII51）</value>
+  </data>
+  <data name="SpPrograms_Inventory_Name" xml:space="preserve">
+    <value>成品庫存查詢</value>
+  </data>
+  <data name="SpPrograms_Inventory_Desc" xml:space="preserve">
+    <value>開啟 MES 成品庫存查詢程式（C_IVI33）</value>
+  </data>
+  <data name="SpPrograms_MoWorkOrder_Name" xml:space="preserve">
+    <value>小工令查詢（月排程來源）</value>
+  </data>
+  <data name="SpPrograms_MoWorkOrder_Desc" xml:space="preserve">
+    <value>開啟 MES 小工令查詢（C_IVI540_BL）；預領的月排程資料來自這裡</value>
+  </data>
+  <data name="SpPrograms_PreIssue_Name" xml:space="preserve">
+    <value>準備領用（預領匯入來源）</value>
+  </data>
+  <data name="SpPrograms_PreIssue_Desc" xml:space="preserve">
+    <value>開啟 MES 準備領用程式（C_IVR621_BL）；預領匯入的資料來自這裡</value>
+  </data>
+  <data name="Plans_Batch_MesToolTip" xml:space="preserve">
+    <value>把清單裡選取的那筆（沒選就用第一筆）帶到 MES 工令登記視窗，工令/線別/日期/數量已預填</value>
+  </data>
 </root>

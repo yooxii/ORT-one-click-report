@@ -1,7 +1,7 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
-namespace Sim44Bridge
+namespace MesBridge
 {
     /// <summary>
     /// 桥接协议：主程序（64 位/AnyCPU）与 32 位桥接进程之间一行一条 JSON。

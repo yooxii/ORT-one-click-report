@@ -15,7 +15,7 @@
     <MapFileExtensions>true</MapFileExtensions>
     <PublisherName>Lucas Li%28AcBel ORT%29</PublisherName>
     <ApplicationRevision>0</ApplicationRevision>
-    <ApplicationVersion>0.6.9.0</ApplicationVersion>
+    <ApplicationVersion>0.6.10.0</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <CreateDesktopShortcut>true</CreateDesktopShortcut>
     <PublishWizardCompleted>true</PublishWizardCompleted>
@@ -182,6 +182,7 @@
     <Compile Include="Models\LocalSettings.cs" />
     <Compile Include="Models\LoginCredential.cs" />
     <Compile Include="Models\Sim44Credential.cs" />
+    <Compile Include="Models\SpProgramCatalog.cs" />
     <Compile Include="Services\LocalSettingsStore.cs" />
     <Compile Include="Services\LoginCredentialStore.cs" />
     <Compile Include="Services\Sim44\Sim44BridgeClient.cs" />
@@ -382,6 +383,9 @@
     <Compile Include="Main\Views\WindowRoleRequest.xaml.cs">
       <DependentUpon>WindowRoleRequest.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Main\Views\WindowSpPrograms.xaml.cs">
+      <DependentUpon>WindowSpPrograms.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Reports\Views\WindowReportTemplate.xaml.cs">
       <DependentUpon>WindowReportTemplate.xaml</DependentUpon>
     </Compile>
@@ -514,6 +518,10 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="Main\Views\WindowRoleRequest.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Main\Views\WindowSpPrograms.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
@@ -834,17 +842,18 @@
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!--
-    SIM44（MES 回线工令）桥接程序：主程序是 AnyCPU，而 Oracle 8.1.7 客户端只有 32 位，
-    64 位进程加载不了 32 位 OCI，所以单独编一个 x86 控制台程序，构建后复制到输出目录的 Sim44Bridge 子目录。
+    MES 桥接程序（模块 sim44 = MES 回线工令）：主程序是 AnyCPU，而 Oracle 8.1.7 客户端只有 32 位，
+    64 位进程加载不了 32 位 OCI，所以单独编一个 x86 控制台程序，构建后复制到输出目录的 MesBridge 子目录。
+    以后 OQC 测试记录、成品库存等程式要直连老库时，在 MesBridge 里加模块即可，不用再建工程。
   -->
-  <Target Name="BuildSim44Bridge" AfterTargets="Build" Condition="Exists('Sim44Bridge\Sim44Bridge.csproj')">
-    <MSBuild Projects="$(MSBuildProjectDirectory)\Sim44Bridge\Sim44Bridge.csproj"
+  <Target Name="BuildMesBridge" AfterTargets="Build" Condition="Exists('MesBridge\\MesBridge.csproj')">
+    <MSBuild Projects="$(MSBuildProjectDirectory)\MesBridge\MesBridge.csproj"
              Targets="Build"
              Properties="Configuration=$(Configuration);Platform=x86" />
     <ItemGroup>
-      <Sim44BridgeFiles Include="$(MSBuildProjectDirectory)\Sim44Bridge\bin\$(Configuration)\Sim44Bridge.exe" />
-      <Sim44BridgeFiles Include="$(MSBuildProjectDirectory)\Sim44Bridge\bin\$(Configuration)\Sim44Bridge.pdb" Condition="'$(Configuration)' == 'Debug'" />
+      <MesBridgeFiles Include="$(MSBuildProjectDirectory)\MesBridge\bin\$(Configuration)\MesBridge.exe" />
+      <MesBridgeFiles Include="$(MSBuildProjectDirectory)\MesBridge\bin\$(Configuration)\MesBridge.pdb" Condition="'$(Configuration)' == 'Debug'" />
     </ItemGroup>
-    <Copy SourceFiles="@(Sim44BridgeFiles)" DestinationFolder="$(OutDir)Sim44Bridge" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(MesBridgeFiles)" DestinationFolder="$(OutDir)MesBridge" SkipUnchangedFiles="true" />
   </Target>
 </Project>

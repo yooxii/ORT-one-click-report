@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace ORT一键报告.Models
@@ -54,6 +54,12 @@ namespace ORT一键报告.Models
 
         /// <summary>MES（SIM44 回线工令）连接设置（本机保存：不同厂区/测试库可能用不同别名）</summary>
         public Sim44Settings Sim44 { get; set; } = new Sim44Settings();
+
+        /// <summary>
+        /// SP程序集里各程式 exe 的路径覆盖（条目 id → 完整路径）。
+        /// 默认路径写在 <see cref="MesProgramInfo.DefaultPath"/>，厂区不一样时改这里，不动代码。
+        /// </summary>
+        public Dictionary<string, string> SpPrograms { get; set; }
     }
 
     /// <summary>

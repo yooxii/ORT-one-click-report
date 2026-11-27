@@ -1,7 +1,9 @@
+using Microsoft.Extensions.DependencyInjection;
 using NLog;
 using ORT一键报告.Models;
 using ORT一键报告.Plans.ViewModels;
 using ORT一键报告.Services;
+using ORT一键报告.Services.Sim44;
 using ORT一键报告.Utils;
 using System;
 using System.Collections.Generic;
@@ -168,6 +170,47 @@ namespace ORT一键报告.Plans.Views
             Title = string.Format(LanguageService.Get(TitleKey(_mode)), _rows.Count);
             btn_confirm.IsEnabled = Targets.Count > 0;
             btn_remove.IsEnabled = dg_items.SelectedItems.Count > 0;
+            // MES 工令登记只在批量回线时出现（批量删除不写 MES）
+            btn_mes.Visibility = _mode == RequisitionBatchMode.Return ? Visibility.Visible : Visibility.Collapsed;
+            btn_mes.IsEnabled = _mode == RequisitionBatchMode.Return && _rows.Count > 0;
+        }
+
+        /* ###############################  MES 工令登记入口  ################################ */
+
+        /// <summary>
+        /// 打开 MES 工令登记（SIM44）：把清单里选中的那条（没选就用第一条）带过去，
+        /// 工令=回线RT工令、线别、回线日期（用上面填的）、数量按记录预填。
+        /// 目前是逐条登记入口；真正的「一键把整张清单都登记上去」下一步再做。
+        /// </summary>
+        private void Btn_Mes_Click(object sender, RoutedEventArgs e)
+        {
+            Requisition req = dg_items.SelectedItem as Requisition ?? _rows.FirstOrDefault();
+            if (req == null)
+            {
+                _ = MessageBox.Show(LanguageService.Get("Plans_Batch_EmptyConfirm"), LanguageService.Get("Cap_Info"));
+                return;
+            }
+            if (string.IsNullOrWhiteSpace(req.ReturnRtOrder))
+            {
+                _ = MessageBox.Show(LanguageService.Get("ReqReturn_MesNeedRtOrder"), LanguageService.Get("Cap_Info"));
+                return;
+            }
+            Sim44Service service = App.ServiceProvider.GetRequiredService<Sim44Service>();
+            DateTime date = dp_returnDate.SelectedDate ?? DateTime.Today;
+            string qty = string.IsNullOrWhiteSpace(req.ReturnQty) ? req.OutQty : req.ReturnQty;
+            Sim44Row prefill = new()
+            {
+                MoNo = req.ReturnRtOrder ?? "",
+                LineNo = req.LineNo ?? "",
+                StartDate = date.ToString("yyyy/MM/dd"),
+                MoQty = qty ?? "",
+            };
+            WindowSim44Return window = new(service, prefill, req.ModelName) { Owner = this };
+            window.ShowDialog();
+            if (window.AnyChangeSaved)
+            {
+                _logger.Info($"批量回线：已为 {req.RequisitionNo} 登记 MES 工令 {prefill.MoNo}");
+            }
         }
 
         /* ###############################  窗口位置与置顶  ################################ */
