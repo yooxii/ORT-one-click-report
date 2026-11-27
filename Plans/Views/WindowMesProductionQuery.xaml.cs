@@ -1,4 +1,4 @@
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using NLog;
 using ORT一键报告.Services;
 using ORT一键报告.Services.Sim44;
@@ -39,7 +39,9 @@ namespace ORT一键报告.Plans.Views
             dp_s_to.SelectedDate = new DateTime(today.Year, today.Month, 1).AddMonths(1).AddDays(-1);
             dp_p_from.SelectedDate = new DateTime(today.Year, today.Month, 1);
             dp_p_to.SelectedDate = today;
-            tabs.SelectedIndex = _initialTab is 0 or 1 ? _initialTab : 0;
+            dp_st_from.SelectedDate = new DateTime(today.Year, today.Month, 1).AddMonths(-6);
+            dp_st_to.SelectedDate = today;
+            tabs.SelectedIndex = _initialTab is 0 or 1 or 2 ? _initialTab : 0;
 
             if (!_service.IsLoggedIn)
             {
@@ -65,6 +67,7 @@ namespace ORT一键报告.Plans.Views
             btn_login.IsEnabled = !_busy;
             btn_s_query.IsEnabled = !_busy;
             btn_p_query.IsEnabled = !_busy;
+            btn_st_query.IsEnabled = !_busy;
         }
 
         private async Task<bool> EnsureLoginAsync()
@@ -144,6 +147,35 @@ namespace ORT一键报告.Plans.Views
                 SetHint(table.Rows.Count == 0
                     ? LanguageService.Get("ProdQuery_Msg_PreIssueEmpty")
                     : string.Format(LanguageService.Get("ProdQuery_Msg_PreIssueFormat"), table.Rows.Count));
+            });
+        }
+
+        /* ###############################  成品库存  ################################ */
+
+        private async void Btn_StockQuery_Click(object sender, RoutedEventArgs e)
+        {
+            if (!await EnsureLoginAsync())
+            {
+                return;
+            }
+            string part = txt_st_part.Text.Trim();
+            if (string.IsNullOrEmpty(part))
+            {
+                MessageBox.Show(this, LanguageService.Get("ProdQuery_Msg_PartRequired"), LanguageService.Get("Cap_Info"));
+                txt_st_part.Focus();
+                return;
+            }
+            string from = dp_st_from.SelectedDate?.ToString("yyyyMMdd") ?? "";
+            string to = dp_st_to.SelectedDate?.ToString("yyyyMMdd") ?? "";
+            string pallet = txt_st_pallet.Text.Trim();
+            await RunBusyAsync(LanguageService.Get("Oqc_Msg_Querying"), async () =>
+            {
+                DataTable table = await Task.Run(() => _service.QueryStock(part, from, to, pallet, 500));
+                grid_stock.ItemsSource = table.DefaultView;
+                txt_st_state.Text = string.Format(LanguageService.Get("ProdQuery_Msg_CountFormat"), table.Rows.Count);
+                SetHint(table.Rows.Count == 0
+                    ? LanguageService.Get("ProdQuery_Msg_StockEmpty")
+                    : string.Format(LanguageService.Get("ProdQuery_Msg_StockFormat"), table.Rows.Count, part));
             });
         }
 

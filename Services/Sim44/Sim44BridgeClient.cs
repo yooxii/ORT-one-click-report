@@ -418,6 +418,21 @@ namespace ORT一键报告.Services.Sim44
             return reply["rows"] as JArray ?? [];
         }
 
+        /// <summary>成品库存（SIM92/SIM96/SIM94 在库栈板，还原自 C_IVI33）</summary>
+        public JArray QueryStock(string partNo, string recvDateFrom, string recvDateTo, string palletNo, int limit = 500)
+        {
+            JObject reply = Send(new JObject
+            {
+                ["op"] = "stockquery",
+                ["partNo"] = partNo ?? "",
+                ["recvDateFrom"] = recvDateFrom ?? "",
+                ["recvDateTo"] = recvDateTo ?? "",
+                ["palletNo"] = palletNo ?? "",
+                ["limit"] = limit,
+            }, 90000);
+            return reply["rows"] as JArray ?? [];
+        }
+
         /// <summary>改数据库密码</summary>
         public void ChangePassword(string oldPassword, string newPassword, int timeoutMs = 30000)
         {

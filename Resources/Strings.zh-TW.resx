@@ -4186,7 +4186,7 @@
     <value>成品庫存查詢</value>
   </data>
   <data name="SpPrograms_Inventory_Desc" xml:space="preserve">
-    <value>開啟 MES 成品庫存查詢程式（C_IVI33）</value>
+    <value>原生查詢 MES 成品庫存（在庫棧板 + 逾期判定），依料號與入庫日期過濾</value>
   </data>
   <data name="SpPrograms_MoWorkOrder_Name" xml:space="preserve">
     <value>小工令查詢（月排程來源）</value>
@@ -4364,5 +4364,26 @@
   </data>
   <data name="ProdQuery_Msg_PreIssueFormat" xml:space="preserve">
     <value>準備領用單共 {0} 筆（IVM530_MP，預領匯入的來源）</value>
+  </data>
+  <data name="ProdQuery_TabStock" xml:space="preserve">
+    <value>成品庫存</value>
+  </data>
+  <data name="ProdQuery_RecvDate" xml:space="preserve">
+    <value>入庫日期</value>
+  </data>
+  <data name="ProdQuery_StockPartHint" xml:space="preserve">
+    <value>料號要與 MES 完全一致（原程式也是精確比對）</value>
+  </data>
+  <data name="ProdQuery_StockHint" xml:space="preserve">
+    <value>只列未報廢、未領用核銷的在庫棧板；超過 180 天標「逾期」</value>
+  </data>
+  <data name="ProdQuery_Msg_PartRequired" xml:space="preserve">
+    <value>請先輸入料號</value>
+  </data>
+  <data name="ProdQuery_Msg_StockEmpty" xml:space="preserve">
+    <value>這個料號在區間內沒有在庫棧板。</value>
+  </data>
+  <data name="ProdQuery_Msg_StockFormat" xml:space="preserve">
+    <value>料號 {1} 在庫棧板 {0} 筆（還原自 C_IVI33）</value>
   </data>
 </root>

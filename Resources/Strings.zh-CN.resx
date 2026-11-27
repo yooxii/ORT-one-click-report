@@ -4186,7 +4186,7 @@
     <value>成品库存查询</value>
   </data>
   <data name="SpPrograms_Inventory_Desc" xml:space="preserve">
-    <value>打开 MES 成品库存查询程式（C_IVI33）</value>
+    <value>原生查询 MES 成品库存（在库栈板 + 逾期判定），按料号与入库日期过滤</value>
   </data>
   <data name="SpPrograms_MoWorkOrder_Name" xml:space="preserve">
     <value>小工令查询（月排程来源）</value>
@@ -4364,5 +4364,26 @@
   </data>
   <data name="ProdQuery_Msg_PreIssueFormat" xml:space="preserve">
     <value>准备领用单共 {0} 笔（IVM530_MP，预领导入的来源）</value>
+  </data>
+  <data name="ProdQuery_TabStock" xml:space="preserve">
+    <value>成品库存</value>
+  </data>
+  <data name="ProdQuery_RecvDate" xml:space="preserve">
+    <value>入库日期</value>
+  </data>
+  <data name="ProdQuery_StockPartHint" xml:space="preserve">
+    <value>料号要与 MES 完全一致（原程式也是精确匹配）</value>
+  </data>
+  <data name="ProdQuery_StockHint" xml:space="preserve">
+    <value>只列未报废、未领用核销的在库栈板；超过 180 天标「逾期」</value>
+  </data>
+  <data name="ProdQuery_Msg_PartRequired" xml:space="preserve">
+    <value>请先输入料号</value>
+  </data>
+  <data name="ProdQuery_Msg_StockEmpty" xml:space="preserve">
+    <value>这个料号在区间内没有在库栈板。</value>
+  </data>
+  <data name="ProdQuery_Msg_StockFormat" xml:space="preserve">
+    <value>料号 {1} 在库栈板 {0} 笔（还原自 C_IVI33）</value>
   </data>
 </root>

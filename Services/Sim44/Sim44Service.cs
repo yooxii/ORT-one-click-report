@@ -318,6 +318,14 @@ namespace ORT一键报告.Services.Sim44
             return ToTable(_client.QueryPrepareIssue(dateFrom, dateTo, user, vchnoFrom, vchnoTo, partFrom, partTo, limit));
         }
 
+        /// <summary>成品库存查询（按料号 + 入库日期区间）</summary>
+        public System.Data.DataTable QueryStock(string partNo, string recvDateFrom, string recvDateTo, string palletNo,
+            int limit = 500)
+        {
+            RequireLogin();
+            return ToTable(_client.QueryStock(partNo, recvDateFrom, recvDateTo, palletNo, limit));
+        }
+
         /// <summary>查数据字典，用于「连接设置」里的探测按钮</summary>
         public System.Collections.Generic.List<string> Probe()
         {

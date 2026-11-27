@@ -4573,7 +4573,7 @@ Continue importing anyway? (fixing the backup folder first is recommended)</valu
     <value>Finished goods inventory</value>
   </data>
   <data name="SpPrograms_Inventory_Desc" xml:space="preserve">
-    <value>Open the MES finished goods inventory program (C_IVI33)</value>
+    <value>Query MES finished-goods stock natively (pallets in stock, overdue flag) by part and received date</value>
   </data>
   <data name="SpPrograms_MoWorkOrder_Name" xml:space="preserve">
     <value>Work order lookup (monthly schedule source)</value>
@@ -4751,5 +4751,26 @@ Continue importing anyway? (fixing the backup folder first is recommended)</valu
   </data>
   <data name="ProdQuery_Msg_PreIssueFormat" xml:space="preserve">
     <value>{0} prepare-issue row(s) from IVM530_MP (source of the pre-issue import)</value>
+  </data>
+  <data name="ProdQuery_TabStock" xml:space="preserve">
+    <value>Finished goods</value>
+  </data>
+  <data name="ProdQuery_RecvDate" xml:space="preserve">
+    <value>Received date</value>
+  </data>
+  <data name="ProdQuery_StockPartHint" xml:space="preserve">
+    <value>The part number must match MES exactly (the original program does an exact match too)</value>
+  </data>
+  <data name="ProdQuery_StockHint" xml:space="preserve">
+    <value>Lists only pallets still in stock (not scrapped / not issued); older than 180 days is marked overdue</value>
+  </data>
+  <data name="ProdQuery_Msg_PartRequired" xml:space="preserve">
+    <value>Please enter a part number</value>
+  </data>
+  <data name="ProdQuery_Msg_StockEmpty" xml:space="preserve">
+    <value>No pallets in stock for this part in the range.</value>
+  </data>
+  <data name="ProdQuery_Msg_StockFormat" xml:space="preserve">
+    <value>{0} pallet(s) in stock for part {1} (restored from C_IVI33)</value>
   </data>
 </root>

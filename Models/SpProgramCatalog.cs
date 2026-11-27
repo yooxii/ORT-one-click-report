@@ -77,7 +77,8 @@ namespace ORT一键报告.Models
                 Id = InventoryId,
                 NameKey = "SpPrograms_Inventory_Name",
                 DescriptionKey = "SpPrograms_Inventory_Desc",
-                Kind = SpProgramKind.Placeholder,
+                // 已改成原生查询（还原自 C_IVI33）
+                Kind = SpProgramKind.Internal,
                 DefaultPath = @"C:\acbelap\C_IVI33.EXE",
             },
             new SpProgramInfo

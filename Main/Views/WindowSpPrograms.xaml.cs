@@ -258,6 +258,12 @@ namespace ORT一键报告.Main.Views
                 window.ShowDialog();
                 return;
             }
+            if (row.Info.Id == SpProgramCatalog.InventoryId)
+            {
+                WindowMesProductionQuery window = new(2) { Owner = this };
+                window.ShowDialog();
+                return;
+            }
             MessageBox.Show(this, string.Format(LanguageService.Get("SpPrograms_Msg_TodoFormat"), row.Name),
                 LanguageService.Get("Cap_Info"), MessageBoxButton.OK, MessageBoxImage.Information);
         }

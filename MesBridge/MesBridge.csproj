@@ -44,6 +44,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="OqcRepository.cs" />
+    <Compile Include="InventoryRepository.cs" />
     <Compile Include="ProductionRepository.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Sim44Repository.cs" />

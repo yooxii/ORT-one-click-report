@@ -301,6 +301,19 @@ namespace MesBridge
                     return;
                 }
 
+                case "stockquery":
+                {
+                    RequireLogin(repo);
+                    List<Dictionary<string, object>> rows = new InventoryRepository(repo).Stock(
+                        BridgeProtocol.Str(request, "partNo"),
+                        BridgeProtocol.Str(request, "recvDateFrom"),
+                        BridgeProtocol.Str(request, "recvDateTo"),
+                        BridgeProtocol.Str(request, "palletNo"),
+                        BridgeProtocol.Int(request, "limit", 500));
+                    Write(new Dictionary<string, object> { ["ok"] = true, ["rows"] = rows, ["count"] = rows.Count });
+                    return;
+                }
+
                 case "probe":
                 {
                     if (repo == null || !repo.IsOpen)

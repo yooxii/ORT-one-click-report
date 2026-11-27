@@ -139,6 +139,65 @@
                               GridLinesVisibility="Horizontal"/>
                 </Grid>
             </TabItem>
+
+            <!--成品库存（还原自 C_IVI33）-->
+            <TabItem Header="{lex:Loc ProdQuery_TabStock}">
+                <Grid Margin="8">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Label Content="{lex:Loc Oqc_Field_PartNo}" VerticalContentAlignment="Center"/>
+                        <TextBox x:Name="txt_st_part" Grid.Column="1" Margin="4,3" VerticalContentAlignment="Center"
+                                 ToolTip="{lex:Loc ProdQuery_StockPartHint}"/>
+                        <Label Grid.Column="2" Content="{lex:Loc ProdQuery_RecvDate}" VerticalContentAlignment="Center" Margin="8,0,0,0"/>
+                        <Grid Grid.Column="3" Margin="4,3">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <DatePicker x:Name="dp_st_from" VerticalContentAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Text="~" VerticalAlignment="Center" Margin="4,0"/>
+                            <DatePicker x:Name="dp_st_to" Grid.Column="2" VerticalContentAlignment="Center"/>
+                        </Grid>
+                        <Button x:Name="btn_st_query" Grid.Column="4" Content="{lex:Loc Common_Query}" Padding="16,3"
+                                Margin="8,0,0,0" Click="Btn_StockQuery_Click"/>
+                        <TextBlock Grid.Column="5" x:Name="txt_st_state" VerticalAlignment="Center" Margin="10,0,0,0"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"/>
+                    </Grid>
+                    <Grid Grid.Row="1" Margin="0,6,0,0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Label Content="{lex:Loc Oqc_Field_Pallet}" VerticalContentAlignment="Center"/>
+                            <TextBox x:Name="txt_st_pallet" Grid.Column="1" Margin="4,3" VerticalContentAlignment="Center"/>
+                            <TextBlock Grid.Column="2" Text="{lex:Loc ProdQuery_StockHint}" TextWrapping="Wrap"
+                                       Margin="10,0,0,0" VerticalAlignment="Center"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"/>
+                        </Grid>
+                        <DataGrid x:Name="grid_stock" Grid.Row="1" Margin="0,8,0,0" AutoGenerateColumns="True"
+                                  IsReadOnly="True" CanUserAddRows="False" HeadersVisibility="Column"
+                                  GridLinesVisibility="Horizontal"/>
+                    </Grid>
+                </Grid>
+            </TabItem>
         </TabControl>
 
         <Grid Grid.Row="2" Margin="0,10,0,0">
