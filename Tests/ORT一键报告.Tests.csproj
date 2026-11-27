@@ -71,6 +71,7 @@
     <Compile Include="ReportTemplateSmokeTests.cs" />
     <Compile Include="ReturnRtCodeCheckTests.cs" />
     <Compile Include="SearchHistoryRulesTests.cs" />
+    <Compile Include="Sim44CredentialTests.cs" />
     <Compile Include="SnVerificationTests.cs" />
     <Compile Include="StartupManagerTests.cs" />
   </ItemGroup>

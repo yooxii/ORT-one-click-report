@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
@@ -15,7 +15,7 @@
     <MapFileExtensions>true</MapFileExtensions>
     <PublisherName>Lucas Li%28AcBel ORT%29</PublisherName>
     <ApplicationRevision>0</ApplicationRevision>
-    <ApplicationVersion>0.6.8.3</ApplicationVersion>
+    <ApplicationVersion>0.6.9.0</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <CreateDesktopShortcut>true</CreateDesktopShortcut>
     <PublishWizardCompleted>true</PublishWizardCompleted>
@@ -181,8 +181,12 @@
     <Compile Include="Services\AppSettingsService.cs" />
     <Compile Include="Models\LocalSettings.cs" />
     <Compile Include="Models\LoginCredential.cs" />
+    <Compile Include="Models\Sim44Credential.cs" />
     <Compile Include="Services\LocalSettingsStore.cs" />
     <Compile Include="Services\LoginCredentialStore.cs" />
+    <Compile Include="Services\Sim44\Sim44BridgeClient.cs" />
+    <Compile Include="Services\Sim44\Sim44CredentialStore.cs" />
+    <Compile Include="Services\Sim44\Sim44Service.cs" />
     <Compile Include="Services\DataFolderMigrator.cs" />
     <Compile Include="Utils\FolderUtil.cs" />
     <Compile Include="Utils\NetworkDriveMapper.cs" />
@@ -255,6 +259,12 @@
     </Compile>
     <Compile Include="Plans\Views\WindowRequisitionReturn.xaml.cs">
       <DependentUpon>WindowRequisitionReturn.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Plans\Views\WindowSim44Login.xaml.cs">
+      <DependentUpon>WindowSim44Login.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Plans\Views\WindowSim44Return.xaml.cs">
+      <DependentUpon>WindowSim44Return.xaml</DependentUpon>
     </Compile>
     <Compile Include="Plans\Views\WindowRequisitionStockIn.xaml.cs">
       <DependentUpon>WindowRequisitionStockIn.xaml</DependentUpon>
@@ -365,6 +375,12 @@
     </Compile>
     <Compile Include="Main\Views\WindowUserCenter.xaml.cs">
       <DependentUpon>WindowUserCenter.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Main\Views\WindowChangePassword.xaml.cs">
+      <DependentUpon>WindowChangePassword.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Main\Views\WindowRoleRequest.xaml.cs">
+      <DependentUpon>WindowRoleRequest.xaml</DependentUpon>
     </Compile>
     <Compile Include="Reports\Views\WindowReportTemplate.xaml.cs">
       <DependentUpon>WindowReportTemplate.xaml</DependentUpon>
@@ -493,6 +509,14 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Page Include="Main\Views\WindowChangePassword.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Main\Views\WindowRoleRequest.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="Reports\Views\WindowReportTemplate.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -530,6 +554,14 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Plans\Views\WindowRequisitionReturn.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Plans\Views\WindowSim44Login.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Plans\Views\WindowSim44Return.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -801,4 +833,18 @@
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!--
+    SIM44（MES 回线工令）桥接程序：主程序是 AnyCPU，而 Oracle 8.1.7 客户端只有 32 位，
+    64 位进程加载不了 32 位 OCI，所以单独编一个 x86 控制台程序，构建后复制到输出目录的 Sim44Bridge 子目录。
+  -->
+  <Target Name="BuildSim44Bridge" AfterTargets="Build" Condition="Exists('Sim44Bridge\Sim44Bridge.csproj')">
+    <MSBuild Projects="$(MSBuildProjectDirectory)\Sim44Bridge\Sim44Bridge.csproj"
+             Targets="Build"
+             Properties="Configuration=$(Configuration);Platform=x86" />
+    <ItemGroup>
+      <Sim44BridgeFiles Include="$(MSBuildProjectDirectory)\Sim44Bridge\bin\$(Configuration)\Sim44Bridge.exe" />
+      <Sim44BridgeFiles Include="$(MSBuildProjectDirectory)\Sim44Bridge\bin\$(Configuration)\Sim44Bridge.pdb" Condition="'$(Configuration)' == 'Debug'" />
+    </ItemGroup>
+    <Copy SourceFiles="@(Sim44BridgeFiles)" DestinationFolder="$(OutDir)Sim44Bridge" SkipUnchangedFiles="true" />
+  </Target>
 </Project>

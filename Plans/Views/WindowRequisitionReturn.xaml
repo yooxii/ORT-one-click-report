@@ -18,9 +18,6 @@
             <RowDefinition Height="auto"/>
             <RowDefinition Height="auto"/>
             <RowDefinition Height="auto"/>
-            <RowDefinition Height="auto"/>
-            <RowDefinition Height="auto"/>
-            <RowDefinition Height="auto"/>
         </Grid.RowDefinitions>
 
         <!--机种名称/回线RT工令/回线数/线别：只读展示，内容可选中复制（Ctrl+C）-->
@@ -48,7 +45,23 @@
         <TextBlock Grid.Row="5" Grid.ColumnSpan="2" Margin="0,6,0,0" TextWrapping="Wrap"
                    Foreground="{DynamicResource TextSecondaryBrush}" Text="{lex:Loc ReqReturn_Hint}"/>
 
-        <StackPanel Grid.Row="6" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+        <!--MES 回线工令（SIM44）：原来要手工到 C_SIM19「重工工令輸入」里敲，这里可以一键登记/修改-->
+        <Border Grid.Row="6" Grid.ColumnSpan="2" BorderBrush="{DynamicResource BorderSubtleBrush}"
+                BorderThickness="0,1,0,0" Padding="0,8,0,0" Margin="0,8,0,0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock x:Name="txt_mesState" TextWrapping="Wrap" VerticalAlignment="Center"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           Text="{lex:Loc ReqReturn_MesHint}"/>
+                <Button x:Name="btn_mes" Grid.Column="1" Content="{lex:Loc ReqReturn_MesOpen}" Padding="12,3"
+                        Margin="8,0,0,0" VerticalAlignment="Center" Click="Btn_Mes_Click"/>
+            </Grid>
+        </Border>
+
+        <StackPanel Grid.Row="7" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
             <Button Content="{lex:Loc Plans_Menu_ReturnLine}" Width="90" Click="Btn_Return_Click" IsDefault="True"/>
             <Button Content="{lex:Loc Common_Cancel}" Width="90" Margin="10,0,0,0" Click="Btn_Cancel_Click" IsCancel="True"/>
         </StackPanel>

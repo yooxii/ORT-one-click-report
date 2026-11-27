@@ -4242,4 +4242,280 @@ Continue importing anyway? (fixing the backup folder first is recommended)</valu
   </data>
   <data name="Cap_BackupFailed" xml:space="preserve">
     <value>Backup failed</value>
-  </data></root>
+  </data>  <data name="Sim44_Title" xml:space="preserve">
+    <value>MES Return Work Order (SIM44)</value>
+  </data>
+  <data name="Sim44_Status_Db" xml:space="preserve">
+    <value>MES database: </value>
+  </data>
+  <data name="Sim44_Status_NotLoggedIn" xml:space="preserve">
+    <value>Not signed in</value>
+  </data>
+  <data name="Sim44_SelfTest" xml:space="preserve">
+    <value>Self-test</value>
+  </data>
+  <data name="Sim44_Login" xml:space="preserve">
+    <value>Sign in</value>
+  </data>
+  <data name="Sim44_Logout" xml:space="preserve">
+    <value>Sign out</value>
+  </data>
+  <data name="Sim44_QuerySection" xml:space="preserve">
+    <value>Query</value>
+  </data>
+  <data name="Sim44_Field_MoNo" xml:space="preserve">
+    <value>Work order (MO_NO)</value>
+  </data>
+  <data name="Sim44_Query_MoHint" xml:space="preserve">
+    <value>Prefix search on work order (blank = all)</value>
+  </data>
+  <data name="Sim44_Field_PartNo" xml:space="preserve">
+    <value>Part / model</value>
+  </data>
+  <data name="Sim44_Field_Line" xml:space="preserve">
+    <value>Line</value>
+  </data>
+  <data name="Sim44_Field_Date" xml:space="preserve">
+    <value>Date</value>
+  </data>
+  <data name="Sim44_ResultSection" xml:space="preserve">
+    <value>Results (select a row to load it below)</value>
+  </data>
+  <data name="Sim44_Field_LineName" xml:space="preserve">
+    <value>Line name</value>
+  </data>
+  <data name="Sim44_Field_Qty" xml:space="preserve">
+    <value>Qty</value>
+  </data>
+  <data name="Sim44_Field_UpdatedBy" xml:space="preserve">
+    <value>Updated by</value>
+  </data>
+  <data name="Sim44_Field_UpdatedAt" xml:space="preserve">
+    <value>Updated</value>
+  </data>
+  <data name="Sim44_EditSection" xml:space="preserve">
+    <value>Work order entry</value>
+  </data>
+  <data name="Sim44_Field_MoHint" xml:space="preserve">
+    <value>Return RT work order (RTAH…)</value>
+  </data>
+  <data name="Sim44_Field_PartHint" xml:space="preserve">
+    <value>Part number; use “…” to look up by model</value>
+  </data>
+  <data name="Sim44_LookupPart" xml:space="preserve">
+    <value>Look up part</value>
+  </data>
+  <data name="Sim44_LookupPartHint" xml:space="preserve">
+    <value>Pick the part number from MES</value>
+  </data>
+  <data name="Sim44_Field_LineNoHint" xml:space="preserve">
+    <value>Line code (e.g. A01)</value>
+  </data>
+  <data name="Sim44_LookupLine" xml:space="preserve">
+    <value>Look up line</value>
+  </data>
+  <data name="Sim44_LookupLineHint" xml:space="preserve">
+    <value>Pick a line (code + name)</value>
+  </data>
+  <data name="Sim44_Field_RmaHint" xml:space="preserve">
+    <value>Fill in only when there is an RMA; RMA_SEQ is numeric</value>
+  </data>
+  <data name="Sim44_Add" xml:space="preserve">
+    <value>Add</value>
+  </data>
+  <data name="Sim44_Modify" xml:space="preserve">
+    <value>Modify</value>
+  </data>
+  <data name="Sim44_AutoLoginOk" xml:space="preserve">
+    <value>Signed in with the saved password</value>
+  </data>
+  <data name="Sim44_Status_LoggedInFormat" xml:space="preserve">
+    <value>Signed in: {0}</value>
+  </data>
+  <data name="Sim44_Status_ExpiredFormat" xml:space="preserve">
+    <value>Password expired {0} day(s) ago — change it in User Center → Change password</value>
+  </data>
+  <data name="Sim44_Status_DaysLeftFormat" xml:space="preserve">
+    <value>Password expires in {0} day(s) (90-day policy)</value>
+  </data>
+  <data name="Sim44_Status_ExpiryUnknown" xml:space="preserve">
+    <value>Last change date unknown; expiry not calculated</value>
+  </data>
+  <data name="Sim44_Status_LoggedOut" xml:space="preserve">
+    <value>Signed out</value>
+  </data>
+  <data name="Sim44_Status_Querying" xml:space="preserve">
+    <value>Querying…</value>
+  </data>
+  <data name="Sim44_Status_NoResult" xml:space="preserve">
+    <value>No matching work order</value>
+  </data>
+  <data name="Sim44_Status_ResultFormat" xml:space="preserve">
+    <value>{0} row(s)</value>
+  </data>
+  <data name="Sim44_Status_RowSelected" xml:space="preserve">
+    <value>Loaded into the editor; click Modify to save</value>
+  </data>
+  <data name="Sim44_Msg_MoRequired" xml:space="preserve">
+    <value>Work order (MO_NO) is required</value>
+  </data>
+  <data name="Sim44_Msg_QtyRequired" xml:space="preserve">
+    <value>Quantity is required</value>
+  </data>
+  <data name="Sim44_Msg_QtyInvalid" xml:space="preserve">
+    <value>Quantity must be numeric</value>
+  </data>
+  <data name="Sim44_Msg_DateRequired" xml:space="preserve">
+    <value>Please pick a date</value>
+  </data>
+  <data name="Sim44_Confirm_Insert" xml:space="preserve">
+    <value>Add this work order?&amp;#10;&amp;#10;MO_NO: {0}&amp;#10;Part: {1}&amp;#10;Line: {2}&amp;#10;Date: {3}&amp;#10;Qty: {4}</value>
+  </data>
+  <data name="Sim44_Confirm_Update" xml:space="preserve">
+    <value>Save changes to this work order?&amp;#10;&amp;#10;MO_NO: {0}&amp;#10;Part: {1}&amp;#10;Line: {2}&amp;#10;Date: {3}&amp;#10;Qty: {4}</value>
+  </data>
+  <data name="Sim44_Status_Saving" xml:space="preserve">
+    <value>Saving…</value>
+  </data>
+  <data name="Sim44_Status_InsertedFormat" xml:space="preserve">
+    <value>Added {1} ({0} row)</value>
+  </data>
+  <data name="Sim44_Status_UpdatedFormat" xml:space="preserve">
+    <value>Updated {1} ({0} row)</value>
+  </data>
+  <data name="Sim44_Msg_NoSuchMo" xml:space="preserve">
+    <value>Work order {0} not found; use Add instead</value>
+  </data>
+  <data name="Sim44_Status_LookingUp" xml:space="preserve">
+    <value>Looking up…</value>
+  </data>
+  <data name="Sim44_Status_PartNotFound" xml:space="preserve">
+    <value>No part found</value>
+  </data>
+  <data name="Sim44_Status_PartPickedFormat" xml:space="preserve">
+    <value>Part {0} filled in</value>
+  </data>
+  <data name="Sim44_Status_LineNotFound" xml:space="preserve">
+    <value>No line found</value>
+  </data>
+  <data name="Sim44_Status_LinePickedFormat" xml:space="preserve">
+    <value>Line {0} filled in</value>
+  </data>
+  <data name="Sim44_ModelHintFormat" xml:space="preserve">
+    <value>Model: {0} (use “Look up part” to find the matching part number)</value>
+  </data>
+  <data name="Sim44_SelfTest_Ok" xml:space="preserve">
+    <value>Environment OK</value>
+  </data>
+  <data name="Sim44_SelfTest_Fail" xml:space="preserve">
+    <value>Environment problem</value>
+  </data>
+  <data name="Sim44_Login_Title" xml:space="preserve">
+    <value>MES database sign-in</value>
+  </data>
+  <data name="Sim44_Login_Hint" xml:space="preserve">
+    <value>Registering return work orders writes to MES (SIM44) and needs your database account. The password is encrypted on this PC and never leaves it.</value>
+  </data>
+  <data name="Sim44_Login_User" xml:space="preserve">
+    <value>User</value>
+  </data>
+  <data name="Sim44_Login_Password" xml:space="preserve">
+    <value>Password</value>
+  </data>
+  <data name="Sim44_Login_Remember" xml:space="preserve">
+    <value>Remember password (DPAPI-encrypted, only this Windows user can decrypt)</value>
+  </data>
+  <data name="Sim44_Msg_UserRequired" xml:space="preserve">
+    <value>Please enter the user name</value>
+  </data>
+  <data name="Sim44_Msg_PasswordRequired" xml:space="preserve">
+    <value>Please enter the password</value>
+  </data>
+  <data name="Sim44_Msg_BadCredential" xml:space="preserve">
+    <value>Wrong user name or password</value>
+  </data>
+  <data name="Sim44_Msg_PasswordExpired" xml:space="preserve">
+    <value>Database password expired — change it first (User Center → Change password)</value>
+  </data>
+  <data name="Sim44_Msg_Network" xml:space="preserve">
+    <value>Cannot reach the database server; check the plant network.</value>
+  </data>
+  <data name="Sim44_Msg_Environment" xml:space="preserve">
+    <value>MES runtime problem (missing bridge program or Oracle client).</value>
+  </data>
+  <data name="Sim44_Status_LoggingIn" xml:space="preserve">
+    <value>Signing in…</value>
+  </data>
+  <data name="Sim44_Status_SelfTesting" xml:space="preserve">
+    <value>Testing…</value>
+  </data>
+  <data name="UserCenter_ChangePasswordTitle" xml:space="preserve">
+    <value>Change password</value>
+  </data>
+  <data name="UserCenter_DbPasswordSection" xml:space="preserve">
+    <value>MES database password (return work orders)</value>
+  </data>
+  <data name="UserCenter_DbPasswordExpiry" xml:space="preserve">
+    <value>Password expiry</value>
+  </data>
+  <data name="UserCenter_ChangeDbPassword" xml:space="preserve">
+    <value>Change database password</value>
+  </data>
+  <data name="UserCenter_DbPasswordHintFormat" xml:space="preserve">
+    <value>Company policy: change every {0} days; last changed: {1}</value>
+  </data>
+  <data name="UserCenter_Msg_EmptyPassword" xml:space="preserve">
+    <value>Please enter the new password</value>
+  </data>
+  <data name="UserCenter_Msg_CurrentDbPasswordRequired" xml:space="preserve">
+    <value>Please enter the current database password</value>
+  </data>
+  <data name="UserCenter_Msg_SamePassword" xml:space="preserve">
+    <value>The new password must differ from the old one</value>
+  </data>
+  <data name="UserCenter_ConfirmChangeDbPassword" xml:space="preserve">
+    <value>Change the MES database password to: {0}? It takes effect immediately.</value>
+  </data>
+  <data name="UserCenter_DbPasswordChanged" xml:space="preserve">
+    <value>Database password changed</value>
+  </data>
+  <data name="UserCenter_RoleApplyTitle" xml:space="preserve">
+    <value>Request access</value>
+  </data>
+  <data name="UserCenter_RoleApplyAllGranted" xml:space="preserve">
+    <value>You already hold every requestable role</value>
+  </data>
+  <data name="UserCenter_SecuritySection" xml:space="preserve">
+    <value>Account &amp; security</value>
+  </data>
+  <data name="UserCenter_ChangePasswordEntry" xml:space="preserve">
+    <value>Change password…</value>
+  </data>
+  <data name="UserCenter_RoleApplyEntry" xml:space="preserve">
+    <value>Request access…</value>
+  </data>
+  <data name="UserCenter_PasswordSetState" xml:space="preserve">
+    <value>App password: set</value>
+  </data>
+  <data name="UserCenter_DbPasswordNotConfigured" xml:space="preserve">
+    <value>Not configured yet (you will be asked to sign in on first use)</value>
+  </data>
+  <data name="UserCenter_DbPasswordStateFormat" xml:space="preserve">
+    <value>MES database password: {0}</value>
+  </data>
+  <data name="ReqReturn_MesHint" xml:space="preserve">
+    <value>This return still has to be registered in MES (SIM44).</value>
+  </data>
+  <data name="ReqReturn_MesOpen" xml:space="preserve">
+    <value>Register MES work order</value>
+  </data>
+  <data name="ReqReturn_MesNeedRtOrder" xml:space="preserve">
+    <value>No return RT work order — cannot register in MES</value>
+  </data>
+  <data name="ReqReturn_MesSaved" xml:space="preserve">
+    <value>Registered / updated in MES</value>
+  </data>
+  <data name="Common_Query" xml:space="preserve">
+    <value>Query</value>
+  </data>
+</root>

@@ -3855,4 +3855,280 @@
   <data name="Plans_View_TabDragHint" xml:space="preserve">
     <value>拖動頁籤可改變順序，拖出頁籤條放手即可浮出成獨立視窗（雙擊也能浮出）</value>
   </data>
+  <data name="Sim44_Title" xml:space="preserve">
+    <value>MES 回線工令（SIM44）</value>
+  </data>
+  <data name="Sim44_Status_Db" xml:space="preserve">
+    <value>MES 資料庫：</value>
+  </data>
+  <data name="Sim44_Status_NotLoggedIn" xml:space="preserve">
+    <value>未登入</value>
+  </data>
+  <data name="Sim44_SelfTest" xml:space="preserve">
+    <value>環境自檢</value>
+  </data>
+  <data name="Sim44_Login" xml:space="preserve">
+    <value>登入</value>
+  </data>
+  <data name="Sim44_Logout" xml:space="preserve">
+    <value>登出</value>
+  </data>
+  <data name="Sim44_QuerySection" xml:space="preserve">
+    <value>查詢條件</value>
+  </data>
+  <data name="Sim44_Field_MoNo" xml:space="preserve">
+    <value>工令（MO_NO）</value>
+  </data>
+  <data name="Sim44_Query_MoHint" xml:space="preserve">
+    <value>依工令前綴查詢（留空查全部）</value>
+  </data>
+  <data name="Sim44_Field_PartNo" xml:space="preserve">
+    <value>料號/機種</value>
+  </data>
+  <data name="Sim44_Field_Line" xml:space="preserve">
+    <value>線別</value>
+  </data>
+  <data name="Sim44_Field_Date" xml:space="preserve">
+    <value>日期</value>
+  </data>
+  <data name="Sim44_ResultSection" xml:space="preserve">
+    <value>查詢結果（選取一列可帶出到下方編輯區）</value>
+  </data>
+  <data name="Sim44_Field_LineName" xml:space="preserve">
+    <value>線名</value>
+  </data>
+  <data name="Sim44_Field_Qty" xml:space="preserve">
+    <value>數量</value>
+  </data>
+  <data name="Sim44_Field_UpdatedBy" xml:space="preserve">
+    <value>修改人</value>
+  </data>
+  <data name="Sim44_Field_UpdatedAt" xml:space="preserve">
+    <value>修改日</value>
+  </data>
+  <data name="Sim44_EditSection" xml:space="preserve">
+    <value>工令登記</value>
+  </data>
+  <data name="Sim44_Field_MoHint" xml:space="preserve">
+    <value>回線RT工令（RTAH…）</value>
+  </data>
+  <data name="Sim44_Field_PartHint" xml:space="preserve">
+    <value>料號；可點右側「…」依機種名查找</value>
+  </data>
+  <data name="Sim44_LookupPart" xml:space="preserve">
+    <value>查料號</value>
+  </data>
+  <data name="Sim44_LookupPartHint" xml:space="preserve">
+    <value>選擇要從 MES 帶入的料號</value>
+  </data>
+  <data name="Sim44_Field_LineNoHint" xml:space="preserve">
+    <value>線別代號（如 A01）</value>
+  </data>
+  <data name="Sim44_LookupLine" xml:space="preserve">
+    <value>查線別</value>
+  </data>
+  <data name="Sim44_LookupLineHint" xml:space="preserve">
+    <value>選擇線別（線代號 + 線名）</value>
+  </data>
+  <data name="Sim44_Field_RmaHint" xml:space="preserve">
+    <value>有 RMA 時填寫，可留空（RMA_SEQ 填數字）</value>
+  </data>
+  <data name="Sim44_Add" xml:space="preserve">
+    <value>新增</value>
+  </data>
+  <data name="Sim44_Modify" xml:space="preserve">
+    <value>修改</value>
+  </data>
+  <data name="Sim44_AutoLoginOk" xml:space="preserve">
+    <value>已用本機儲存的密碼登入</value>
+  </data>
+  <data name="Sim44_Status_LoggedInFormat" xml:space="preserve">
+    <value>已登入：{0}</value>
+  </data>
+  <data name="Sim44_Status_ExpiredFormat" xml:space="preserve">
+    <value>密碼已逾期 {0} 天，請儘快到「使用者中心 → 修改密碼」變更</value>
+  </data>
+  <data name="Sim44_Status_DaysLeftFormat" xml:space="preserve">
+    <value>密碼還剩 {0} 天到期（公司要求 90 天變更）</value>
+  </data>
+  <data name="Sim44_Status_ExpiryUnknown" xml:space="preserve">
+    <value>不知道上次改密時間，到期日未計算</value>
+  </data>
+  <data name="Sim44_Status_LoggedOut" xml:space="preserve">
+    <value>已登出資料庫</value>
+  </data>
+  <data name="Sim44_Status_Querying" xml:space="preserve">
+    <value>查詢中…</value>
+  </data>
+  <data name="Sim44_Status_NoResult" xml:space="preserve">
+    <value>沒有符合條件的工令</value>
+  </data>
+  <data name="Sim44_Status_ResultFormat" xml:space="preserve">
+    <value>共 {0} 筆</value>
+  </data>
+  <data name="Sim44_Status_RowSelected" xml:space="preserve">
+    <value>已帶出到下方編輯區，改完點「修改」儲存</value>
+  </data>
+  <data name="Sim44_Msg_MoRequired" xml:space="preserve">
+    <value>工令（MO_NO）不能為空</value>
+  </data>
+  <data name="Sim44_Msg_QtyRequired" xml:space="preserve">
+    <value>數量不能為空</value>
+  </data>
+  <data name="Sim44_Msg_QtyInvalid" xml:space="preserve">
+    <value>數量必須是數字</value>
+  </data>
+  <data name="Sim44_Msg_DateRequired" xml:space="preserve">
+    <value>請選擇日期</value>
+  </data>
+  <data name="Sim44_Confirm_Insert" xml:space="preserve">
+    <value>新增這筆工令？&amp;#10;&amp;#10;工令：{0}&amp;#10;料號：{1}&amp;#10;線別：{2}&amp;#10;日期：{3}&amp;#10;數量：{4}</value>
+  </data>
+  <data name="Sim44_Confirm_Update" xml:space="preserve">
+    <value>儲存對這筆工令的修改？&amp;#10;&amp;#10;工令：{0}&amp;#10;料號：{1}&amp;#10;線別：{2}&amp;#10;日期：{3}&amp;#10;數量：{4}</value>
+  </data>
+  <data name="Sim44_Status_Saving" xml:space="preserve">
+    <value>儲存中…</value>
+  </data>
+  <data name="Sim44_Status_InsertedFormat" xml:space="preserve">
+    <value>已新增 {1}（{0} 列）</value>
+  </data>
+  <data name="Sim44_Status_UpdatedFormat" xml:space="preserve">
+    <value>已修改 {1}（{0} 列）</value>
+  </data>
+  <data name="Sim44_Msg_NoSuchMo" xml:space="preserve">
+    <value>找不到工令 {0}，無法修改（可改用「新增」）</value>
+  </data>
+  <data name="Sim44_Status_LookingUp" xml:space="preserve">
+    <value>查詢中…</value>
+  </data>
+  <data name="Sim44_Status_PartNotFound" xml:space="preserve">
+    <value>沒查到料號</value>
+  </data>
+  <data name="Sim44_Status_PartPickedFormat" xml:space="preserve">
+    <value>已帶入料號 {0}</value>
+  </data>
+  <data name="Sim44_Status_LineNotFound" xml:space="preserve">
+    <value>沒查到線別</value>
+  </data>
+  <data name="Sim44_Status_LinePickedFormat" xml:space="preserve">
+    <value>已帶入線別 {0}</value>
+  </data>
+  <data name="Sim44_ModelHintFormat" xml:space="preserve">
+    <value>機種名稱：{0}（可用「查料號」依機種名找對應料號）</value>
+  </data>
+  <data name="Sim44_SelfTest_Ok" xml:space="preserve">
+    <value>環境正常</value>
+  </data>
+  <data name="Sim44_SelfTest_Fail" xml:space="preserve">
+    <value>環境異常</value>
+  </data>
+  <data name="Sim44_Login_Title" xml:space="preserve">
+    <value>MES 資料庫登入</value>
+  </data>
+  <data name="Sim44_Login_Hint" xml:space="preserve">
+    <value>回線登記要寫 MES 的工令表（SIM44），需要你的資料庫帳號。密碼加密儲存在本機，不會外傳。</value>
+  </data>
+  <data name="Sim44_Login_User" xml:space="preserve">
+    <value>帳號</value>
+  </data>
+  <data name="Sim44_Login_Password" xml:space="preserve">
+    <value>密碼</value>
+  </data>
+  <data name="Sim44_Login_Remember" xml:space="preserve">
+    <value>記住密碼（DPAPI 加密，僅本機目前 Windows 使用者可解）</value>
+  </data>
+  <data name="Sim44_Msg_UserRequired" xml:space="preserve">
+    <value>請輸入帳號</value>
+  </data>
+  <data name="Sim44_Msg_PasswordRequired" xml:space="preserve">
+    <value>請輸入密碼</value>
+  </data>
+  <data name="Sim44_Msg_BadCredential" xml:space="preserve">
+    <value>帳號或密碼不正確</value>
+  </data>
+  <data name="Sim44_Msg_PasswordExpired" xml:space="preserve">
+    <value>資料庫密碼已過期，請先修改密碼（使用者中心 → 修改密碼）</value>
+  </data>
+  <data name="Sim44_Msg_Network" xml:space="preserve">
+    <value>連不上資料庫伺服器，請確認在公司內網。</value>
+  </data>
+  <data name="Sim44_Msg_Environment" xml:space="preserve">
+    <value>MES 執行環境異常（缺少橋接程式或 Oracle 用戶端）。</value>
+  </data>
+  <data name="Sim44_Status_LoggingIn" xml:space="preserve">
+    <value>登入中…</value>
+  </data>
+  <data name="Sim44_Status_SelfTesting" xml:space="preserve">
+    <value>自檢中…</value>
+  </data>
+  <data name="UserCenter_ChangePasswordTitle" xml:space="preserve">
+    <value>修改密碼</value>
+  </data>
+  <data name="UserCenter_DbPasswordSection" xml:space="preserve">
+    <value>MES 資料庫密碼（回線工令登記）</value>
+  </data>
+  <data name="UserCenter_DbPasswordExpiry" xml:space="preserve">
+    <value>密碼到期</value>
+  </data>
+  <data name="UserCenter_ChangeDbPassword" xml:space="preserve">
+    <value>修改資料庫密碼</value>
+  </data>
+  <data name="UserCenter_DbPasswordHintFormat" xml:space="preserve">
+    <value>公司要求每 {0} 天變更一次；上次變更：{1}</value>
+  </data>
+  <data name="UserCenter_Msg_EmptyPassword" xml:space="preserve">
+    <value>請輸入新密碼</value>
+  </data>
+  <data name="UserCenter_Msg_CurrentDbPasswordRequired" xml:space="preserve">
+    <value>請輸入目前的資料庫密碼</value>
+  </data>
+  <data name="UserCenter_Msg_SamePassword" xml:space="preserve">
+    <value>新舊密碼不能相同</value>
+  </data>
+  <data name="UserCenter_ConfirmChangeDbPassword" xml:space="preserve">
+    <value>確定把 MES 資料庫密碼改成：{0} ？改完立即生效。</value>
+  </data>
+  <data name="UserCenter_DbPasswordChanged" xml:space="preserve">
+    <value>資料庫密碼已修改</value>
+  </data>
+  <data name="UserCenter_RoleApplyTitle" xml:space="preserve">
+    <value>申請權限</value>
+  </data>
+  <data name="UserCenter_RoleApplyAllGranted" xml:space="preserve">
+    <value>你已有全部可申請的身分組，無需再申請</value>
+  </data>
+  <data name="UserCenter_SecuritySection" xml:space="preserve">
+    <value>帳號與安全</value>
+  </data>
+  <data name="UserCenter_ChangePasswordEntry" xml:space="preserve">
+    <value>修改密碼…</value>
+  </data>
+  <data name="UserCenter_RoleApplyEntry" xml:space="preserve">
+    <value>申請權限…</value>
+  </data>
+  <data name="UserCenter_PasswordSetState" xml:space="preserve">
+    <value>本程式密碼：已設定</value>
+  </data>
+  <data name="UserCenter_DbPasswordNotConfigured" xml:space="preserve">
+    <value>尚未設定（第一次登記回線工令時會提示登入）</value>
+  </data>
+  <data name="UserCenter_DbPasswordStateFormat" xml:space="preserve">
+    <value>MES 資料庫密碼：{0}</value>
+  </data>
+  <data name="ReqReturn_MesHint" xml:space="preserve">
+    <value>還需要把這條回線登記到 MES（工令表 SIM44）。</value>
+  </data>
+  <data name="ReqReturn_MesOpen" xml:space="preserve">
+    <value>登記 MES 工令</value>
+  </data>
+  <data name="ReqReturn_MesNeedRtOrder" xml:space="preserve">
+    <value>沒有回線RT工令，無法登記 MES 工令</value>
+  </data>
+  <data name="ReqReturn_MesSaved" xml:space="preserve">
+    <value>已在 MES 登記/更新該工令</value>
+  </data>
+  <data name="Common_Query" xml:space="preserve">
+    <value>查詢</value>
+  </data>
 </root>

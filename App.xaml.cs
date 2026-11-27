@@ -128,6 +128,7 @@ namespace ORT一键报告
                 services.AddSingleton<PlanExcelService>();
                 services.AddSingleton<AdminService>();
                 services.AddSingleton<ReviewService>();
+                services.AddSingleton<Services.Sim44.Sim44Service>();
                 services.AddSingleton<MailService>();
                 services.AddSingleton<MailNotifier>();
                 services.AddSingleton<ReportGenerationService>();

@@ -51,6 +51,29 @@ namespace ORT一键报告.Models
 
         /// <summary>预领的更新提醒设置（每周排程提醒 / 每天看板提醒，本机保存）</summary>
         public PreIssueReminderSettings PreIssueReminders { get; set; } = new PreIssueReminderSettings();
+
+        /// <summary>MES（SIM44 回线工令）连接设置（本机保存：不同厂区/测试库可能用不同别名）</summary>
+        public Sim44Settings Sim44 { get; set; } = new Sim44Settings();
+    }
+
+    /// <summary>
+    /// MES 回线工令（SIM44 表）的连接设置，存本机：
+    /// 数据库别名走 Oracle 的 tnsnames（默认与 BDE 别名 BSFC 指向同一个库），
+    /// 表名允许带 schema 前缀（例如 APITECH.SIM44），桥接程序路径用于非常规安装位置。
+    /// </summary>
+    public class Sim44Settings
+    {
+        /// <summary>Oracle 连接别名（tnsnames.ora 里的名字）</summary>
+        public string DataSource { get; set; } = "NT_BSFC.WORLD";
+
+        /// <summary>表名（可带 schema，默认 SIM44）</summary>
+        public string Table { get; set; } = "SIM44";
+
+        /// <summary>桥接程序完整路径（留空则在程序目录下自动查找）</summary>
+        public string BridgePath { get; set; }
+
+        /// <summary>上次使用的数据库账号（只记账号，密码单独加密存用户目录）</summary>
+        public string LastUser { get; set; }
     }
 
     /// <summary>
