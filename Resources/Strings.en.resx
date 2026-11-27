@@ -4590,4 +4590,10 @@ Continue importing anyway? (fixing the backup folder first is recommended)</valu
   <data name="Plans_Batch_MesToolTip" xml:space="preserve">
     <value>Open the MES work order entry for the selected row (or the first one) with values pre-filled</value>
   </data>
+  <data name="Sim44_Msg_NoTable" xml:space="preserve">
+    <value>Signed in, but this account cannot read the MES work order table (no grant or synonym). Ask the DBA for access.</value>
+  </data>
+  <data name="Sim44_Msg_NeedDba" xml:space="preserve">
+    <value>If only privileges are missing, send this to the DBA: GRANT SELECT, INSERT, UPDATE ON APITECH.SIM44 TO &lt;your account&gt;;</value>
+  </data>
 </root>

@@ -108,16 +108,17 @@ namespace MesBridge
                     }
                     catch (BridgeException ex)
                     {
-                        WriteError(ex.Code, ex.Message);
+                        WriteError(ex.Code, ex.Message, repo?.LastSql);
                     }
                     catch (OracleException ex)
                     {
                         (string code, string message) = ClassifyOracle(ex);
-                        WriteError(code, message);
+                        // 把出错的 SQL 一起带回去，主程序会写进日志，便于判断是哪张表/哪条语句
+                        WriteError(code, message, repo?.LastSql);
                     }
                     catch (Exception ex)
                     {
-                        WriteError("unknown", ex.GetType().Name + ": " + ex.Message);
+                        WriteError("unknown", ex.GetType().Name + ": " + ex.Message, repo?.LastSql);
                     }
                 }
             }
@@ -208,11 +209,24 @@ namespace MesBridge
                         WriteError(code, message);
                         return;
                     }
+                    // 登录成功后再确认表能访问：访问不到就在这一步说清楚，
+                    // 而不是等用户点「查询」才冒一句 ORA-00942。
+                    List<string> tables;
+                    try
+                    {
+                        tables = repo.ResolveAll();
+                    }
+                    catch (BridgeException ex)
+                    {
+                        WriteError(ex.Code, ex.Message, repo.LastSql);
+                        return;
+                    }
                     Write(new Dictionary<string, object>
                     {
                         ["ok"] = true,
                         ["user"] = actualUser,
                         ["dataSource"] = dataSource,
+                        ["tables"] = tables,
                     });
                     return;
                 }
@@ -390,14 +404,19 @@ namespace MesBridge
             return ("sql", message);
         }
 
-        private static void WriteError(string code, string message)
+        private static void WriteError(string code, string message, string sql = null)
         {
-            Write(new Dictionary<string, object>
+            Dictionary<string, object> payload = new Dictionary<string, object>
             {
                 ["ok"] = false,
                 ["code"] = code,
                 ["message"] = message,
-            });
+            };
+            if (!string.IsNullOrWhiteSpace(sql))
+            {
+                payload["sql"] = sql;
+            }
+            Write(payload);
         }
 
         private static void Write(Dictionary<string, object> payload)

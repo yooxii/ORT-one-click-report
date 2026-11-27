@@ -4203,4 +4203,10 @@
   <data name="Plans_Batch_MesToolTip" xml:space="preserve">
     <value>把清单里选中的那条（没选就用第一条）带到 MES 工令登记窗口，工令/线别/日期/数量已预填</value>
   </data>
+  <data name="Sim44_Msg_NoTable" xml:space="preserve">
+    <value>登录成功，但这个账号读不到 MES 的工令表（缺授权或同义词），请让 DBA 授权后再试。</value>
+  </data>
+  <data name="Sim44_Msg_NeedDba" xml:space="preserve">
+    <value>如果只是读取要权限，请把下面这句发给 DBA：GRANT SELECT, INSERT, UPDATE ON APITECH.SIM44 TO 你的账号;</value>
+  </data>
 </root>

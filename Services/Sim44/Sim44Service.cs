@@ -1,4 +1,4 @@
-using Newtonsoft.Json.Linq;
+﻿using Newtonsoft.Json.Linq;
 using NLog;
 using ORT一键报告.Models;
 using System;
@@ -71,6 +71,8 @@ namespace ORT一键报告.Services.Sim44
             Network,
             /// <summary>环境问题（缺桥接程序、缺 Oracle 客户端）</summary>
             Environment,
+            /// <summary>登录成功，但这个账号访问不到 SIM44 表（缺授权/同义词）</summary>
+            NoTable,
             /// <summary>其它错误</summary>
             Other,
         }
@@ -101,17 +103,22 @@ namespace ORT一键报告.Services.Sim44
                     {
                         Sim44CredentialStore.Touch(actual, now);
                     }
-                    _logger.Info($"SIM44 登录成功：{actual} @ {settings.DataSource}");
+                    _logger.Info($"SIM44 登录成功：{actual} @ {settings.DataSource}"
+                                 + (string.IsNullOrWhiteSpace(_client.LastLoginDiagnostics)
+                                     ? ""
+                                     : "（表解析：" + _client.LastLoginDiagnostics + "）"));
                     return (LoginOutcome.Success, actual, "");
                 }
                 catch (Sim44Exception ex)
                 {
-                    _logger.Warn($"SIM44 登录失败（{ex.Code}）：{ex.Message}");
+                    _logger.Warn($"SIM44 登录失败（{ex.Code}）：{ex.Message}"
+                                 + (string.IsNullOrWhiteSpace(ex.Detail) ? "" : "｜SQL：" + ex.Detail));
                     LoginOutcome outcome = ex.Code switch
                     {
                         "auth" => LoginOutcome.BadCredential,
                         "expired" => LoginOutcome.PasswordExpired,
                         "net" => LoginOutcome.Network,
+                        "notable" => LoginOutcome.NoTable,
                         "nobridge" or "crashed" or "badreply" => LoginOutcome.Environment,
                         _ => LoginOutcome.Other,
                     };

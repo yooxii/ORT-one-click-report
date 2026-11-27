@@ -1,4 +1,4 @@
-using NLog;
+﻿using NLog;
 using ORT一键报告.Services;
 using ORT一键报告.Services.Sim44;
 using System;
@@ -80,6 +80,9 @@ namespace ORT一键报告.Plans.Views
                         break;
                     case Sim44Service.LoginOutcome.PasswordExpired:
                         ShowMessage(LanguageService.Get("Sim44_Msg_PasswordExpired"));
+                        break;
+                    case Sim44Service.LoginOutcome.NoTable:
+                        ShowMessage(LanguageService.Get("Sim44_Msg_NoTable") + Environment.NewLine + message);
                         break;
                     case Sim44Service.LoginOutcome.Network:
                         ShowMessage(LanguageService.Get("Sim44_Msg_Network") + Environment.NewLine + message);

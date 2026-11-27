@@ -1,9 +1,10 @@
-﻿using NLog;
+using NLog;
 using Newtonsoft.Json.Linq;
 using ORT一键报告.Models;
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -171,6 +172,7 @@ namespace ORT一键报告.Services.Sim44
 
         /// <summary>
         /// 发一条请求并等响应（同一条管道，必须串行）。
+        /// 请求/响应都会写进日志（密码字段打码），出错时连 SQL 一起记下来，方便离线排查。
         /// </summary>
         private JObject Send(JObject request, int timeoutMs)
         {
@@ -178,6 +180,8 @@ namespace ORT一键报告.Services.Sim44
             {
                 EnsureStarted();
                 string line = request.ToString(Newtonsoft.Json.Formatting.None);
+                _logger.Debug("→ " + MaskSecrets(line));
+                System.Diagnostics.Stopwatch watch = System.Diagnostics.Stopwatch.StartNew();
                 _stdin.WriteLine(line);
                 Task<string> readTask = _stdout.ReadLineAsync();
                 if (!readTask.Wait(timeoutMs))
@@ -186,6 +190,7 @@ namespace ORT一键报告.Services.Sim44
                     throw new Sim44Exception("timeout", "数据库无响应（超时 " + timeoutMs / 1000 + " 秒），请检查网络后重试");
                 }
                 string response = readTask.Result;
+                watch.Stop();
                 if (response == null)
                 {
                     int exitCode = -1;
@@ -204,14 +209,34 @@ namespace ORT一键报告.Services.Sim44
                 }
                 if (reply.Value<bool?>("ok") != true)
                 {
-                    throw new Sim44Exception(reply.Value<string>("code") ?? "error",
-                        reply.Value<string>("message") ?? "未知错误");
+                    string code = reply.Value<string>("code") ?? "error";
+                    string message = reply.Value<string>("message") ?? "未知错误";
+                    string sql = reply.Value<string>("sql") ?? "";
+                    _logger.Warn($"← 失败〔{code}〕{watch.ElapsedMilliseconds}ms：{message}"
+                                 + (string.IsNullOrWhiteSpace(sql) ? "" : "｜SQL：" + sql));
+                    throw new Sim44Exception(code, message) { Detail = sql };
                 }
+                _logger.Debug($"← 成功 {watch.ElapsedMilliseconds}ms：" + MaskSecrets(reply.ToString(Newtonsoft.Json.Formatting.None)));
                 return reply;
             }
         }
 
+        /// <summary>日志里把密码字段打码（绝不让密码进日志）</summary>
+        private static string MaskSecrets(string json)
+        {
+            if (string.IsNullOrEmpty(json))
+            {
+                return "";
+            }
+            return System.Text.RegularExpressions.Regex.Replace(json,
+                "\"(pass|oldPass|newPass)\"\\s*:\\s*\"[^\"]*\"",
+                "\"$1\":\"***\"");
+        }
+
         /* ###############################  业务命令  ################################ */
+
+        /// <summary>上次登录时桥接程序报告的「表解析结果」（SIM44 → 实际表名 等），供日志与界面诊断用</summary>
+        public string LastLoginDiagnostics { get; private set; } = "";
 
         /// <summary>登录数据库（成功后桥接进程保持连接）</summary>
         public string Login(string user, string password, string dataSource, string table, int timeoutMs = 30000)
@@ -226,6 +251,9 @@ namespace ORT一键报告.Services.Sim44
             };
             JObject reply = Send(request, timeoutMs);
             CurrentUser = reply.Value<string>("user") ?? user;
+            LastLoginDiagnostics = reply["tables"] is JArray tables
+                ? string.Join("；", tables.Select(t => t.ToString()))
+                : "";
             return CurrentUser;
         }
 
@@ -371,6 +399,9 @@ namespace ORT一键报告.Services.Sim44
         }
 
         public string Code { get; }
+
+        /// <summary>出错时桥接程序回传的 SQL（只用于写日志/排障，不弹给用户）</summary>
+        public string Detail { get; set; } = "";
 
         /// <summary>账号或密码不对</summary>
         public bool IsAuth => Code == "auth" || Code == "expired";

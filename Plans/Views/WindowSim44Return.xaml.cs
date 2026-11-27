@@ -1,4 +1,4 @@
-using NLog;
+﻿using NLog;
 using ORT一键报告.Main.Views;
 using ORT一键报告.Services;
 using ORT一键报告.Services.Sim44;
@@ -457,7 +457,8 @@ namespace ORT一键报告.Plans.Views
             }
             catch (Sim44Exception ex)
             {
-                _logger.Warn($"SIM44 操作失败（{ex.Code}）：{ex.Message}");
+                _logger.Warn($"SIM44 操作失败（{ex.Code}）：{ex.Message}"
+                             + (string.IsNullOrWhiteSpace(ex.Detail) ? "" : "｜SQL：" + ex.Detail));
                 SetStatus(ex.Message);
                 if (ex.Code == "nologin")
                 {
