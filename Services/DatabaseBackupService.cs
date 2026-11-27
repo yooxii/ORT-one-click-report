@@ -251,10 +251,12 @@ namespace ORT一键报告.Services
                 return DatabaseBackupResult.Fail($"备份文件夹不可用：{folderError}");
             }
             List<DatabaseBackupEntry> entries = ListBackups();
-            DatabaseBackupEntry baseEntry = entries.FirstOrDefault();
-            if (baseEntry == null)
+            // 基准必须是「全量」：增量补丁是 JSON，打不开成数据库，
+            // 之前取最新一条（可能正是上一份增量）就会让后面的增量全部失败
+            DatabaseBackupEntry baseEntry = DatabaseBackupDiffer.PickDiffBase(entries);
+            if (baseEntry == null || !File.Exists(baseEntry.FilePath))
             {
-                return CreateFullBackup($"{reason}（还没有基准备份，先做全量）");
+                return CreateFullBackup($"{reason}（还没有可用的基准全量，先做全量）");
             }
             using BackupLock lockFile = TryAcquireLock(root);
             if (lockFile == null)
@@ -313,7 +315,16 @@ namespace ORT一键报告.Services
                 TryDelete(temp);
                 File.WriteAllText(temp, JsonConvert.SerializeObject(patch), new System.Text.UTF8Encoding(false));
                 TryDelete(target);
-                File.Move(temp, target);
+                try
+                {
+                    File.Move(temp, target);
+                }
+                catch (IOException)
+                {
+                    // 备份目录在网络共享上时改名偶发失败（或被占用）：退回复制，保证增量文件能落地
+                    File.Copy(temp, target, overwrite: true);
+                    TryDelete(temp);
+                }
                 DatabaseBackupEntry entry = Describe(target, DatabaseBackupKind.Incremental);
                 entry.BaseFileName = patch.BaseFileName;
                 entry.ChangedRows = patch.ChangedRows;

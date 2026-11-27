@@ -130,6 +130,12 @@
                 <!--看板平台配置：取数条件与平台链接，技术员及以上可改（入口放领退，不要求管理员）-->
                 <MenuItem x:Name="menu_ortSettings" Header="{lex:Loc Plans_Menu_OrtSettings}" Click="Menu_OrtSettings_Click"
                           ToolTip="{lex:Loc Plans_ToolTip_OrtSettings}"/>
+                <Separator/>
+                <!--导入入口：从管理模块搬回这里，导入前自动做一次数据库备份；技术员及以上可用-->
+                <MenuItem x:Name="menu_importRequisition" Header="{lex:Loc Plans_Menu_ImportRequisition}"
+                          Click="Menu_ImportRequisition_Click" ToolTip="{lex:Loc Plans_ToolTip_ImportRequisition}"/>
+                <MenuItem x:Name="menu_importSchedule" Header="{lex:Loc Plans_Menu_ImportSchedule}"
+                          Click="Menu_ImportSchedule_Click" ToolTip="{lex:Loc Plans_ToolTip_ImportSchedule}"/>
             </MenuItem>
             <MenuItem Header="{lex:Loc Common_View}">
                 <MenuItem x:Name="menu_view_toolbar" Header="{lex:Loc Menu_Toolbar}" IsCheckable="True" Click="Menu_View_Toggle_Click"/>

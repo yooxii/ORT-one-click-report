@@ -4214,4 +4214,32 @@ This cannot be restored directly but is logged; prefer Undo import if you only p
   </data>
   <data name="RoleRequest_Note" xml:space="preserve">
     <value>Reason</value>
+  </data>  <data name="Plans_Menu_ImportRequisition" xml:space="preserve">
+    <value>Import requisition sheet…</value>
+  </data>
+  <data name="Plans_ToolTip_ImportRequisition" xml:space="preserve">
+    <value>Import the finished-goods requisition record; a database backup is taken first (Technician or above)</value>
+  </data>
+  <data name="Plans_Menu_ImportSchedule" xml:space="preserve">
+    <value>Import schedule sheet…</value>
+  </data>
+  <data name="Plans_ToolTip_ImportSchedule" xml:space="preserve">
+    <value>Import the ORT Test Schedule and sync its dictionaries; a database backup is taken first (Technician or above)</value>
+  </data>
+  <data name="Plans_ImportRequisitionDone" xml:space="preserve">
+    <value>Requisition sheet imported: {0} added, {1} updated</value>
+  </data>
+  <data name="Msg_ImportNeedRole" xml:space="preserve">
+    <value>Importing needs the Technician role or above; you can apply for a role in the user center</value>
+  </data>
+  <data name="Msg_ImportWithPendingChanges" xml:space="preserve">
+    <value>There are unsaved table edits: submit or discard them before importing</value>
+  </data>
+  <data name="Msg_ImportBackupFailedFormat" xml:space="preserve">
+    <value>The automatic backup before importing failed: {0}
+
+Continue importing anyway? (fixing the backup folder first is recommended)</value>
+  </data>
+  <data name="Cap_BackupFailed" xml:space="preserve">
+    <value>Backup failed</value>
   </data></root>

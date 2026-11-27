@@ -4215,4 +4215,33 @@
   </data>
   <data name="RoleRequest_Note" xml:space="preserve">
     <value>申请说明</value>
+  </data>  <!-- 领退/计划的导入入口（技术员及以上）与导入前自动备份 -->
+  <data name="Plans_Menu_ImportRequisition" xml:space="preserve">
+    <value>导入领退表…</value>
+  </data>
+  <data name="Plans_ToolTip_ImportRequisition" xml:space="preserve">
+    <value>导入成品領用記錄；导入前会自动备份一次数据库（技术员及以上）</value>
+  </data>
+  <data name="Plans_Menu_ImportSchedule" xml:space="preserve">
+    <value>导入计划表…</value>
+  </data>
+  <data name="Plans_ToolTip_ImportSchedule" xml:space="preserve">
+    <value>导入 ORT Test Schedule 并同步字典；导入前会自动备份一次数据库（技术员及以上）</value>
+  </data>
+  <data name="Plans_ImportRequisitionDone" xml:space="preserve">
+    <value>领用表导入完成：新增 {0} 条，更新 {1} 条</value>
+  </data>
+  <data name="Msg_ImportNeedRole" xml:space="preserve">
+    <value>导入需要技术员及以上身份，可在用户中心申请身份组</value>
+  </data>
+  <data name="Msg_ImportWithPendingChanges" xml:space="preserve">
+    <value>当前有未提交的表格修改：请先提交或放弃这些修改，再导入</value>
+  </data>
+  <data name="Msg_ImportBackupFailedFormat" xml:space="preserve">
+    <value>导入前自动备份失败：{0}
+
+仍要继续导入吗？（建议先修好备份文件夹再导入）</value>
+  </data>
+  <data name="Cap_BackupFailed" xml:space="preserve">
+    <value>备份失败</value>
   </data></root>

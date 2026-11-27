@@ -38,6 +38,15 @@ namespace ORT一键报告.Plans.Views
         /// <summary>权限服务：看板平台配置要求技术员及以上</summary>
         private readonly IPermissionService _permission;
 
+        /// <summary>文件对话框（导入领退表 / 计划表选文件用）</summary>
+        private readonly IPathService _pathService;
+
+        /// <summary>Excel 导入（领退表 / 计划表）</summary>
+        private readonly PlanExcelService _planExcel;
+
+        /// <summary>管理服务（计划表导入后同步客户 / 产品别 / 测试项目字典）</summary>
+        private readonly AdminService _adminService;
+
         /// <summary>
         /// 界面完全就绪（首次 Loaded 之后）才执行的一次性动作：托盘菜单让本窗口「新增领用 / 批量回线…」时用。
         /// 必须等表格建好再执行——这些动作会操作 DataGrid、弹权限提示，构造函数里跑太早。
@@ -61,10 +70,17 @@ namespace ORT一键报告.Plans.Views
             _vm = App.ServiceProvider.GetRequiredService<PlansViewModel>();
             _appSettings = App.ServiceProvider.GetRequiredService<AppSettingsService>();
             _permission = App.ServiceProvider.GetRequiredService<IPermissionService>();
+            _pathService = App.ServiceProvider.GetRequiredService<IPathService>();
+            _planExcel = App.ServiceProvider.GetRequiredService<PlanExcelService>();
+            _adminService = App.ServiceProvider.GetRequiredService<AdminService>();
             // 看板平台配置：技术员及以上才可改；没权限就直接禁用入口（免得点了才发现不行）
             bool canOrtSettings = _permission.Can("ort.settings");
             menu_ortSettings.IsEnabled = canOrtSettings;
             btn_ortSettings.IsEnabled = canOrtSettings;
+            // 导入领退表 / 计划表：技术员及以上（plan.import）
+            bool canImport = _permission.Can("plan.import");
+            menu_importRequisition.IsEnabled = canImport;
+            menu_importSchedule.IsEnabled = canImport;
             DataContext = _vm;
             // 预领页签自己一套视图模型（三个内层页签共用一个月份）
             _preVm = App.ServiceProvider.GetRequiredService<PreIssueViewModel>();
@@ -1494,6 +1510,146 @@ namespace ORT一键报告.Plans.Views
             }
             WindowOrtSettings window = new() { Owner = this };
             _ = window.ShowDialog();
+        }
+
+        /// <summary>
+        /// 工具菜单「导入领退表」：选文件 → 导入前自动备份数据库 → 导入 → 刷新。
+        /// 权限放到技术员及以上（plan.import），与管理模块里的同名入口效果一致。
+        /// </summary>
+        private void Menu_ImportRequisition_Click(object sender, RoutedEventArgs e)
+        {
+            if (!CheckImportAllowed())
+            {
+                return;
+            }
+            string file = _pathService.OpenPathDialog(LanguageService.Get("Dlg_SelectReqFile"),
+                initPath: _appSettings.RequisitionDir);
+            if (file == null)
+            {
+                return;
+            }
+            if (!BackupBeforeImport(LanguageService.Get("Plans_Menu_ImportRequisition")))
+            {
+                return;
+            }
+            try
+            {
+                (int added, int updated) = _planExcel.ImportRequisition(file);
+                _logger.Info($"导入领退表完成：新增 {added} 条、更新 {updated} 条（{file}）");
+                ToastService.Show(string.Format(LanguageService.Get("Plans_ImportRequisitionDone"), added, updated),
+                    ToastType.Info);
+                _vm.Refresh();
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "导入领退表失败");
+                _ = MessageBox.Show($"导入领退表失败:\n{ex.Message}", LanguageService.Get("Cap_Error"));
+            }
+        }
+
+        /// <summary>
+        /// 工具菜单「导入计划表」：选文件 → 导入前自动备份数据库 → 导入计划 + 同步字典 → 刷新。
+        /// 字典同步（客户 / 产品别 / 机种映射 / 测试项目 / 负责人）与管理模块里的导入保持同一套行为。
+        /// </summary>
+        private void Menu_ImportSchedule_Click(object sender, RoutedEventArgs e)
+        {
+            if (!CheckImportAllowed())
+            {
+                return;
+            }
+            string file = _pathService.OpenPathDialog(LanguageService.Get("Dlg_SelectPlanFile2"),
+                initPath: _appSettings.ScheduleDir);
+            if (file == null)
+            {
+                return;
+            }
+            if (!BackupBeforeImport(LanguageService.Get("Plans_Menu_ImportSchedule")))
+            {
+                return;
+            }
+            try
+            {
+                (int added, int updated, List<string> unmatched) = _planExcel.ImportSchedule(file);
+                (int customers, int products, int mappings) = _adminService.SyncCatalogsFromScheduleFile(file);
+                int testItems = _adminService.SyncTestItemsFromScheduleFile(file);
+                (int technicians, int rolesAdded) = _adminService.SyncTechniciansFromTestItemOwners();
+                _logger.Info($"导入计划表完成：新增 {added} 条、更新 {updated} 条（{file}）");
+
+                string message = $"计划表导入完成: 新增{added}条, 更新{updated}条\n"
+                    + $"字典同步: 客户+{customers}, 产品别+{products}, 机种映射+{mappings}, 测试项目+{testItems}";
+                if (technicians > 0)
+                {
+                    message += $"\n已自动登记负责人账号 {technicians} 个";
+                }
+                if (rolesAdded > 0)
+                {
+                    message += $"\n已补上技术员身份 {rolesAdded} 个";
+                }
+                if (unmatched.Count > 0)
+                {
+                    string list = unmatched.Count > 30
+                        ? string.Join("\n", unmatched.GetRange(0, 30)) + $"\n...等共{unmatched.Count}条"
+                        : string.Join("\n", unmatched);
+                    message += $"\n\n以下 {unmatched.Count} 条备注中未找到工令且工作編號非 Q 开头，未关联到领用数据:\n{list}";
+                }
+                _ = MessageBox.Show(message, LanguageService.Get("Cap_ImportResult"));
+                _vm.Refresh();
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "导入计划表失败");
+                _ = MessageBox.Show($"导入计划表失败:\n{ex.Message}", LanguageService.Get("Cap_Error"));
+            }
+        }
+
+        /// <summary>导入前的通用检查：权限 + 没有未提交的表格修改</summary>
+        private bool CheckImportAllowed()
+        {
+            if (!_permission.Can("plan.import"))
+            {
+                _ = MessageBox.Show(LanguageService.Get("Msg_ImportNeedRole"), LanguageService.Get("Cap_NoPermission"),
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                return false;
+            }
+            if (_vm.HasPendingChanges)
+            {
+                _ = MessageBox.Show(LanguageService.Get("Msg_ImportWithPendingChanges"), LanguageService.Get("Cap_Info"),
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return false;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// 导入前自动备份数据库：做增量（没有可用基准时服务会自动改做全量）。
+        /// 备份失败时默认不继续导入（问一句，用户明确要继续才放行）。
+        /// </summary>
+        private bool BackupBeforeImport(string actionName)
+        {
+            try
+            {
+                DatabaseBackupService backup = App.ServiceProvider.GetRequiredService<DatabaseBackupService>();
+                DatabaseBackupResult result = backup.CreateIncrementalBackup($"{actionName}前自动备份");
+                if (result.Success)
+                {
+                    if (result.Created)
+                    {
+                        ToastService.Show(result.Message, ToastType.Info);
+                    }
+                    return true;
+                }
+                _logger.Warn($"导入前自动备份失败：{result.Message}");
+                return MessageBox.Show(string.Format(LanguageService.Get("Msg_ImportBackupFailedFormat"), result.Message),
+                    LanguageService.Get("Cap_BackupFailed"), MessageBoxButton.YesNo, MessageBoxImage.Warning)
+                    == MessageBoxResult.Yes;
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "导入前自动备份失败");
+                return MessageBox.Show(string.Format(LanguageService.Get("Msg_ImportBackupFailedFormat"), ex.Message),
+                    LanguageService.Get("Cap_BackupFailed"), MessageBoxButton.YesNo, MessageBoxImage.Warning)
+                    == MessageBoxResult.Yes;
+            }
         }
 
         /// <summary>临时筛选提示条上的「取消筛选」</summary>

@@ -131,14 +131,15 @@ namespace ORT一键报告.Tests
 
         /* ###############################  还原链  ################################ */
 
-        private static DatabaseBackupEntry Entry(string fileName, DatabaseBackupKind kind, string baseFileName = null)
+        private static DatabaseBackupEntry Entry(string fileName, DatabaseBackupKind kind, string baseFileName = null,
+            DateTime? createdAt = null)
             => new()
             {
                 FileName = fileName,
                 FilePath = @"C:\Backups\" + fileName,
                 Kind = kind,
                 BaseFileName = baseFileName,
-                CreatedAt = Sample
+                CreatedAt = createdAt ?? Sample
             };
 
         [Test]
@@ -199,6 +200,69 @@ namespace ORT一键报告.Tests
             Assert.That(DatabaseBackupEntry.FormatSize(512), Is.EqualTo("512 B"));
             Assert.That(DatabaseBackupEntry.FormatSize(2048), Is.EqualTo("2.0 KB"));
             Assert.That(DatabaseBackupEntry.FormatSize(3 * 1024 * 1024), Is.EqualTo("3.0 MB"));
+        }
+
+        /* ###############################  增量基准的挑选  ################################ */
+
+        [Test]
+        public void 增量基准_取最近的全量而不是上一份增量()
+        {
+            DatabaseBackupEntry olderFull = Entry("ort_plans_full_20261001_090000.db", DatabaseBackupKind.Full,
+                createdAt: new DateTime(2026, 10, 1, 9, 0, 0));
+            DatabaseBackupEntry newerFull = Entry("ort_plans_full_20261008_090000.db", DatabaseBackupKind.Full,
+                createdAt: new DateTime(2026, 10, 8, 9, 0, 0));
+            DatabaseBackupEntry newestIncremental = Entry("ort_plans_inc_20261009_090000.json",
+                DatabaseBackupKind.Incremental, newerFull.FileName, new DateTime(2026, 10, 9, 9, 0, 0));
+
+            DatabaseBackupEntry picked = DatabaseBackupDiffer.PickDiffBase(
+                [newestIncremental, newerFull, olderFull]);
+
+            Assert.That(picked, Is.SameAs(newerFull), "增量补丁不能当基准（它是 JSON，SQLite 打不开）");
+        }
+
+        [Test]
+        public void 增量基准_没有全量时返回空()
+        {
+            DatabaseBackupEntry inc = Entry("ort_plans_inc_20261009_090000.json", DatabaseBackupKind.Incremental);
+            Assert.That(DatabaseBackupDiffer.PickDiffBase([inc]), Is.Null);
+            Assert.That(DatabaseBackupDiffer.PickDiffBase([]), Is.Null);
+            Assert.That(DatabaseBackupDiffer.PickDiffBase(null), Is.Null);
+        }
+
+        [Test]
+        public void 增量基准_不可还原或被删的全量要跳过()
+        {
+            DatabaseBackupEntry broken = Entry("ort_plans_full_20261008_090000.db", DatabaseBackupKind.Full,
+                createdAt: new DateTime(2026, 10, 8, 9, 0, 0));
+            broken.CanRestore = false;
+            DatabaseBackupEntry usable = Entry("ort_plans_full_20261001_090000.db", DatabaseBackupKind.Full,
+                createdAt: new DateTime(2026, 10, 1, 9, 0, 0));
+
+            Assert.That(DatabaseBackupDiffer.PickDiffBase([broken, usable]), Is.SameAs(usable));
+            Assert.That(DatabaseBackupDiffer.PickDiffBase([broken]), Is.Null);
+        }
+
+        [Test]
+        public void 多份增量都基于同一份全量_还原链各自成立()
+        {
+            DatabaseBackupEntry full = Entry("ort_plans_full_20261001_090000.db", DatabaseBackupKind.Full);
+            DatabaseBackupEntry first = Entry("ort_plans_inc_20261002_090000.json", DatabaseBackupKind.Incremental,
+                full.FileName, new DateTime(2026, 10, 2, 9, 0, 0));
+            DatabaseBackupEntry second = Entry("ort_plans_inc_20261003_090000.json", DatabaseBackupKind.Incremental,
+                full.FileName, new DateTime(2026, 10, 3, 9, 0, 0));
+            Dictionary<string, DatabaseBackupEntry> byName = new(StringComparer.OrdinalIgnoreCase)
+            {
+                [full.FileName] = full,
+                [first.FileName] = first,
+                [second.FileName] = second
+            };
+
+            List<DatabaseBackupEntry> chain = DatabaseBackupDiffer.BuildRestoreChain(byName, second, out string problem);
+
+            Assert.That(problem, Is.Null);
+            Assert.That(chain, Has.Count.EqualTo(2), "基准全量 + 这份增量（每份增量都是相对基准的完整差异）");
+            Assert.That(chain[0], Is.SameAs(full));
+            Assert.That(chain[1], Is.SameAs(second));
         }
     }
 }

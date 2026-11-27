@@ -376,6 +376,17 @@ namespace ORT一键报告.Models
         /// <summary>增量备份文件名</summary>
         public static string IncrementalFileName(DateTime time) => $"{IncrementalPrefix}{time.ToString(TimeFormat)}.json";
 
+        /// <summary>
+        /// 增量比对该拿哪份当基准：最近一份「文件还在、能还原的全量」。
+        /// 注意不能用增量补丁当基准——补丁是 JSON，SQLite 打不开，之前第二次增量就因此直接失败；
+        /// 每份增量都相对同一份基准全量做「完整差异」，还原时「基准全量 + 之后的增量」按时间回放即可。
+        /// </summary>
+        public static DatabaseBackupEntry PickDiffBase(IEnumerable<DatabaseBackupEntry> entries)
+            => entries?
+                .Where(e => e != null && e.Kind == DatabaseBackupKind.Full && e.CanRestore)
+                .OrderByDescending(e => e.CreatedAt)
+                .FirstOrDefault();
+
         /* ###############################  还原链  ################################ */
 
         /// <summary>
