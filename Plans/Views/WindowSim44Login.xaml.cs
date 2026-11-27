@@ -44,6 +44,9 @@ namespace ORT一键报告.Plans.Views
             }
             string user = txt_user.Text.Trim();
             string password = pwd.Password;
+            // 记住密码的勾选状态必须在 UI 线程读出来：下面丢到后台线程做登录，
+            // 后台线程碰 WPF 控件会抛「调用线程无法访问此对象」。
+            bool remember = chk_remember.IsChecked == true;
             if (string.IsNullOrWhiteSpace(user))
             {
                 ShowMessage(LanguageService.Get("Sim44_Msg_UserRequired"));
@@ -63,7 +66,7 @@ namespace ORT一键报告.Plans.Views
             try
             {
                 (Sim44Service.LoginOutcome outcome, string actualUser, string message) =
-                    await Task.Run(() => _service.Login(user, password, chk_remember.IsChecked == true));
+                    await Task.Run(() => _service.Login(user, password, remember));
                 switch (outcome)
                 {
                     case Sim44Service.LoginOutcome.Success:
