@@ -92,6 +92,12 @@ namespace ORT一键报告.Plans.Views
                 txt_expiry.Text = "";
                 return;
             }
+            // 登录成功但表访问不到时，把诊断直接显示在顶部，不挡住登录本身
+            if (!string.IsNullOrWhiteSpace(_service.LastLoginWarning))
+            {
+                txt_expiry.Text = _service.LastLoginWarning;
+                return;
+            }
             Sim44CredentialStatus status = _service.GetCredentialStatus();
             if (status.DaysLeft is int days)
             {

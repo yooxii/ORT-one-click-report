@@ -210,32 +210,36 @@ namespace MesBridge
                         WriteError(code, message);
                         return;
                     }
-                    // 登录成功后再确认表能访问：访问不到就在这一步说清楚，
-                    // 而不是等用户点「查询」才冒一句 ORA-00942。
-                    List<string> tables;
+                    // 登录成功后顺带确认表能不能访问。
+                    // 但**不因为表访问不到就让登录失败**：账号密码对就应该让人进去，
+                    // 表权限的问题作为警告带回去显示，等到真正查询时再报具体错误。
+                    List<string> tables = new List<string>();
+                    string warning = "";
                     try
                     {
                         tables = repo.ResolveAll();
                     }
                     catch (BridgeException ex)
                     {
-                        // 表访问不到时顺带查一下数据字典，把「表在哪、有没有同义词」一并告诉用户
-                        string message = ex.Message;
+                        warning = ex.Message;
                         List<string> probe = repo.ProbeTables(new[] { "SIM44" });
                         if (probe.Count > 0)
                         {
-                            message += "｜数据字典：" + string.Join("；", probe);
+                            warning += "｜数据字典：" + string.Join("；", probe);
                         }
-                        WriteError(ex.Code, message, repo.LastSql);
-                        return;
                     }
-                    Write(new Dictionary<string, object>
+                    Dictionary<string, object> payload = new Dictionary<string, object>
                     {
                         ["ok"] = true,
                         ["user"] = actualUser,
                         ["dataSource"] = dataSource,
                         ["tables"] = tables,
-                    });
+                    };
+                    if (!string.IsNullOrEmpty(warning))
+                    {
+                        payload["warning"] = warning;
+                    }
+                    Write(payload);
                     return;
                 }
 

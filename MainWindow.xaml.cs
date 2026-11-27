@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using NLog;
 using ORT一键报告.Admin.Views;
 using ORT一键报告.Main.Views;
@@ -896,8 +896,8 @@ namespace ORT一键报告
         /// </summary>
         private void Button_SpPrograms_Click(object sender, RoutedEventArgs e)
         {
-            WindowSpPrograms window = new() { Owner = this };
-            window.ShowDialog();
+            // 非模态：主窗口随时能点回来（抢回焦点），不会被 SP程序集 挡住
+            WindowSpPrograms.ShowSingle(this);
         }
 
         /// <summary>

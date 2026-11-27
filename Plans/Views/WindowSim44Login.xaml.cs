@@ -70,7 +70,8 @@ namespace ORT一键报告.Plans.Views
                 switch (outcome)
                 {
                     case Sim44Service.LoginOutcome.Success:
-                        _logger.Info($"MES 数据库登录成功：{actualUser}");
+                        _logger.Info($"MES 数据库登录成功：{actualUser}"
+                                     + (string.IsNullOrWhiteSpace(message) ? "" : "｜警告：" + message));
                         DialogResult = true;
                         return;
                     case Sim44Service.LoginOutcome.BadCredential:

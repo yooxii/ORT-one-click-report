@@ -4323,4 +4323,7 @@
   <data name="Oqc_Msg_SelectRow" xml:space="preserve">
     <value>请先在上面的结果里选中一笔托盘记录。</value>
   </data>
+  <data name="SpPrograms_State_Running" xml:space="preserve">
+    <value>已打开</value>
+  </data>
 </root>

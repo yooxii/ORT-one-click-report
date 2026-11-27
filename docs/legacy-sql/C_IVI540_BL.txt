@@ -1,0 +1,296 @@
+FILE C:\acbelap\C_IVI540_BL.EXE 84480
+forms:
+  TFORM1 (15216)
+  TFORM3 (3173)
+  TFORM4 (8960)
+  TFRMQU_MO (8696)
+
+----- TFORM1 #1 @0x000eac -----
+select  MO_NO,PART_NO,substr(GET_PART_TYPE(PART_NO),1,8) PART_TYPE
+ from ivm05
+ WHERE  MO_NO like :MO_NO
+ 
+ 
+ 
+
+----- TFORM1 #2 @0x001111 -----
+SELECT TO_CHAR(SYSDATE,'YYYYMMDD') S_DATE FROM DUAL
+
+----- TFORM1 #3 @0x00118c -----
+select  version from apitech.ivm540
+where prod_date=:prod_date
+AND PCB  like :PCB
+
+
+----- TFORM1 #4 @0x001323 -----
+select a.*,b.part_no,DECODE(RTRIM(B.PCS_PRINT_DATE), NULL,'N','Y') AS PCS_PRINT_YN,get_bihrs(b.part_no) bi_hrs,
+(CASE WHEN PCB IN ('重工','變壓器','電感','自製') OR A.LINE_NO LIKE 'S%' THEN  NULL  ELSE   round((A.QTY1+A.QTY2)/(3600/decode(qty1+QTY2,0,APITECH.GET_PROC_TIME('D',B.PART_NO),APITECH.GET_PROC_TIME('M',B.PART_NO))),2) END) TIME1,
+GET_SECTION_STD_HR(B.PART_NO,'20') STD_HR_20,GET_SECTION_STD_HR(B.PART_NO,'30') STD_HR_30,GET_SECTION_STD_HR(B.PART_NO,'80') STD_HR_80,SUBSTRB(GET_BOM_LOCATION(B.PART_NO),1,700) LOCATION,
+
+----- TFORM1 #5 @0x00274d -----
+select * from bmm04
+
+
+----- TFORM1 #6 @0x00287e -----
+SELECT MAX(VERSION) VARSION FROM apitech.IVM540  A
+WHERE PROD_DATE=:PROD_DATE
+AND PCB like :PCB    AND DIVISION_CODE=:DIV
+ 
+
+----- TFORM1 #7 @0x002c11 -----
+select  version from ivm540@BMRP2BK_DB
+where prod_date=:prod_date
+AND PCB like :PCB
+
+----- TFORM1 #8 @0x002d3b -----
+select a.*,b.part_no,
+DECODE(RTRIM(B.PCS_PRINT_DATE), NULL,'N','Y') AS PCS_PRINT_YN,
+get_bihrs(b.part_no) bi_hrs from
+(select A.mo_no,apitech.GET_MO_QTY(MO_NO) MO_QTY,A.date_code,A.pcb,A.version,A.line_no,A.prod_date,
+        A.qty1,A.qty2,A.proc_seq,A.remark,reason,A.wk_hr_t TIME,A.send_yn,A.upd_user,
+        A.upd_date,A.upd_time,A.wk_hr_t,A.wk_hr_hk,A.wk_hr_cp,A.flag,MO_MARK,
+        apitech.get_qty((:prod_date_s),mo_no)-SUM(QTY1+QTY2)
+       OVER (PARTITION BY MO_NO ORDER BY PROD_DATE,MO_NO,line_no ROWS UNBOUNDED PRECEDING) xqty
+ from apitech.ivm540@BMRP2BK_DB A
+ where A.version like :version
+ and A.prod_date >=:prod_date_s
+ and A.prod_date <=:prod_date_e
+ and A.pcb like :pcb
+ and A.line_no like :line_no
+ and MO_no like :MO_no
+ AND NVL(MO_MARK,' ') LIKE :MO_MARK
+) A,APITECH.IVM05 B
+WHERE A.MO_NO=B.MO_NO and b.part_no like :part_no  and b.division_code=:DIV
+order by prod_date,A.line_no,A.proc_seq,A.mo_no
+
+
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+----- TFORM1 #9 @0x003938 -----
+SELECT MAX(VERSION) VARSION FROM apitech.IVM540@BMRP2BK_DB  A
+WHERE PROD_DATE=:PROD_DATE
+AND PCB like :PCB    AND DIVISION_CODE=:DIV
+ 
+
+----- TFORM3 #10 @0x0005d8 -----
+select * from bmm04
+
+
+----- TFORM3 #11 @0x00070d -----
+SELECT trim(substr(apitech.GET_MO_MODEL(mo_no),1,18)) part_no,MO_NO,PROD_DATE,DECODE(NVL(QTY1,0),0,NVL(QTY2,0),QTY1) QTY,line_no,
+get_bihrs(trim(substr(apitech.GET_MO_MODEL(mo_no),1,18))) bi_hrs
+FROM APITECH.IVM540 A
+WHERE (PCB,PROD_DATE,VERSION) IN
+     (SELECT PCB,PROD_DATE,MAX(VERSION) FROM apitech.IVM540 A,APITECH.IVM05 B
+       WHERE prod_date BETWEEN :ED_ST AND :ED_END  AND A.MO_NO=B.MO_NO AND B.DIVISION_CODE LIKE :DIV
+        GROUP BY PCB,PROD_DATE)
+AND trim(substr(apitech.GET_MO_MODEL(mo_no),1,18))  LIKE :PART_NO
+ORDER BY trim(substr(apitech.GET_MO_MODEL(a.mo_no),1,18)),a.MO_NO,a.PROD_DATE
+ 
+ 
+ 
+
+ 
+
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+----- TFORM4 #12 @0x00074b -----
+select
+ym,line_no,dt,part_no,SUM(qty) QTY ,get_bihrs(part_no) bi_hrs
+ from
+(select line_no,substr(apitech.GET_MO_MODEL(mo_no),1,18) part_no,
+substr(prod_date,1,6) ym,substr(prod_date,7,2) dt,DIVISION_CODE,
+DECODE(SUBSTR(MO_NO,1,1),'R',0,qty1+qty2) qty from APITECH.ivm540
+where (pcb,prod_date,version,FAC_CODE) in
+(select pcb,prod_date,max(version),FAC_CODE from APITECH.ivm540
+  group by pcb,prod_date,FAC_CODE)
+  and prod_date>=:date_s and  prod_date<=:date_e
+  and line_no like :line_no  AND DIVISION_CODE LIKE :DIV
+  and     SUBSTR(GET_PART_TYPE(SUBSTR(GET_MO_MODEL(mo_no),1,16)),1,2) like 'MP'
+)
+where part_no like :part_no
+Group by ym,line_no,dt,part_no
+order by ym,line_no,dt,part_no
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+----- TFORM4 #13 @0x000d16 -----
+select * from ivt540
+where yymm=:yymm
+and line_no=:line_no
+and seq_no=:seq_no
+
+----- TFORM4 #14 @0x000ecc -----
+select * from bmm04
+
+
+----- TFORM4 #15 @0x000ffc -----
+select  MO_NO,PART_NO,substr(GET_PART_TYPE(PART_NO),1,8) PART_TYPE
+ from ivm05
+ WHERE  MO_NO like :MO_NO
+ 
+ 
+ 
+
+----- TFORM4 #16 @0x0012ee -----
+select * from ivt540
+
+----- TFRMQU_MO #17 @0x000b9d -----
+select a.mo_no,a.part_no,pcs_rls_date as rls_date,A.MO_qty,qty2,a.mo_qty-b.qty qty1,PROD_DATE,line_no,
+get_bihrs(a.part_no) bi_hrs from
+ IVM05 a,
+ ( SELECT a.mo_no,qty2,qty,A.DIVISION_CODE FROM
+    (  SELECT mo_no,SUM(nvl(qty1,0)+nvl(qty2,0)) qty2,DIVISION_CODE FROM
+       (   SELECT J.* FROM apitech.IVM540 J,
+          ( SELECT PCB,PROD_DATE,MAX(VERSION) VERSION,FAC_CODE FROM APITECH.IVM540
+             WHERE prod_date BETWEEN :ED_ST AND :ED_END
+            GROUP BY PCB,PROD_DATE,FAC_CODE ) K
+          WHERE J.PCB=K.PCB
+            AND J.PROD_DATE=K.PROD_DATE
+            AND J.VERSION=K.VERSION
+            AND J.FAC_CODE=K.FAC_CODE
+           AND  J. prod_date BETWEEN :ED_ST AND :ED_END
+            AND J.DIVISION_CODE=:DIV
+           and  (nvl(qty1,0)+nvl(qty2,0))>0  )
+      group by mo_no,DIVISION_CODE) a,
+    ( select  mo_no,SUM(QTY1+QTY2) qty  FROM
+     (  SELECT J.* FROM apitech.IVM540 J,
+          ( SELECT PCB,PROD_DATE,MAX(VERSION) VERSION,FAC_CODE FROM APITECH.IVM540
+             WHERE prod_date BETWEEN :ED_ST AND :ED_END
+            GROUP BY PCB,PROD_DATE,FAC_CODE ) K
+          WHERE J.PCB=K.PCB
+            AND J.PROD_DATE=K.PROD_DATE
+            AND J.VERSION=K.VERSION
+            AND J.FAC_CODE=K.FAC_CODE
+            AND J.DIVISION_CODE=:DIV
+            AND J.prod_date<= :ED_END )
+       GROUP BY MO_NO     ) b
+      WHERE A.MO_NO=B.MO_NO  ) B,
+
+ (SELECT MO_NO,DIVISION_CODE,
+       (CASE WHEN apitech.GET_MO_qty(MO_NO)=SUM(QTY1+QTY2) THEN MAX(PROD_DATE)
+        ELSE '' END) PROD_DATE
+  FROM  (  SELECT J.* FROM apitech.IVM540 J,
+          ( SELECT PCB,PROD_DATE,MAX(VERSION) VERSION,FAC_CODE FROM APITECH.IVM540
+             WHERE prod_date BETWEEN :ED_ST AND :ED_END
+            GROUP BY PCB,PROD_DATE,FAC_CODE ) K
+          WHERE J.PCB=K.PCB
+            AND J.PROD_DATE=K.PROD_DATE
+            AND J.VERSION=K.VERSION
+            AND J.FAC_CODE=K.FAC_CODE
+            AND J.DIVISION_CODE=:DIV
+            AND J.prod_date<= :ED_END )
+   GROUP BY MO_NO,DIVISION_CODE) C
+ where a.mo_no=b.mo_no
+ AND A.MO_NO=C.MO_NO
+ AND A.MO_NO LIKE:MO_NO
+ AND A.PART_NO LIKE :PART_NO
+
+
+
+
+
+
+
+        
+ 
+ 
+ 
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+
+
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+----- TFRMQU_MO #18 @0x001b49 -----
+SELECT MO_NO
+FROM  APITECH.IVM05
+
+
+
+ 
+ 
+ 
+ 
+
+ 
+ 
+ 
+ 
+ 
+
+----- TFRMQU_MO #19 @0x001c87 -----
+select mo_no,part_no,pcs_rls_date as rls_date,MO_qty ,'0' QTY2,'0' QTY1,' ' PROD_DATE,line_no,
+ get_bihrs(part_no) bi_hrs from APITECH.IVM05
+ WHERE CLOSE_CODE='N'
+ AND SUBSTR(MO_NO,1,1) IN ('H','P','D')
+ AND PCS_ISSUE_DATE IS NOT NULL
+ AND PART_NO LIKE :PART_NO
+ AND MO_NO LIKE :MO_NO and division_code=:div
+ AND MO_NO NOT IN
+ (SELECT DISTINCT MO_NO FROM APITECH.IVM540
+  WHERE VERSION>='A')
+
+
+ 
+ 
+
+----- TFRMQU_MO #20 @0x00210c -----
+SELECT PART_NO FROM APITECH.BMM04
+
+合计 SQL.Strings 数量：20

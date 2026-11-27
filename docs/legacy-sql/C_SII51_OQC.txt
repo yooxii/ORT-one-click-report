@@ -1,0 +1,797 @@
+
+----- TDATAMODULE3 第 1 个 SQL.Strings @0x000077 -----
+select sum(decode(substr(inspect_date,5,2),'01',tot_lot,'')) Jan_lot,
+sum(decode(substr(inspect_date,5,2),'02',tot_lot,'')) Feb_lot,
+sum(decode(substr(inspect_date,5,2),'03',tot_lot,'')) Mar_lot,
+sum(decode(substr(inspect_date,5,2),'04',tot_lot,'')) Apr_lot,
+sum(decode(substr(inspect_date,5,2),'05',tot_lot,'')) May_lot,
+sum(decode(substr(inspect_date,5,2),'06',tot_lot,'')) Jun_lot,
+sum(decode(substr(inspect_date,5,2),'07',tot_lot,'')) Jul_lot,
+sum(decode(substr(inspect_date,5,2),'08',tot_lot,'')) Aug_lot,
+sum(decode(substr(inspect_date,5,2),'09',tot_lot,'')) sep_lot,
+sum(decode(substr(inspect_date,5,2),'10',tot_lot,'')) oct_lot,
+sum(decode(substr(inspect_date,5,2),'11',tot_lot,'')) nov_lot,
+sum(decode(substr(inspect_date,5,2),'12',tot_lot,'')) dec_lot,
+
+sum(decode(substr(inspect_date,5,2),'01',acc_lot,'')) Jan_acc,
+sum(decode(substr(inspect_date,5,2),'02',acc_lot,'')) Feb_acc,
+sum(decode(substr(inspect_date,5,2),'03',acc_lot,'')) Mar_acc,
+sum(decode(substr(inspect_date,5,2),'04',acc_lot,'')) Apr_acc,
+sum(decode(substr(inspect_date,5,2),'05',acc_lot,'')) May_acc,
+sum(decode(substr(inspect_date,5,2),'06',acc_lot,'')) Jun_acc,
+sum(decode(substr(inspect_date,5,2),'07',acc_lot,'')) Jul_acc,
+sum(decode(substr(inspect_date,5,2),'08',acc_lot,'')) Aug_acc,
+sum(decode(substr(inspect_date,5,2),'09',acc_lot,'')) sep_acc,
+sum(decode(substr(inspect_date,5,2),'10',acc_lot,'')) oct_acc,
+sum(decode(substr(inspect_date,5,2),'11',acc_lot,'')) nov_acc,
+sum(decode(substr(inspect_date,5,2),'12',acc_lot,'')) dec_acc,
+
+sum(decode(substr(inspect_date,5,2),'01',rej_lot,'')) Jan_rej,
+sum(decode(substr(inspect_date,5,2),'02',rej_lot,'')) Feb_rej,
+sum(decode(substr(inspect_date,5,2),'03',rej_lot,'')) Mar_rej,
+sum(decode(substr(inspect_date,5,2),'04',rej_lot,'')) Apr_rej,
+sum(decode(substr(inspect_date,5,2),'05',rej_lot,'')) May_rej,
+sum(decode(substr(inspect_date,5,2),'06',rej_lot,'')) Jun_rej,
+sum(decode(substr(inspect_date,5,2),'07',rej_lot,'')) Jul_rej,
+sum(decode(substr(inspect_date,5,2),'08',rej_lot,'')) Aug_rej,
+sum(decode(substr(inspect_date,5,2),'09',rej_lot,'')) sep_rej,
+sum(decode(substr(inspect_date,5,2),'10',rej_lot,'')) oct_rej,
+sum(decode(substr(inspect_date,5,2),'11',rej_lot,'')) nov_rej,
+sum(decode(substr(inspect_date,5,2),'12',rej_lot,'')) dec_rej,
+
+sum(decode(substr(inspect_date,5,2),'01',ACC_RATE,'')) Jan_rate,
+sum(decode(substr(inspect_date,5,2),'02',ACC_RATE,'')) Feb_rate,
+sum(decode(substr(inspect_date,5,2),'03',ACC_RATE,'')) Mar_rate,
+sum(decode(substr(inspect_date,5,2),'04',ACC_RATE,'')) Apr_rate,
+sum(decode(substr(inspect_date,5,2),'05',ACC_RATE,'')) May_rate,
+sum(decode(substr(inspect_date,5,2),'06',ACC_RATE,'')) Jun_rate,
+sum(decode(substr(inspect_date,5,2),'07',ACC_RATE,'')) Jul_rate,
+sum(decode(substr(inspect_date,5,2),'08',ACC_RATE,'')) Aug_rate,
+sum(decode(substr(inspect_date,5,2),'09',ACC_RATE,'')) sep_rate,
+sum(decode(substr(inspect_date,5,2),'10',ACC_RATE,'')) oct_rate,
+sum(decode(substr(inspect_date,5,2),'11',ACC_RATE,'')) nov_rate,
+sum(decode(substr(inspect_date,5,2),'12',ACC_RATE,'')) dec_rate,
+
+sum(decode(substr(inspect_date,5,2),'01',target,'')) Jan_target,
+sum(decode(substr(inspect_date,5,2),'02',target,'')) Feb_target,
+sum(decode(substr(inspect_date,5,2),'03',target,'')) Mar_target,
+sum(decode(substr(inspect_date,5,2),'04',target,'')) Apr_target,
+sum(decode(substr(inspect_date,5,2),'05',target,'')) May_target,
+sum(decode(substr(inspect_date,5,2),'06',target,'')) Jun_target,
+sum(decode(substr(inspect_date,5,2),'07',target,'')) Jul_target,
+sum(decode(substr(inspect_date,5,2),'08',target,'')) Aug_target,
+sum(decode(substr(inspect_date,5,2),'09',target,'')) sep_target,
+sum(decode(substr(inspect_date,5,2),'10',target,'')) oct_target,
+sum(decode(substr(inspect_date,5,2),'11',target,'')) nov_target,
+sum(decode(substr(inspect_date,5,2),'12',target,'')) dec_target,
+
+sum(decode(substr(inspect_date,5,2),'01',tot_acc_rate,'')) Jan_tot_rate,
+sum(decode(substr(inspect_date,5,2),'02',tot_acc_rate,'')) Feb_tot_rate,
+sum(decode(substr(inspect_date,5,2),'03',tot_acc_rate,'')) Mar_tot_rate,
+sum(decode(substr(inspect_date,5,2),'04',tot_acc_rate,'')) Apr_tot_rate,
+sum(decode(substr(inspect_date,5,2),'05',tot_acc_rate,''))  May_tot_rate,
+sum(decode(substr(inspect_date,5,2),'06',tot_acc_rate,''))  Jun_tot_rate,
+sum(decode(substr(inspect_date,5,2),'07',tot_acc_rate,''))  Jul_tot_rate,
+sum(decode(substr(inspect_date,5,2),'08',tot_acc_rate,''))  Aug_tot_rate,
+sum(decode(substr(inspect_date,5,2),'09',tot_acc_rate,''))  sep_tot_rate,
+sum(decode(substr(inspect_date,5,2),'10',tot_acc_rate,''))  oct_tot_rate,
+sum(decode(substr(inspect_date,5,2),'11',tot_acc_rate,''))  nov_tot_rate,
+sum(decode(substr(inspect_date,5,2),'12',tot_acc_rate,''))  dec_tot_rate
+
+ from ( select inspect_date,tot_lot,acc_Lot,rej_lot,acc_rate,target,sum_acc_rate tot_acc_rate
+          from apitech.siw18
+           where emp_no=:emp_no)
+----- 结束 -----
+
+----- TDATAMODULE3 第 2 个 SQL.Strings @0x00265e -----
+select inspect_date month,tot_lot,acc_lot,rej_lot,acc_rate,sum_acc_rate tot_acc_rate,target,
+decode(substr(inspect_date,5,2),'01','Jan','02','Feb','03','Mar','04','Apr','05','May',
+'06','Jun','07','Jul','08','Aug','09','Sep','10','Oct','11','Nov','12','Dec')  inspect_month
+ from  apitech.siw18
+ where emp_no=:emp_no
+----- 结束 -----
+
+----- TDATAMODULE3 第 3 个 SQL.Strings @0x002ac5 -----
+select inspect_date inspect_month,
+decode(substr(inspect_date,5,2),'01','Jan','02','Feb','03','Mar','04','Apr','05','May',
+'06','Jun','07','Jul','08','Aug','09','Sep','10','Oct','11','Nov','12','Dec') month,
+lot_qty,sampling_qty,reject_qty,defect_ppm,calcluate_fail_qty,dppm,target
+ from  apitech.siw19
+ where emp_no=:emp_no
+----- 结束 -----
+
+----- TDATAMODULE3 第 4 个 SQL.Strings @0x002eac -----
+select sum(decode(substr(inspect_date,5,2),'01',lot_qty,'')) Jan_lot,
+sum(decode(substr(inspect_date,5,2),'02',lot_qty,'')) Feb_lot,
+sum(decode(substr(inspect_date,5,2),'03',lot_qty,'')) Mar_lot,
+sum(decode(substr(inspect_date,5,2),'04',lot_qty,'')) Apr_lot,
+sum(decode(substr(inspect_date,5,2),'05',lot_qty,'')) May_lot,
+sum(decode(substr(inspect_date,5,2),'06',lot_qty,'')) Jun_lot,
+sum(decode(substr(inspect_date,5,2),'07',lot_qty,'')) Jul_lot,
+sum(decode(substr(inspect_date,5,2),'08',lot_qty,'')) Aug_lot,
+sum(decode(substr(inspect_date,5,2),'09',lot_qty,'')) sep_lot,
+sum(decode(substr(inspect_date,5,2),'10',lot_qty,'')) oct_lot,
+sum(decode(substr(inspect_date,5,2),'11',lot_qty,'')) nov_lot,
+sum(decode(substr(inspect_date,5,2),'12',lot_qty,'')) dec_lot,
+
+sum(decode(substr(inspect_date,5,2),'01',sampling_qty,'')) Jan_sampling,
+sum(decode(substr(inspect_date,5,2),'02',sampling_qty,'')) Feb_sampling,
+sum(decode(substr(inspect_date,5,2),'03',sampling_qty,'')) Mar_sampling,
+sum(decode(substr(inspect_date,5,2),'04',sampling_qty,'')) Apr_sampling,
+sum(decode(substr(inspect_date,5,2),'05',sampling_qty,'')) May_sampling,
+sum(decode(substr(inspect_date,5,2),'06',sampling_qty,'')) Jun_sampling,
+sum(decode(substr(inspect_date,5,2),'07',sampling_qty,'')) Jul_sampling,
+sum(decode(substr(inspect_date,5,2),'08',sampling_qty,'')) Aug_sampling,
+sum(decode(substr(inspect_date,5,2),'09',sampling_qty,'')) sep_sampling,
+sum(decode(substr(inspect_date,5,2),'10',sampling_qty,'')) oct_sampling,
+sum(decode(substr(inspect_date,5,2),'11',sampling_qty,'')) nov_sampling,
+sum(decode(substr(inspect_date,5,2),'12',sampling_qty,'')) dec_sampling,
+
+sum(decode(substr(inspect_date,5,2),'01',reject_qty,'')) Jan_reject,
+sum(decode(substr(inspect_date,5,2),'02',reject_qty,'')) Feb_reject,
+sum(decode(substr(inspect_date,5,2),'03',reject_qty,'')) Mar_reject,
+sum(decode(substr(inspect_date,5,2),'04',reject_qty,'')) Apr_reject,
+sum(decode(substr(inspect_date,5,2),'05',reject_qty,'')) May_reject,
+sum(decode(substr(inspect_date,5,2),'06',reject_qty,'')) Jun_reject,
+sum(decode(substr(inspect_date,5,2),'07',reject_qty,'')) Jul_reject,
+sum(decode(substr(inspect_date,5,2),'08',reject_qty,'')) Aug_reject,
+sum(decode(substr(inspect_date,5,2),'09',reject_qty,'')) sep_reject,
+sum(decode(substr(inspect_date,5,2),'10',reject_qty,'')) oct_reject,
+sum(decode(substr(inspect_date,5,2),'11',reject_qty,'')) nov_reject,
+sum(decode(substr(inspect_date,5,2),'12',reject_qty,'')) dec_reject,
+
+sum(decode(substr(inspect_date,5,2),'01',CALCLUATE_FAIL_QTY,'')) Jan_calcluate,
+sum(decode(substr(inspect_date,5,2),'02',CALCLUATE_FAIL_QTY,'')) Feb_calcluate,
+sum(decode(substr(inspect_date,5,2),'03',CALCLUATE_FAIL_QTY,'')) Mar_calcluate,
+sum(decode(substr(inspect_date,5,2),'04',CALCLUATE_FAIL_QTY,'')) Apr_calcluate,
+sum(decode(substr(inspect_date,5,2),'05',CALCLUATE_FAIL_QTY,'')) May_calcluate,
+sum(decode(substr(inspect_date,5,2),'06',CALCLUATE_FAIL_QTY,'')) Jun_calcluate,
+sum(decode(substr(inspect_date,5,2),'07',CALCLUATE_FAIL_QTY,'')) Jul_calcluate,
+sum(decode(substr(inspect_date,5,2),'08',CALCLUATE_FAIL_QTY,'')) Aug_calcluate,
+sum(decode(substr(inspect_date,5,2),'09',CALCLUATE_FAIL_QTY,'')) sep_calcluate,
+sum(decode(substr(inspect_date,5,2),'10',CALCLUATE_FAIL_QTY,'')) oct_calcluate,
+sum(decode(substr(inspect_date,5,2),'11',CALCLUATE_FAIL_QTY,'')) nov_calcluate,
+sum(decode(substr(inspect_date,5,2),'12',CALCLUATE_FAIL_QTY,'')) dec_calcluate,
+
+sum(decode(substr(inspect_date,5,2),'01',DEFECT_PPM,'')) Jan_ppm,
+sum(decode(substr(inspect_date,5,2),'02',DEFECT_PPM,'')) Feb_ppm,
+sum(decode(substr(inspect_date,5,2),'03',DEFECT_PPM,'')) Mar_ppm,
+sum(decode(substr(inspect_date,5,2),'04',DEFECT_PPM,'')) Apr_ppm,
+sum(decode(substr(inspect_date,5,2),'05',DEFECT_PPM,''))  May_ppm,
+sum(decode(substr(inspect_date,5,2),'06',DEFECT_PPM,''))  Jun_ppm,
+sum(decode(substr(inspect_date,5,2),'07',DEFECT_PPM,''))  Jul_ppm,
+sum(decode(substr(inspect_date,5,2),'08',DEFECT_PPM,''))  Aug_ppm,
+sum(decode(substr(inspect_date,5,2),'09',DEFECT_PPM,''))  sep_ppm,
+sum(decode(substr(inspect_date,5,2),'10',DEFECT_PPM,''))  oct_ppm,
+sum(decode(substr(inspect_date,5,2),'11',DEFECT_PPM,''))  nov_ppm,
+sum(decode(substr(inspect_date,5,2),'12',DEFECT_PPM,''))  dec_ppm,
+
+sum(decode(substr(inspect_date,5,2),'01',DPPM,'')) Jan_dppm,
+sum(decode(substr(inspect_date,5,2),'02',DPPM,'')) Feb_dppm,
+sum(decode(substr(inspect_date,5,2),'03',DPPM,'')) Mar_dppm,
+sum(decode(substr(inspect_date,5,2),'04',DPPM,'')) Apr_dppm,
+sum(decode(substr(inspect_date,5,2),'05',DPPM,''))  May_dppm,
+sum(decode(substr(inspect_date,5,2),'06',DPPM,''))  Jun_dppm,
+sum(decode(substr(inspect_date,5,2),'07',DPPM,''))  Jul_dppm,
+sum(decode(substr(inspect_date,5,2),'08',DPPM,''))  Aug_dppm,
+sum(decode(substr(inspect_date,5,2),'09',DPPM,''))  sep_dppm,
+sum(decode(substr(inspect_date,5,2),'10',DPPM,''))  oct_dppm,
+sum(decode(substr(inspect_date,5,2),'11',DPPM,''))  nov_dppm,
+sum(decode(substr(inspect_date,5,2),'12',DPPM,''))  dec_dppm,
+
+sum(decode(substr(inspect_date,5,2),'01',target,'')) Jan_target,
+sum(decode(substr(inspect_date,5,2),'02',target,'')) Feb_target,
+sum(decode(substr(inspect_date,5,2),'03',target,'')) Mar_target,
+sum(decode(substr(inspect_date,5,2),'04',target,'')) Apr_target,
+sum(decode(substr(inspect_date,5,2),'05',target,'')) May_target,
+sum(decode(substr(inspect_date,5,2),'06',target,'')) Jun_target,
+sum(decode(substr(inspect_date,5,2),'07',target,'')) Jul_target,
+sum(decode(substr(inspect_date,5,2),'08',target,'')) Aug_target,
+sum(decode(substr(inspect_date,5,2),'09',target,'')) sep_target,
+sum(decode(substr(inspect_date,5,2),'10',target,'')) oct_target,
+sum(decode(substr(inspect_date,5,2),'11',target,'')) nov_target,
+sum(decode(substr(inspect_date,5,2),'12',target,'')) dec_target
+
+ from ( select inspect_date,lot_qty,SAMPLING_QTY,REJECT_QTY,DEFECT_PPM,CALCLUATE_FAIL_QTY,dppm,target
+          from apitech.siw19
+           where emp_no=:emp_no
+)
+----- 结束 -----
+
+----- TDATAMODULE3 第 5 个 SQL.Strings @0x0059c9 -----
+SELECT SUBSTR(INSPECT_DATE,5,2)||'/'||SUBSTR(INSPECT_DATE,7,2) INSPECT_DATE,TOT_LOT,ACC_LOT,REJ_LOT,ACC_RATE,SUM_ACC_RATE,TARGET
+FROM APITECH.SIW21
+ where emp_no=:emp_no
+
+ORDER BY INSPECT_DATE
+----- 结束 -----
+
+----- TDATAMODULE3 第 6 个 SQL.Strings @0x005d21 -----
+SELECT SUBSTR(INSPECT_DATE,5,2)||'/'||SUBSTR(INSPECT_DATE,7,2) INSPECT_DATE,LOT_QTY,SAMPLING_QTY,REJECT_QTY,DEFECT_PPM,CALCLUATE_FAIL_QTY,
+DEF_PPM,TARGET FROM APITECH.SIW20
+ where emp_no=:emp_no
+
+ORDER BY INSPECT_DATE
+----- 结束 -----
+
+----- TDATAMODULE3 第 7 个 SQL.Strings @0x006088 -----
+SELECT 0||INSPECT_WEEK INSPECT_WEEK,TOT_LOT,ACC_LOT,REJ_LOT,
+ACC_RATE,SUM_ACC_RATE,TARGET
+ FROM apitech.siw22
+ where emp_no=:emp_no
+
+order by inspect_week
+----- 结束 -----
+
+----- TDATAMODULE3 第 8 个 SQL.Strings @0x0063bf -----
+SELECT  '0'||INSPECT_WEEK INSPECT_WEEK,LOT_QTY,
+  SAMPLING_QTY,REJECT_QTY, DEFECT_PPM,
+  CALCLUATE_FAIL_QTY,DEF_PPM,TARGET
+ FROM APITECH.SIW23
+ where emp_no=:emp_no
+----- 结束 -----
+
+----- TDATAMODULE3 第 9 个 SQL.Strings @0x006a76 -----
+SELECT TO_CHAR(SYSDATE,'YYYY') YEAR FROM DUAL
+----- 结束 -----
+
+----- TDATAMODULE3 第 10 个 SQL.Strings @0x007451 -----
+SELECT
+SUM(decode(ROWNUM,1,lot_qty,''))  lot_qty_1,
+sum(decode(ROWNUM,2,lot_qty,''))  lot_qty_2,
+sum(decode(ROWNUM,3,lot_qty,''))  lot_qty_3,
+sum(decode(ROWNUM,4,lot_qty,''))  lot_qty_4,
+sum(decode(ROWNUM,5,lot_qty,''))  lot_qty_5,
+sum(decode(ROWNUM,6,lot_qty,''))  lot_qty_6,
+sum(decode(ROWNUM,7,lot_qty,''))  lot_qty_7,
+sum(decode(ROWNUM,8,lot_qty,''))  lot_qty_8,
+sum(decode(ROWNUM,9,lot_qty,''))  lot_qty_9,
+sum(decode(ROWNUM,10,lot_qty,''))  lot_qty_10,
+sum(decode(ROWNUM,11,lot_qty,''))  lot_qty_11,
+sum(decode(ROWNUM,12,lot_qty,''))  lot_qty_12,
+sum(decode(ROWNUM,13,lot_qty,''))  lot_qty_13,
+sum(decode(ROWNUM,14,lot_qty,''))  lot_qty_14,
+
+SUM(decode(ROWNUM,1,sampling_qty,''))  sampling_qty_1,
+sum(decode(ROWNUM,2,sampling_qty,''))  sampling_qty_2,
+sum(decode(ROWNUM,3,sampling_qty,''))  sampling_qty_3,
+sum(decode(ROWNUM,4,sampling_qty,''))  sampling_qty_4,
+sum(decode(ROWNUM,5,sampling_qty,''))  sampling_qty_5,
+sum(decode(ROWNUM,6,sampling_qty,''))  sampling_qty_6,
+sum(decode(ROWNUM,7,sampling_qty,''))  sampling_qty_7,
+sum(decode(ROWNUM,8,sampling_qty,''))  sampling_qty_8,
+sum(decode(ROWNUM,9,sampling_qty,''))  sampling_qty_9,
+sum(decode(ROWNUM,10,sampling_qty,''))  sampling_qty_10,
+sum(decode(ROWNUM,11,sampling_qty,''))  sampling_qty_11,
+sum(decode(ROWNUM,12,sampling_qty,''))  sampling_qty_12,
+sum(decode(ROWNUM,13,sampling_qty,''))  sampling_qty_13,
+sum(decode(ROWNUM,14,sampling_qty,''))  sampling_qty_14,
+
+SUM(decode(ROWNUM,1,reject_qty,''))  reject_qty_1,
+sum(decode(ROWNUM,2,reject_qty,''))  reject_qty_2,
+sum(decode(ROWNUM,3,reject_qty,''))  reject_qty_3,
+sum(decode(ROWNUM,4,reject_qty,''))  reject_qty_4,
+sum(decode(ROWNUM,5,reject_qty,''))  reject_qty_5,
+sum(decode(ROWNUM,6,reject_qty,''))  reject_qty_6,
+sum(decode(ROWNUM,7,reject_qty,''))  reject_qty_7,
+sum(decode(ROWNUM,8,reject_qty,''))  reject_qty_8,
+sum(decode(ROWNUM,9,reject_qty,''))  reject_qty_9,
+sum(decode(ROWNUM,10,reject_qty,''))  reject_qty_10,
+sum(decode(ROWNUM,11,reject_qty,''))  reject_qty_11,
+sum(decode(ROWNUM,12,reject_qty,''))  reject_qty_12,
+sum(decode(ROWNUM,13,reject_qty,''))  reject_qty_13,
+sum(decode(ROWNUM,14,reject_qty,''))  reject_qty_14,
+
+SUM(decode(ROWNUM,1,defect_ppm,''))  defect_ppm_1,
+sum(decode(ROWNUM,2,defect_ppm,''))  defect_ppm_2,
+sum(decode(ROWNUM,3,defect_ppm,''))  defect_ppm_3,
+sum(decode(ROWNUM,4,defect_ppm,''))  defect_ppm_4,
+sum(decode(ROWNUM,5,defect_ppm,''))  defect_ppm_5,
+sum(decode(ROWNUM,6,defect_ppm,''))  defect_ppm_6,
+sum(decode(ROWNUM,7,defect_ppm,''))  defect_ppm_7,
+sum(decode(ROWNUM,8,defect_ppm,''))  defect_ppm_8,
+sum(decode(ROWNUM,9,defect_ppm,''))  defect_ppm_9,
+sum(decode(ROWNUM,10,defect_ppm,''))  defect_ppm_10,
+sum(decode(ROWNUM,11,defect_ppm,''))  defect_ppm_11,
+sum(decode(ROWNUM,12,defect_ppm,''))  defect_ppm_12,
+sum(decode(ROWNUM,13,defect_ppm,''))  defect_ppm_13,
+sum(decode(ROWNUM,14,defect_ppm,''))  defect_ppm_14,
+
+SUM(decode(ROWNUM,1,CALCLUATE_FAIL_QTY,''))  CALCLUATE_FAIL_QTY_1,
+sum(decode(ROWNUM,2,CALCLUATE_FAIL_QTY,''))  CALCLUATE_FAIL_QTY_2,
+sum(decode(ROWNUM,3,CALCLUATE_FAIL_QTY,''))  CALCLUATE_FAIL_QTY_3,
+sum(decode(ROWNUM,4,CALCLUATE_FAIL_QTY,''))  CALCLUATE_FAIL_QTY_4,
+sum(decode(ROWNUM,5,CALCLUATE_FAIL_QTY,''))  CALCLUATE_FAIL_QTY_5,
+sum(decode(ROWNUM,6,CALCLUATE_FAIL_QTY,''))  CALCLUATE_FAIL_QTY_6,
+sum(decode(ROWNUM,7,CALCLUATE_FAIL_QTY,''))  CALCLUATE_FAIL_QTY_7,
+sum(decode(ROWNUM,8,CALCLUATE_FAIL_QTY,''))  CALCLUATE_FAIL_QTY_8,
+sum(decode(ROWNUM,9,CALCLUATE_FAIL_QTY,''))  CALCLUATE_FAIL_QTY_9,
+sum(decode(ROWNUM,10,CALCLUATE_FAIL_QTY,''))  CALCLUATE_FAIL_QTY_10,
+sum(decode(ROWNUM,11,CALCLUATE_FAIL_QTY,''))  CALCLUATE_FAIL_QTY_11,
+sum(decode(ROWNUM,12,CALCLUATE_FAIL_QTY,''))  CALCLUATE_FAIL_QTY_12,
+sum(decode(ROWNUM,13,CALCLUATE_FAIL_QTY,''))  CALCLUATE_FAIL_QTY_13,
+sum(decode(ROWNUM,14,CALCLUATE_FAIL_QTY,''))  CALCLUATE_FAIL_QTY_14,
+
+SUM(decode(ROWNUM,1,def_ppm,''))  def_ppm_1,
+sum(decode(ROWNUM,2,def_ppm,''))  def_ppm_2,
+sum(decode(ROWNUM,3,def_ppm,''))  def_ppm_3,
+sum(decode(ROWNUM,4,def_ppm,''))  def_ppm_4,
+sum(decode(ROWNUM,5,def_ppm,''))  def_ppm_5,
+sum(decode(ROWNUM,6,def_ppm,''))  def_ppm_6,
+sum(decode(ROWNUM,7,def_ppm,''))  def_ppm_7,
+sum(decode(ROWNUM,8,def_ppm,''))  def_ppm_8,
+sum(decode(ROWNUM,9,def_ppm,''))  def_ppm_9,
+sum(decode(ROWNUM,10,deF_ppm,''))  def_ppm_10,
+sum(decode(ROWNUM,11,def_ppm,''))  def_ppm_11,
+sum(decode(ROWNUM,12,def_ppm,''))  def_ppm_12,
+sum(decode(ROWNUM,13,def_ppm,''))  def_ppm_13,
+sum(decode(ROWNUM,14,def_ppm,''))  def_ppm_14,
+
+SUM(decode(ROWNUM,1,target,''))  target_1,
+sum(decode(ROWNUM,2,target,''))  target_2,
+sum(decode(ROWNUM,3,target,''))  target_3,
+sum(decode(ROWNUM,4,target,''))  target_4,
+sum(decode(ROWNUM,5,target,''))  target_5,
+sum(decode(ROWNUM,6,target,''))  target_6,
+sum(decode(ROWNUM,7,target,''))  target_7,
+sum(decode(ROWNUM,8,target,''))  target_8,
+sum(decode(ROWNUM,9,target,''))  target_9,
+sum(decode(ROWNUM,10,target,''))  target_10,
+sum(decode(ROWNUM,11,target,''))  target_11,
+sum(decode(ROWNUM,12,target,''))  target_12,
+sum(decode(ROWNUM,13,target,''))  target_13,
+sum(decode(ROWNUM,14,target,''))  target_14
+
+ FROM (
+SELECT SUBSTR(INSPECT_DATE,5,2)||'/'||SUBSTR(INSPECT_DATE,7,2) INSPECT_DATE,LOT_QTY,SAMPLING_QTY,REJECT_QTY,DEFECT_PPM,CALCLUATE_FAIL_QTY,
+  DEF_PPM,TARGET FROM APITECH.SIW20
+ where emp_no=:emp_no
+
+ORDER BY INSPECT_DATE)
+----- 结束 -----
+
+----- TDATAMODULE3 第 11 个 SQL.Strings @0x00a211 -----
+SELECT SUBSTR(INSPECT_DATE,5,2)||'/'||SUBSTR(INSPECT_DATE,7,2) INSPECT_DATE,LOT_QTY,SAMPLING_QTY,REJECT_QTY,DEFECT_PPM,CALCLUATE_FAIL_QTY,
+DEF_PPM,TARGET FROM APITECH.SIW20
+ where emp_no=:emp_no
+
+ORDER BY INSPECT_DATE
+----- 结束 -----
+
+----- TDATAMODULE3 第 12 个 SQL.Strings @0x00a57a -----
+SELECT
+SUM(decode(ROWNUM,1,tot_lot,''))  tot_lot_1,
+sum(decode(ROWNUM,2,tot_lot,''))  tot_lot_2,
+sum(decode(ROWNUM,3,tot_lot,''))  tot_lot_3,
+sum(decode(ROWNUM,4,tot_lot,''))  tot_lot_4,
+sum(decode(ROWNUM,5,tot_lot,''))  tot_lot_5,
+sum(decode(ROWNUM,6,tot_lot,''))  tot_lot_6,
+sum(decode(ROWNUM,7,tot_lot,''))  tot_lot_7,
+sum(decode(ROWNUM,8,tot_lot,''))  tot_lot_8,
+sum(decode(ROWNUM,9,tot_lot,''))  tot_lot_9,
+sum(decode(ROWNUM,10,tot_lot,''))  tot_lot_10,
+sum(decode(ROWNUM,11,tot_lot,''))  tot_lot_11,
+sum(decode(ROWNUM,12,tot_lot,''))  tot_lot_12,
+sum(decode(ROWNUM,13,tot_lot,''))  tot_lot_13,
+sum(decode(ROWNUM,14,tot_lot,''))  tot_lot_14,
+
+SUM(decode(ROWNUM,1,acc_lot,''))  acc_lot_1,
+sum(decode(ROWNUM,2,acc_lot,''))  acc_lot_2,
+sum(decode(ROWNUM,3,acc_lot,''))  acc_lot_3,
+sum(decode(ROWNUM,4,acc_lot,''))  acc_lot_4,
+sum(decode(ROWNUM,5,acc_lot,''))  acc_lot_5,
+sum(decode(ROWNUM,6,acc_lot,''))  acc_lot_6,
+sum(decode(ROWNUM,7,acc_lot,''))  acc_lot_7,
+sum(decode(ROWNUM,8,acc_lot,''))  acc_lot_8,
+sum(decode(ROWNUM,9,acc_lot,''))  acc_lot_9,
+sum(decode(ROWNUM,10,acc_lot,''))  acc_lot_10,
+sum(decode(ROWNUM,11,acc_lot,''))  acc_lot_11,
+sum(decode(ROWNUM,12,acc_lot,''))  acc_lot_12,
+sum(decode(ROWNUM,13,acc_lot,''))  acc_lot_13,
+sum(decode(ROWNUM,14,acc_lot,''))  acc_lot_14,
+
+SUM(decode(ROWNUM,1,acc_rate,''))  acc_rate_1,
+sum(decode(ROWNUM,2,acc_rate,''))  acc_rate_2,
+sum(decode(ROWNUM,3,acc_rate,''))  acc_rate_3,
+sum(decode(ROWNUM,4,acc_rate,''))  acc_rate_4,
+sum(decode(ROWNUM,5,acc_rate,''))  acc_rate_5,
+sum(decode(ROWNUM,6,acc_rate,''))  acc_rate_6,
+sum(decode(ROWNUM,7,acc_rate,''))  acc_rate_7,
+sum(decode(ROWNUM,8,acc_rate,''))  acc_rate_8,
+sum(decode(ROWNUM,9,acc_rate,''))  acc_rate_9,
+sum(decode(ROWNUM,10,acc_rate,''))  acc_rate_10,
+sum(decode(ROWNUM,11,acc_rate,''))  acc_rate_11,
+sum(decode(ROWNUM,12,acc_rate,''))  acc_rate_12,
+sum(decode(ROWNUM,13,acc_rate,''))  acc_rate_13,
+sum(decode(ROWNUM,14,acc_rate,''))  acc_rate_14,
+
+SUM(decode(ROWNUM,1,sum_acc_rate,''))  sum_acc_rate_1,
+sum(decode(ROWNUM,2,sum_acc_rate,''))  sum_acc_rate_2,
+sum(decode(ROWNUM,3,sum_acc_rate,''))  sum_acc_rate_3,
+sum(decode(ROWNUM,4,sum_acc_rate,''))  sum_acc_rate_4,
+sum(decode(ROWNUM,5,sum_acc_rate,''))  sum_acc_rate_5,
+sum(decode(ROWNUM,6,sum_acc_rate,''))  sum_acc_rate_6,
+sum(decode(ROWNUM,7,sum_acc_rate,''))  sum_acc_rate_7,
+sum(decode(ROWNUM,8,sum_acc_rate,''))  sum_acc_rate_8,
+sum(decode(ROWNUM,9,sum_acc_rate,''))  sum_acc_rate_9,
+sum(decode(ROWNUM,10,sum_acc_rate,''))  sum_acc_rate_10,
+sum(decode(ROWNUM,11,sum_acc_rate,''))  sum_acc_rate_11,
+sum(decode(ROWNUM,12,sum_acc_rate,''))  sum_acc_rate_12,
+sum(decode(ROWNUM,13,sum_acc_rate,''))  sum_acc_rate_13,
+sum(decode(ROWNUM,14,sum_acc_rate,''))  sum_acc_rate_14,
+
+SUM(decode(ROWNUM,1,TARGET,''))  target_1,
+sum(decode(ROWNUM,2,TARGET,''))  target_2,
+sum(decode(ROWNUM,3,TARGET,''))  target_3,
+sum(decode(ROWNUM,4,TARGET,''))  target_4,
+sum(decode(ROWNUM,5,TARGET,''))  target_5,
+sum(decode(ROWNUM,6,TARGET,''))  target_6,
+sum(decode(ROWNUM,7,TARGET,''))  target_7,
+sum(decode(ROWNUM,8,TARGET,''))  target_8,
+sum(decode(ROWNUM,9,TARGET,''))  target_9,
+sum(decode(ROWNUM,10,TARGET,''))  target_10,
+sum(decode(ROWNUM,11,TARGET,''))  target_11,
+sum(decode(ROWNUM,12,TARGET,''))  target_12,
+sum(decode(ROWNUM,13,TARGET,''))  target_13,
+sum(decode(ROWNUM,14,TARGET,''))  target_14
+
+ FROM (
+SELECT SUBSTR(INSPECT_DATE,5,2)||'/'||SUBSTR(INSPECT_DATE,7,2) INSPECT_DATE,TOT_LOT,ACC_LOT,ACC_RATE,SUM_ACC_RATE,TARGET 
+FROM APITECH.SIW21
+ where emp_no=:emp_no
+
+ORDER BY INSPECT_DATE
+)
+----- 结束 -----
+
+----- TDATAMODULE3 第 13 个 SQL.Strings @0x00c8b5 -----
+SELECT SUBSTR(INSPECT_DATE,5,2)||'/'||SUBSTR(INSPECT_DATE,7,2) INSPECT_DATE,TOT_LOT,ACC_LOT,ACC_RATE,SUM_ACC_RATE,TARGET 
+FROM APITECH.SIW21
+ where emp_no=:emp_no
+
+ORDER BY INSPECT_DATE
+----- 结束 -----
+
+----- TDATAMODULE3 第 14 个 SQL.Strings @0x00ce86 -----
+SELECT
+SUM(decode(ROWNUM,1,tot_lot,''))  tot_lot_1,
+sum(decode(ROWNUM,2,tot_lot,''))  tot_lot_2,
+sum(decode(ROWNUM,3,tot_lot,''))  tot_lot_3,
+sum(decode(ROWNUM,4,tot_lot,''))  tot_lot_4,
+sum(decode(ROWNUM,5,tot_lot,''))  tot_lot_5,
+sum(decode(ROWNUM,6,tot_lot,''))  tot_lot_6,
+sum(decode(ROWNUM,7,tot_lot,''))  tot_lot_7,
+sum(decode(ROWNUM,8,tot_lot,''))  tot_lot_8,
+sum(decode(ROWNUM,9,tot_lot,''))  tot_lot_9,
+sum(decode(ROWNUM,10,tot_lot,''))  tot_lot_10,
+sum(decode(ROWNUM,11,tot_lot,''))  tot_lot_11,
+sum(decode(ROWNUM,12,tot_lot,''))  tot_lot_12,
+sum(decode(ROWNUM,13,tot_lot,''))  tot_lot_13,
+sum(decode(ROWNUM,14,tot_lot,''))  tot_lot_14,
+
+SUM(decode(ROWNUM,1,acc_lot,''))  acc_lot_1,
+sum(decode(ROWNUM,2,acc_lot,''))  acc_lot_2,
+sum(decode(ROWNUM,3,acc_lot,''))  acc_lot_3,
+sum(decode(ROWNUM,4,acc_lot,''))  acc_lot_4,
+sum(decode(ROWNUM,5,acc_lot,''))  acc_lot_5,
+sum(decode(ROWNUM,6,acc_lot,''))  acc_lot_6,
+sum(decode(ROWNUM,7,acc_lot,''))  acc_lot_7,
+sum(decode(ROWNUM,8,acc_lot,''))  acc_lot_8,
+sum(decode(ROWNUM,9,acc_lot,''))  acc_lot_9,
+sum(decode(ROWNUM,10,acc_lot,''))  acc_lot_10,
+sum(decode(ROWNUM,11,acc_lot,''))  acc_lot_11,
+sum(decode(ROWNUM,12,acc_lot,''))  acc_lot_12,
+sum(decode(ROWNUM,13,acc_lot,''))  acc_lot_13,
+sum(decode(ROWNUM,14,acc_lot,''))  acc_lot_14,
+
+SUM(decode(ROWNUM,1,acc_rate,''))  acc_rate_1,
+sum(decode(ROWNUM,2,acc_rate,''))  acc_rate_2,
+sum(decode(ROWNUM,3,acc_rate,''))  acc_rate_3,
+sum(decode(ROWNUM,4,acc_rate,''))  acc_rate_4,
+sum(decode(ROWNUM,5,acc_rate,''))  acc_rate_5,
+sum(decode(ROWNUM,6,acc_rate,''))  acc_rate_6,
+sum(decode(ROWNUM,7,acc_rate,''))  acc_rate_7,
+sum(decode(ROWNUM,8,acc_rate,''))  acc_rate_8,
+sum(decode(ROWNUM,9,acc_rate,''))  acc_rate_9,
+sum(decode(ROWNUM,10,acc_rate,''))  acc_rate_10,
+sum(decode(ROWNUM,11,acc_rate,''))  acc_rate_11,
+sum(decode(ROWNUM,12,acc_rate,''))  acc_rate_12,
+sum(decode(ROWNUM,13,acc_rate,''))  acc_rate_13,
+sum(decode(ROWNUM,14,acc_rate,''))  acc_rate_14,
+
+SUM(decode(ROWNUM,1,sum_acc_rate,''))  sum_acc_rate_1,
+sum(decode(ROWNUM,2,sum_acc_rate,''))  sum_acc_rate_2,
+sum(decode(ROWNUM,3,sum_acc_rate,''))  sum_acc_rate_3,
+sum(decode(ROWNUM,4,sum_acc_rate,''))  sum_acc_rate_4,
+sum(decode(ROWNUM,5,sum_acc_rate,''))  sum_acc_rate_5,
+sum(decode(ROWNUM,6,sum_acc_rate,''))  sum_acc_rate_6,
+sum(decode(ROWNUM,7,sum_acc_rate,''))  sum_acc_rate_7,
+sum(decode(ROWNUM,8,sum_acc_rate,''))  sum_acc_rate_8,
+sum(decode(ROWNUM,9,sum_acc_rate,''))  sum_acc_rate_9,
+sum(decode(ROWNUM,10,sum_acc_rate,''))  sum_acc_rate_10,
+sum(decode(ROWNUM,11,sum_acc_rate,''))  sum_acc_rate_11,
+sum(decode(ROWNUM,12,sum_acc_rate,''))  sum_acc_rate_12,
+sum(decode(ROWNUM,13,sum_acc_rate,''))  sum_acc_rate_13,
+sum(decode(ROWNUM,14,sum_acc_rate,''))  sum_acc_rate_14,
+
+SUM(decode(ROWNUM,1,TARGET,''))  target_1,
+sum(decode(ROWNUM,2,TARGET,''))  target_2,
+sum(decode(ROWNUM,3,TARGET,''))  target_3,
+sum(decode(ROWNUM,4,TARGET,''))  target_4,
+sum(decode(ROWNUM,5,TARGET,''))  target_5,
+sum(decode(ROWNUM,6,TARGET,''))  target_6,
+sum(decode(ROWNUM,7,TARGET,''))  target_7,
+sum(decode(ROWNUM,8,TARGET,''))  target_8,
+sum(decode(ROWNUM,9,TARGET,''))  target_9,
+sum(decode(ROWNUM,10,TARGET,''))  target_10,
+sum(decode(ROWNUM,11,TARGET,''))  target_11,
+sum(decode(ROWNUM,12,TARGET,''))  target_12,
+sum(decode(ROWNUM,13,TARGET,''))  target_13,
+sum(decode(ROWNUM,14,TARGET,''))  target_14
+
+ FROM (
+SELECT  INSPECT_week,TOT_LOT,ACC_LOT,ACC_RATE,SUM_ACC_RATE,TARGET 
+FROM APITECH.SIW22
+ where emp_no=:emp_no
+
+ORDER BY INSPECT_week
+)
+----- 结束 -----
+
+----- TDATAMODULE3 第 15 个 SQL.Strings @0x00f143 -----
+SELECT  '0'||INSPECT_week inspect_week,TOT_LOT,ACC_LOT,ACC_RATE,SUM_ACC_RATE,TARGET 
+FROM APITECH.SIW22
+ where emp_no=:emp_no
+
+ORDER BY INSPECT_week
+----- 结束 -----
+
+----- TDATAMODULE3 第 16 个 SQL.Strings @0x00f6e6 -----
+SELECT
+SUM(decode(ROWNUM,1,lot_qty,''))  lot_qty_1,
+sum(decode(ROWNUM,2,lot_qty,''))  lot_qty_2,
+sum(decode(ROWNUM,3,lot_qty,''))  lot_qty_3,
+sum(decode(ROWNUM,4,lot_qty,''))  lot_qty_4,
+sum(decode(ROWNUM,5,lot_qty,''))  lot_qty_5,
+sum(decode(ROWNUM,6,lot_qty,''))  lot_qty_6,
+sum(decode(ROWNUM,7,lot_qty,''))  lot_qty_7,
+sum(decode(ROWNUM,8,lot_qty,''))  lot_qty_8,
+sum(decode(ROWNUM,9,lot_qty,''))  lot_qty_9,
+sum(decode(ROWNUM,10,lot_qty,''))  lot_qty_10,
+sum(decode(ROWNUM,11,lot_qty,''))  lot_qty_11,
+sum(decode(ROWNUM,12,lot_qty,''))  lot_qty_12,
+sum(decode(ROWNUM,13,lot_qty,''))  lot_qty_13,
+sum(decode(ROWNUM,14,lot_qty,''))  lot_qty_14,
+
+SUM(decode(ROWNUM,1,sampling_qty,''))  sampling_qty_1,
+sum(decode(ROWNUM,2,sampling_qty,''))  sampling_qty_2,
+sum(decode(ROWNUM,3,sampling_qty,''))  sampling_qty_3,
+sum(decode(ROWNUM,4,sampling_qty,''))  sampling_qty_4,
+sum(decode(ROWNUM,5,sampling_qty,''))  sampling_qty_5,
+sum(decode(ROWNUM,6,sampling_qty,''))  sampling_qty_6,
+sum(decode(ROWNUM,7,sampling_qty,''))  sampling_qty_7,
+sum(decode(ROWNUM,8,sampling_qty,''))  sampling_qty_8,
+sum(decode(ROWNUM,9,sampling_qty,''))  sampling_qty_9,
+sum(decode(ROWNUM,10,sampling_qty,''))  sampling_qty_10,
+sum(decode(ROWNUM,11,sampling_qty,''))  sampling_qty_11,
+sum(decode(ROWNUM,12,sampling_qty,''))  sampling_qty_12,
+sum(decode(ROWNUM,13,sampling_qty,''))  sampling_qty_13,
+sum(decode(ROWNUM,14,sampling_qty,''))  sampling_qty_14,
+
+SUM(decode(ROWNUM,1,reject_qty,''))  reject_qty_1,
+sum(decode(ROWNUM,2,reject_qty,''))  reject_qty_2,
+sum(decode(ROWNUM,3,reject_qty,''))  reject_qty_3,
+sum(decode(ROWNUM,4,reject_qty,''))  reject_qty_4,
+sum(decode(ROWNUM,5,reject_qty,''))  reject_qty_5,
+sum(decode(ROWNUM,6,reject_qty,''))  reject_qty_6,
+sum(decode(ROWNUM,7,reject_qty,''))  reject_qty_7,
+sum(decode(ROWNUM,8,reject_qty,''))  reject_qty_8,
+sum(decode(ROWNUM,9,reject_qty,''))  reject_qty_9,
+sum(decode(ROWNUM,10,reject_qty,''))  reject_qty_10,
+sum(decode(ROWNUM,11,reject_qty,''))  reject_qty_11,
+sum(decode(ROWNUM,12,reject_qty,''))  reject_qty_12,
+sum(decode(ROWNUM,13,reject_qty,''))  reject_qty_13,
+sum(decode(ROWNUM,14,reject_qty,''))  reject_qty_14,
+
+SUM(decode(ROWNUM,1,defect_ppm,''))  defect_ppm_1,
+sum(decode(ROWNUM,2,defect_ppm,''))  defect_ppm_2,
+sum(decode(ROWNUM,3,defect_ppm,''))  defect_ppm_3,
+sum(decode(ROWNUM,4,defect_ppm,''))  defect_ppm_4,
+sum(decode(ROWNUM,5,defect_ppm,''))  defect_ppm_5,
+sum(decode(ROWNUM,6,defect_ppm,''))  defect_ppm_6,
+sum(decode(ROWNUM,7,defect_ppm,''))  defect_ppm_7,
+sum(decode(ROWNUM,8,defect_ppm,''))  defect_ppm_8,
+sum(decode(ROWNUM,9,defect_ppm,''))  defect_ppm_9,
+sum(decode(ROWNUM,10,defect_ppm,''))  defect_ppm_10,
+sum(decode(ROWNUM,11,defect_ppm,''))  defect_ppm_11,
+sum(decode(ROWNUM,12,defect_ppm,''))  defect_ppm_12,
+sum(decode(ROWNUM,13,defect_ppm,''))  defect_ppm_13,
+sum(decode(ROWNUM,14,defect_ppm,''))  defect_ppm_14,
+
+SUM(decode(ROWNUM,1,CALCLUATE_FAIL_QTY,''))  CALCLUATE_FAIL_QTY_1,
+sum(decode(ROWNUM,2,CALCLUATE_FAIL_QTY,''))  CALCLUATE_FAIL_QTY_2,
+sum(decode(ROWNUM,3,CALCLUATE_FAIL_QTY,''))  CALCLUATE_FAIL_QTY_3,
+sum(decode(ROWNUM,4,CALCLUATE_FAIL_QTY,''))  CALCLUATE_FAIL_QTY_4,
+sum(decode(ROWNUM,5,CALCLUATE_FAIL_QTY,''))  CALCLUATE_FAIL_QTY_5,
+sum(decode(ROWNUM,6,CALCLUATE_FAIL_QTY,''))  CALCLUATE_FAIL_QTY_6,
+sum(decode(ROWNUM,7,CALCLUATE_FAIL_QTY,''))  CALCLUATE_FAIL_QTY_7,
+sum(decode(ROWNUM,8,CALCLUATE_FAIL_QTY,''))  CALCLUATE_FAIL_QTY_8,
+sum(decode(ROWNUM,9,CALCLUATE_FAIL_QTY,''))  CALCLUATE_FAIL_QTY_9,
+sum(decode(ROWNUM,10,CALCLUATE_FAIL_QTY,''))  CALCLUATE_FAIL_QTY_10,
+sum(decode(ROWNUM,11,CALCLUATE_FAIL_QTY,''))  CALCLUATE_FAIL_QTY_11,
+sum(decode(ROWNUM,12,CALCLUATE_FAIL_QTY,''))  CALCLUATE_FAIL_QTY_12,
+sum(decode(ROWNUM,13,CALCLUATE_FAIL_QTY,''))  CALCLUATE_FAIL_QTY_13,
+sum(decode(ROWNUM,14,CALCLUATE_FAIL_QTY,''))  CALCLUATE_FAIL_QTY_14,
+
+SUM(decode(ROWNUM,1,def_ppm,''))  def_ppm_1,
+sum(decode(ROWNUM,2,def_ppm,''))  def_ppm_2,
+sum(decode(ROWNUM,3,def_ppm,''))  def_ppm_3,
+sum(decode(ROWNUM,4,def_ppm,''))  def_ppm_4,
+sum(decode(ROWNUM,5,def_ppm,''))  def_ppm_5,
+sum(decode(ROWNUM,6,def_ppm,''))  def_ppm_6,
+sum(decode(ROWNUM,7,def_ppm,''))  def_ppm_7,
+sum(decode(ROWNUM,8,def_ppm,''))  def_ppm_8,
+sum(decode(ROWNUM,9,def_ppm,''))  def_ppm_9,
+sum(decode(ROWNUM,10,deF_ppm,''))  def_ppm_10,
+sum(decode(ROWNUM,11,def_ppm,''))  def_ppm_11,
+sum(decode(ROWNUM,12,def_ppm,''))  def_ppm_12,
+sum(decode(ROWNUM,13,def_ppm,''))  def_ppm_13,
+sum(decode(ROWNUM,14,def_ppm,''))  def_ppm_14,
+
+SUM(decode(ROWNUM,1,target,''))  target_1,
+sum(decode(ROWNUM,2,target,''))  target_2,
+sum(decode(ROWNUM,3,target,''))  target_3,
+sum(decode(ROWNUM,4,target,''))  target_4,
+sum(decode(ROWNUM,5,target,''))  target_5,
+sum(decode(ROWNUM,6,target,''))  target_6,
+sum(decode(ROWNUM,7,target,''))  target_7,
+sum(decode(ROWNUM,8,target,''))  target_8,
+sum(decode(ROWNUM,9,target,''))  target_9,
+sum(decode(ROWNUM,10,target,''))  target_10,
+sum(decode(ROWNUM,11,target,''))  target_11,
+sum(decode(ROWNUM,12,target,''))  target_12,
+sum(decode(ROWNUM,13,target,''))  target_13,
+sum(decode(ROWNUM,14,target,''))  target_14
+
+ FROM (
+SELECT  INSPECT_WEEK,LOT_QTY,SAMPLING_QTY,REJECT_QTY,DEFECT_PPM,CALCLUATE_FAIL_QTY,
+  DEF_PPM,TARGET FROM APITECH.SIW23
+ where emp_no=:emp_no
+
+ORDER BY INSPECT_WEEK)
+----- 结束 -----
+
+----- TDATAMODULE3 第 17 个 SQL.Strings @0x01240e -----
+SELECT  '0'||INSPECT_WEEK INSPECT_WEEK,LOT_QTY,SAMPLING_QTY,REJECT_QTY,DEFECT_PPM,CALCLUATE_FAIL_QTY,
+  DEF_PPM,TARGET FROM APITECH.SIW23
+ where emp_no=:emp_no
+
+ORDER BY INSPECT_WEEK 
+----- 结束 -----
+
+----- TFRMMASTER 第 1 个 SQL.Strings @0x002286 -----
+SELECT distinct A.PALLET_NO,DELIVER_DATE,A.LINE_NAME,A.WARE_CODE,
+A.PART_NO,PART_VER,a.STATUS,DELIVER_QTY,SAMPLE_QTY,RESULT,INSPECTOR,INSPECT_DATE,A.TRANS_YN,REMARK
+FROM APITECH.SIM92 A,APITECH.SIM96 B,apitech.sim94 c
+WHERE A.PALLET_NO=B.PALLET_NO(+)
+  and a.pallet_no=c.pallet_no(+)
+  AND A.PART_NO LIKE :PART_NO
+  AND 1=1
+ AND  NVL(INSPECT_DATE,'00000000')   between :s_date and :e_date
+ AND  A.PALLET_NO LIKE :PALLET_NO
+ and NVL(c.mo_no,' ') like :mo_no
+ and NVL(c.bar_code,' ') like :bar_code
+ AND NVL(B.RESULT,' ') LIKE  :result
+ AND A.STATUS LIKE :STATUS
+ORDER BY A.PALLET_NO
+ 
+ 
+ 
+----- 结束 -----
+
+----- TFRMMASTER 第 2 个 SQL.Strings @0x002eae -----
+SELECT PART_NO,PALLET_NO,MO_NO,
+SEQ_NO,BAR_CODE,IS_INDEX,BAR_CODE1,BAR_CODE2,BAR_CODE3,BAR_CODE4,
+BAR_CODE5,STATUS,RC_NO,RW_YN,BOX_NO,RW_REMARK
+FROM APITECH.SIM94
+WHERE PART_NO LIKE:PART_NO
+AND 1=1
+AND PALLET_NO LIKE :PALLET_NO
+AND MO_NO LIKE :MO_NO
+AND BAR_CODE LIKE :BAR_CODE
+order by pallet_no,seq_no
+
+ 
+ 
+ 
+----- 结束 -----
+
+----- TFRMMASTER 第 3 个 SQL.Strings @0x0035f1 -----
+SELECT A.*,C.PROD_TYPE,
+C.SAMPLE_INTERVAL FROM APITECH.SIM98 A ,APITECH.SIM96 B,apitech.sim560 C
+WHERE A.PALLET_NO=B.PALLET_NO
+AND PART_NO LIKE :PART_NO
+AND 1=1
+AND INSPECT_DATE BETWEEN :S_DATE AND :E_DATE
+AND B.PALLET_NO LIKE :PALLET_NO
+AND BAR_CODE LIKE :BAR_CODE
+AND B.RESULT LIKE :RESULT
+ AND C.PROD_TYPE(+)=APITECH.GET_PROD_TYPE1@BMRP2_DB(B.PART_NO)
+ ORDER BY a.PALLET_NO,SEQ_NO
+----- 结束 -----
+
+----- TFRMMASTER 第 4 个 SQL.Strings @0x0043cb -----
+SELECT  BAR_CODE FROM APITECH.SIM94
+WHERE PALLET_NO=:PALLET_NO
+AND MO_NO=:MO_NO
+AND SEQ_NO=:SEQ_NO
+----- 结束 -----
+
+----- TFRMMASTER 第 5 个 SQL.Strings @0x00456b -----
+SELECT * FROM HMM627
+WHERE EMP_NO = :EMP_NO
+AND NPI_YN='Y'
+----- 结束 -----
+
+----- TFORM10 第 1 个 SQL.Strings @0x0007f8 -----
+SELECT A.*,DECODE(SUBSTR(A.MO_NO,1,1),'R',SUBSTR(APITECH.GET_N_MO_NO(A.PART_NO,A.BAR_CODE),1,18),A.MO_NO) N_MO_NO FROM (
+SELECT DISTINCT PALLET_NO,MO_NO,SUBSTR(APITECH.GET_PART_NO(MO_NO),1,18) PART_NO,
+SEQ_NO,BAR_CODE,IS_INDEX,BAR_CODE1,BAR_CODE2,BAR_CODE3,BAR_CODE4,
+BAR_CODE5,STATUS,RC_NO,RW_YN,RW_REMARK
+FROM APITECH.SIM94
+WHERE PART_NO LIKE:PART_NO
+AND 1=1
+AND PALLET_NO LIKE :PALLET_NO
+AND MO_NO LIKE :MO_NO
+AND BAR_CODE LIKE :BAR_CODE
+order by pallet_no,seq_no ) A
+
+ 
+ 
+ 
+----- 结束 -----
+
+----- TFORM11 第 1 个 SQL.Strings @0x00091d -----
+SELECT 
+GET_PART_NO(:mo_no)  AS part_no
+FROM DUAL
+----- 结束 -----
+
+----- TFORM11 第 2 个 SQL.Strings @0x000a4a -----
+SELECT A.prod_date,a.line_name,A.MO_NO,a.chinese_desc,a.remark,
+       B.PRODUCTION_AREAS,B.LEAD_EMP ,b.LEAD_NAME
+FROM SIM411_DPPM_LIST_V1 A,
+ (SELECT DISTINCT LINE_NO,PRODUCTION_AREAS,LEAD_EMP,LEAD_NAME FROM SIM091) B
+WHERE A.LINE_NAME = B.LINE_NO
+and a.line_name =:line_name
+and a.prod_date between :prod_date1 and :prod_date2
+and get_part_no(a.mo_no)  =:part_no
+and b.line_no = :line_no
+----- 结束 -----
+
+----- TFRMOQC_REPORT 第 1 个 SQL.Strings @0x00130c -----
+SELECT LINE_NAME,LINE_NO FROM SIM11
+ORDER BY LINE_NAME
+----- 结束 -----
+
+----- TFRMOQC_REPORT 第 2 个 SQL.Strings @0x0014c2 -----
+SELECT  CATEGORY_CODE,LONG_DESC,CHINESE_DESC FROM SIM15
+----- 结束 -----
+
+----- TFRMOQC_REPORT 第 3 个 SQL.Strings @0x0016e5 -----
+SELECT DISTINCT PART_NO FROM APITECH.SIM96
+----- 结束 -----
+
+----- TFRMOQC_REPORT 第 4 个 SQL.Strings @0x00181b -----
+select distinct prod_type from sim01,bmm04_p
+where sim01.part_no=bmm04_p.part_no(+)
+  and prod_type is not null
+----- 结束 -----
+
+----- TFRMOQC_REPORT 第 5 个 SQL.Strings @0x0019bb -----
+SELECT DISTINCT CUST_NO,CUST_SHNM_C FROM SFM02_B
+----- 结束 -----
+
+----- TFRMOQC_REPORT 第 6 个 SQL.Strings @0x001ed2 -----
+SELECT  DISTINCT APPROVAL FROM  APITECH.SIM96
+----- 结束 -----

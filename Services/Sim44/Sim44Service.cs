@@ -22,6 +22,9 @@ namespace ORT一键报告.Services.Sim44
         /// <summary>当前登录的数据库账号</summary>
         public string CurrentUser => _client.CurrentUser;
 
+        /// <summary>上次登录的警告（登录成功但表访问不到等），空表示正常</summary>
+        public string LastLoginWarning { get; private set; } = "";
+
         /// <summary>桥接程序路径（诊断用）</summary>
         public string BridgePath => _client.BridgePath;
 
@@ -103,11 +106,16 @@ namespace ORT一键报告.Services.Sim44
                     {
                         Sim44CredentialStore.Touch(actual, now);
                     }
+                    LastLoginWarning = _client.LastLoginWarning ?? "";
                     _logger.Info($"SIM44 登录成功：{actual} @ {settings.DataSource}"
                                  + (string.IsNullOrWhiteSpace(_client.LastLoginDiagnostics)
                                      ? ""
-                                     : "（表解析：" + _client.LastLoginDiagnostics + "）"));
-                    return (LoginOutcome.Success, actual, "");
+                                     : "（表解析：" + _client.LastLoginDiagnostics + "）")
+                                 + (string.IsNullOrWhiteSpace(LastLoginWarning)
+                                     ? ""
+                                     : "｜警告：" + LastLoginWarning));
+                    // 登录算成功；表访问不到的情况放在 message 里，界面当警告显示而不是当成登录失败
+                    return (LoginOutcome.Success, actual, LastLoginWarning);
                 }
                 catch (Sim44Exception ex)
                 {

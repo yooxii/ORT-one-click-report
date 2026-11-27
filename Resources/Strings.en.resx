@@ -4710,4 +4710,7 @@ Continue importing anyway? (fixing the backup folder first is recommended)</valu
   <data name="Oqc_Msg_SelectRow" xml:space="preserve">
     <value>Select a pallet row in the results first.</value>
   </data>
+  <data name="SpPrograms_State_Running" xml:space="preserve">
+    <value>Running</value>
+  </data>
 </root>

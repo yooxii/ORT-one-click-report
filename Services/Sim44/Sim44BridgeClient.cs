@@ -238,6 +238,9 @@ namespace ORT一键报告.Services.Sim44
         /// <summary>上次登录时桥接程序报告的「表解析结果」（SIM44 → 实际表名 等），供日志与界面诊断用</summary>
         public string LastLoginDiagnostics { get; private set; } = "";
 
+        /// <summary>上次登录时的警告（例如登录成功但表访问不到），空表示一切正常</summary>
+        public string LastLoginWarning { get; private set; } = "";
+
         /// <summary>登录数据库（成功后桥接进程保持连接）</summary>
         public string Login(string user, string password, string dataSource, string table, int timeoutMs = 30000)
         {
@@ -254,6 +257,7 @@ namespace ORT一键报告.Services.Sim44
             LastLoginDiagnostics = reply["tables"] is JArray tables
                 ? string.Join("；", tables.Select(t => t.ToString()))
                 : "";
+            LastLoginWarning = reply.Value<string>("warning") ?? "";
             return CurrentUser;
         }
 

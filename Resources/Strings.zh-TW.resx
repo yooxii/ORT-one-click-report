@@ -4323,4 +4323,7 @@
   <data name="Oqc_Msg_SelectRow" xml:space="preserve">
     <value>請先在上面的結果裡選取一筆棧板記錄。</value>
   </data>
+  <data name="SpPrograms_State_Running" xml:space="preserve">
+    <value>已開啟</value>
+  </data>
 </root>

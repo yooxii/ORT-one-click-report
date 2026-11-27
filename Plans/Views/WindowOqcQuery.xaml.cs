@@ -1,4 +1,4 @@
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using NLog;
 using ORT一键报告.Models;
 using ORT一键报告.Services;
@@ -47,8 +47,9 @@ namespace ORT一键报告.Plans.Views
             }
             if (_service.IsLoggedIn)
             {
-                // 先探一下表能不能访问：OQC 用的是 SIM92/SIM96/SIM94
-                SetHint(string.Format(LanguageService.Get("Oqc_Msg_ReadyFormat"), _service.CurrentUser));
+                SetHint(string.IsNullOrWhiteSpace(_service.LastLoginWarning)
+                    ? string.Format(LanguageService.Get("Oqc_Msg_ReadyFormat"), _service.CurrentUser)
+                    : _service.LastLoginWarning);
             }
             UpdateLoginUi();
         }
