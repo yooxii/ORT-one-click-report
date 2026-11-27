@@ -242,6 +242,59 @@ namespace ORT一键报告.Services.Sim44
             return _client.LookupLine(text, limit);
         }
 
+        /// <summary>OQC 测试记录主查询，返回可直接绑表格的 DataTable</summary>
+        public System.Data.DataTable QueryOqc(string partNo, string sDate, string eDate, string palletNo,
+            string moNo, string barCode, string result, string status, int limit = 300)
+        {
+            RequireLogin();
+            return ToTable(_client.QueryOqc(partNo, sDate, eDate, palletNo, moNo, barCode, result, status, limit));
+        }
+
+        /// <summary>OQC 托盘条码明细</summary>
+        public System.Data.DataTable DetailOqc(string partNo, string palletNo, string moNo, string barCode, int limit = 500)
+        {
+            RequireLogin();
+            return ToTable(_client.DetailOqc(partNo, palletNo, moNo, barCode, limit));
+        }
+
+        /// <summary>JSON 行集合 → DataTable（列按出现顺序合并）</summary>
+        private static System.Data.DataTable ToTable(JArray rows)
+        {
+            System.Data.DataTable table = new();
+            if (rows == null)
+            {
+                return table;
+            }
+            foreach (JToken token in rows)
+            {
+                if (token is not JObject item)
+                {
+                    continue;
+                }
+                foreach (JProperty property in item.Properties())
+                {
+                    if (!table.Columns.Contains(property.Name))
+                    {
+                        table.Columns.Add(property.Name, typeof(string));
+                    }
+                }
+            }
+            foreach (JToken token in rows)
+            {
+                if (token is not JObject item)
+                {
+                    continue;
+                }
+                System.Data.DataRow row = table.NewRow();
+                foreach (JProperty property in item.Properties())
+                {
+                    row[property.Name] = property.Value?.ToString() ?? "";
+                }
+                table.Rows.Add(row);
+            }
+            return table;
+        }
+
         /// <summary>查数据字典，用于「连接设置」里的探测按钮</summary>
         public System.Collections.Generic.List<string> Probe()
         {

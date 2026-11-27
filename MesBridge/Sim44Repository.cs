@@ -30,6 +30,12 @@ namespace MesBridge
         /// <summary>最近一次执行的 SQL（出错时回传给主程序写日志，便于判断是哪张表/哪条语句）</summary>
         internal string LastSql { get; private set; } = "";
 
+        /// <summary>给同进程里的其它查询模块（OQC 等）复用同一条连接</summary>
+        internal OracleConnection Connection => _conn;
+
+        /// <summary>其它模块执行前登记 SQL，便于出错时回传</summary>
+        internal void SetLastSql(string sql) => LastSql = sql ?? "";
+
         internal Sim44Repository(string dataSource, string table)
         {
             DataSource = string.IsNullOrWhiteSpace(dataSource) ? DefaultDataSource : dataSource.Trim();

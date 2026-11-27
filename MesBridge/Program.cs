@@ -49,9 +49,10 @@ namespace MesBridge
                 }
                 module = arg.ToLowerInvariant();
             }
-            if (!string.Equals(module, "sim44", StringComparison.Ordinal))
+            if (!string.Equals(module, "sim44", StringComparison.Ordinal)
+                && !string.Equals(module, "mes", StringComparison.Ordinal))
             {
-                WriteError("nomodule", "不支持的桥接模块：" + module + "（目前支持 sim44）");
+                WriteError("nomodule", "不支持的桥接模块：" + module + "（目前支持 mes / sim44）");
                 return 4;
             }
 
@@ -235,6 +236,36 @@ namespace MesBridge
                         ["dataSource"] = dataSource,
                         ["tables"] = tables,
                     });
+                    return;
+                }
+
+                case "oqcquery":
+                {
+                    RequireLogin(repo);
+                    List<Dictionary<string, object>> rows = new OqcRepository(repo).Query(
+                        BridgeProtocol.Str(request, "partNo"),
+                        BridgeProtocol.Str(request, "sDate"),
+                        BridgeProtocol.Str(request, "eDate"),
+                        BridgeProtocol.Str(request, "palletNo"),
+                        BridgeProtocol.Str(request, "moNo"),
+                        BridgeProtocol.Str(request, "barCode"),
+                        BridgeProtocol.Str(request, "result"),
+                        BridgeProtocol.Str(request, "status"),
+                        BridgeProtocol.Int(request, "limit", 300));
+                    Write(new Dictionary<string, object> { ["ok"] = true, ["rows"] = rows, ["count"] = rows.Count });
+                    return;
+                }
+
+                case "oqcdetail":
+                {
+                    RequireLogin(repo);
+                    List<Dictionary<string, object>> rows = new OqcRepository(repo).Detail(
+                        BridgeProtocol.Str(request, "partNo"),
+                        BridgeProtocol.Str(request, "palletNo"),
+                        BridgeProtocol.Str(request, "moNo"),
+                        BridgeProtocol.Str(request, "barCode"),
+                        BridgeProtocol.Int(request, "limit", 500));
+                    Write(new Dictionary<string, object> { ["ok"] = true, ["rows"] = rows, ["count"] = rows.Count });
                     return;
                 }
 

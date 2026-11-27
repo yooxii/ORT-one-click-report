@@ -4567,7 +4567,7 @@ Continue importing anyway? (fixing the backup folder first is recommended)</valu
     <value>OQC test records</value>
   </data>
   <data name="SpPrograms_Oqc_Desc" xml:space="preserve">
-    <value>Open the MES OQC test record query program (C_SII51)</value>
+    <value>Query MES OQC inspection records natively (SIM92/SIM96/SIM94) by part / date / pallet / MO / barcode</value>
   </data>
   <data name="SpPrograms_Inventory_Name" xml:space="preserve">
     <value>Finished goods inventory</value>
@@ -4643,5 +4643,71 @@ Continue importing anyway? (fixing the backup folder first is recommended)</valu
   </data>
   <data name="Sim44_Settings_MsgTableRequired" xml:space="preserve">
     <value>Work order table is required</value>
+  </data>
+  <data name="Oqc_Title" xml:space="preserve">
+    <value>OQC test records</value>
+  </data>
+  <data name="Oqc_QuerySection" xml:space="preserve">
+    <value>Query</value>
+  </data>
+  <data name="Oqc_Field_PartNo" xml:space="preserve">
+    <value>Part number</value>
+  </data>
+  <data name="Oqc_Field_Date" xml:space="preserve">
+    <value>Inspection date</value>
+  </data>
+  <data name="Oqc_Field_MoNo" xml:space="preserve">
+    <value>Work order</value>
+  </data>
+  <data name="Oqc_Field_Pallet" xml:space="preserve">
+    <value>Pallet</value>
+  </data>
+  <data name="Oqc_Field_Barcode" xml:space="preserve">
+    <value>Barcode</value>
+  </data>
+  <data name="Oqc_Field_Result" xml:space="preserve">
+    <value>Result</value>
+  </data>
+  <data name="Oqc_Field_Status" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="Oqc_Detail" xml:space="preserve">
+    <value>Show detail</value>
+  </data>
+  <data name="Oqc_ResultSection" xml:space="preserve">
+    <value>Pallet summary</value>
+  </data>
+  <data name="Oqc_DetailSection" xml:space="preserve">
+    <value>Barcode detail (double-click or use “Show detail”)</value>
+  </data>
+  <data name="Oqc_OpenLegacy" xml:space="preserve">
+    <value>Open original program</value>
+  </data>
+  <data name="Oqc_SourceHint" xml:space="preserve">
+    <value>Data from MES SIM92 / SIM96 / SIM94 (SQL restored from the original OQC program)</value>
+  </data>
+  <data name="Oqc_Msg_NeedLogin" xml:space="preserve">
+    <value>Sign in to the MES database first.</value>
+  </data>
+  <data name="Oqc_Msg_ReadyFormat" xml:space="preserve">
+    <value>Signed in as {0}; fill in the filters and click Query.</value>
+  </data>
+  <data name="Oqc_Msg_Querying" xml:space="preserve">
+    <value>Querying…</value>
+  </data>
+  <data name="Oqc_Msg_QueryingDetail" xml:space="preserve">
+    <value>Loading detail…</value>
+  </data>
+  <data name="Oqc_Msg_NoResult" xml:space="preserve">
+    <value>No inspection records matched.</value>
+  </data>
+  <data name="Oqc_Msg_ResultFormat" xml:space="preserve">
+    <value>{0} pallet record(s)</value>
+  </data>
+  <data name="Oqc_Msg_DetailFormat" xml:space="preserve">
+    <value>{0} barcode row(s) under pallet {1}</value>
+  </data>
+  <data name="Oqc_Msg_SelectRow" xml:space="preserve">
+    <value>Select a pallet row in the results first.</value>
   </data>
 </root>

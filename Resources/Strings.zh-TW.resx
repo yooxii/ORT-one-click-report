@@ -4180,7 +4180,7 @@
     <value>OQC 測試記錄查詢</value>
   </data>
   <data name="SpPrograms_Oqc_Desc" xml:space="preserve">
-    <value>開啟 MES 的 OQC 測試記錄查詢程式（C_SII51）</value>
+    <value>原生查詢 MES 的 OQC 檢驗記錄（SIM92/SIM96/SIM94），依料號/日期/棧板/工令/條碼過濾</value>
   </data>
   <data name="SpPrograms_Inventory_Name" xml:space="preserve">
     <value>成品庫存查詢</value>
@@ -4256,5 +4256,71 @@
   </data>
   <data name="Sim44_Settings_MsgTableRequired" xml:space="preserve">
     <value>工令表名不能為空</value>
+  </data>
+  <data name="Oqc_Title" xml:space="preserve">
+    <value>OQC 測試記錄查詢</value>
+  </data>
+  <data name="Oqc_QuerySection" xml:space="preserve">
+    <value>查詢條件</value>
+  </data>
+  <data name="Oqc_Field_PartNo" xml:space="preserve">
+    <value>料號</value>
+  </data>
+  <data name="Oqc_Field_Date" xml:space="preserve">
+    <value>檢驗日期</value>
+  </data>
+  <data name="Oqc_Field_MoNo" xml:space="preserve">
+    <value>工令</value>
+  </data>
+  <data name="Oqc_Field_Pallet" xml:space="preserve">
+    <value>棧板號</value>
+  </data>
+  <data name="Oqc_Field_Barcode" xml:space="preserve">
+    <value>條碼</value>
+  </data>
+  <data name="Oqc_Field_Result" xml:space="preserve">
+    <value>檢驗結果</value>
+  </data>
+  <data name="Oqc_Field_Status" xml:space="preserve">
+    <value>狀態</value>
+  </data>
+  <data name="Oqc_Detail" xml:space="preserve">
+    <value>查明細</value>
+  </data>
+  <data name="Oqc_ResultSection" xml:space="preserve">
+    <value>棧板彙總</value>
+  </data>
+  <data name="Oqc_DetailSection" xml:space="preserve">
+    <value>條碼明細（雙擊或選取後點「查明細」）</value>
+  </data>
+  <data name="Oqc_OpenLegacy" xml:space="preserve">
+    <value>開啟原程式</value>
+  </data>
+  <data name="Oqc_SourceHint" xml:space="preserve">
+    <value>資料來自 MES 的 SIM92 / SIM96 / SIM94（SQL 還原自原 OQC 查詢程式）</value>
+  </data>
+  <data name="Oqc_Msg_NeedLogin" xml:space="preserve">
+    <value>請先登入 MES 資料庫。</value>
+  </data>
+  <data name="Oqc_Msg_ReadyFormat" xml:space="preserve">
+    <value>已登入：{0}。填條件後點「查詢」。</value>
+  </data>
+  <data name="Oqc_Msg_Querying" xml:space="preserve">
+    <value>查詢中…</value>
+  </data>
+  <data name="Oqc_Msg_QueryingDetail" xml:space="preserve">
+    <value>查明細中…</value>
+  </data>
+  <data name="Oqc_Msg_NoResult" xml:space="preserve">
+    <value>沒有符合條件的檢驗記錄。</value>
+  </data>
+  <data name="Oqc_Msg_ResultFormat" xml:space="preserve">
+    <value>共 {0} 筆棧板記錄</value>
+  </data>
+  <data name="Oqc_Msg_DetailFormat" xml:space="preserve">
+    <value>棧板 {1} 下共 {0} 筆條碼明細</value>
+  </data>
+  <data name="Oqc_Msg_SelectRow" xml:space="preserve">
+    <value>請先在上面的結果裡選取一筆棧板記錄。</value>
   </data>
 </root>

@@ -1,0 +1,137 @@
+<Window x:Class="ORT一键报告.Plans.Views.WindowOqcQuery"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:lex="http://wpflocalizeextension.codeplex.com"
+        mc:Ignorable="d"
+        Background="{DynamicResource WindowBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}"
+        Title="{lex:Loc Oqc_Title}" Height="760" Width="1100" MinHeight="600" MinWidth="900"
+        WindowStartupLocation="CenterOwner">
+
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!--登录状态-->
+        <Border BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="1" Padding="10,6" Margin="0,0,0,8">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="{lex:Loc Sim44_Status_Db}" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="txt_loginState" Margin="6,0,16,0" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                    <TextBlock x:Name="txt_source" VerticalAlignment="Center"
+                               Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <Button x:Name="btn_login" Content="{lex:Loc Sim44_Login}" Padding="10,3" Margin="0,0,8,0"
+                            Click="Btn_Login_Click"/>
+                    <Button x:Name="btn_settings" Content="{lex:Loc Sim44_Settings_Open}" Padding="10,3"
+                            Click="Btn_Settings_Click"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!--查询条件-->
+        <GroupBox Grid.Row="1" Header="{lex:Loc Oqc_QuerySection}" Padding="8" Margin="0,0,0,8">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <Label Content="{lex:Loc Oqc_Field_PartNo}" VerticalContentAlignment="Center"/>
+                <TextBox x:Name="txt_part" Grid.Column="1" Margin="4,3" VerticalContentAlignment="Center"/>
+
+                <Label Grid.Column="2" Content="{lex:Loc Oqc_Field_Date}" VerticalContentAlignment="Center" Margin="8,0,0,0"/>
+                <Grid Grid.Column="3" Margin="4,3">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <DatePicker x:Name="dp_from" VerticalContentAlignment="Center"/>
+                    <TextBlock Grid.Column="1" Text="~" VerticalAlignment="Center" Margin="4,0"/>
+                    <DatePicker x:Name="dp_to" Grid.Column="2" VerticalContentAlignment="Center"/>
+                </Grid>
+
+                <Label Grid.Column="4" Content="{lex:Loc Oqc_Field_MoNo}" VerticalContentAlignment="Center" Margin="8,0,0,0"/>
+                <TextBox x:Name="txt_mo" Grid.Column="5" Margin="4,3" VerticalContentAlignment="Center"/>
+
+                <Label Grid.Row="1" Content="{lex:Loc Oqc_Field_Pallet}" VerticalContentAlignment="Center"/>
+                <TextBox x:Name="txt_pallet" Grid.Row="1" Grid.Column="1" Margin="4,3" VerticalContentAlignment="Center"/>
+
+                <Label Grid.Row="1" Grid.Column="2" Content="{lex:Loc Oqc_Field_Barcode}" VerticalContentAlignment="Center" Margin="8,0,0,0"/>
+                <TextBox x:Name="txt_barcode" Grid.Row="1" Grid.Column="3" Margin="4,3" VerticalContentAlignment="Center"/>
+
+                <Label Grid.Row="1" Grid.Column="4" Content="{lex:Loc Oqc_Field_Result}" VerticalContentAlignment="Center" Margin="8,0,0,0"/>
+                <TextBox x:Name="txt_result" Grid.Row="1" Grid.Column="5" Margin="4,3" VerticalContentAlignment="Center"/>
+
+                <Label Grid.Row="2" Content="{lex:Loc Oqc_Field_Status}" VerticalContentAlignment="Center"/>
+                <TextBox x:Name="txt_status" Grid.Row="2" Grid.Column="1" Margin="4,3" VerticalContentAlignment="Center"/>
+
+                <StackPanel Grid.Row="2" Grid.Column="2" Grid.ColumnSpan="4" Orientation="Horizontal"
+                            HorizontalAlignment="Right" Margin="8,0,0,0">
+                    <Button x:Name="btn_query" Content="{lex:Loc Common_Query}" Padding="16,3" Margin="0,0,8,0"
+                            Click="Btn_Query_Click" IsDefault="True"/>
+                    <Button x:Name="btn_detail" Content="{lex:Loc Oqc_Detail}" Padding="16,3" Margin="0,0,8,0"
+                            Click="Btn_Detail_Click"/>
+                    <Button x:Name="btn_clear" Content="{lex:Loc Common_Clear}" Padding="16,3"
+                            Click="Btn_Clear_Click"/>
+                </StackPanel>
+            </Grid>
+        </GroupBox>
+
+        <!--结果：上主表、下明细-->
+        <Grid Grid.Row="2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="2*"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <GroupBox Header="{lex:Loc Oqc_ResultSection}" Padding="6">
+                <DataGrid x:Name="grid_main" AutoGenerateColumns="True" IsReadOnly="True"
+                          CanUserAddRows="False" HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                          SelectionMode="Single" SelectionUnit="FullRow"
+                          MouseDoubleClick="Grid_Main_MouseDoubleClick"/>
+            </GroupBox>
+            <TextBlock Grid.Row="1" Text="{lex:Loc Oqc_DetailSection}" Margin="2,8,0,4" FontWeight="SemiBold"/>
+            <GroupBox Grid.Row="2" Padding="6">
+                <DataGrid x:Name="grid_detail" AutoGenerateColumns="True" IsReadOnly="True"
+                          CanUserAddRows="False" HeadersVisibility="Column" GridLinesVisibility="Horizontal"/>
+            </GroupBox>
+        </Grid>
+
+        <!--底部-->
+        <Grid Grid.Row="3" Margin="0,10,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock x:Name="txt_hint" VerticalAlignment="Center" TextWrapping="Wrap"
+                       Foreground="{DynamicResource TextSecondaryBrush}"/>
+            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <Button x:Name="btn_legacy" Content="{lex:Loc Oqc_OpenLegacy}" Padding="12,3" Margin="0,0,8,0"
+                        Click="Btn_Legacy_Click"/>
+                <Button Content="{lex:Loc Common_Close}" Width="90" Padding="0,3" IsCancel="True"
+                        Click="Btn_Close_Click"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>

@@ -4569,7 +4569,7 @@
     <value>OQC 测试记录查询</value>
   </data>
   <data name="SpPrograms_Oqc_Desc" xml:space="preserve">
-    <value>打开 MES 的 OQC 测试记录查询程式（C_SII51）</value>
+    <value>原生查询 MES 的 OQC 检验记录（SIM92/SIM96/SIM94），按料号/日期/托盘/工令/条码过滤</value>
   </data>
   <data name="SpPrograms_Inventory_Name" xml:space="preserve">
     <value>成品库存查询</value>
@@ -4645,5 +4645,71 @@
   </data>
   <data name="Sim44_Settings_MsgTableRequired" xml:space="preserve">
     <value>工令表名不能为空</value>
+  </data>
+  <data name="Oqc_Title" xml:space="preserve">
+    <value>OQC 测试记录查询</value>
+  </data>
+  <data name="Oqc_QuerySection" xml:space="preserve">
+    <value>查询条件</value>
+  </data>
+  <data name="Oqc_Field_PartNo" xml:space="preserve">
+    <value>料号</value>
+  </data>
+  <data name="Oqc_Field_Date" xml:space="preserve">
+    <value>检验日期</value>
+  </data>
+  <data name="Oqc_Field_MoNo" xml:space="preserve">
+    <value>工令</value>
+  </data>
+  <data name="Oqc_Field_Pallet" xml:space="preserve">
+    <value>托盘号</value>
+  </data>
+  <data name="Oqc_Field_Barcode" xml:space="preserve">
+    <value>条码</value>
+  </data>
+  <data name="Oqc_Field_Result" xml:space="preserve">
+    <value>检验结果</value>
+  </data>
+  <data name="Oqc_Field_Status" xml:space="preserve">
+    <value>状态</value>
+  </data>
+  <data name="Oqc_Detail" xml:space="preserve">
+    <value>查明细</value>
+  </data>
+  <data name="Oqc_ResultSection" xml:space="preserve">
+    <value>托盘汇总</value>
+  </data>
+  <data name="Oqc_DetailSection" xml:space="preserve">
+    <value>条码明细（双击或选中后点「查明细」）</value>
+  </data>
+  <data name="Oqc_OpenLegacy" xml:space="preserve">
+    <value>打开原程式</value>
+  </data>
+  <data name="Oqc_SourceHint" xml:space="preserve">
+    <value>数据来自 MES 的 SIM92 / SIM96 / SIM94（SQL 还原自原 OQC 查询程式）</value>
+  </data>
+  <data name="Oqc_Msg_NeedLogin" xml:space="preserve">
+    <value>请先登录 MES 数据库。</value>
+  </data>
+  <data name="Oqc_Msg_ReadyFormat" xml:space="preserve">
+    <value>已登录：{0}。填条件后点「查询」。</value>
+  </data>
+  <data name="Oqc_Msg_Querying" xml:space="preserve">
+    <value>查询中…</value>
+  </data>
+  <data name="Oqc_Msg_QueryingDetail" xml:space="preserve">
+    <value>查明细中…</value>
+  </data>
+  <data name="Oqc_Msg_NoResult" xml:space="preserve">
+    <value>没有符合条件的检验记录。</value>
+  </data>
+  <data name="Oqc_Msg_ResultFormat" xml:space="preserve">
+    <value>共 {0} 笔托盘记录</value>
+  </data>
+  <data name="Oqc_Msg_DetailFormat" xml:space="preserve">
+    <value>托盘 {1} 下共 {0} 笔条码明细</value>
+  </data>
+  <data name="Oqc_Msg_SelectRow" xml:space="preserve">
+    <value>请先在上面的结果里选中一笔托盘记录。</value>
   </data>
 </root>

@@ -68,7 +68,8 @@ namespace ORT一键报告.Models
                 Id = OqcId,
                 NameKey = "SpPrograms_Oqc_Name",
                 DescriptionKey = "SpPrograms_Oqc_Desc",
-                Kind = SpProgramKind.External,
+                // 已改成原生查询（SQL 还原自原程式），不再依赖 C_SII51 运行时；原程式仍可从窗口里打开
+                Kind = SpProgramKind.Internal,
                 DefaultPath = @"C:\actelap\C_SII51.EXE",
             },
             new SpProgramInfo

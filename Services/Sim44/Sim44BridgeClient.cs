@@ -346,6 +346,41 @@ namespace ORT一键报告.Services.Sim44
             return lines;
         }
 
+        /// <summary>OQC 测试记录主查询（托盘级汇总）</summary>
+        public JArray QueryOqc(string partNo, string sDate, string eDate, string palletNo, string moNo,
+            string barCode, string result, string status, int limit = 300)
+        {
+            JObject reply = Send(new JObject
+            {
+                ["op"] = "oqcquery",
+                ["partNo"] = partNo ?? "",
+                ["sDate"] = sDate ?? "",
+                ["eDate"] = eDate ?? "",
+                ["palletNo"] = palletNo ?? "",
+                ["moNo"] = moNo ?? "",
+                ["barCode"] = barCode ?? "",
+                ["result"] = result ?? "",
+                ["status"] = status ?? "",
+                ["limit"] = limit,
+            }, 60000);
+            return reply["rows"] as JArray ?? [];
+        }
+
+        /// <summary>OQC 托盘下的条码明细（SIM94）</summary>
+        public JArray DetailOqc(string partNo, string palletNo, string moNo, string barCode, int limit = 500)
+        {
+            JObject reply = Send(new JObject
+            {
+                ["op"] = "oqcdetail",
+                ["partNo"] = partNo ?? "",
+                ["palletNo"] = palletNo ?? "",
+                ["moNo"] = moNo ?? "",
+                ["barCode"] = barCode ?? "",
+                ["limit"] = limit,
+            }, 60000);
+            return reply["rows"] as JArray ?? [];
+        }
+
         /// <summary>改数据库密码</summary>
         public void ChangePassword(string oldPassword, string newPassword, int timeoutMs = 30000)
         {
