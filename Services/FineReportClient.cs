@@ -351,8 +351,58 @@ namespace ORT一键报告.Services
             }
 
             // ---- 4c 取数 ----
-            string body = BuildLoadBody(ep, widget, query);
+            // 大看板会分页（响应里 totalPage > 1）：按页码逐页取回来再拼成一张表，
+            // 否则只拿到第一页，后面的行都丢了
             string loadUrl = ep.ReportHost.TrimEnd('/') + ep.LoadContentPath + "?_=" + NowMilliseconds();
+            List<List<string>> grid = [];
+            int rawLength = 0;
+            int startPage = Math.Max(1, ep.PageIndex);
+            int totalPage = startPage;
+            string previousPage = null;
+            string lastText = null;
+            for (int page = startPage; page <= totalPage && page < startPage + MaxPages; page++)
+            {
+                string text = await PostLoadContentAsync(client, ep, loadUrl, widget, query, page, sessionId, ct)
+                    .ConfigureAwait(false);
+                rawLength += text.Length;
+                lastText = text;
+                // 服务器忽略 pageIndex、翻回来还是同一页时不重复拼
+                if (page > startPage && string.Equals(text, previousPage, StringComparison.Ordinal))
+                {
+                    break;
+                }
+                previousPage = text;
+                grid.AddRange(ParseGrid(text));
+                totalPage = Math.Max(page, ReadTotalPage(text));
+            }
+            if (grid.Count == 0)
+            {
+                _logger.Warn($"取数响应里没解析出单元格（原始 {rawLength} 字节）：{Truncate(lastText, 200)}");
+            }
+
+            FineReportTable table = new()
+            {
+                Widgets = widgets,
+                Widget = widget,
+                SessionId = sessionId,
+                RawLength = rawLength,
+                Rows = grid
+            };
+            _logger.Info($"取数成功：控件={widget}，原始 {rawLength} 字节，还原 {table.Rows.Count} 行");
+            return table;
+        }
+
+        /// <summary>最多翻多少页（防止服务端 totalPage 异常时死循环）</summary>
+        private const int MaxPages = 50;
+
+        /// <summary>
+        /// POST 一次 load/content 取一页数据，返回响应文本。
+        /// HTTP 失败或响应里带 errorCode 时抛 <see cref="PortalAuthException"/>。
+        /// </summary>
+        private async Task<string> PostLoadContentAsync(HttpClient client, OrtBoardEndpoints ep, string loadUrl,
+            string widget, OrtBoardQuery query, int pageIndex, string sessionId, CancellationToken ct)
+        {
+            string body = BuildLoadBody(ep, widget, query, pageIndex);
             using HttpRequestMessage loadRequest = new(HttpMethod.Post, loadUrl);
             using StringContent content = new(body, Encoding.UTF8);
             content.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded") { CharSet = "UTF-8" };
@@ -395,17 +445,7 @@ namespace ORT一键报告.Services
                 throw new PortalAuthException(PortalLoginStatus.ServiceError,
                     $"报表返回错误 {errorCode}：{errorMsg}" + HintForError(errorCode, errorMsg));
             }
-
-            FineReportTable table = new()
-            {
-                Widgets = widgets,
-                Widget = widget,
-                SessionId = sessionId,
-                RawLength = text.Length,
-                Rows = ParseGrid(text)
-            };
-            _logger.Info($"取数成功：控件={widget}，原始 {text.Length} 字节，还原 {table.Rows.Count} 行");
-            return table;
+            return text;
         }
 
         /// <summary>
@@ -493,8 +533,9 @@ namespace ORT一键报告.Services
         /// widgetName=…&amp;pageIndex=1&amp;__parameters__=&lt;双重编码的 JSON&gt;&amp;noCache=&amp;simpleJson=false&amp;arrayJson=false
         /// 注意 __parameters__ 必须**编码两次**（%257B…），其余字段明文，不能整体再过一次表单编码，
         /// 否则 pageIndex 会被吃掉、后端报 "Error page index -1"。
+        /// <paramref name="pageIndex"/> 为空时用高级选项里配置的页码（默认第 1 页）。
         /// </summary>
-        public static string BuildLoadBody(OrtBoardEndpoints ep, string widget, OrtBoardQuery query)
+        public static string BuildLoadBody(OrtBoardEndpoints ep, string widget, OrtBoardQuery query, int? pageIndex = null)
         {
             JObject parameters = new()
             {
@@ -507,7 +548,7 @@ namespace ORT一键报告.Services
             string once = Uri.EscapeDataString(parameters.ToString(Newtonsoft.Json.Formatting.None));
             string twice = Uri.EscapeDataString(once);
             return $"widgetName={Uri.EscapeDataString(widget)}"
-                + $"&pageIndex={ep.PageIndex}"
+                + $"&pageIndex={(pageIndex ?? ep.PageIndex)}"
                 + $"&__parameters__={twice}"
                 + "&noCache="
                 + "&simpleJson=false"
@@ -542,6 +583,11 @@ namespace ORT一键报告.Services
         /// 把帆软返回的稀疏单元格矩阵还原成行列文本。
         /// 每个单元格是 { position:{x,y,columnSpan,rowSpan}, value:"{\"type\":\"text\",\"value\":\"…\"}" }，
         /// 合并单元格要按 span 铺开，否则后面的行会整体错位。
+        /// <para>
+        /// 注意 pageResult 的真实形状是「行数组的数组」：<c>[[单元格…], [单元格…]]</c>，
+        /// 不是「页 → 行 → 单元格」的三层结构；早期按三层解析会一个单元格都取不到（表现为「取到数据但 0 行」）。
+        /// 这里递归收集带 position 的单元格，嵌套层数多少都能认。
+        /// </para>
         /// </summary>
         public static List<List<string>> ParseGrid(string json)
         {
@@ -555,62 +601,16 @@ namespace ORT一键报告.Services
             {
                 return rows;
             }
-            if (pageResult is not JArray pageArray)
+            if (pageResult is not JArray)
             {
                 return rows;
             }
 
-            // (行, 列) → 文本
+            // (行, 列) → 文本；pageResult 的嵌套层数不固定（一页时是「行 → 单元格」，
+            // 多页时是「页 → 行 → 单元格」），所以递归找带 position 的单元格，不硬编码层数
             SortedDictionary<int, SortedDictionary<int, string>> cells = [];
             int maxRow = -1, maxCol = -1;
-            foreach (JToken page in pageArray)
-            {
-                if (page is not JArray pageRows)
-                {
-                    continue;
-                }
-                foreach (JToken rowToken in pageRows)
-                {
-                    if (rowToken is not JArray rowCells)
-                    {
-                        continue;
-                    }
-                    foreach (JToken cellToken in rowCells)
-                    {
-                        JToken position = cellToken["position"];
-                        int y = position?["y"]?.Value<int>() ?? -1;
-                        int x = position?["x"]?.Value<int>() ?? -1;
-                        if (y < 0 || x < 0)
-                        {
-                            continue;
-                        }
-                        int rowSpan = Math.Max(1, position?["rowSpan"]?.Value<int>() ?? 1);
-                        int colSpan = Math.Max(1, position?["columnSpan"]?.Value<int>() ?? 1);
-                        string text = CellText(cellToken["value"]);
-                        for (int dy = 0; dy < rowSpan; dy++)
-                        {
-                            for (int dx = 0; dx < colSpan; dx++)
-                            {
-                                int ry = y + dy, rx = x + dx;
-                                if (!cells.TryGetValue(ry, out SortedDictionary<int, string> line))
-                                {
-                                    line = [];
-                                    cells[ry] = line;
-                                }
-                                line[rx] = text;
-                                if (ry > maxRow)
-                                {
-                                    maxRow = ry;
-                                }
-                                if (rx > maxCol)
-                                {
-                                    maxCol = rx;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            CollectCells(pageResult, cells, ref maxRow, ref maxCol);
 
             for (int y = 0; y <= maxRow; y++)
             {
@@ -630,6 +630,83 @@ namespace ORT一键报告.Services
                 rows.RemoveAt(rows.Count - 1);
             }
             return rows;
+        }
+
+        /// <summary>
+        /// 递归收集单元格：遇到带 position 的对象就按 x/y 落位（合并单元格按 rowSpan/columnSpan 铺开），
+        /// 遇到数组就往下走。这样「行数组的数组」和「页 → 行 → 单元格」两种形状都能解析。
+        /// </summary>
+        private static void CollectCells(JToken token, SortedDictionary<int, SortedDictionary<int, string>> cells,
+            ref int maxRow, ref int maxCol)
+        {
+            if (token is JArray array)
+            {
+                foreach (JToken child in array)
+                {
+                    CollectCells(child, cells, ref maxRow, ref maxCol);
+                }
+                return;
+            }
+            if (token is not JObject cell)
+            {
+                return;
+            }
+            JToken position = cell["position"];
+            int y = position?["y"]?.Value<int>() ?? -1;
+            int x = position?["x"]?.Value<int>() ?? -1;
+            if (y < 0 || x < 0)
+            {
+                return;   // 不是单元格（比如别处的普通对象）
+            }
+            int rowSpan = Math.Max(1, position?["rowSpan"]?.Value<int>() ?? 1);
+            int colSpan = Math.Max(1, position?["columnSpan"]?.Value<int>() ?? 1);
+            string text = CellText(cell["value"]);
+            for (int dy = 0; dy < rowSpan; dy++)
+            {
+                for (int dx = 0; dx < colSpan; dx++)
+                {
+                    int ry = y + dy, rx = x + dx;
+                    if (!cells.TryGetValue(ry, out SortedDictionary<int, string> line))
+                    {
+                        line = [];
+                        cells[ry] = line;
+                    }
+                    line[rx] = text;
+                    if (ry > maxRow)
+                    {
+                        maxRow = ry;
+                    }
+                    if (rx > maxCol)
+                    {
+                        maxCol = rx;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// 响应里的总页数（大看板会分页；没有这个字段或认不出就当 1 页）。
+        /// </summary>
+        public static int ReadTotalPage(string json)
+        {
+            try
+            {
+                JToken token = JObject.Parse(json)["totalPage"];
+                if (token == null || token.Type == JTokenType.Null)
+                {
+                    return 1;
+                }
+                int pages = token.Type == JTokenType.Integer ? token.Value<int>() : 0;
+                if (pages <= 0 && !int.TryParse(token.ToString(), out pages))
+                {
+                    pages = 0;
+                }
+                return pages > 0 ? pages : 1;
+            }
+            catch (Exception)
+            {
+                return 1;
+            }
         }
 
         /// <summary>

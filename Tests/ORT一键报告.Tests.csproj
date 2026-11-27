@@ -57,6 +57,7 @@
     <Compile Include="ConverterAndCommandTests.cs" />
     <Compile Include="DatabaseBackupTests.cs" />
     <Compile Include="DateAndTextParsingTests.cs" />
+    <Compile Include="FineReportGridTests.cs" />
     <Compile Include="FlowViewModelTests.cs" />
     <Compile Include="KindAndResourceTests.cs" />
     <Compile Include="PathAndFileUtilTests.cs" />

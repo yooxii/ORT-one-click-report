@@ -102,8 +102,10 @@ namespace ORT一键报告.Services
                 result.Rows = ToBoardRows(table.Rows, _auth.CurrentOperatorName, out string parseError);
                 if (result.Rows.Count == 0)
                 {
-                    result.Message = parseError
-                        ?? "取到了报表数据，但里面没有认得出的看板行（核对高级选项里的 TargetEntryId / WidgetHint 是不是这张看板）";
+                    // 带上原始字节数：如果日志里响应很大却 0 行，说明是解析问题而不是没取到数据
+                    result.Message = (parseError
+                        ?? "取到了报表数据，但里面没有认得出的看板行（核对高级选项里的 TargetEntryId / WidgetHint 是不是这张看板）")
+                        + $"（原始响应 {table.RawLength} 字节）";
                     return result;
                 }
                 result.Success = true;
